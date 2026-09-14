@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "entrySource": "index.html",
+  "initialClosureMode": "vite-manifest-static-import-closure-v1",
+  "initialJsRawBytes": 650000,
+  "initialCssRawBytes": 590000,
+  "largestInitialChunkRawBytes": 420000,
+  "totalManifestJsRawBytes": 1800000,
+  "largestAnyJsChunkRawBytes": 600000,
+  "totalBuildRawBytes": 6500000,
+  "boardColumnWindowP95Ms": 1.5,
+  "routePolicyP95Microseconds": 40,
+  "observedPreCorrectiveBaseline": {
+    "source": "M31 corrective Mac production build before bundle-budget correction",
+    "totalManifestJsRawBytesApprox": 2109810,
+    "initialCssRawBytesApprox": 566180,
+    "largestAnyJsChunkRawBytesApprox": 1246390,
+    "largestChunkName": "platform",
+    "note": "Observed values are provenance evidence only; release gates measure the current dist/Vite manifest and do not substitute these baseline numbers."
+  }
+}

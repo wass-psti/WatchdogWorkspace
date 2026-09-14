@@ -1,3 +1,6 @@
+export type WorkManagementRuntimeEnvironment = 'local' | 'development' | 'ci' | 'production';
+export type BackendConfigurationSource = 'vite-env' | 'vite-env-incomplete' | 'runtime-fallback' | 'unconfigured';
+
 export interface PublicBackendRuntimeConfig {
   readonly provider: 'supabase';
   readonly accountBased: boolean;
@@ -6,58 +9,58 @@ export interface PublicBackendRuntimeConfig {
   readonly publishableKey: string;
   readonly requireAuthentication: boolean;
   readonly allowRegistration: boolean;
+  readonly runtimeEnvironment: WorkManagementRuntimeEnvironment;
+  readonly configurationSource: BackendConfigurationSource;
 }
 
 export interface VitePublicRuntimeEnv {
   readonly VITE_SUPABASE_URL?: unknown;
   readonly VITE_SUPABASE_PUBLISHABLE_KEY?: unknown;
+  readonly VITE_RUNTIME_ENV?: unknown;
+  readonly MODE?: unknown;
 }
 
 type UnknownRecord = Readonly<Record<string, unknown>>;
-
-
-declare global {
-  var WM_BACKEND_CONFIG: unknown;
-}
+declare global { var WM_BACKEND_CONFIG: unknown; }
 
 const clean = (value: unknown): string => typeof value === 'string' ? value.trim() : '';
-const asRecord = (value: unknown): UnknownRecord =>
-  value !== null && typeof value === 'object' && !Array.isArray(value)
-    ? value as UnknownRecord
-    : Object.freeze({});
+const asRecord = (value: unknown): UnknownRecord => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as UnknownRecord : Object.freeze({});
+const environments = new Set<WorkManagementRuntimeEnvironment>(['local','development','ci','production']);
 
-/**
- * Resolve public Vite client configuration against the existing runtime fallback.
- * VITE_* values always win when explicitly provided; checked-in/public runtime
- * configuration remains the fallback for controlled deployments and source tests.
- */
-export function resolveViteRuntimeConfig(
-  env: VitePublicRuntimeEnv = {},
-  currentConfig: unknown = {},
-): PublicBackendRuntimeConfig {
+function runtimeEnvironment(env: VitePublicRuntimeEnv, current: UnknownRecord): WorkManagementRuntimeEnvironment {
+  const explicit = clean(env.VITE_RUNTIME_ENV) as WorkManagementRuntimeEnvironment;
+  if (environments.has(explicit)) return explicit;
+  const fallback = clean(current.runtimeEnvironment) as WorkManagementRuntimeEnvironment;
+  if (environments.has(fallback)) return fallback;
+  return clean(env.MODE) === 'production' ? 'production' : 'development';
+}
+
+export function resolveViteRuntimeConfig(env: VitePublicRuntimeEnv = {}, currentConfig: unknown = {}): PublicBackendRuntimeConfig {
   const current = asRecord(currentConfig);
   const envUrl = clean(env.VITE_SUPABASE_URL);
   const envKey = clean(env.VITE_SUPABASE_PUBLISHABLE_KEY);
-
+  const envAttempted = Boolean(envUrl || envKey);
+  const fallbackUrl = clean(current.supabaseUrl);
+  const fallbackKey = clean(current.publishableKey);
+  const fallbackConfigured = Boolean(fallbackUrl && fallbackKey);
+  const source: BackendConfigurationSource = envAttempted
+    ? (envUrl && envKey ? 'vite-env' : 'vite-env-incomplete')
+    : (fallbackConfigured ? 'runtime-fallback' : 'unconfigured');
   return Object.freeze({
     provider: 'supabase',
     accountBased: current.accountBased !== false,
     enabled: current.enabled !== false,
-    supabaseUrl: envUrl || clean(current.supabaseUrl),
-    publishableKey: envKey || clean(current.publishableKey),
+    supabaseUrl: envAttempted ? envUrl : fallbackUrl,
+    publishableKey: envAttempted ? envKey : fallbackKey,
     requireAuthentication: current.requireAuthentication !== false,
     allowRegistration: current.allowRegistration !== false,
+    runtimeEnvironment: runtimeEnvironment(env, current),
+    configurationSource: source,
   });
 }
 
-/**
- * Apply Vite public-client environment values without exposing privileged secrets.
- * Existing WM_BACKEND_CONFIG values remain the fallback so local/source verifiers
- * and controlled deployments keep the same backend contract.
- */
 export function applyViteRuntimeConfig(env: VitePublicRuntimeEnv = {}): PublicBackendRuntimeConfig {
-  const current = globalThis.WM_BACKEND_CONFIG;
-  const resolved = resolveViteRuntimeConfig(env, current);
+  const resolved = resolveViteRuntimeConfig(env, globalThis.WM_BACKEND_CONFIG);
   globalThis.WM_BACKEND_CONFIG = resolved;
   return resolved;
 }

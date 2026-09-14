@@ -39,6 +39,64 @@
   --wm-color-row-selected: #fff7f2;
   --wm-color-input: #ffffff;
   --wm-color-input-disabled: #f0f2f4;
+  /* Work Management Shell navigation semantic roles. */
+  --wm-shell-navigation-surface: var(--wm-color-navigation);
+  --wm-shell-navigation-surface-raised: var(--wm-color-navigation-raised);
+  --wm-shell-navigation-surface-hover: var(--wm-color-navigation-hover);
+  --wm-shell-navigation-surface-active: color-mix(in srgb, var(--wm-color-navigation-hover) 72%, var(--wm-color-navigation-raised));
+  --wm-shell-navigation-text: var(--wm-color-navigation-text);
+  --wm-shell-navigation-text-muted: var(--wm-color-navigation-muted);
+  --wm-shell-navigation-text-subtle: color-mix(in srgb, var(--wm-color-navigation-muted) 78%, transparent);
+  --wm-shell-navigation-border: rgba(255, 255, 255, .08);
+  --wm-shell-navigation-active-border: rgba(255, 255, 255, .12);
+  --wm-shell-navigation-active-indicator: var(--wm-color-accent);
+  --wm-shell-navigation-focus: var(--wm-color-focus);
+  --wm-shell-navigation-resizer: rgba(255, 255, 255, .10);
+  --wm-shell-navigation-resizer-hover: var(--wm-color-focus);
+  --wm-shell-navigation-scrollbar: rgba(255, 255, 255, .22);
+  --wm-shell-navigation-shadow: 0 12px 32px rgba(2, 6, 23, .14);
+  --wm-shell-navigation-backdrop: rgba(2, 6, 23, .52);
+  /* Shell M6 shared host overlay/menu/tooltip semantic roles. */
+  --wm-shell-overlay-surface: var(--wm-color-surface-elevated);
+  --wm-shell-overlay-text: var(--wm-color-text-primary);
+  --wm-shell-overlay-border: var(--wm-color-border-primary);
+  --wm-shell-overlay-shadow: var(--wm-shadow-overlay);
+  --wm-shell-tooltip-surface: #252b34;
+  --wm-shell-tooltip-text: #ffffff;
+  --wm-shell-tooltip-shadow: 0 8px 24px rgba(2, 6, 23, .2);
+  /* Shell M5 account/profile semantic roles. */
+  --wm-shell-account-surface: var(--wm-color-surface-primary);
+  --wm-shell-account-surface-elevated: var(--wm-color-surface-elevated);
+  --wm-shell-account-header-surface: var(--wm-color-surface-secondary);
+  --wm-shell-account-hover: var(--wm-color-row-hover);
+  --wm-shell-account-pressed: var(--wm-color-surface-tertiary);
+  --wm-shell-account-selected: var(--wm-color-accent-soft);
+  --wm-shell-account-text: var(--wm-color-text-primary);
+  --wm-shell-account-muted: var(--wm-color-text-secondary);
+  --wm-shell-account-border: var(--wm-color-border-primary);
+  --wm-shell-account-border-subtle: var(--wm-color-border-subtle);
+  --wm-shell-account-border-strong: var(--wm-color-border-strong);
+  --wm-shell-account-focus: var(--wm-color-focus);
+  --wm-shell-account-shadow: 0 18px 48px rgba(15, 23, 42, .18);
+  /* Work Boards semantic color roles. Geometry and typography live in tokens.css. */
+  --wm-board-primary: #0073ea;
+  --wm-board-primary-hover: #0060b9;
+  --wm-board-primary-soft: #e6f0ff;
+  --wm-board-primary-contrast: #ffffff;
+  --wm-board-text: #323338;
+  --wm-board-muted: #676879;
+  --wm-board-disabled: #9699a6;
+  --wm-board-border: #d0d4e4;
+  --wm-board-border-strong: #a9afc3;
+  --wm-board-grid-border: #c3c6d4;
+  --wm-board-surface: #ffffff;
+  --wm-board-surface-subtle: #f6f7fb;
+  --wm-board-surface-elevated: #ffffff;
+  --wm-board-hover: #f5f6f8;
+  --wm-board-pressed: #edf0f5;
+  --wm-board-selected: #e5f0ff;
+  --wm-board-focus: #0073ea;
+  --wm-board-overlay: rgba(50, 51, 56, .42);
 }
 
 :root[data-theme="dark"] {
@@ -80,6 +138,63 @@
   --wm-color-row-selected: #30251f;
   --wm-color-input: #171d25;
   --wm-color-input-disabled: #202730;
+  /* Work Management Shell navigation semantic roles. */
+  --wm-shell-navigation-surface: var(--wm-color-navigation);
+  --wm-shell-navigation-surface-raised: var(--wm-color-navigation-raised);
+  --wm-shell-navigation-surface-hover: var(--wm-color-navigation-hover);
+  --wm-shell-navigation-surface-active: color-mix(in srgb, var(--wm-color-navigation-hover) 72%, var(--wm-color-navigation-raised));
+  --wm-shell-navigation-text: var(--wm-color-navigation-text);
+  --wm-shell-navigation-text-muted: var(--wm-color-navigation-muted);
+  --wm-shell-navigation-text-subtle: color-mix(in srgb, var(--wm-color-navigation-muted) 78%, transparent);
+  --wm-shell-navigation-border: rgba(255, 255, 255, .08);
+  --wm-shell-navigation-active-border: rgba(255, 255, 255, .12);
+  --wm-shell-navigation-active-indicator: var(--wm-color-accent);
+  --wm-shell-navigation-focus: var(--wm-color-focus);
+  --wm-shell-navigation-resizer: rgba(255, 255, 255, .10);
+  --wm-shell-navigation-resizer-hover: var(--wm-color-focus);
+  --wm-shell-navigation-scrollbar: rgba(255, 255, 255, .22);
+  --wm-shell-navigation-shadow: 0 12px 32px rgba(2, 6, 23, .14);
+  --wm-shell-navigation-backdrop: rgba(2, 6, 23, .52);
+  /* Shell M6 shared host overlay/menu/tooltip semantic roles. */
+  --wm-shell-overlay-surface: var(--wm-color-surface-elevated);
+  --wm-shell-overlay-text: var(--wm-color-text-primary);
+  --wm-shell-overlay-border: var(--wm-color-border-primary);
+  --wm-shell-overlay-shadow: var(--wm-shadow-overlay);
+  --wm-shell-tooltip-surface: #252b34;
+  --wm-shell-tooltip-text: #ffffff;
+  --wm-shell-tooltip-shadow: 0 8px 24px rgba(2, 6, 23, .2);
+  /* Shell M5 account/profile semantic roles. */
+  --wm-shell-account-surface: var(--wm-color-surface-primary);
+  --wm-shell-account-surface-elevated: var(--wm-color-surface-elevated);
+  --wm-shell-account-header-surface: var(--wm-color-surface-secondary);
+  --wm-shell-account-hover: var(--wm-color-row-hover);
+  --wm-shell-account-pressed: var(--wm-color-surface-tertiary);
+  --wm-shell-account-selected: var(--wm-color-accent-soft);
+  --wm-shell-account-text: var(--wm-color-text-primary);
+  --wm-shell-account-muted: var(--wm-color-text-secondary);
+  --wm-shell-account-border: var(--wm-color-border-primary);
+  --wm-shell-account-border-subtle: var(--wm-color-border-subtle);
+  --wm-shell-account-border-strong: var(--wm-color-border-strong);
+  --wm-shell-account-focus: var(--wm-color-focus);
+  --wm-shell-account-shadow: 0 18px 48px rgba(15, 23, 42, .18);
+  --wm-board-primary: #579bfc;
+  --wm-board-primary-hover: #74adff;
+  --wm-board-primary-soft: #203958;
+  --wm-board-primary-contrast: #101820;
+  --wm-board-text: #eef2f6;
+  --wm-board-muted: #aeb7c4;
+  --wm-board-disabled: #747f8d;
+  --wm-board-border: #3a4350;
+  --wm-board-border-strong: #5a6675;
+  --wm-board-grid-border: #46515f;
+  --wm-board-surface: #181e26;
+  --wm-board-surface-subtle: #202731;
+  --wm-board-surface-elevated: #222a35;
+  --wm-board-hover: #242c36;
+  --wm-board-pressed: #2b3541;
+  --wm-board-selected: #223c5c;
+  --wm-board-focus: #74adff;
+  --wm-board-overlay: rgba(0, 0, 0, .58);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -122,5 +237,62 @@
     --wm-color-row-selected: #30251f;
     --wm-color-input: #171d25;
     --wm-color-input-disabled: #202730;
+    /* Work Management Shell navigation semantic roles. */
+    --wm-shell-navigation-surface: var(--wm-color-navigation);
+    --wm-shell-navigation-surface-raised: var(--wm-color-navigation-raised);
+    --wm-shell-navigation-surface-hover: var(--wm-color-navigation-hover);
+    --wm-shell-navigation-surface-active: color-mix(in srgb, var(--wm-color-navigation-hover) 72%, var(--wm-color-navigation-raised));
+    --wm-shell-navigation-text: var(--wm-color-navigation-text);
+    --wm-shell-navigation-text-muted: var(--wm-color-navigation-muted);
+    --wm-shell-navigation-text-subtle: color-mix(in srgb, var(--wm-color-navigation-muted) 78%, transparent);
+    --wm-shell-navigation-border: rgba(255, 255, 255, .08);
+    --wm-shell-navigation-active-border: rgba(255, 255, 255, .12);
+    --wm-shell-navigation-active-indicator: var(--wm-color-accent);
+    --wm-shell-navigation-focus: var(--wm-color-focus);
+    --wm-shell-navigation-resizer: rgba(255, 255, 255, .10);
+    --wm-shell-navigation-resizer-hover: var(--wm-color-focus);
+    --wm-shell-navigation-scrollbar: rgba(255, 255, 255, .22);
+    --wm-shell-navigation-shadow: 0 12px 32px rgba(2, 6, 23, .14);
+  --wm-shell-navigation-backdrop: rgba(2, 6, 23, .52);
+  /* Shell M6 shared host overlay/menu/tooltip semantic roles. */
+  --wm-shell-overlay-surface: var(--wm-color-surface-elevated);
+  --wm-shell-overlay-text: var(--wm-color-text-primary);
+  --wm-shell-overlay-border: var(--wm-color-border-primary);
+  --wm-shell-overlay-shadow: var(--wm-shadow-overlay);
+  --wm-shell-tooltip-surface: #252b34;
+  --wm-shell-tooltip-text: #ffffff;
+  --wm-shell-tooltip-shadow: 0 8px 24px rgba(2, 6, 23, .2);
+  /* Shell M5 account/profile semantic roles. */
+  --wm-shell-account-surface: var(--wm-color-surface-primary);
+  --wm-shell-account-surface-elevated: var(--wm-color-surface-elevated);
+  --wm-shell-account-header-surface: var(--wm-color-surface-secondary);
+  --wm-shell-account-hover: var(--wm-color-row-hover);
+  --wm-shell-account-pressed: var(--wm-color-surface-tertiary);
+  --wm-shell-account-selected: var(--wm-color-accent-soft);
+  --wm-shell-account-text: var(--wm-color-text-primary);
+  --wm-shell-account-muted: var(--wm-color-text-secondary);
+  --wm-shell-account-border: var(--wm-color-border-primary);
+  --wm-shell-account-border-subtle: var(--wm-color-border-subtle);
+  --wm-shell-account-border-strong: var(--wm-color-border-strong);
+  --wm-shell-account-focus: var(--wm-color-focus);
+  --wm-shell-account-shadow: 0 18px 48px rgba(15, 23, 42, .18);
+    --wm-board-primary: #579bfc;
+    --wm-board-primary-hover: #74adff;
+    --wm-board-primary-soft: #203958;
+    --wm-board-primary-contrast: #101820;
+    --wm-board-text: #eef2f6;
+    --wm-board-muted: #aeb7c4;
+    --wm-board-disabled: #747f8d;
+    --wm-board-border: #3a4350;
+    --wm-board-border-strong: #5a6675;
+    --wm-board-grid-border: #46515f;
+    --wm-board-surface: #181e26;
+    --wm-board-surface-subtle: #202731;
+    --wm-board-surface-elevated: #222a35;
+    --wm-board-hover: #242c36;
+    --wm-board-pressed: #2b3541;
+    --wm-board-selected: #223c5c;
+    --wm-board-focus: #74adff;
+    --wm-board-overlay: rgba(0, 0, 0, .58);
   }
 }

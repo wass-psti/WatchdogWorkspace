@@ -7,6 +7,7 @@ import type {
 } from '../../../../src/types/auth.ts';
 import type { ModuleId } from '../../../../src/types/identifiers.ts';
 import type { CapabilityMatrix } from '../../../../src/platform/contracts/rbac.ts';
+import { boardRoleSchema, platformRoleSchema } from '../../../../src/runtime-schemas/index.ts';
 
 export const CAPABILITIES = Object.freeze({
   PLATFORM_ADMIN: 'platform.admin',
@@ -37,11 +38,9 @@ const PLATFORM_ADMIN_MODULE_ROLE = Object.freeze({
   tradelink: 'General Manager',
 } as const satisfies Readonly<Record<ModuleId, string>>);
 
-export const isPlatformRole = (value: unknown): value is PlatformRole =>
-  value === 'admin_general_manager' || value === 'hr' || value === 'supervisor' || value === 'employee';
+export const isPlatformRole = (value: unknown): value is PlatformRole => platformRoleSchema.safeParse(value).success;
 
-export const isBoardRole = (value: unknown): value is BoardRole =>
-  value === 'owner' || value === 'editor' || value === 'viewer';
+export const isBoardRole = (value: unknown): value is BoardRole => boardRoleSchema.safeParse(value).success;
 
 export const isCapability = (value: unknown): value is Capability =>
   typeof value === 'string' && (Object.values(CAPABILITIES) as readonly string[]).includes(value);

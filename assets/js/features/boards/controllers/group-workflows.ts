@@ -50,7 +50,7 @@ export function createGroupWorkflows({ commands, state, dialog, toast, escapeHtm
     const group = state.board?.groups.find((entry) => String(entry.id) === String(groupId));
     if (!group) return false;
     const groupName = group.title || 'this group';
-    if (!confirmAction(`Delete “${groupName}” permanently? Every item in this group will also be deleted. This cannot be undone.`)) return false;
+    if (!await confirmAction(`Delete “${groupName}” permanently? Every item in this group will also be deleted. This cannot be undone.`)) return false;
     try {
       await commands.deleteGroup(group.id);
       toast(`“${groupName}” and its items were deleted permanently.`);

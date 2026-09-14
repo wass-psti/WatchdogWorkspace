@@ -1,0 +1,37 @@
+name: Users RBAC Functional Recovery
+on:
+  push:
+  pull_request:
+jobs:
+  m42:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run modern-tests:toolchain:ensure
+      - run: npm run users-rbac-recovery:dependencies:check
+      - name: Capture M42 evidence digests
+        shell: bash
+        run: |
+          echo "M42_SOURCE_DIGEST=$(node scripts/lib/stage-g-m42-certification-tree.mjs \"$PWD\")" >> "$GITHUB_ENV"
+          echo "M42_DEPENDENCY_DIGEST=$(node scripts/lib/stage-g-m42-dependency-tree.mjs \"$PWD\")" >> "$GITHUB_ENV"
+          echo "WM_M42_PRESERVE_GOVERNED_TEST_TOOLCHAIN=1" >> "$GITHUB_ENV"
+          echo "WM_M42_CERTIFICATION_DEPENDENCY_DIGEST=$(node scripts/lib/stage-g-m42-dependency-tree.mjs \"$PWD\")" >> "$GITHUB_ENV"
+      - run: npm run users-rbac-recovery:preflight
+      - run: npm run users-rbac-recovery:check
+      - run: npm run users-rbac-recovery:test
+      - run: npm run users-rbac-recovery:browser
+      - run: npm run database-rls:test:local
+      - run: npm run verify:historical-all
+      - run: npm run typecheck
+      - run: npm run security:check
+      - run: npm run verify:ui
+      - name: Verify M42 evidence digests remained stable
+        shell: bash
+        run: |
+          test "$(node scripts/lib/stage-g-m42-certification-tree.mjs \"$PWD\")" = "$M42_SOURCE_DIGEST"
+          test "$(node scripts/lib/stage-g-m42-dependency-tree.mjs \"$PWD\")" = "$M42_DEPENDENCY_DIGEST"

@@ -1,0 +1,85 @@
+/* Shell M6 — shared host overlay/menu/tooltip surface language. */
+.wm-shell-floating-surface {
+  position: fixed;
+  z-index: var(--wm-shell-overlay-z);
+  box-sizing: border-box;
+  border: 1px solid var(--wm-shell-overlay-border);
+  border-radius: var(--wm-shell-overlay-radius);
+  background: var(--wm-shell-overlay-surface);
+  color: var(--wm-shell-overlay-text);
+  box-shadow: var(--wm-shell-overlay-shadow);
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.wm-shell-menu-surface {
+  overflow: auto;
+  padding: var(--wm-shell-overlay-padding);
+  transform-origin: top right;
+  animation: wm-shell-overlay-enter var(--wm-shell-overlay-motion-standard) var(--wm-shell-overlay-ease-out) both;
+}
+
+.wm-shell-menu-surface[data-vertical-placement="top"] { transform-origin: bottom right; }
+.wm-shell-menu-surface[data-placement^="left"] { transform-origin: right top; }
+.wm-shell-menu-surface[data-placement^="right"] { transform-origin: left top; }
+
+.wm-shell-tooltip {
+  width: max-content;
+  max-width: min(var(--wm-shell-tooltip-max-width), calc(100vw - (var(--wm-shell-overlay-gutter) * 2)));
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  padding: 6px 9px;
+  border-radius: var(--wm-shell-tooltip-radius);
+  background: var(--wm-shell-tooltip-surface);
+  color: var(--wm-shell-tooltip-text);
+  box-shadow: var(--wm-shell-tooltip-shadow);
+  font-size: var(--wm-text-xs);
+  font-weight: var(--wm-font-weight-medium);
+  line-height: 1.35;
+  pointer-events: none;
+  animation: wm-shell-tooltip-enter var(--wm-shell-overlay-motion-fast) var(--wm-shell-overlay-ease-out) both;
+}
+
+/* Short action tooltips (collapse/pin) stay visually attached to the trigger. */
+.wm-shell-tooltip--action {
+  max-width: min(var(--wm-shell-tooltip-action-max-width), calc(100vw - (var(--wm-shell-overlay-gutter) * 2)));
+  min-height: 26px;
+  padding: 4px 8px;
+  border-color: color-mix(in srgb,var(--wm-shell-tooltip-text) 12%,transparent);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes wm-shell-overlay-enter {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes wm-shell-tooltip-enter {
+  from { opacity: 0; transform: translateX(-3px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wm-shell-menu-surface,
+  .wm-shell-tooltip { animation: none !important; }
+}
+
+@media (forced-colors: active) {
+  .wm-shell-floating-surface,
+  .wm-shell-tooltip {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    box-shadow: none;
+    forced-color-adjust: none;
+  }
+}
+
+/* Stage C M11 — React-owned page-lifetime global portal host. */
+.wm-global-overlay-host { display: contents; }
+#overlayRoot[data-wm-global-overlay-layer="interactive"],
+#toastRoot[data-wm-global-overlay-layer="toast"] { isolation: isolate; }

@@ -1,16 +1,20 @@
 import type { BoardDomainService } from '../../../../../src/features/boards/contracts/service.ts';
+import type { BoardCommandService } from '../../../../../src/features/boards/contracts/commands.ts';
 import type { MutableBoardViewState } from '../../../../../src/features/boards/contracts/view-state.ts';
 import type { ConfirmAction } from '../../../../../src/features/boards/contracts/presentation.ts';
 import type { ToastRenderer } from '../../../../../src/platform/contracts/ui.ts';
-import type { BoardItemId } from '../../../../../src/types/identifiers.ts';
+import type { BoardItemId, ISODate, StatusLabelId, UserId } from '../../../../../src/types/identifiers.ts';
 import { createItemWorkspaceRuntime } from '../services/item-workspace-runtime.ts';
+import { normalizeBoardCellValue } from '../grid/column-type-registry.ts';
 
 interface ItemWorkspaceControllerDependencies {
   readonly api: BoardDomainService;
+  readonly commands: BoardCommandService;
   readonly state: MutableBoardViewState;
   readonly toast: ToastRenderer;
   readonly renderBoard: () => void;
   readonly renderPanel: () => void;
+  readonly reloadBoard?: (() => Promise<unknown>) | null;
   readonly confirmAction?: ConfirmAction;
 }
 
@@ -28,10 +32,12 @@ const eventElement = (target: EventTarget | null): Element | null => target inst
 /** DOM presentation adapter over the typed Item Workspace runtime. */
 export function createItemWorkspaceController({
   api,
+  commands,
   state,
   toast,
   renderBoard,
   renderPanel,
+  reloadBoard = null,
   confirmAction = (message) => globalThis.confirm?.(message) ?? true,
 }: ItemWorkspaceControllerDependencies) {
   let returnFocus: HTMLElement | null = null;
@@ -116,6 +122,13 @@ export function createItemWorkspaceController({
       return true;
     }
     if (event.key === 'Escape') {
+      const propertyForm = target?.closest<HTMLFormElement>('[data-item-property-form]');
+      if (propertyForm) {
+        event.preventDefault();
+        propertyForm.reset();
+        propertyForm.querySelector<HTMLElement>('input,select,textarea')?.focus();
+        return true;
+      }
       event.preventDefault();
       close();
       return true;
@@ -158,6 +171,7 @@ export function createItemWorkspaceController({
       const applied = await runtime.postUpdate(body);
       if (applied) {
         textarea.value = '';
+        runtime.setUpdateDraft('');
         toast('Update posted to this item.');
       }
     } catch (error) {
@@ -175,8 +189,67 @@ export function createItemWorkspaceController({
     return true;
   }
 
+  async function submitProperty(event: SubmitEvent): Promise<boolean> {
+    const form = event.target instanceof HTMLFormElement ? event.target : null;
+    if (!form?.matches('[data-item-property-form]')) return false;
+    event.preventDefault();
+    const itemId = state.itemPanel.itemId;
+    const item = state.board?.items.find((entry) => String(entry.id) === String(itemId));
+    if (!itemId || !item) return true;
+    const submit = event.submitter instanceof HTMLButtonElement ? event.submitter : form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const controls = [...form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLButtonElement>('input,textarea,select,button')];
+    controls.forEach((control) => { control.disabled = true; });
+    form.setAttribute('aria-busy', 'true');
+    try {
+      const data = new FormData(form);
+      if (form.dataset.itemPropertyKind === 'core') {
+        const field = form.dataset.itemPropertyField;
+        const raw = String(data.get('value') ?? '');
+        const next = {
+          itemId: item.id,
+          title: item.title,
+          status: item.status,
+          assigneeId: item.assignee_id ?? null,
+          dueDate: item.due_date ?? null,
+          notes: item.notes ?? '',
+        };
+        if (field === 'title') next.title = raw.trim();
+        else if (field === 'status') next.status = (raw || null) as StatusLabelId | null;
+        else if (field === 'assignee') next.assigneeId = (raw || null) as UserId | null;
+        else if (field === 'due_date') next.dueDate = (raw || null) as ISODate | null;
+        else if (field === 'notes') next.notes = raw;
+        else throw new Error('Unsupported Item Workspace field.');
+        await commands.updateItem(next);
+      } else if (form.dataset.itemPropertyKind === 'cell') {
+        const columnId = form.dataset.columnId;
+        const column = state.board?.columns.find((entry) => String(entry.id) === String(columnId));
+        if (!column) throw new Error('This Board property is no longer available.');
+        const raw = column.data_type === 'timeline'
+          ? { start: String(data.get('start') ?? ''), end: String(data.get('end') ?? '') }
+          : data.get('value');
+        const value = normalizeBoardCellValue(column.data_type, raw);
+        await commands.setCell({ itemId: item.id, columnId: column.id, value });
+      } else {
+        throw new Error('Unsupported Item Workspace property operation.');
+      }
+      await reloadBoard?.();
+      if (state.itemPanel.itemId === itemId) await runtime.load(itemId, { quiet: true });
+      toast('Item property saved.');
+    } catch (error) {
+      toast(errorMessage(error), 'warning');
+    } finally {
+      if (form.isConnected) {
+        form.removeAttribute('aria-busy');
+        controls.forEach((control) => { control.disabled = false; });
+        submit?.focus({ preventScroll: true });
+      }
+    }
+    return true;
+  }
+
   function syncUpdateComposer(textarea: HTMLTextAreaElement): void {
     const value = textarea.value;
+    runtime.setUpdateDraft(value);
     const form = textarea.form;
     const counter = form?.querySelector<HTMLElement>('[data-item-update-count]');
     const submit = form?.querySelector<HTMLButtonElement>('[data-item-update-submit]');
@@ -207,16 +280,48 @@ export function createItemWorkspaceController({
     return true;
   }
 
+  async function uploadFileList(files: readonly File[]): Promise<void> {
+    if (!files.length) return;
+    try {
+      const uploaded = await runtime.uploadFiles(files);
+      if (uploaded !== null) toast(`${uploaded} attachment${uploaded === 1 ? '' : 's'} added.`);
+    } catch (error) {
+      toast(errorMessage(error), 'warning');
+    }
+  }
+
+  function handleFileDrag(event: DragEvent): boolean {
+    const target = eventElement(event.target);
+    const drop = target?.closest<HTMLElement>('[data-item-file-drop]');
+    if (!drop) return false;
+    if (event.type === 'dragenter' || event.type === 'dragover') {
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+      drop.classList.add('is-dragging');
+      return true;
+    }
+    if (event.type === 'dragleave') {
+      const related = eventElement(event.relatedTarget);
+      if (!related || !drop.contains(related)) drop.classList.remove('is-dragging');
+      return true;
+    }
+    if (event.type === 'drop') {
+      event.preventDefault();
+      drop.classList.remove('is-dragging');
+      const files = [...(event.dataTransfer?.files || [])];
+      void uploadFileList(files);
+      return true;
+    }
+    return false;
+  }
+
   async function uploadFiles(event: Event): Promise<boolean> {
     const input = event.target instanceof HTMLInputElement ? event.target : null;
     if (!input?.matches('[data-item-file-input]')) return false;
     const files = [...(input.files || [])];
     if (!files.length) return true;
     try {
-      const uploaded = await runtime.uploadFiles(files);
-      if (uploaded !== null) toast(`${uploaded} attachment${uploaded === 1 ? '' : 's'} added.`);
-    } catch (error) {
-      toast(errorMessage(error), 'warning');
+      await uploadFileList(files);
     } finally {
       if (input.isConnected) input.value = '';
     }
@@ -257,7 +362,7 @@ export function createItemWorkspaceController({
     }
 
     if (button.matches('[data-delete-item-update]')) {
-      if (!confirmAction('Delete this update permanently? This cannot be undone.')) return true;
+      if (!await confirmAction('Delete this update permanently? This cannot be undone.')) return true;
       const updateId = button.dataset.deleteItemUpdate;
       if (!updateId) return true;
       try {
@@ -278,7 +383,7 @@ export function createItemWorkspaceController({
       const fileId = button.dataset.deleteItemFile;
       const file = state.itemPanel.data.files.find((entry) => entry.id === fileId);
       const fileName = String(file?.file_name || 'this attachment');
-      if (!file || !confirmAction(`Remove “${fileName}” from this item? This cannot be undone.`)) return true;
+      if (!file || !await confirmAction(`Remove “${fileName}” from this item? This cannot be undone.`)) return true;
       try {
         if (await runtime.deleteFile(file.id)) toast('Attachment removed.');
       } catch (error) { toast(errorMessage(error), 'warning'); }
@@ -303,5 +408,5 @@ export function createItemWorkspaceController({
     returnFocus = null;
   }
 
-  return Object.freeze({ open, close, load, setTab, handleKeydown, handleInput, submitUpdate, uploadFiles, handleButton, handleScrim, reset });
+  return Object.freeze({ open, close, load, setTab, handleKeydown, handleInput, submitUpdate, submitProperty, uploadFiles, handleFileDrag, handleButton, handleScrim, reset });
 }

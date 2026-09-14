@@ -1,0 +1,10 @@
+import fs from 'node:fs';import path from 'node:path';const root=path.resolve(import.meta.dirname,'..');
+const read=(f)=>fs.readFileSync(path.join(root,f),'utf8');
+const state=read('config/stage-f-m36-production-cutover-certification-target.ts').match(/activationState:\s*'([^']+)'/)?.[1]??'unknown';
+const arch=read('config/application-manifest.ts').match(/architectureVersion:\s*(\d+)/)?.[1]??'unknown';
+console.log(`Stage F M36 Production cutover certification status: ${state}`);
+console.log(`Architecture: ${arch}`);
+console.log('Deployment: GitHub Pages dist-only; post-deploy HTTPS entrypoint/service-worker smoke required');
+console.log('Artifact: production build + dist verification + preview + SHA-256 manifest + provenance evidence');
+console.log('Rollback: retain last-known-good certified source SHA and dist artifact; no automatic destructive DB rollback');
+console.log('Retained boundaries: M26 module iframes, M28 RPC authority until Edge Function external cutover, M30 bounded-CDP parity, M34 external backup/PITR controls');

@@ -15,6 +15,7 @@ export interface ItemWorkspaceRuntime {
   reset(): void;
   cancelPending(): void;
   setTab(tab: unknown): tab is ItemWorkspaceTab;
+  setUpdateDraft(value: unknown): void;
   load(itemId?: BoardItemId | string | null, options?: Readonly<{ quiet?: boolean }>): Promise<boolean>;
   postUpdate(body: unknown): Promise<boolean>;
   uploadFiles(files: readonly File[]): Promise<number | null>;

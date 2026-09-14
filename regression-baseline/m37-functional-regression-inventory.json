@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "milestone": 37,
+  "stage": "G",
+  "status": "characterized-not-remediated",
+  "reportedSymptom": "Boards, Users, Settings, and Account are currently reported as no longer functional.",
+  "entries": [
+    {
+      "id": "M37-XMOD-001",
+      "module": "cross-module",
+      "severity": "critical",
+      "classification": "environment-contract",
+      "status": "confirmed-source-signature",
+      "summary": "Checked-in public Supabase configuration is intentionally empty, so an unconfigured local run cannot enter authenticated protected modules.",
+      "reproduction": "Start Vite without VITE_SUPABASE_URL/VITE_SUPABASE_PUBLISHABLE_KEY and request #/boards, #/users, #/settings, or #/account.",
+      "testIds": [
+        "M37-E2E-UNCONFIGURED-PROTECTED-ROUTES"
+      ],
+      "failureSignatures": [
+        "Cloud authentication must be configured before Work Management can be used.",
+        "setup-required",
+        "#/login"
+      ],
+      "evidence": [
+        "config/backend-config.js",
+        "assets/js/core/auth.ts",
+        "tests/modern/e2e/functional-regression-baseline.spec.mjs"
+      ],
+      "remediationMilestone": "M38"
+    },
+    {
+      "id": "M37-BRD-001",
+      "module": "boards",
+      "severity": "critical",
+      "classification": "lifecycle-dom-ownership",
+      "status": "confirmed-source-race-signature",
+      "summary": "Board routing publishes React facade state and immediately enters the imperative renderer, which synchronously resolves the React-owned Board host; React commit timing is therefore an explicit failure boundary.",
+      "reproduction": "Enter #/boards or #/boards/:id during a transition where the React Board host has not committed before boardsFeature.render* resolves the host.",
+      "testIds": [
+        "M37-EXEC-BOARD-HOST-HANDOFF",
+        "M37-E2E-BOARDS-FIXTURE"
+      ],
+      "failureSignatures": [
+        "Work Management React Board presentation facade host is missing.",
+        "ROUTE_RENDER_FAILURE",
+        "react-board-presentation-facade",
+        "runtime route=boards while React Board host reports view=hidden and hidden=true"
+      ],
+      "evidence": [
+        "assets/js/app.ts",
+        "src/app/boards/board-presentation-host.ts",
+        "src/app/boards/BoardPresentationFacade.tsx"
+      ],
+      "remediationMilestone": "M40/M45",
+      "certificationObservation": "Operator evidence captured an authenticated Boards route with the React Board host inactive/hidden while the visible Board error state reported a wm_list_boards backend failure."
+    },
+    {
+      "id": "M37-BRD-002",
+      "module": "boards",
+      "severity": "critical",
+      "classification": "backend-contract",
+      "status": "documented-runtime-signature",
+      "summary": "Boards depend on deployed wm_* RPCs and explicitly surface an outdated-backend failure when the configured-board authority is absent.",
+      "reproduction": "Use an authenticated session against a project missing current Board RPC migrations, then list/create/open a board.",
+      "testIds": [
+        "M37-E2E-BOARDS-FIXTURE"
+      ],
+      "failureSignatures": [
+        "WM_BOARD_BACKEND_OUTDATED",
+        "PGRST202",
+        "wm_create_board_configured",
+        "wm_list_boards"
+      ],
+      "evidence": [
+        "assets/js/features/boards/data/board-repository.ts",
+        "supabase/migrations"
+      ],
+      "remediationMilestone": "M46"
+    },
+    {
+      "id": "M37-USR-001",
+      "module": "users",
+      "severity": "critical",
+      "classification": "backend-rpc",
+      "status": "observed-browser-signature-plus-deterministic-fixture",
+      "summary": "The Users directory is unavailable if list_user_directory is missing, unauthorized, stale in PostgREST schema cache, or the authenticated administrator context cannot be established.",
+      "reproduction": "Open #/users as an administrator while returning an RPC error from list_user_directory.",
+      "testIds": [
+        "M37-E2E-USERS-FIXTURE"
+      ],
+      "failureSignatures": [
+        "User directory unavailable",
+        "list_user_directory",
+        "Administrator access is required.",
+        "Your session expired. Sign in again.",
+        "authenticated users route reached but data-wm-management-view=users absent"
+      ],
+      "evidence": [
+        "src/app/management/AuthenticatedManagementUI.tsx",
+        "assets/js/core/auth.ts"
+      ],
+      "remediationMilestone": "M39/M42",
+      "certificationObservation": "First operator run observed Users management view count 0 in one execution; another execution mounted the route but did not surface the expected directory-error text before timeout."
+    },
+    {
+      "id": "M37-USR-002",
+      "module": "users",
+      "severity": "high",
+      "classification": "transitional-authority",
+      "status": "confirmed-architectural-boundary",
+      "summary": "User mutations still use protected RPC authority; the M28 admin-sync-auth-access Edge Function is present in source but intentionally not the browser authority until external deployment/cutover.",
+      "reproduction": "Inspect the Users mutation path and M28 target/cutover documentation.",
+      "testIds": [
+        "M37-EXEC-USERS-RPC-AUTHORITY"
+      ],
+      "failureSignatures": [
+        "admin_set_user_access",
+        "deployment-dependent-retained-rpc-authority"
+      ],
+      "evidence": [
+        "assets/js/core/auth.ts",
+        "config/stage-f-m28-edge-functions-target.ts",
+        "config/stage-f-m36-production-cutover-certification-target.ts"
+      ],
+      "remediationMilestone": "M42/M54"
+    },
+    {
+      "id": "M37-SET-001",
+      "module": "settings",
+      "severity": "critical",
+      "classification": "authenticated-route-runtime",
+      "status": "observed-browser-signature-plus-deterministic-fixture",
+      "summary": "Settings is React-owned behind the authenticated management runtime; route mount, DOM ownership, shell inert/hidden state, storage APIs, diagnostics, compatibility checks, and backup operations require integrated browser characterization.",
+      "reproduction": "Open #/settings under the fixture session and run Platform verification; record route/auth/DOM/network/backend evidence.",
+      "testIds": [
+        "M37-E2E-SETTINGS-FIXTURE"
+      ],
+      "failureSignatures": [
+        "M13 Settings action failed",
+        "data-wm-management-view=settings",
+        "auth-health",
+        "authenticated settings route reached but data-wm-management-view=settings absent",
+        "Run diagnostics control repeatedly detached before activation"
+      ],
+      "evidence": [
+        "src/app/management/AuthenticatedManagementUI.tsx",
+        "src/app/management/authenticated-management-ui-runtime.ts"
+      ],
+      "remediationMilestone": "M40/M43",
+      "certificationObservation": "First operator run observed Settings management view count 0 in one execution and repeated diagnostics-button DOM detachment in another."
+    },
+    {
+      "id": "M37-ACC-001",
+      "module": "account",
+      "severity": "critical",
+      "classification": "authenticated-route-runtime",
+      "status": "observed-browser-signature-plus-deterministic-fixture",
+      "summary": "Account route rendering and profile/security/session mutations require a valid hydrated cloud identity and were not covered by the previous login-only Playwright smoke.",
+      "reproduction": "Open #/account under the fixture session and submit a profile change while capturing backend response and UI feedback.",
+      "testIds": [
+        "M37-E2E-ACCOUNT-FIXTURE"
+      ],
+      "failureSignatures": [
+        "update_own_profile",
+        "Account settings could not be updated.",
+        "No authenticated session is available.",
+        "authenticated account route reached but data-wm-management-view=account absent"
+      ],
+      "evidence": [
+        "src/app/management/AuthenticatedManagementUI.tsx",
+        "src/app/management/authenticated-management-ui-runtime.ts",
+        "assets/js/core/auth.ts"
+      ],
+      "remediationMilestone": "M39/M41",
+      "certificationObservation": "First operator run observed Account management view count 0 under the authenticated fixture before the intended profile-RPC characterization completed."
+    },
+    {
+      "id": "M37-CERT-001",
+      "module": "cross-module",
+      "severity": "critical",
+      "classification": "test-coverage-gap",
+      "status": "confirmed",
+      "summary": "Prior Playwright coverage proves login composition ownership only; prior management execution verification exercises in-memory show/hide state rather than authenticated user workflows.",
+      "reproduction": "Inspect the M30 application smoke and M13 management execution verifier.",
+      "testIds": [
+        "M37-EXEC-CERTIFICATION-GAP",
+        "M37-E2E-UNCONFIGURED-PROTECTED-ROUTES",
+        "M37-E2E-ACCOUNT-FIXTURE",
+        "M37-E2E-USERS-FIXTURE",
+        "M37-E2E-SETTINGS-FIXTURE",
+        "M37-E2E-BOARDS-FIXTURE"
+      ],
+      "failureSignatures": [
+        "/#/login",
+        "authenticatedManagementUiRuntime.show",
+        "no authenticated module workflow",
+        "M30 generic Playwright runner discovered M37 environment-specific fixture tests during release:check"
+      ],
+      "evidence": [
+        "tests/modern/e2e/application-smoke.spec.mjs",
+        "scripts/verify-authenticated-management-ui-execution.mjs"
+      ],
+      "remediationMilestone": "M52",
+      "certificationObservation": "The first M37 certification run demonstrated test-runner coupling: the M30 generic Playwright command executed M37 fixture tests without the dedicated fixture Vite environment."
+    },
+    {
+      "id": "M37-TECHDEBT-001",
+      "module": "account/users/settings",
+      "severity": "medium",
+      "classification": "duplicate-legacy-authority",
+      "status": "confirmed-source-debt",
+      "summary": "Legacy Account, Settings, and User Management feature implementations remain exported/listed even though React AuthenticatedManagementUI is the declared route owner.",
+      "reproduction": "Inspect runtime exports/runtime-assets and compare them with application-manifest route ownership.",
+      "testIds": [
+        "M37-EXEC-DUPLICATE-MANAGEMENT-AUTHORITY"
+      ],
+      "failureSignatures": [
+        "createAccountFeature",
+        "createSettingsFeature",
+        "createUserManagementFeature",
+        "react-account-settings-user-management-v1"
+      ],
+      "evidence": [
+        "assets/js/runtime/index.ts",
+        "config/runtime-assets.js",
+        "config/application-manifest.ts"
+      ],
+      "remediationMilestone": "M44"
+    }
+  ]
+}

@@ -1,0 +1,149 @@
+/* Shell M5 — Account/Profile Menu Reconstruction
+ * Host-level account launcher and profile menu. Global overlay primitive
+ * Shell M6 supplies the shared floating-surface shell beneath these account-specific rules. */
+body[data-wm-surface="shell"] .account-pill {
+  min-width: 0;
+  min-height: var(--wm-shell-account-trigger-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--wm-space-100);
+  padding: var(--wm-space-050) var(--wm-space-100);
+  border: 1px solid var(--wm-shell-account-border);
+  border-radius: var(--wm-shell-account-trigger-radius);
+  background: var(--wm-shell-account-surface);
+  color: var(--wm-shell-account-text);
+  cursor: pointer;
+}
+body[data-wm-surface="shell"] .account-pill > svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+body[data-wm-surface="shell"] .account-pill > span:last-child { min-width: 0; }
+
+body[data-wm-surface="shell"] .account-pill[data-account-menu-trigger] {
+  min-width: 0;
+  max-width: 248px;
+  min-height: var(--wm-shell-account-trigger-height);
+  padding: var(--wm-space-050) var(--wm-space-100);
+  gap: var(--wm-space-100);
+  border-radius: var(--wm-shell-account-trigger-radius);
+  background: var(--wm-shell-account-surface);
+  border-color: var(--wm-shell-account-border);
+  color: var(--wm-shell-account-text);
+}
+body[data-wm-surface="shell"] .account-pill[data-account-menu-trigger] > span:last-child {
+  display: grid;
+  min-width: 0;
+  text-align: start;
+  line-height: 1.15;
+}
+body[data-wm-surface="shell"] .account-pill[data-account-menu-trigger] b,
+body[data-wm-surface="shell"] .account-pill[data-account-menu-trigger] small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body[data-wm-surface="shell"] .account-pill[data-account-menu-trigger] b { font-size: var(--wm-text-sm); font-weight: var(--wm-font-weight-semibold); }
+body[data-wm-surface="shell"] .account-pill[data-account-menu-trigger] small { margin-top: 2px; color: var(--wm-shell-account-muted); font-size: var(--wm-text-2xs); }
+body[data-wm-surface="shell"] .account-pill[data-account-menu-trigger] .avatar.mini { flex: 0 0 auto; width: var(--wm-shell-account-trigger-avatar); height: var(--wm-shell-account-trigger-avatar); border-radius: var(--wm-radius-round); background: var(--wm-color-accent); color: var(--wm-color-accent-contrast); }
+body[data-wm-surface="shell"] .account-pill[data-account-menu-trigger][aria-expanded="true"] { border-color: var(--wm-shell-account-border-strong); background: var(--wm-shell-account-hover); }
+
+.shell-account-menu {
+  width: min(var(--wm-shell-account-menu-width), calc(100vw - (var(--wm-shell-overlay-gutter) * 2)));
+  max-height: min(var(--wm-shell-account-menu-max-height), calc(100vh - (var(--wm-shell-overlay-gutter) * 2)));
+  color: var(--wm-shell-account-text);
+  scrollbar-width: thin;
+}
+.shell-account-submenu { width: min(var(--wm-shell-account-submenu-width), calc(100vw - 24px)); }
+.shell-account-menu-header {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: var(--wm-space-125);
+  padding: var(--wm-space-125);
+  margin-bottom: var(--wm-space-075);
+  border-radius: var(--wm-shell-account-menu-item-radius);
+  background: var(--wm-shell-account-header-surface);
+}
+.shell-account-menu-avatar {
+  width: var(--wm-shell-account-avatar-size);
+  height: var(--wm-shell-account-avatar-size);
+  display: grid;
+  place-items: center;
+  border-radius: var(--wm-radius-round);
+  background: var(--wm-color-accent);
+  color: var(--wm-color-accent-contrast);
+  font-size: var(--wm-text-sm);
+  font-weight: var(--wm-font-weight-bold);
+  letter-spacing: .02em;
+}
+.shell-account-menu-identity { min-width: 0; display: grid; gap: 2px; }
+.shell-account-menu-identity strong,
+.shell-account-menu-identity small,
+.shell-account-menu-identity span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shell-account-menu-identity strong { font-size: var(--wm-text-sm); font-weight: var(--wm-font-weight-semibold); }
+.shell-account-menu-identity small { color: var(--wm-shell-account-muted); font-size: var(--wm-text-xs); }
+.shell-account-menu-identity > span { color: var(--wm-shell-account-muted); font-size: var(--wm-text-2xs); }
+.shell-account-status { align-self: start; padding: 4px 7px; border-radius: var(--wm-radius-round); font-size: var(--wm-text-2xs); font-weight: var(--wm-font-weight-semibold); }
+.shell-account-status.is-active { color: var(--wm-color-positive); background: var(--wm-color-positive-soft); }
+.shell-account-status.is-warning { color: var(--wm-color-warning); background: var(--wm-color-warning-soft); }
+.shell-account-menu-section { display: grid; gap: 2px; padding: var(--wm-space-075) 0; border-top: 1px solid var(--wm-shell-account-border-subtle); }
+.shell-account-menu-section:first-of-type { border-top: 0; }
+.shell-account-menu-section-title { padding: 0 var(--wm-space-100) var(--wm-space-050); color: var(--wm-shell-account-muted); font-size: var(--wm-text-2xs); font-weight: var(--wm-font-weight-bold); letter-spacing: .08em; text-transform: uppercase; }
+.shell-account-menu-item {
+  width: 100%;
+  min-height: var(--wm-shell-account-menu-row-height);
+  display: grid;
+  grid-template-columns: var(--wm-shell-account-menu-icon-size) minmax(0,1fr) auto;
+  align-items: center;
+  gap: var(--wm-space-100);
+  padding: var(--wm-space-075) var(--wm-space-100);
+  border: 0;
+  border-radius: var(--wm-shell-account-menu-item-radius);
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--wm-shell-account-motion-fast) var(--wm-shell-account-motion-ease), color var(--wm-shell-account-motion-fast) var(--wm-shell-account-motion-ease);
+}
+.shell-account-menu-item:is(:hover,:focus-visible) { background: var(--wm-shell-account-hover); outline: none; }
+.shell-account-menu-item:focus-visible { box-shadow: inset 0 0 0 var(--wm-focus-width) var(--wm-shell-account-focus); }
+.shell-account-menu-item:active { background: var(--wm-shell-account-pressed); }
+.shell-account-menu-item.is-selected { background: var(--wm-shell-account-selected); }
+.shell-account-menu-icon,
+.shell-account-menu-chevron,
+.shell-account-check { display: grid; place-items: center; color: var(--wm-shell-account-muted); }
+.shell-account-menu-icon svg,
+.shell-account-menu-chevron svg,
+.shell-account-check svg { width: var(--wm-shell-account-menu-icon-size); height: var(--wm-shell-account-menu-icon-size); fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.shell-account-menu-chevron svg { width: 14px; height: 14px; }
+.shell-account-menu-item-copy { min-width: 0; display: grid; gap: 2px; }
+.shell-account-menu-item-copy strong,
+.shell-account-menu-item-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shell-account-menu-item-copy strong { font-size: var(--wm-text-sm); font-weight: var(--wm-font-weight-medium); }
+.shell-account-menu-item-copy small { color: var(--wm-shell-account-muted); font-size: var(--wm-text-2xs); }
+.shell-account-menu-session .shell-account-menu-item { color: var(--wm-color-negative); }
+.shell-account-menu-subhead { display: grid; gap: 3px; padding: var(--wm-space-100) var(--wm-space-100) var(--wm-space-125); }
+.shell-account-menu-subhead strong { font-size: var(--wm-text-sm); }
+.shell-account-menu-subhead small { color: var(--wm-shell-account-muted); font-size: var(--wm-text-xs); }
+.shell-account-theme-item { grid-template-columns: minmax(0,1fr) auto; }
+
+@media (max-width: 620px) {
+  body[data-wm-surface="shell"] .account-pill { min-width: var(--wm-shell-account-trigger-height); min-height: var(--wm-shell-account-trigger-height); padding: 0; justify-content: center; }
+  body[data-wm-surface="shell"] .account-pill > span:last-child { display: none; }
+  .shell-account-menu { width: min(calc(100vw - 16px), var(--wm-shell-account-menu-width)); max-height: calc(100vh - 16px); }
+  .shell-account-submenu { width: min(calc(100vw - 16px), var(--wm-shell-account-menu-width)); }
+}
+
+@media (pointer: coarse) {
+  .shell-account-menu-item { min-height: var(--wm-shell-account-menu-row-touch-height); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell-account-menu-item { transition-duration: 1ms!important; }
+}
+
+@media (forced-colors: active) {
+  .shell-account-menu { border-color: CanvasText; background: Canvas; color: CanvasText; box-shadow: none; }
+  .shell-account-menu-item:is(:hover,:focus-visible), .shell-account-menu-item.is-selected { background: Highlight; color: HighlightText; forced-color-adjust: none; }
+  .shell-account-menu-header { border: 1px solid CanvasText; background: Canvas; }
+  body[data-wm-surface="shell"] .account-pill[data-account-menu-trigger][aria-expanded="true"] { outline: 2px solid Highlight; }
+}

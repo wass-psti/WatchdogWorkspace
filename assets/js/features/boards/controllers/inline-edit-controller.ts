@@ -1,6 +1,6 @@
 import type { BoardCommandService } from '../../../../../src/features/boards/contracts/commands.ts';
 import type { BoardCellValue, BoardColumn, BoardGroup, BoardItem, StatusLabel, TimelineValue } from '../../../../../src/features/boards/contracts/domain.ts';
-import type { ReloadBoard } from '../../../../../src/features/boards/contracts/presentation.ts';
+import type { ConfirmAction, ReloadBoard } from '../../../../../src/features/boards/contracts/presentation.ts';
 import type { BoardPreferencePatchService } from '../../../../../src/features/boards/contracts/preference-patches.ts';
 import type { MutableBoardViewState } from '../../../../../src/features/boards/contracts/view-state.ts';
 import type { OverlayManager } from '../../../../../src/platform/contracts/overlay.ts';
@@ -10,6 +10,7 @@ import type { BoardHistoryController } from './history-controller.ts';
 import { STATUS_COLOR_PALETTE, activeStatusLabels } from '../status-labels.ts';
 import { createStatusLabelEditor } from '../services/status-label-editor.ts';
 import { getBoardCellEditorContract, normalizeBoardCellValue } from '../grid/column-type-registry.ts';
+import { resolveGlobalOverlayRoot } from '../../../platform/ui/global-overlay-runtime.ts';
 
 interface BoardInlineEditDependencies {
   readonly state: MutableBoardViewState;
@@ -28,6 +29,7 @@ interface BoardInlineEditDependencies {
   readonly preferencePatches: BoardPreferencePatchService;
   readonly statusLabelsFor?: (column: BoardColumn) => readonly StatusLabel[];
   readonly statusLabelForValue?: (column: BoardColumn, value: unknown) => StatusLabel | null;
+  readonly confirmAction?: ConfirmAction;
 }
 
 interface CommitOptions { readonly label?: string; readonly deferRender?: boolean; }
@@ -61,6 +63,18 @@ interface StatusDraft {
 
 const errorMessage = (error: unknown, fallback: string): string => error instanceof Error ? error.message : fallback;
 const elementTarget = (event: Event): Element | null => event.target instanceof Element ? event.target : null;
+const cssPixels = (name: string, fallback: number): number => {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const parsed = Number.parseFloat(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+const displayInitials = (value: unknown): string => {
+  const parts = String(value ?? '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : (parts[0]?.[1] ?? '');
+  return `${first}${last}`.toUpperCase().slice(0, 2);
+};
 
 function cloneCellValue(value: BoardCellValue): BoardCellValue {
   if (Array.isArray(value)) return [...value];
@@ -83,6 +97,7 @@ export function createBoardInlineEditController({
   overlayCoordinator = null,
   reloadBoard = null,
   preferencePatches,
+  confirmAction = (message) => globalThis.confirm(message),
 }: BoardInlineEditDependencies) {
   const esc = escapeHtml;
   let active: ActiveEditor | null = null;
@@ -180,18 +195,32 @@ export function createBoardInlineEditController({
   }
 
   function position(popover: HTMLDivElement, anchor: HTMLElement): void {
-    const rect = anchor.getBoundingClientRect();
-    const pad = 10;
-    const gap = 7;
+    const pad = cssPixels('--wm-board-overlay-gutter', 12);
+    const gap = cssPixels('--wm-board-overlay-gap', 8);
+    const maxHeightToken = cssPixels('--wm-board-popover-max-height', 520);
     popover.style.visibility = 'hidden';
     requestAnimationFrame(() => {
-      if (!popover.isConnected) return;
+      if (!popover.isConnected || !anchor.isConnected) return;
+      const rect = anchor.getBoundingClientRect();
       const box = popover.getBoundingClientRect();
-      const left = Math.max(pad, Math.min(rect.left, innerWidth - box.width - pad));
-      let top = rect.bottom + gap;
-      if (top + box.height > innerHeight - pad && rect.top - box.height - gap > pad) top = rect.top - box.height - gap;
+      const viewportWidth = Math.max(0, innerWidth - pad * 2);
+      const width = Math.min(box.width, viewportWidth);
+      const left = Math.max(pad, Math.min(rect.left, innerWidth - width - pad));
+      const below = innerHeight - rect.bottom - gap - pad;
+      const above = rect.top - gap - pad;
+      const openAbove = below < Math.min(box.height, 220) && above > below;
+      const available = Math.max(120, openAbove ? above : below);
+      const maxHeight = Math.max(120, Math.min(maxHeightToken, available));
+      const renderedHeight = Math.min(box.height, maxHeight);
+      let top = openAbove ? rect.top - renderedHeight - gap : rect.bottom + gap;
+      top = Math.max(pad, Math.min(top, innerHeight - renderedHeight - pad));
+      const originX = Math.round(Math.min(width - 16, Math.max(16, rect.left + rect.width / 2 - left)));
+      popover.dataset.placement = openAbove ? 'top' : 'bottom';
+      popover.style.setProperty('--board-popover-origin-x', `${originX}px`);
+      popover.style.setProperty('--board-popover-origin-y', openAbove ? '100%' : '0%');
       popover.style.left = `${Math.round(left)}px`;
-      popover.style.top = `${Math.round(Math.max(pad, Math.min(top, innerHeight - box.height - pad)))}px`;
+      popover.style.top = `${Math.round(top)}px`;
+      popover.style.maxHeight = `${Math.round(maxHeight)}px`;
       popover.style.visibility = 'visible';
     });
   }
@@ -199,10 +228,16 @@ export function createBoardInlineEditController({
   function openPopover(anchor: HTMLElement, html: string, { className = '', onClick = null, onInput = null, onChange = null, onSubmit = null }: PopoverOptions = {}): HTMLDivElement {
     close({ restore: false });
     const popover = document.createElement('div');
-    popover.className = `board-inline-popover ${className}`.trim();
+    popover.className = `board-inline-popover board-popover-surface ${className}`.trim();
+    popover.dataset.popoverKind = className.replace(/^board-|popover$/g, '').replace(/-popover$/, '') || 'cell';
+    popover.dataset.boardOverlaySurface = 'true';
     popover.setAttribute('role', 'dialog');
+    popover.setAttribute('aria-modal', 'false');
+    popover.tabIndex = -1;
     popover.innerHTML = html;
-    document.body.appendChild(popover);
+    const contentLabel = popover.querySelector<HTMLElement>('[aria-label]')?.getAttribute('aria-label');
+    popover.setAttribute('aria-label', contentLabel || 'Edit board cell');
+    resolveGlobalOverlayRoot().appendChild(popover);
     active = { popover, anchor, inline: false };
     overlayCoordinator?.open({ id: 'inline-editor', element: popover, trigger: anchor, close: ({ restoreFocus = false, fromCoordinator = false } = {}) => close({ restore: restoreFocus, fromCoordinator, cancel: true }) });
     position(popover, anchor);
@@ -409,7 +444,7 @@ export function createBoardInlineEditController({
           const label = editor.label(id);
           if (!label) return;
           const used = statusUsageCount(column, label.id, label.name);
-          if (used && !globalThis.confirm(`Delete “${label.name}”? ${used} item${used === 1 ? '' : 's'} currently use this label. Those values will be cleared.`)) return;
+          if (used && !await confirmAction(`Delete “${label.name}”? ${used} item${used === 1 ? '' : 's'} currently use this label. Those values will be cleared.`)) return;
           try { editor.remove(label.id); }
           catch (error) { toast(errorMessage(error, 'The status label could not be deleted.'), 'warning'); return; }
           draft.expandedId = null;
@@ -561,7 +596,7 @@ export function createBoardInlineEditController({
         return;
       case 'dropdown': {
         const choices = optionList(column).map((entry) => [entry, entry] as const);
-        openPopover(anchor, `<div class="board-choice-editor"><button type="button" data-inline-choice="">Clear value</button>${choices.map(([choice, label]) => `<button type="button" data-inline-choice="${esc(choice)}" class="${String(value || '') === String(choice) ? 'selected' : ''}">${esc(label)}</button>`).join('')}</div>`, {
+        openPopover(anchor, `<div class="board-choice-editor" role="listbox" aria-label="Choose ${esc(column.name)}"><button type="button" class="board-choice-option clear" data-inline-choice="" role="option" aria-selected="${value == null || value === ''}"><span class="board-choice-indicator" aria-hidden="true">×</span><span>Clear value</span></button>${choices.map(([choice, label]) => { const selected = String(value || '') === String(choice); return `<button type="button" data-inline-choice="${esc(choice)}" class="board-choice-option ${selected ? 'selected' : ''}" role="option" aria-selected="${selected}"><span class="board-choice-indicator" aria-hidden="true">${selected ? '✓' : ''}</span><span>${esc(label)}</span></button>`; }).join('')}</div>`, {
           onClick: (event) => {
             const button = elementTarget(event)?.closest<HTMLElement>('[data-inline-choice]') ?? null;
             if (!button) return;
@@ -574,7 +609,7 @@ export function createBoardInlineEditController({
         return;
       }
       case 'people': {
-        const pop = openPopover(anchor, `<div class="board-person-editor"><label class="inline-picker-search"><input type="search" placeholder="Search board members" aria-label="Search board members" data-inline-person-search></label><div data-inline-person-list><button type="button" data-inline-person="">Unassigned</button>${(state.board?.members || []).map((member) => `<button type="button" data-inline-person="${member.user_id}" data-search="${esc(`${member.display_name || ''} ${member.email || ''}`.toLowerCase())}" class="${String(value || '') === String(member.user_id) ? 'selected' : ''}"><strong>${esc(member.display_name || '')}</strong><small>${esc(member.email || '')}</small></button>`).join('')}</div></div>`, {
+        const pop = openPopover(anchor, `<div class="board-person-editor"><div class="board-cell-editor-heading"><strong>Assign person</strong><small>${esc(column.name)}</small></div><label class="inline-picker-search"><span class="board-picker-search-icon" aria-hidden="true">⌕</span><input type="search" placeholder="Search board members" aria-label="Search board members" data-inline-person-search></label><div class="board-person-choice-list" data-inline-person-list role="listbox" aria-label="Board members"><button type="button" class="board-person-choice ${value == null || value === '' ? 'selected' : ''}" data-inline-person="" role="option" aria-selected="${value == null || value === ''}"><span class="board-person-avatar is-unassigned" aria-hidden="true">–</span><span class="board-person-choice-copy"><strong>Unassigned</strong><small>Clear assignment</small></span></button>${(state.board?.members || []).map((member) => { const displayName = member.display_name || member.email || 'Board member'; const selected = String(value || '') === String(member.user_id); return `<button type="button" class="board-person-choice ${selected ? 'selected' : ''}" data-inline-person="${member.user_id}" data-search="${esc(`${member.display_name || ''} ${member.email || ''}`.toLowerCase())}" role="option" aria-selected="${selected}"><span class="board-person-avatar" aria-hidden="true">${esc(displayInitials(displayName))}</span><span class="board-person-choice-copy"><strong>${esc(displayName)}</strong><small>${esc(member.email || 'Board member')}</small></span><span class="board-person-choice-check" aria-hidden="true">${selected ? '✓' : ''}</span></button>`; }).join('')}</div></div>`, {
           onClick: (event) => {
             const button = elementTarget(event)?.closest<HTMLElement>('[data-inline-person]') ?? null;
             if (!button) return;
@@ -757,5 +792,17 @@ export function createBoardInlineEditController({
   function repositionPopover(): void { if (active && !active.inline && active.anchor.isConnected) position(active.popover, active.anchor); }
   function reset(): void { close({ restore: false }); }
 
-  return Object.freeze({ open, openTitle, openColumnTitle, openGroupTitle, commitCell, commitTitle, handleDocumentPointer, dismissPopover, repositionPopover, reset });
+  return Object.freeze({
+    open,
+    openTitle,
+    openColumnTitle,
+    openGroupTitle,
+    commitCell,
+    commitTitle,
+    handleDocumentPointer,
+    dismissPopover,
+    repositionPopover,
+    reset,
+    get activeEditor() { return active !== null; },
+  });
 }

@@ -15,7 +15,7 @@ export interface BoardDataControllerDependencies {
 
 export interface BoardDataController {
   loadBoards(status?: BoardLifecycleStatus): Promise<boolean>;
-  loadBoard(boardId: BoardId | string, options?: Readonly<{ quiet?: boolean }>): Promise<boolean>;
+  loadBoard(boardId: BoardId | string, options?: Readonly<{ quiet?: boolean; force?: boolean }>): Promise<boolean>;
   cancelPending(): void;
 }
 
@@ -61,7 +61,7 @@ export function createBoardDataController({
     }
   };
 
-  const loadBoard = async (boardId: BoardId | string, { quiet = false }: Readonly<{ quiet?: boolean }> = {}): Promise<boolean> => {
+  const loadBoard = async (boardId: BoardId | string, { quiet = false, force = false }: Readonly<{ quiet?: boolean; force?: boolean }> = {}): Promise<boolean> => {
     const id = String(boardId) as BoardId;
     const ticket = ++epoch;
     if (!quiet) {
@@ -70,7 +70,7 @@ export function createBoardDataController({
       onBoardChange();
     }
     try {
-      const data = await service.get(id);
+      const data = await service.get(id, { force });
       if (ticket !== epoch) return false;
       state.board = data;
       state.error = '';

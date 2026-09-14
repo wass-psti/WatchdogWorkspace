@@ -1,4 +1,9 @@
 const { APP_VERSION, STORAGE_KEY, BACKUP_KEY, UI_KEY, AUTOSAVE_KEY, VENDOR_LOGO_PREFIX, VENDOR_QR_PREFIX, MAX_VENDOR_ASSET_BYTES, TYPES, DEFAULT_VENDORS, DEFAULT_VENDOR_TEMPLATES, TEMPLATE_TERMS_MODES, DEFAULT_TERMS, STATUS_FLOW, QUOTE_STATUS_OPTIONS, CURRENCIES, PAYMENT_TERMS, QUOTATION_VALIDITY, QUOTATION_DELIVERY, QUOTATION_NOTE_TEMPLATES, PO_VALIDITY, PO_DELIVERY, PO_ACCOUNT_MANAGERS, PO_NOTE_TEMPLATES, DR_QC_PERSONNEL, DR_LOGISTICS_PERSONNEL, PAYMENT_RECEIVERS, PAYMENT_ADMINS, VAT_OPTIONS, VAT_ALIASES, VAT_LABELS, APPROVERS, ESI_FINANCE_TEAM, ESI_MANAGEMENT_TEAM, WORKFLOW_DIRECTORY, GENERAL_MANAGER, SALES_SUPERVISOR, QUOTATION_APPROVAL_USERS, SOURCE_ADMIN_EMAILS, PRIMARY_TABS, TAB_ROUTES, ROUTE_TABS, LEGACY_TAB_REDIRECTS, LEGACY_ROUTE_REDIRECTS } = globalThis.WMTradeLinkDomain || (() => { throw new Error('TradeLink domain configuration failed to load.'); })();
+const TRADELINK_STABILITY = globalThis.WMTradeLinkStability || (() => { throw new Error('TradeLink stability runtime failed to load.'); })();
+const sharedMutationGate = TRADELINK_STABILITY.createMutationGate('tradelink-shared');
+const uiWriteQueue = TRADELINK_STABILITY.createSerialTaskQueue();
+const draftWriteQueue = TRADELINK_STABILITY.createSerialTaskQueue();
+const auditWriteQueue = TRADELINK_STABILITY.createSerialTaskQueue();
 
 const todayISO = () => new Date().toISOString().slice(0,10);
 const nowISO = () => new Date().toISOString();
@@ -196,10 +201,11 @@ function normalizeState(raw){
   };
 }
 
+let startupRecoveredFromBackup=false;
 function loadState(){
   const parse = key => { try { return JSON.parse(globalThis.WMModuleStore.getItem(key)||'null'); } catch { return null; } };
   const primary=parse(STORAGE_KEY); if(primary) return normalizeState(primary);
-  const backup=parse(BACKUP_KEY); if(backup){ globalThis.WMModuleStore.setItem(STORAGE_KEY,JSON.stringify(backup)); return normalizeState(backup); }
+  const backup=parse(BACKUP_KEY); if(backup){ startupRecoveredFromBackup=true; return normalizeState(backup); }
   return initialState();
 }
 let state=loadState();
@@ -208,14 +214,16 @@ if(CLOUD_IDENTITY?.user?.id){state.currentUser={id:`cloud:${CLOUD_IDENTITY.user.
 function vendorAssetKey(vendorId,kind){ return `${kind==='qr'?VENDOR_QR_PREFIX:VENDOR_LOGO_PREFIX}${vendorId}`; }
 function validImageData(value){ return typeof value==='string' && /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(value); }
 function getVendorAsset(vendorId,kind){ try{const value=globalThis.WMModuleStore.getItem(vendorAssetKey(vendorId,kind));return validImageData(value)?value:''}catch{return ''} }
-function setVendorAsset(vendorId,kind,value){ if(!state.vendors.some(v=>v.id===vendorId))throw new Error('Unknown company.'); if(!validImageData(value))throw new Error('Invalid image data.'); globalThis.WMModuleStore.setItem(vendorAssetKey(vendorId,kind),value); }
-function deleteVendorAsset(vendorId,kind){ try{globalThis.WMModuleStore.removeItem(vendorAssetKey(vendorId,kind))}catch{} }
+async function setVendorAssetConfirmed(vendorId,kind,value){ if(!state.vendors.some(v=>v.id===vendorId))throw new Error('Unknown company.'); if(!validImageData(value))throw new Error('Invalid image data.'); return TRADELINK_STABILITY.confirmedSet(vendorAssetKey(vendorId,kind),value); }
+async function deleteVendorAssetConfirmed(vendorId,kind){ return TRADELINK_STABILITY.confirmedRemove(vendorAssetKey(vendorId,kind)); }
+async function restoreVendorAssetsConfirmed(assets,{clear=true}={}){ if(clear){for(const v of state.vendors){if(getVendorAsset(v.id,'logo'))await deleteVendorAssetConfirmed(v.id,'logo');if(getVendorAsset(v.id,'qr'))await deleteVendorAssetConfirmed(v.id,'qr');}} if(!assets||typeof assets!=='object'||Array.isArray(assets))return; for(const [id,data] of Object.entries(assets)){if(!state.vendors.some(v=>v.id===id)||!data||typeof data!=='object')continue;if(validImageData(data.logo))await setVendorAssetConfirmed(id,'logo',data.logo);if(validImageData(data.qrCode))await setVendorAssetConfirmed(id,'qr',data.qrCode);} }
 function collectVendorAssets(){ const out={}; for(const v of state.vendors){const logo=getVendorAsset(v.id,'logo'),qrCode=getVendorAsset(v.id,'qr');if(logo||qrCode)out[v.id]={...(logo?{logo}:{}),...(qrCode?{qrCode}:{})};} return out; }
-function restoreVendorAssets(assets,{clear=true}={}){ if(clear){for(const v of state.vendors){deleteVendorAsset(v.id,'logo');deleteVendorAsset(v.id,'qr')}} if(!assets||typeof assets!=='object'||Array.isArray(assets))return; for(const [id,data] of Object.entries(assets)){if(!state.vendors.some(v=>v.id===id)||!data||typeof data!=='object')continue;if(validImageData(data.logo))setVendorAsset(id,'logo',data.logo);if(validImageData(data.qrCode))setVendorAsset(id,'qr',data.qrCode);} }
-function migrateEmbeddedVendorAssets(){ let changed=false,stored=null;try{stored=JSON.parse(globalThis.WMModuleStore.getItem(STORAGE_KEY)||'null')}catch{} for(const v of state.vendors){const raw=(stored?.vendors||[]).find(x=>x?.id===v.id);if(raw?.logo&&validImageData(raw.logo)&&!getVendorAsset(v.id,'logo')){try{setVendorAsset(v.id,'logo',raw.logo)}catch{} changed=true}if(raw?.qrCode&&validImageData(raw.qrCode)&&!getVendorAsset(v.id,'qr')){try{setVendorAsset(v.id,'qr',raw.qrCode)}catch{} changed=true}} if(changed)try{globalThis.WMModuleStore.setItem(STORAGE_KEY,JSON.stringify(state))}catch{} }
-migrateEmbeddedVendorAssets();
-let ui={ tab:'create', editingId:null, previewId:null, search:'', type:'all', status:'all', quoteStatus:'all', companyFilter:'all', page:1, documentSort:'updated-desc', documentRange:'all', selectedDocumentIds:[], approvalQueueOpen:true, form:null, errors:{}, modal:null, recoveryPane:'tools', activitySearch:'', activityAction:'all', activityType:'all', activityRange:'all', activitySort:'newest', activityPage:1, termsExpanded:false, companyPanelOpen:false };
+let ui={ tab:'create', editingId:null, editBaseUpdatedAt:null, previewId:null, search:'', type:'all', status:'all', quoteStatus:'all', companyFilter:'all', page:1, documentSort:'updated-desc', documentRange:'all', selectedDocumentIds:[], approvalQueueOpen:true, form:null, errors:{}, modal:null, recoveryPane:'tools', activitySearch:'', activityAction:'all', activityType:'all', activityRange:'all', activitySort:'newest', activityPage:1, termsExpanded:false, companyPanelOpen:false };
 try { ui={...ui,...JSON.parse(globalThis.WMModuleStore.getItem(UI_KEY)||'{}')}; } catch {}
+if(ui.selectedVendorId && state.vendors.some(v=>v.id===ui.selectedVendorId)) state.selectedVendorId=ui.selectedVendorId;
+else ui.selectedVendorId=state.selectedVendorId;
+if(Number(ui.pageSize)>0) state.settings.pageSize=Number(ui.pageSize);
+else ui.pageSize=Number(state.settings.pageSize)||20;
 ui.companyPanelOpen=false;
 const initialHash = location.hash;
 const routeTab = ROUTE_TABS[initialHash] || LEGACY_ROUTE_REDIRECTS[initialHash];
@@ -224,28 +232,95 @@ ui.tab = routeTab || LEGACY_TAB_REDIRECTS[ui.tab] || ui.tab;
 if(!PRIMARY_TABS.includes(ui.tab)) ui.tab='create';
 function syncRoute(tab, replace=false){ const next=TAB_ROUTES[tab]||TAB_ROUTES.create; if(location.hash===next)return; history[replace?'replaceState':'pushState'](null,'',next); }
 
-function persist(reason='update', audit=true){
-  try {
-    const current=globalThis.WMModuleStore.getItem(STORAGE_KEY); if(current) globalThis.WMModuleStore.setItem(BACKUP_KEY,current);
-    state.updatedAt=nowISO(); const persistedState={...state,currentUser:null}; globalThis.WMModuleStore.setItem(STORAGE_KEY,JSON.stringify(persistedState));
-    globalThis.WMModuleStore.setItem(UI_KEY,JSON.stringify({...ui,form:undefined,errors:{},modal:null,companyPanelOpen:false}));
-    if(audit) addAudit('system','State persisted',reason,null,false);
-  } catch(error){ toast(`Unable to persist data: ${error.message}`,'error'); throw error; }
+function userUiState(){ return {...ui,selectedVendorId:state.selectedVendorId,pageSize:Number(state.settings.pageSize)||20,form:undefined,errors:{},modal:null,companyPanelOpen:false,editBaseUpdatedAt:null}; }
+function canonicalSharedState(source=state){ const copy=deepCopy(source); copy.currentUser=null; copy.selectedVendorId=DEFAULT_VENDORS.find(v=>v.id==='watchdog-sales')?.id||DEFAULT_VENDORS[0]?.id||''; copy.settings={...copy.settings,pageSize:20}; return copy; }
+function applyUserScopedPreferences(){
+  try{
+    const saved=JSON.parse(globalThis.WMModuleStore.getItem(UI_KEY)||'{}');
+    if(saved?.selectedVendorId&&state.vendors.some(v=>v.id===saved.selectedVendorId))state.selectedVendorId=saved.selectedVendorId;
+    if(Number(saved?.pageSize)>0)state.settings.pageSize=Number(saved.pageSize);
+  }catch{}
 }
-function addAudit(action, title, detail='', documentId=null, save=true){
-  state.audit.unshift({id:uid('audit'),at:nowISO(),user:state.currentUser.name,role:state.currentUser.role,action,title,detail,documentId});
-  state.audit=state.audit.slice(0,1000); if(save) persist('audit',false);
+async function persistUiConfirmed(){ return uiWriteQueue.run(()=>TRADELINK_STABILITY.confirmedSet(UI_KEY,JSON.stringify(userUiState()))); }
+async function persistDraftConfirmed(){ if(!state.settings.autosave||!ui.form)return true; const payload=JSON.stringify(ui.form); return draftWriteQueue.run(()=>TRADELINK_STABILITY.confirmedSet(AUTOSAVE_KEY,payload)); }
+async function removeDraftConfirmed(){ return draftWriteQueue.run(()=>TRADELINK_STABILITY.confirmedRemove(AUTOSAVE_KEY)); }
+async function refreshAuthoritativeTradeLinkState({renderUi=false}={}){
+  await TRADELINK_STABILITY.refreshStore();
+  const raw=globalThis.WMModuleStore.getItem(STORAGE_KEY);
+  if(raw){ state=normalizeState(JSON.parse(raw)); if(CLOUD_IDENTITY?.user?.id)state.currentUser={id:`cloud:${CLOUD_IDENTITY.user.id}`,name:CLOUD_IDENTITY.user.displayName||CLOUD_IDENTITY.user.email,email:CLOUD_IDENTITY.user.email||'',role:CLOUD_IDENTITY.module?.role||'User',source:'work-management-cloud'}; applyUserScopedPreferences(); }
+  if(renderUi)render();
+  return state;
 }
-function snapshot(label='Manual snapshot'){
+async function persistSharedConfirmed(reason='update',audit=true){
+  if(audit)addAudit('system','State persisted',reason,null,false);
+  const current=globalThis.WMModuleStore.getItem(STORAGE_KEY);
+  if(current)await TRADELINK_STABILITY.confirmedSet(BACKUP_KEY,current);
+  state.updatedAt=nowISO();
+  await TRADELINK_STABILITY.confirmedSet(STORAGE_KEY,JSON.stringify(canonicalSharedState()));
+  void persistUiConfirmed().catch(error=>console.warn('TradeLink user UI state could not be persisted after the shared commit.',error));
+  return true;
+}
+async function recordAuditConfirmed(action,title,detail='',documentId=null){
+  return auditWriteQueue.run(()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{
+    await refreshAuthoritativeTradeLinkState();
+    addAudit(action,title,detail,documentId,false);
+    await persistSharedConfirmed(`audit ${action}`,false);
+    return true;
+  }));
+}
+function recordAuditBestEffort(action,title,detail='',documentId=null){
+  void recordAuditConfirmed(action,title,detail,documentId).catch(error=>console.warn(`TradeLink audit event could not be persisted: ${title}`,error));
+}
+async function ensureConfirmedStartupRecovery(){
+  try{return await sharedMutationGate.run('startup-recovery',()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{
+    await TRADELINK_STABILITY.refreshStore();
+    const primaryRaw=globalThis.WMModuleStore.getItem(STORAGE_KEY);
+    if(primaryRaw){state=normalizeState(JSON.parse(primaryRaw));if(CLOUD_IDENTITY?.user?.id)state.currentUser={id:`cloud:${CLOUD_IDENTITY.user.id}`,name:CLOUD_IDENTITY.user.displayName||CLOUD_IDENTITY.user.email,email:CLOUD_IDENTITY.user.email||'',role:CLOUD_IDENTITY.module?.role||'User',source:'work-management-cloud'};applyUserScopedPreferences();}
+    else if(startupRecoveredFromBackup){await TRADELINK_STABILITY.confirmedSet(STORAGE_KEY,JSON.stringify(canonicalSharedState()));startupRecoveredFromBackup=false;}
+
+    let stored=null;try{stored=JSON.parse(globalThis.WMModuleStore.getItem(STORAGE_KEY)||'null')}catch{}
+    const previousAssets=collectVendorAssets();let migratedAssets=false;
+    try{
+      for(const v of state.vendors){
+        const raw=(stored?.vendors||[]).find(x=>x?.id===v.id);
+        if(raw?.logo&&validImageData(raw.logo)&&!getVendorAsset(v.id,'logo')){await setVendorAssetConfirmed(v.id,'logo',raw.logo);migratedAssets=true;}
+        if(raw?.qrCode&&validImageData(raw.qrCode)&&!getVendorAsset(v.id,'qr')){await setVendorAssetConfirmed(v.id,'qr',raw.qrCode);migratedAssets=true;}
+      }
+      if(migratedAssets)await persistSharedConfirmed('embedded vendor asset migration',false);
+    }catch(error){if(migratedAssets)await restoreVendorAssetsConfirmed(previousAssets,{clear:true}).catch(()=>{});throw error;}
+    return true;
+  }));}
+  catch(error){console.warn('TradeLink confirmed startup recovery/migration could not complete.',error);return false;}
+}
+function appendSnapshot(label='Manual snapshot'){
   const data={...state,snapshots:[]},vendorAssets=collectVendorAssets();
   const encoded=JSON.stringify({data,vendorAssets});
   const hash=simpleHash(encoded);
   state.snapshots.unshift({id:uid('snapshot'),at:nowISO(),label,hash,data,vendorAssets}); state.snapshots=state.snapshots.slice(0,12);
-  addAudit('backup','Snapshot created',`${label} · ${hash}`,null,false); persist('snapshot',false); toast('Snapshot created');
+  addAudit('backup','Snapshot created',`${label} · ${hash}`,null,false);
+  return hash;
+}
+async function snapshot(label='Manual snapshot'){
+  try{return await sharedMutationGate.run('snapshot',()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{await refreshAuthoritativeTradeLinkState();appendSnapshot(label);await persistSharedConfirmed('snapshot',false);render();toast('Snapshot created');return true;}));}
+  catch(error){toast(`Snapshot failed: ${error.message}`,'error');return false;}
 }
 function simpleHash(text){ let h=2166136261; for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)} return `TL-${(h>>>0).toString(16).padStart(8,'0')}`; }
-function restoreSnapshot(id){ const s=state.snapshots.find(x=>x.id===id); if(!s) return; const keep=deepCopy(state.snapshots); state=normalizeState(deepCopy(s.data)); state.snapshots=keep; if(s.vendorAssets)restoreVendorAssets(s.vendorAssets, {clear:true}); addAudit('restore','Snapshot restored',`${s.label} · ${s.hash}`,null,false); persist('restore snapshot',false); ui.tab='recovery'; syncRoute('recovery',true); render(); toast('Snapshot restored'); }
+async function restoreSnapshot(id){
+  let previousAssets=null;
+  try{return await sharedMutationGate.run(`restore:${id}`,()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{
+    await refreshAuthoritativeTradeLinkState();const s=state.snapshots.find(x=>x.id===id);if(!s)throw new Error('Recovery snapshot is no longer available.');
+    const keep=deepCopy(state.snapshots);previousAssets=collectVendorAssets();state=normalizeState(deepCopy(s.data));state.snapshots=keep;
+    try{if(s.vendorAssets)await restoreVendorAssetsConfirmed(s.vendorAssets,{clear:true});addAudit('restore','Snapshot restored',`${s.label} · ${s.hash}`,null,false);await persistSharedConfirmed('restore snapshot',false);}
+    catch(error){if(previousAssets)await restoreVendorAssetsConfirmed(previousAssets,{clear:true}).catch(()=>{});throw error;}
+    ui.tab='recovery';syncRoute('recovery',true);render();toast('Snapshot restored');return true;
+  }));}
+  catch(error){await refreshAuthoritativeTradeLinkState({renderUi:true}).catch(()=>{});toast(`Snapshot restore failed: ${error.message}`,'error');return false;}
+}
 
+function addAudit(action, title, detail='', documentId=null){
+  state.audit.unshift({id:uid('audit'),at:nowISO(),user:state.currentUser.name,role:state.currentUser.role,action,title,detail,documentId});
+  state.audit=state.audit.slice(0,1000);
+}
 function vendorById(id){ return state.vendors.find(v=>v.id===id)||null; }
 function selectedVendor(){ const v=vendorById(state.selectedVendorId)||state.vendors[0]||DEFAULT_VENDORS[1]; return {...v,logo:getVendorAsset(v.id,'logo'),qrCode:getVendorAsset(v.id,'qr')}; }
 function documentVendor(d){ const id=d?.vendorId||d?.vendor?.id; const live=id?vendorById(id):null; const snapshot=d?.vendor&&typeof d.vendor==='object'?d.vendor:null; const base=live||snapshot||(!d?selectedVendor():null); if(!base)return {id:'',name:'Unassigned Company',address:'',phone:'',email:'',website:'',tin:'',logo:'',qrCode:''}; return {...base,logo:(base.id?getVendorAsset(base.id,'logo'):'')||snapshot?.logo||'',qrCode:(base.id?getVendorAsset(base.id,'qr'):'')||snapshot?.qrCode||''}; }
@@ -407,7 +482,7 @@ function validate(form){
   return e;
 }
 function duplicateFor(form){ if(!state.settings.duplicateDetection||!form.customerName?.trim()) return null; const n=form.customerName.trim().toLowerCase(); return state.documents.find(d=>d.id!==form.id&&d.documentType===form.documentType&&d.customerName?.trim().toLowerCase()===n&&Math.abs(new Date(d.date)-new Date(form.date))<7*86400000); }
-function saveForm(intent='draft'){
+async function saveForm(intent='draft'){
   const form=deepCopy(ui.form);
   if(samePerson(form.createdBy,state.currentUser.name)){form.createdByEmail=form.createdByEmail||state.currentUser.email||'';form.createdByRole=form.createdByRole||state.currentUser.role||'';}
   if(['quotation','po'].includes(form.documentType)&&!form.id){const route=sourceQuotationApprovers({name:form.createdBy,email:form.createdByEmail,role:form.createdByRole});if(!form.verifiedBy&&route.reviewer)form.verifiedBy=route.reviewer;if(!form.approvedBy&&route.approver)form.approvedBy=route.approver;}
@@ -461,84 +536,90 @@ function saveForm(intent='draft'){
     if(!String(form.paymentParticulars||'').trim())ui.errors.paymentParticulars='Add payment particulars before submitting the acknowledgement.';
   }
   if(Object.keys(ui.errors).length){render();const target=document.querySelector('.invalid,[aria-invalid="true"]');target?.focus();toast(intent==='submit'?(form.documentType==='esi'?'Complete the required Electronic SI workflow fields':form.documentType==='delivery'?'Complete the required Delivery Receipt workflow fields':form.documentType==='payment'?'Complete the required Payment AR workflow fields':'Complete the required workflow fields'):'Correct the highlighted validation errors','error');return;}
-  const dup=duplicateFor(form); if(dup&&!confirm(`A similar ${TYPES[form.documentType].label} exists (${dup.documentNumber}). Continue?`))return;
-  const now=nowISO(); const existing=form.id ? state.documents.find(d=>d.id===form.id):null;
-  const formVendor=ensureFormCompanyBinding(form,{existing});
-  // Template association follows the document company. Existing documents retain their captured template snapshot.
-  if(!existing || !form.template || typeof form.template!=='object'){ const tpl=companyTemplate(formVendor.id); form.templateId=tpl.id; form.template=deepCopy(tpl); }
-  if(!existing){ form.id=uid('doc'); form.documentNumber=nextNumber(form.documentType); form.createdAt=now; }
-  form.updatedAt=now;
-  if(intent==='submit') form.status=['quotation','po','esi'].includes(form.documentType)?approvalStatusForDocument(form):(TYPES[form.documentType].approval?'For Approval':'Generated'); else if(intent==='complete') form.status='Completed'; else form.status=form.status||'Draft';
-  if(form.documentType==='payment') form.total=form.paymentForm==='cheque'?Number(form.chequeAmount)||0:Number(form.cashAmount)||0; else form.total=calc(form).total;
-  const idx=state.documents.findIndex(d=>d.id===form.id); if(idx>=0) state.documents[idx]=form; else state.documents.unshift(form);
-  const collection=form.documentType==='po'?'suppliers':'clients';
-  if(form.customerName){
-    const existingParty=state[collection].find(x=>String(x.name||'').toLowerCase()===form.customerName.toLowerCase());
-    const partyData={name:form.customerName,address:form.customerAddress,tin:form.customerTin,contact:form.customerContact,email:form.customerEmail||'',phone:form.customerPhone||'',paymentTerms:form.paymentTerms||'',paymentTermsCustom:form.paymentTermsCustom||'',currency:form.currency||'PHP'};
-    if(existingParty) Object.assign(existingParty,partyData); else state[collection].push({id:uid(collection),...partyData});
+  const mutationKey=form.id?`document:${form.id}`:`document:new:${form.documentType}`;
+  try{
+    return await sharedMutationGate.run(mutationKey,()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{
+      await refreshAuthoritativeTradeLinkState();
+      const existing=form.id?state.documents.find(d=>d.id===form.id):null;
+      if(form.id&&!existing){const error=new Error('This document no longer exists in the authoritative workspace.');error.code='WM_TRADELINK_STALE_DOCUMENT';throw error;}
+      if(existing&&ui.editBaseUpdatedAt&&String(existing.updatedAt||'')!==String(ui.editBaseUpdatedAt)){const error=new Error(`${existing.documentNumber} changed in another session. Reloaded the authoritative version; review your draft before retrying.`);error.code='WM_TRADELINK_STALE_DOCUMENT';throw error;}
+      const dup=duplicateFor(form); if(dup&&!confirm(`A similar ${TYPES[form.documentType].label} exists (${dup.documentNumber}). Continue?`))return false;
+      const now=nowISO();
+      const formVendor=ensureFormCompanyBinding(form,{existing});
+      if(!existing || !form.template || typeof form.template!=='object'){ const tpl=companyTemplate(formVendor.id); form.templateId=tpl.id; form.template=deepCopy(tpl); }
+      if(!existing){ form.id=uid('doc'); form.documentNumber=nextNumber(form.documentType); form.createdAt=now; }
+      form.updatedAt=now;
+      if(intent==='submit') form.status=['quotation','po','esi'].includes(form.documentType)?approvalStatusForDocument(form):(TYPES[form.documentType].approval?'For Approval':'Generated'); else if(intent==='complete') form.status='Completed'; else form.status=form.status||'Draft';
+      if(form.documentType==='payment') form.total=form.paymentForm==='cheque'?Number(form.chequeAmount)||0:Number(form.cashAmount)||0; else form.total=calc(form).total;
+      const idx=state.documents.findIndex(d=>d.id===form.id); if(idx>=0) state.documents[idx]=form; else state.documents.unshift(form);
+      const collection=form.documentType==='po'?'suppliers':'clients';
+      if(form.customerName){
+        const existingParty=state[collection].find(x=>String(x.name||'').toLowerCase()===form.customerName.toLowerCase());
+        const partyData={name:form.customerName,address:form.customerAddress,tin:form.customerTin,contact:form.customerContact,email:form.customerEmail||'',phone:form.customerPhone||'',paymentTerms:form.paymentTerms||'',paymentTermsCustom:form.paymentTermsCustom||'',currency:form.currency||'PHP'};
+        if(existingParty) Object.assign(existingParty,partyData); else state[collection].push({id:uid(collection),...partyData});
+      }
+      if(['esi','quotation','po'].includes(form.documentType)){
+        (form.items||[]).filter(i=>isRealItem(i)&&i.description?.trim()).forEach(i=>{
+          const key=i.description.trim().toLowerCase(); const known=state.products.find(p=>String(p.description||'').trim().toLowerCase()===key);
+          const productData={description:i.description.trim(),unitPrice:Number(i.unitPrice)||0,currency:form.currency||'PHP',lastUsedAt:now};
+          if(known)Object.assign(known,productData); else state.products.push({id:uid('product'),...productData});
+        });
+        state.products=state.products.sort((a,b)=>String(b.lastUsedAt||'').localeCompare(String(a.lastUsedAt||''))).slice(0,250);
+      }
+      addAudit(existing?'update':'create',`${existing?'Updated':'Created'} ${form.documentNumber}`,`${TYPES[form.documentType].label} · ${form.status}`,form.id,false);
+      if(state.settings.backups && ['submit','complete'].includes(intent))appendSnapshot(`${form.documentNumber} ${form.status}`);
+      await persistSharedConfirmed('document save',false);
+      await removeDraftConfirmed().catch(()=>false);
+      ui.editingId=null;ui.editBaseUpdatedAt=null;ui.form=null;ui.tab='documents';ui.page=1;syncRoute('documents');render();toast(`${form.documentNumber} saved`);return true;
+    }));
+  }catch(error){
+    await refreshAuthoritativeTradeLinkState({renderUi:false}).catch(()=>{});
+    if(error?.code==='WM_TRADELINK_STALE_DOCUMENT'&&ui.editingId){const current=state.documents.find(d=>d.id===ui.editingId);if(current)ui.editBaseUpdatedAt=current.updatedAt||'';}
+    render();toast(error?.message||'Unable to save the document.','error');return false;
   }
-  if(['esi','quotation','po'].includes(form.documentType)){
-    (form.items||[]).filter(i=>isRealItem(i)&&i.description?.trim()).forEach(i=>{
-      const key=i.description.trim().toLowerCase(); const known=state.products.find(p=>String(p.description||'').trim().toLowerCase()===key);
-      const productData={description:i.description.trim(),unitPrice:Number(i.unitPrice)||0,currency:form.currency||'PHP',lastUsedAt:now};
-      if(known)Object.assign(known,productData); else state.products.push({id:uid('product'),...productData});
-    });
-    state.products=state.products.sort((a,b)=>String(b.lastUsedAt||'').localeCompare(String(a.lastUsedAt||''))).slice(0,250);
-  }
-  addAudit(existing?'update':'create',`${existing?'Updated':'Created'} ${form.documentNumber}`,`${TYPES[form.documentType].label} · ${form.status}`,form.id,false);
-  if(state.settings.backups && ['submit','complete'].includes(intent)) snapshot(`${form.documentNumber} ${form.status}`); else persist('document save',false);
-  globalThis.WMModuleStore.removeItem(AUTOSAVE_KEY); ui.editingId=null; ui.form=null; ui.tab='documents'; ui.page=1; syncRoute('documents'); render(); toast(`${form.documentNumber} saved`);
 }
-function captureApprovalStep(id,field){
-  const d=state.documents.find(x=>x.id===id); if(!d)return false;
+
+async function captureApprovalStep(id,field){
   if(!['verifiedAt','approvedAt'].includes(field))return false;
-  const isReview=field==='verifiedAt';
-  const assignee=isReview?d.verifiedBy:d.approvedBy;
-  if(!assignee){toast(isReview?'No reviewer/verifier is assigned to this document.':'No final approver is assigned to this document.','error');return false;}
-  if(!isReview&&d.verifiedBy&&!d.verifiedAt){toast('Complete the review / verification stage before final approval.','error');return false;}
-  if(!canCurrentUserActAs(assignee)){
-    const role=samePerson(assignee,GENERAL_MANAGER.name)?`${GENERAL_MANAGER.role} / final approver`:'assigned workflow owner';
-    toast(`Only ${assignee} (${role}) can complete this step. Current user: ${state.currentUser.name}.`,'error');return false;
-  }
-  const capturedAt=nowISO();
-  d[field]=capturedAt;
-  if(d.documentType==='quotation'){
-    if(isReview)d.verifiedByEmail=workflowEmail(assignee)||d.verifiedByEmail||'';
-    else d.approvedByEmail=workflowEmail(assignee)||d.approvedByEmail||'';
-  }
-  d.status=approvalStatusForDocument(d);
-  d.updatedAt=capturedAt;
-  const verb=isReview?(d.documentType==='esi'?'verified':'reviewed'):'approved';
-  const actor=workflowPerson(assignee);
-  addAudit('workflow',`${d.documentNumber} ${verb}`,`${assignee}${actor?.email?` (${actor.email})`:''} completed the ${isReview?'review / verification':'final approval'} stage using Use Time Now at ${capturedAt}`,id,false);
-  persist(`workflow ${field}`,false); render(); toast(`${d.documentNumber} ${verb} by ${assignee}`); return true;
+  try{return await sharedMutationGate.run(`workflow:${id}`,()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{
+    await refreshAuthoritativeTradeLinkState();
+    const d=state.documents.find(x=>x.id===id); if(!d)throw new Error('The document is no longer available.');
+    const isReview=field==='verifiedAt';
+    const assignee=isReview?d.verifiedBy:d.approvedBy;
+    if(!assignee)throw new Error(isReview?'No reviewer/verifier is assigned to this document.':'No final approver is assigned to this document.');
+    if(!isReview&&d.verifiedBy&&!d.verifiedAt)throw new Error('Complete the review / verification stage before final approval.');
+    if(!canCurrentUserActAs(assignee)){const role=samePerson(assignee,GENERAL_MANAGER.name)?`${GENERAL_MANAGER.role} / final approver`:'assigned workflow owner';throw new Error(`Only ${assignee} (${role}) can complete this step. Current user: ${state.currentUser.name}.`);}
+    const capturedAt=nowISO(); d[field]=capturedAt;
+    if(d.documentType==='quotation'){if(isReview)d.verifiedByEmail=workflowEmail(assignee)||d.verifiedByEmail||'';else d.approvedByEmail=workflowEmail(assignee)||d.approvedByEmail||'';}
+    d.status=approvalStatusForDocument(d);d.updatedAt=capturedAt;
+    const verb=isReview?(d.documentType==='esi'?'verified':'reviewed'):'approved';const actor=workflowPerson(assignee);
+    addAudit('workflow',`${d.documentNumber} ${verb}`,`${assignee}${actor?.email?` (${actor.email})`:''} completed the ${isReview?'review / verification':'final approval'} stage using Use Time Now at ${capturedAt}`,id,false);
+    await persistSharedConfirmed(`workflow ${field}`,false);render();toast(`${d.documentNumber} ${verb} by ${assignee}`);return true;
+  }));}catch(error){await refreshAuthoritativeTradeLinkState({renderUi:true}).catch(()=>{});toast(error.message||'Workflow update failed.','error');return false;}
 }
-function changeStatus(id,status,note=''){
-  const d=state.documents.find(x=>x.id===id); if(!d)return;
+async function changeStatus(id,status,note=''){
   if(status==='Approved'){
-    if(['quotation','po'].includes(d.documentType)&&((d.documentType==='quotation'&&quotationHasCreatorAuthority(d))||(d.documentType==='po'&&poHasCreatorAuthority(d)))&&!d.verifiedBy&&!d.approvedBy){
-      d.status='Approved';d.updatedAt=nowISO();addAudit('workflow',`${d.documentNumber} → Approved`,'General Manager creator authority',id,false);persist('workflow',false);render();toast(`${d.documentNumber} marked Approved`);return;
-    }
-    captureApprovalStep(id,'approvedAt');return;
+    const current=state.documents.find(x=>x.id===id);if(!current)return false;
+    if(!(['quotation','po'].includes(current.documentType)&&((current.documentType==='quotation'&&quotationHasCreatorAuthority(current))||(current.documentType==='po'&&poHasCreatorAuthority(current)))&&!current.verifiedBy&&!current.approvedBy))return captureApprovalStep(id,'approvedAt');
   }
-  if(status==='Under Review'||status==='For Approval'){
-    d.status='For Approval';d.updatedAt=nowISO();addAudit('workflow',`${d.documentNumber} → For Approval`,note||'Workflow awaiting assigned review / approval',id,false);persist('workflow',false);render();toast(`${d.documentNumber} is For Approval`);return;
-  }
-  if(status==='Rejected'){
-    const actors=[d.verifiedBy,d.approvedBy].filter(Boolean);
-    if(actors.length&&!actors.some(canCurrentUserActAs)&&!isGeneralManagerIdentity(state.currentUser)){toast('Only an assigned reviewer/approver or the General Manager can reject this document.','error');return;}
-  }
-  d.status=status; d.updatedAt=nowISO(); addAudit('workflow',`${d.documentNumber} → ${status}`,note||`Workflow status changed to ${status}`,id,false); persist('workflow',false); render(); toast(`${d.documentNumber} marked ${status}`);
+  try{return await sharedMutationGate.run(`workflow:${id}`,()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{
+    await refreshAuthoritativeTradeLinkState();const d=state.documents.find(x=>x.id===id);if(!d)throw new Error('The document is no longer available.');
+    if(status==='Approved'){d.status='Approved';d.updatedAt=nowISO();addAudit('workflow',`${d.documentNumber} → Approved`,'General Manager creator authority',id,false);}
+    else if(status==='Under Review'||status==='For Approval'){d.status='For Approval';d.updatedAt=nowISO();addAudit('workflow',`${d.documentNumber} → For Approval`,note||'Workflow awaiting assigned review / approval',id,false);}
+    else {if(status==='Rejected'){const actors=[d.verifiedBy,d.approvedBy].filter(Boolean);if(actors.length&&!actors.some(canCurrentUserActAs)&&!isGeneralManagerIdentity(state.currentUser))throw new Error('Only an assigned reviewer/approver or the General Manager can reject this document.');}d.status=status;d.updatedAt=nowISO();addAudit('workflow',`${d.documentNumber} → ${status}`,note||`Workflow status changed to ${status}`,id,false);}
+    await persistSharedConfirmed('workflow',false);render();toast(status==='Under Review'||status==='For Approval'?`${d.documentNumber} is For Approval`:`${d.documentNumber} marked ${d.status}`);return true;
+  }));}catch(error){await refreshAuthoritativeTradeLinkState({renderUi:true}).catch(()=>{});toast(error.message||'Workflow update failed.','error');return false;}
 }
-function deleteDoc(id){
-  const d=state.documents.find(x=>x.id===id); if(!d)return false;
-  if(!confirm(`Delete ${d.documentNumber}? TradeLink will create a recovery snapshot before deletion.`))return false;
-  snapshot(`Before delete · ${d.documentNumber}`);
-  state.documents=state.documents.filter(x=>x.id!==id); delete state.comments[id];
-  ui.selectedDocumentIds=(ui.selectedDocumentIds||[]).filter(x=>x!==id);
-  addAudit('delete',`Deleted ${d.documentNumber}`,TYPES[d.documentType].label,id,false); persist('delete',false); render(); toast(`${d.documentNumber} deleted`); return true;
+async function deleteDoc(id){
+  const visible=state.documents.find(x=>x.id===id);if(!visible)return false;if(!confirm(`Delete ${visible.documentNumber}? TradeLink will create a recovery snapshot before deletion.`))return false;
+  try{return await sharedMutationGate.run(`delete:${id}`,()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{await refreshAuthoritativeTradeLinkState();const d=state.documents.find(x=>x.id===id);if(!d)throw new Error('The document was already removed in another session.');appendSnapshot(`Before delete · ${d.documentNumber}`);state.documents=state.documents.filter(x=>x.id!==id);delete state.comments[id];ui.selectedDocumentIds=(ui.selectedDocumentIds||[]).filter(x=>x!==id);addAudit('delete',`Deleted ${d.documentNumber}`,TYPES[d.documentType].label,id,false);await persistSharedConfirmed('delete',false);render();toast(`${d.documentNumber} deleted`);return true;}));}
+  catch(error){await refreshAuthoritativeTradeLinkState({renderUi:true}).catch(()=>{});toast(error.message||'Delete failed.','error');return false;}
 }
-function addComment(id,text){ text=text.trim(); if(!text)return; state.comments[id]=state.comments[id]||[]; state.comments[id].push({id:uid('comment'),at:nowISO(),user:state.currentUser.name,text}); addAudit('comment','Comment added',text.slice(0,100),id,false); persist('comment',false); renderModal('preview',id); }
+async function addComment(id,text){
+  text=String(text||'').trim();if(!text)return false;
+  try{return await sharedMutationGate.run(`comment:${id}`,()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{await refreshAuthoritativeTradeLinkState();const d=state.documents.find(x=>x.id===id);if(!d)throw new Error('The document is no longer available.');state.comments[id]=state.comments[id]||[];state.comments[id].push({id:uid('comment'),at:nowISO(),user:state.currentUser.name,text});addAudit('comment','Comment added',text.slice(0,100),id,false);await persistSharedConfirmed('comment',false);renderModal('preview',id);return true;}));}
+  catch(error){await refreshAuthoritativeTradeLinkState({renderUi:true}).catch(()=>{});toast(error.message||'Comment could not be saved.','error');return false;}
+}
 
 function toast(message,type='success'){
   let host=document.querySelector('.toast-host'); if(!host){host=document.createElement('div');host.className='toast-host';document.body.appendChild(host)}
@@ -547,12 +628,12 @@ function toast(message,type='success'){
 function setTab(tab){
   const resolved=LEGACY_TAB_REDIRECTS[tab]||tab, next=PRIMARY_TABS.includes(resolved)?resolved:'create';
   if(next===ui.tab)return;
-  const commit=()=>{ui.tab=next;ui.modal=null;syncRoute(ui.tab);globalThis.WMModuleStore.setItem(UI_KEY,JSON.stringify({...ui,form:undefined,errors:{},modal:null,companyPanelOpen:false}));render();window.scrollTo({top:0,behavior:scrollBehavior()});};
+  const commit=()=>{ui.tab=next;ui.modal=null;syncRoute(ui.tab);persistDocumentView();render();window.scrollTo({top:0,behavior:scrollBehavior()});};
   if(globalThis.WorkManagementMotion?.exitThen&&!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches)globalThis.WorkManagementMotion.exitThen(commit,{selector:'#mainView > :first-child',kind:'route',duration:95});
   else commit();
 }
-function startCreate(type='quotation'){ ui.form=newForm(type); ui.editingId=null; ui.errors={}; ui.tab='create'; syncRoute('create'); render(); }
-function editDoc(id){ const d=state.documents.find(x=>x.id===id); if(!d)return; ui.form=normalizeForm(d); ui.editingId=id; ui.errors={}; ui.tab='create'; syncRoute('create'); render(); }
+function startCreate(type='quotation'){ ui.form=newForm(type); ui.editingId=null; ui.editBaseUpdatedAt=null; ui.errors={}; ui.tab='create'; syncRoute('create'); render(); }
+function editDoc(id){ const d=state.documents.find(x=>x.id===id); if(!d)return; ui.form=normalizeForm(d); ui.editingId=id; ui.editBaseUpdatedAt=d.updatedAt||''; ui.errors={}; ui.tab='create'; syncRoute('create'); render(); }
 
 function stableFocus(el){ if(!el)return; try{el.focus({preventScroll:true})}catch{try{el.focus()}catch{}} }
 function renderAnchorSelector(el){
@@ -637,8 +718,8 @@ function renderCompanyPanel(){
 }
 function navButton(id,label){ const active=ui.tab===id; return `<button data-tab="${id}" role="tab" aria-controls="mainView" aria-selected="${active}" class="wm-tab ${active?'active is-active':''}">${label}</button>`; }
 function renderCompanyTemplateCard(v){ const t=companyTemplate(v.id); return `<section class="company-asset-card company-template-card"><div class="company-asset-title"><strong>Document Template</strong><span>Active</span></div><div class="template-preview" style="--tpl-accent:${esc(t.accent)};--tpl-bg:${esc(t.tableBackground)}"><div class="template-preview-brand"><i></i><b>${esc(vendorShortName(v))}</b><strong>QUOTATION</strong></div><div class="template-preview-rule"></div><div class="template-preview-table"><span></span><span></span><span></span></div></div><label class="template-setting"><span>Template profile</span><input value="${esc(t.name)}" readonly></label><div class="template-setting-grid"><label class="template-setting"><span>Accent</span><input type="color" id="vendorTemplateAccent" value="${esc(t.accent)}" aria-label="Template accent color"></label><label class="template-setting"><span>Terms pagination</span><select id="vendorTemplateTerms" aria-label="Terms pagination"><option value="flow" ${t.termsMode==='flow'?'selected':''}>Flow naturally</option><option value="new-page" ${t.termsMode==='new-page'?'selected':''}>Start on new page</option></select></label></div><div class="template-card-actions"><button type="button" class="button ghost" data-open-template-reference>Open reference</button><button type="button" class="button ghost" data-reset-company-template>Restore default</button></div><small>Managed independently for ${esc(v.name)}. New documents snapshot this template so historical PDFs keep their original presentation.</small></section>`; }
-function updateActiveCompanyTemplate(patch){ const id=state.selectedVendorId,current=companyTemplate(id),next={...current,...patch}; state.vendorTemplates={...state.vendorTemplates,[id]:normalizeVendorTemplates({[id]:next},[vendorById(id)])[id]}; persist('company template updated',false); addAudit('update','Company document template updated',vendorById(id)?.name||id,null,false); render(); toast('Company template updated'); }
-function resetActiveCompanyTemplate(){ const id=state.selectedVendorId,base=DEFAULT_VENDOR_TEMPLATES[id]; if(!base)return; if(!confirm(`Restore the default document template for ${vendorById(id)?.name||id}? Existing saved documents keep their template snapshot.`))return; state.vendorTemplates={...state.vendorTemplates,[id]:deepCopy(base)}; persist('company template restored',false);render();toast('Default company template restored'); }
+async function updateActiveCompanyTemplate(patch){ const id=state.selectedVendorId; try{return await sharedMutationGate.run(`template:${id}`,()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{await refreshAuthoritativeTradeLinkState();const current=companyTemplate(id),next={...current,...patch};state.vendorTemplates={...state.vendorTemplates,[id]:normalizeVendorTemplates({[id]:next},[vendorById(id)])[id]};addAudit('update','Company document template updated',vendorById(id)?.name||id,null,false);await persistSharedConfirmed('company template updated',false);render();toast('Company template updated');return true;}));}catch(error){await refreshAuthoritativeTradeLinkState({renderUi:true}).catch(()=>{});toast(error.message||'Company template update failed.','error');return false;} }
+async function resetActiveCompanyTemplate(){ const id=state.selectedVendorId,base=DEFAULT_VENDOR_TEMPLATES[id]; if(!base)return false; if(!confirm(`Restore the default document template for ${vendorById(id)?.name||id}? Existing saved documents keep their template snapshot.`))return false; try{return await sharedMutationGate.run(`template:${id}`,()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{await refreshAuthoritativeTradeLinkState();state.vendorTemplates={...state.vendorTemplates,[id]:deepCopy(base)};addAudit('update','Company document template restored',vendorById(id)?.name||id,null,false);await persistSharedConfirmed('company template restored',false);render();toast('Default company template restored');return true;}));}catch(error){await refreshAuthoritativeTradeLinkState({renderUi:true}).catch(()=>{});toast(error.message||'Company template restore failed.','error');return false;} }
 function openActiveTemplateReference(){ const t=companyTemplate(state.selectedVendorId); if(!t.referenceFile)return toast('No reference PDF is assigned to this company.','error'); window.open(new URL(t.referenceFile,location.href).href,'_blank','noopener'); }
 function hero(kicker,title,accent,lede,side=''){ return `<div class="intro-grid wm-page-header"><div><p class="eyebrow">${kicker}</p><h1>${title} <em>${accent}</em></h1><p class="lede">${lede}</p></div><div class="date-stack"><span>${fmtDate(new Date())}</span><strong>${side||selectedVendor().name.split(' ').slice(0,2).join(' ')}</strong></div></div>`; }
 function renderView(){ switch(ui.tab){case'documents':return renderDocuments();case'manual':return renderManual();case'recovery':return renderRecovery();case'create':default:return renderCreate();} }
@@ -682,14 +763,14 @@ function renderActivityWorkspace(){
 }
 function copyActivity(id){ const a=state.audit.find(x=>x.id===id); if(!a)return; const d=activityDocument(a); const text=[a.title,a.detail,`Action: ${activityActionLabel(a.action)}`,`When: ${fmtDate(a.at,true)}`,`User: ${a.user}${a.role?` (${a.role})`:''}`,d?`Document: ${d.documentNumber}`:''].filter(Boolean).join('\n'); if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>toast('Activity details copied')).catch(()=>fallbackCopy(text)); else fallbackCopy(text); }
 function fallbackCopy(text){ const area=document.createElement('textarea');area.value=text;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();try{document.execCommand('copy');toast('Activity details copied')}catch{toast('Unable to copy activity details','error')}area.remove(); }
-function exportActivity(){ const rows=filteredActivity(); if(!rows.length){toast('No matching activity to export','error');return;} const headers=['Timestamp','Action','Title','Detail','User','Role','Document Number','Document Type']; const csv=[headers,...rows.map(a=>{const d=activityDocument(a),t=inferActivityType(a);return[a.at,activityActionLabel(a.action),a.title||'',a.detail||'',a.user||'',a.role||'',d?.documentNumber||'',t&&TYPES[t]?createTypeLabel(t):'']})].map(row=>row.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\r\n'); const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}); const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`TradeLink-activity-${todayISO()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);addAudit('export','Activity exported',`${rows.length} filtered events`,null,false);persist('activity export',false);toast('Activity CSV exported'); }
+function exportActivity(){ const rows=filteredActivity(); if(!rows.length){toast('No matching activity to export','error');return;} const headers=['Timestamp','Action','Title','Detail','User','Role','Document Number','Document Type']; const csv=[headers,...rows.map(a=>{const d=activityDocument(a),t=inferActivityType(a);return[a.at,activityActionLabel(a.action),a.title||'',a.detail||'',a.user||'',a.role||'',d?.documentNumber||'',t&&TYPES[t]?createTypeLabel(t):'']})].map(row=>row.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\r\n'); const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}); const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`TradeLink-activity-${todayISO()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);recordAuditBestEffort('export','Activity exported',`${rows.length} filtered events`);toast('Activity CSV exported'); }
 function clearActivityFilters(){ Object.assign(ui,{activitySearch:'',activityAction:'all',activityType:'all',activityRange:'all',activitySort:'newest',activityPage:1}); render(); }
 
 function createTypeLabel(type){ return ({esi:'Electronic SI',packing:'Packing List',delivery:'Delivery Receipt',payment:'Payment AR',quotation:'Quotations',po:'PO to Suppliers'})[type]||TYPES[type]?.label||type; }
 function renderCreateTypeTabs(active){ const order=['esi','packing','delivery','payment','quotation','po']; return `<div class="create-type-tabs wm-tabs" role="tablist" aria-label="Create document type">${order.map(type=>`<button type="button" role="tab" aria-selected="${active===type}" class="wm-tab ${active===type?'active is-active':''}" data-create-type="${type}"><span>${esc(TYPES[type].short)}</span>${esc(createTypeLabel(type))}</button>`).join('')}</div>`; }
 function renderEsiSectionNav(){ const sections=[['esiDocumentInfo','Document'],['esiClientInfo','Client'],['esiItems','Items'],['esiFinancial','Adjustments'],['esiTerms','Terms'],['esiApprovalWorkflow','Approval']]; return `<nav class="esi-section-nav" aria-label="Electronic SI sections">${sections.map(([id,label],idx)=>`<button type="button" class="${idx===0?'active':''}" data-scroll-section="${id}">${idx+1}<span>${label}</span></button>`).join('')}</nav>`; }
 
-function switchCreateType(type){ if(!TYPES[type]||ui.form?.documentType===type)return; const hasDraft=ui.form && (ui.form.customerName?.trim() || ui.form.referenceNumber?.trim() || ui.form.remarks?.trim() || (ui.form.items||[]).some(i=>i.description?.trim())); if(hasDraft&&!confirm(`Switch to ${createTypeLabel(type)}? The current uncommitted form will be replaced.`))return; ui.form=newForm(type); ui.editingId=null; ui.errors={}; globalThis.WMModuleStore.removeItem(AUTOSAVE_KEY); render(); }
+function switchCreateType(type){ if(!TYPES[type]||ui.form?.documentType===type)return; const hasDraft=ui.form && (ui.form.customerName?.trim() || ui.form.referenceNumber?.trim() || ui.form.remarks?.trim() || (ui.form.items||[]).some(i=>i.description?.trim())); if(hasDraft&&!confirm(`Switch to ${createTypeLabel(type)}? The current uncommitted form will be replaced.`))return; ui.form=newForm(type); ui.editingId=null;ui.editBaseUpdatedAt=null; ui.errors={}; void removeDraftConfirmed().catch(()=>false); render(); }
 
 function renderEsiTerms(f){
   const terms=String(f.terms||'');
@@ -1087,17 +1168,17 @@ function sortDocuments(rows){
 }
 function filteredDocs(){ const term=String(ui.search||'').trim().toLowerCase(); return sortDocuments(state.documents.filter(d=>(ui.type==='all'||d.documentType===ui.type)&&(ui.status==='all'||d.status===ui.status)&&(ui.quoteStatus==='all'||(d.documentType==='quotation'&&documentQuoteStatus(d)===ui.quoteStatus))&&(ui.companyFilter==='all'||documentVendor(d)?.id===ui.companyFilter)&&documentMatchesRange(d)&&(!term||documentSearchText(d).includes(term)))); }
 function selectedDocuments(){ const set=new Set(ui.selectedDocumentIds||[]); return state.documents.filter(d=>set.has(d.id)); }
-function persistDocumentView(){ globalThis.WMModuleStore.setItem(UI_KEY,JSON.stringify({...ui,form:undefined,errors:{},modal:null,companyPanelOpen:false})); }
+function persistDocumentView(){ void persistUiConfirmed().catch(error=>toast(`Unable to save view preferences: ${error.message}`,'error')); }
 function clearDocumentFilters(){ ui.search='';ui.type='all';ui.status='all';ui.quoteStatus='all';ui.companyFilter='all';ui.documentRange='all';ui.documentSort='updated-desc';ui.page=1;persistDocumentView();render(); }
-function exportSelectedDocuments(){ const docs=selectedDocuments(); if(!docs.length)return toast('Select at least one document to export','error'); const payload={schema:'TradeLinkDocumentExport',version:APP_VERSION,exportedAt:nowISO(),documents:docs,comments:Object.fromEntries(docs.map(d=>[d.id,state.comments[d.id]||[]]))}; const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`TradeLink-selected-documents-${todayISO()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);addAudit('export','Selected documents exported',`${docs.length} documents`,null,false);persist('selected document export',false);toast(`${docs.length} document${docs.length===1?'':'s'} exported`); }
+function exportSelectedDocuments(){ const docs=selectedDocuments(); if(!docs.length)return toast('Select at least one document to export','error'); const payload={schema:'TradeLinkDocumentExport',version:APP_VERSION,exportedAt:nowISO(),documents:docs,comments:Object.fromEntries(docs.map(d=>[d.id,state.comments[d.id]||[]]))}; const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`TradeLink-selected-documents-${todayISO()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);recordAuditBestEffort('export','Selected documents exported',`${docs.length} documents`);toast(`${docs.length} document${docs.length===1?'':'s'} exported`); }
 function copySelectedDocumentNumbers(){ const docs=selectedDocuments();if(!docs.length)return toast('Select at least one document','error');const text=docs.map(d=>d.documentNumber).join('\n');if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>toast('Document numbers copied')).catch(()=>fallbackCopy(text));else fallbackCopy(text); }
-function deleteSelectedDocuments(){ const docs=selectedDocuments(); if(!docs.length)return toast('Select at least one document to delete','error'); if(!confirm(`Delete ${docs.length} selected document${docs.length===1?'':'s'}? A recovery snapshot will be created automatically first.`))return; snapshot(`Before bulk delete · ${docs.length} documents`); const ids=new Set(docs.map(d=>d.id)); state.documents=state.documents.filter(d=>!ids.has(d.id)); docs.forEach(d=>delete state.comments[d.id]); addAudit('delete','Bulk documents deleted',docs.map(d=>d.documentNumber).join(', '),null,false); ui.selectedDocumentIds=[];persist('bulk delete',false);render();toast(`${docs.length} document${docs.length===1?'':'s'} deleted`); }
+async function deleteSelectedDocuments(){ const visible=selectedDocuments(); if(!visible.length)return toast('Select at least one document to delete','error'); if(!confirm(`Delete ${visible.length} selected document${visible.length===1?'':'s'}? A recovery snapshot will be created automatically first.`))return false; const ids=[...new Set(visible.map(d=>d.id))]; try{return await sharedMutationGate.run('bulk-delete',()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{await refreshAuthoritativeTradeLinkState();const docs=state.documents.filter(d=>ids.includes(d.id));if(!docs.length)throw new Error('The selected documents were already removed in another session.');appendSnapshot(`Before bulk delete · ${docs.length} documents`);const deleting=new Set(docs.map(d=>d.id));state.documents=state.documents.filter(d=>!deleting.has(d.id));docs.forEach(d=>delete state.comments[d.id]);addAudit('delete','Bulk documents deleted',docs.map(d=>d.documentNumber).join(', '),null,false);ui.selectedDocumentIds=[];await persistSharedConfirmed('bulk delete',false);render();toast(`${docs.length} document${docs.length===1?'':'s'} deleted`);return true;}));}catch(error){await refreshAuthoritativeTradeLinkState({renderUi:true}).catch(()=>{});toast(error.message||'Bulk delete failed.','error');return false;} }
 function documentAmount(d){ return TYPES[d.documentType]?.financial||d.documentType==='payment'||(d.documentType==='delivery'&&d.drIncludePricing)?Number(d.total)||0:null; }
 function documentRevision(d){ return String(d.referenceNumber||'0').trim()||'0'; }
 function documentQuoteStatus(d){ return d.documentType==='quotation'?(QUOTE_STATUS_OPTIONS.includes(d.quoteStatus)?d.quoteStatus:'Working on it'):'—'; }
 function quoteStatusClass(value){ return String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
 function documentCompanyTag(d){ const v=documentVendor(d); return `<div class="document-company-cell"><strong>${esc(v?.name||'—')}</strong><span class="company-pill company-${esc(v?.id||'unknown')}">${esc(vendorShortName(v))}</span></div>`; }
-function updateQuoteStatus(id,value){ const d=state.documents.find(x=>x.id===id); if(!d||d.documentType!=='quotation')return; if(!QUOTE_STATUS_OPTIONS.includes(value))return toast('Unsupported Quote Status','error'); if((d.quoteStatus||'Working on it')===value)return; const previous=d.quoteStatus||'Working on it'; d.quoteStatus=value; d.updatedAt=nowISO(); addAudit('workflow','Quote status changed',`${d.documentNumber} · ${previous} → ${value}`,d.id,false); persist('quote status changed',false); render(); toast(`Quote Status: ${value}`); }
+async function updateQuoteStatus(id,value){ if(!QUOTE_STATUS_OPTIONS.includes(value))return toast('Unsupported Quote Status','error'); try{return await sharedMutationGate.run(`quote-status:${id}`,()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{await refreshAuthoritativeTradeLinkState();const d=state.documents.find(x=>x.id===id);if(!d||d.documentType!=='quotation')throw new Error('The quotation is no longer available.');if((d.quoteStatus||'Working on it')===value)return true;const previous=d.quoteStatus||'Working on it';d.quoteStatus=value;d.updatedAt=nowISO();addAudit('workflow','Quote status changed',`${d.documentNumber} · ${previous} → ${value}`,d.id,false);await persistSharedConfirmed('quote status changed',false);render();toast(`Quote Status: ${value}`);return true;}));}catch(error){await refreshAuthoritativeTradeLinkState({renderUi:true}).catch(()=>{});toast(error.message||'Quote status update failed.','error');return false;} }
 let documentActionMenuCleanup=null;
 function closeDocumentActionMenu(options={}){
   const menu=document.querySelector('#documentActionMenu');
@@ -1120,7 +1201,7 @@ function exportDocumentExcel(id){
   const rows=(d.items||[]).map((i,idx)=>`<tr><td>${idx+1}</td><td>${esc(i.description||'')}</td><td>${isRealItem(i)?esc(i.quantity||0):''}</td><td>${isRealItem(i)&&TYPES[d.documentType]?.financial?esc(i.unitPrice||0):''}</td><td>${isRealItem(i)&&TYPES[d.documentType]?.financial?esc(itemAmount(i)):''}</td></tr>`).join('');
   const html=`<html><head><meta charset="utf-8"></head><body><table border="1"><tr><th colspan="5">${esc(d.documentNumber)} - ${esc(d.customerName||'')}</th></tr><tr><td>Document Type</td><td colspan="4">${esc(createTypeLabel(d.documentType))}</td></tr><tr><td>Date</td><td colspan="4">${esc(d.date||'')}</td></tr><tr><td>Workflow Status</td><td colspan="4">${esc(d.status||'')}</td></tr><tr><td>Quote Status</td><td colspan="4">${esc(documentQuoteStatus(d))}</td></tr><tr><td>Creator</td><td colspan="4">${esc(d.createdBy||'')}</td></tr><tr><td>Active Company</td><td colspan="4">${esc(v?.name||'')}</td></tr><tr><td>Revision No.</td><td colspan="4">${esc(documentRevision(d))}</td></tr><tr><th>#</th><th>Material Description</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr>${rows}${amount!==null?`<tr><td colspan="4">Subtotal</td><td>${esc(c.subtotal)}</td></tr><tr><td colspan="4">VAT</td><td>${esc(c.vat)}</td></tr><tr><td colspan="4"><b>TOTAL</b></td><td><b>${esc(c.total)}</b></td></tr>`:''}</table></body></html>`;
   try{
-    const blob=new Blob(['\ufeff',html],{type:'application/vnd.ms-excel;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a'); a.href=url;a.download=`${String(d.documentNumber||'TradeLink-document').replace(/[^a-z0-9_-]+/gi,'-')}.xls`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);addAudit('export','Document exported to Excel',d.documentNumber,d.id,false);persist('excel export',false);toast('Excel export created'); return true;
+    const blob=new Blob(['\ufeff',html],{type:'application/vnd.ms-excel;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a'); a.href=url;a.download=`${String(d.documentNumber||'TradeLink-document').replace(/[^a-z0-9_-]+/gi,'-')}.xls`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);recordAuditBestEffort('export','Document exported to Excel',d.documentNumber,d.id);toast('Excel export created'); return true;
   }catch(error){toast(`Excel export failed: ${error.message}`,'error');return false;}
 }
 function openDocumentComments(id){ const d=state.documents.find(x=>x.id===id); if(!d)return toast('Document no longer exists.','error'); closeDocumentActionMenu({returnFocus:false}); renderModal('preview',id); requestAnimationFrame(()=>stableFocus(document.querySelector('#commentForm textarea'))); }
@@ -1283,10 +1364,9 @@ function renderActivityInPlace(){
 function switchActiveVendor(id){
   const next=vendorById(id); if(!next)return toast('The selected company is not available.','error');
   if(next.id===state.selectedVendorId){ui.companyPanelOpen=true;render();return;}
-  const previous=selectedVendor(); state.selectedVendorId=next.id;
+  state.selectedVendorId=next.id;ui.selectedVendorId=next.id;
   const boundDraftVendor=ui.form?documentVendor(ui.form):null;
-  persist('active company changed',false); addAudit('system','Active company changed',`${previous.name} → ${next.name}`,null,false);
-  ui.companyPanelOpen=true; render();
+  ui.companyPanelOpen=true;persistDocumentView();render();
   toast(ui.form&&boundDraftVendor?.id&&boundDraftVendor.id!==next.id?`Active company: ${next.name}. Current document remains assigned to ${boundDraftVendor.name}.`:`Active company: ${next.name}`);
 }
 function vendorAssetInput(){
@@ -1301,15 +1381,14 @@ function handleVendorAssetFile(e){
   if(file.size>MAX_VENDOR_ASSET_BYTES){input.value='';return toast('Image must be 1 MB or smaller to preserve reliable local storage.','error');}
   const vendorId=state.selectedVendorId, reader=new FileReader();
   reader.onerror=()=>{input.value='';toast('The selected image could not be read.','error')};
-  reader.onload=()=>{try{setVendorAsset(vendorId,kind,String(reader.result||''));addAudit('update',kind==='qr'?'Company QR updated':'Company logo updated',vendorById(vendorId)?.name||vendorId,null,false);persist('company asset updated',false);render();toast(kind==='qr'?'Footer QR code saved':'Company logo saved')}catch(error){toast(`Unable to save image: ${error.message}`,'error')}finally{input.value=''}};
+  reader.onload=async()=>{const value=String(reader.result||'');let previous='';try{await sharedMutationGate.run(`asset:${vendorId}:${kind}`,()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{await refreshAuthoritativeTradeLinkState();previous=getVendorAsset(vendorId,kind);await setVendorAssetConfirmed(vendorId,kind,value);try{addAudit('update',kind==='qr'?'Company QR updated':'Company logo updated',vendorById(vendorId)?.name||vendorId,null,false);await persistSharedConfirmed('company asset updated',false);}catch(error){if(previous)await setVendorAssetConfirmed(vendorId,kind,previous);else await deleteVendorAssetConfirmed(vendorId,kind);throw error;}render();toast(kind==='qr'?'Footer QR code saved':'Company logo saved');}));}catch(error){toast(`Unable to save image: ${error.message}`,'error')}finally{input.value=''}};
   reader.readAsDataURL(file);
 }
-function removeActiveVendorAsset(kind){ const v=selectedVendor(),label=kind==='qr'?'footer QR code':'custom logo'; if(!getVendorAsset(v.id,kind))return; if(!confirm(`Delete the ${label} for ${v.name}?`))return; deleteVendorAsset(v.id,kind);addAudit('update',kind==='qr'?'Company QR removed':'Company logo removed',v.name,null,false);persist('company asset removed',false);render();toast(`${kind==='qr'?'QR code':'Logo'} removed`); }
+async function removeActiveVendorAsset(kind){ const v=selectedVendor(),label=kind==='qr'?'footer QR code':'custom logo',previous=getVendorAsset(v.id,kind); if(!previous)return false; if(!confirm(`Delete the ${label} for ${v.name}?`))return false; try{return await sharedMutationGate.run(`asset:${v.id}:${kind}`,()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{await refreshAuthoritativeTradeLinkState();await deleteVendorAssetConfirmed(v.id,kind);try{addAudit('update',kind==='qr'?'Company QR removed':'Company logo removed',v.name,null,false);await persistSharedConfirmed('company asset removed',false);}catch(error){await setVendorAssetConfirmed(v.id,kind,previous);throw error;}render();toast(`${kind==='qr'?'QR code':'Logo'} removed`);return true;}));}catch(error){toast(error.message||'Unable to remove the company asset.','error');return false;} }
 function safeCounterFloor(type){ let highest=11130; for(const d of state.documents){if(d.documentType!==type)continue;const match=String(d.documentNumber||'').match(/(\d+)$/);if(match)highest=Math.max(highest,Number(match[1])||0);} return highest; }
-function resetCounters(scope){
-  const all=scope==='all',label=all?'all document counters':'the Packing List counter'; if(!confirm(`Reset ${label}? Existing document numbers will be preserved and each counter will remain at or above the highest number already issued to prevent duplicates.`))return;
-  snapshot(`Before counter reset · ${label}`); if(all)for(const key of Object.keys(state.counters))state.counters[key]=safeCounterFloor(key); else state.counters.packing=safeCounterFloor('packing');
-  addAudit('system','Document counter reset',all?'All counters reset to safe issued-number floors':'Packing List counter reset to its safe issued-number floor',null,false);persist('counter reset',false);render();toast(all?'All counters reset safely':'Packing List counter reset safely');
+async function resetCounters(scope){
+  const all=scope==='all',label=all?'all document counters':'the Packing List counter'; if(!confirm(`Reset ${label}? Existing document numbers will be preserved and each counter will remain at or above the highest number already issued to prevent duplicates.`))return false;
+  try{return await sharedMutationGate.run('counter-reset',()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{await refreshAuthoritativeTradeLinkState();appendSnapshot(`Before counter reset · ${label}`);if(all)for(const key of Object.keys(state.counters))state.counters[key]=safeCounterFloor(key);else state.counters.packing=safeCounterFloor('packing');addAudit('system','Document counter reset',all?'All counters reset to safe issued-number floors':'Packing List counter reset to its safe issued-number floor',null,false);await persistSharedConfirmed('counter reset',false);render();toast(all?'All counters reset safely':'Packing List counter reset safely');return true;}));}catch(error){await refreshAuthoritativeTradeLinkState({renderUi:true}).catch(()=>{});toast(error.message||'Counter reset failed.','error');return false;}
 }
 
 function bindGlobal(){
@@ -1334,7 +1413,7 @@ function bindGlobal(){
   document.querySelectorAll('[data-approval-step-id]').forEach(b=>b.addEventListener('click',()=>captureApprovalStep(b.dataset.approvalStepId,b.dataset.approvalStep)));
   document.querySelectorAll('[data-snapshot]').forEach(b=>b.addEventListener('click',()=>snapshot()));
   document.querySelectorAll('[data-restore]').forEach(b=>b.addEventListener('click',()=>{if(confirm('Restore this snapshot? Current state will be replaced.'))restoreSnapshot(b.dataset.restore)}));
-  document.querySelectorAll('[data-recovery-pane]').forEach(b=>b.addEventListener('click',()=>{ui.recoveryPane=b.dataset.recoveryPane==='activity'?'activity':'tools';ui.activityPage=1;globalThis.WMModuleStore.setItem(UI_KEY,JSON.stringify({...ui,form:undefined,errors:{},modal:null,companyPanelOpen:false}));render();}));
+  document.querySelectorAll('[data-recovery-pane]').forEach(b=>b.addEventListener('click',()=>{ui.recoveryPane=b.dataset.recoveryPane==='activity'?'activity':'tools';ui.activityPage=1;persistDocumentView();render();}));
   bindActivityControls();
   document.querySelectorAll('[data-export]').forEach(b=>b.addEventListener('click',exportState));
   document.querySelectorAll('[data-import]').forEach(b=>b.addEventListener('click',openImportPicker));
@@ -1347,7 +1426,7 @@ function bindGlobal(){
   document.querySelector('#filterCompany')?.addEventListener('change',e=>{ui.companyFilter=e.target.value;ui.page=1;persistDocumentView();render()});
   document.querySelector('#filterRange')?.addEventListener('change',e=>{ui.documentRange=e.target.value;ui.page=1;persistDocumentView();render()});
   document.querySelector('#filterSort')?.addEventListener('change',e=>{ui.documentSort=e.target.value;ui.page=1;persistDocumentView();render()});
-  document.querySelector('#filterPageSize')?.addEventListener('change',e=>{state.settings.pageSize=Number(e.target.value)||20;ui.page=1;persist('document page size',false);render()});
+  document.querySelector('#filterPageSize')?.addEventListener('change',e=>{state.settings.pageSize=Number(e.target.value)||20;ui.pageSize=state.settings.pageSize;ui.page=1;persistDocumentView();render()});
   document.querySelectorAll('[data-clear-document-filters]').forEach(b=>b.addEventListener('click',clearDocumentFilters));
   document.querySelector('[data-toggle-approval-queue]')?.addEventListener('click',()=>{ui.approvalQueueOpen=!ui.approvalQueueOpen;persistDocumentView();render()});
   document.querySelectorAll('[data-select-document]').forEach(c=>c.addEventListener('change',()=>{const ids=new Set(ui.selectedDocumentIds||[]);c.checked?ids.add(c.dataset.selectDocument):ids.delete(c.dataset.selectDocument);ui.selectedDocumentIds=[...ids];persistDocumentView();render()}));
@@ -1364,7 +1443,7 @@ function bindGlobal(){
   if(ui.tab==='create') bindForm();
 }
 function renderDocumentsInPlace(){ if(ui.tab!=='documents')return; render(); const el=document.querySelector('#filterSearch'); if(el){stableFocus(el);el.setSelectionRange(el.value.length,el.value.length)} }
-function autosaveDraft(){ if(state.settings.autosave&&ui.form)globalThis.WMModuleStore.setItem(AUTOSAVE_KEY,JSON.stringify(ui.form)); }
+function autosaveDraft(){ void persistDraftConfirmed().catch(error=>toast(`Draft autosave failed: ${error.message}`,'error')); }
 function addEsiLine(item){ if(!ui.form||ui.form.items.length>=100){toast('A document can contain up to 100 lines','error');return;} ui.form.items.push(item); autosaveDraft(); render(); requestAnimationFrame(()=>stableFocus(document.querySelector(`[data-item-row="${item.id}"] textarea`))); }
 
 function announceVatSelection(value){
@@ -1397,7 +1476,7 @@ function bindForm(){
     const eventName=el.tagName==='SELECT'?'change':'input';
     el.addEventListener(eventName,()=>syncControl(el));
   });
-  form.querySelectorAll('[data-item]').forEach(el=>el.addEventListener('input',()=>{const i=Number(el.dataset.index);const field=el.dataset.item;if(!ui.form.items[i])return;ui.form.items[i][field]=['description','serialNumber'].includes(field)?el.value:Number(el.value);if(ui.errors.itemRows?.[i]){delete ui.errors.itemRows[i][field];if(!Object.keys(ui.errors.itemRows[i]).length)delete ui.errors.itemRows[i];}if(state.settings.autosave)globalThis.WMModuleStore.setItem(AUTOSAVE_KEY,JSON.stringify(ui.form));if(field!=='description'){if(ui.form.documentType==='delivery'&&ui.form.drIncludePricing){document.querySelectorAll('[data-delivery-line-amount]').forEach(out=>{const n=Number(out.dataset.deliveryLineAmount);if(ui.form.items[n])out.textContent=money(itemAmount(ui.form.items[n]),ui.form.currency)});const total=document.querySelector('[data-delivery-total]');if(total)total.textContent=money(calc(ui.form).subtotal,ui.form.currency);}else refreshFinancialDisplay();}const row=el.closest('[data-item-row]');row?.classList.toggle('has-error',Boolean(ui.errors.itemRows?.[i]));el.classList.remove('invalid');el.removeAttribute('aria-invalid');const lineField=el.closest('.line-field');lineField?.querySelector('.line-error')?.remove();if(field==='description'){const count=row?.querySelector('.item-char-count,.packing-char-count');if(count)count.textContent=`${el.value.length}/5000`;}}));
+  form.querySelectorAll('[data-item]').forEach(el=>el.addEventListener('input',()=>{const i=Number(el.dataset.index);const field=el.dataset.item;if(!ui.form.items[i])return;ui.form.items[i][field]=['description','serialNumber'].includes(field)?el.value:Number(el.value);if(ui.errors.itemRows?.[i]){delete ui.errors.itemRows[i][field];if(!Object.keys(ui.errors.itemRows[i]).length)delete ui.errors.itemRows[i];}if(state.settings.autosave)autosaveDraft();if(field!=='description'){if(ui.form.documentType==='delivery'&&ui.form.drIncludePricing){document.querySelectorAll('[data-delivery-line-amount]').forEach(out=>{const n=Number(out.dataset.deliveryLineAmount);if(ui.form.items[n])out.textContent=money(itemAmount(ui.form.items[n]),ui.form.currency)});const total=document.querySelector('[data-delivery-total]');if(total)total.textContent=money(calc(ui.form).subtotal,ui.form.currency);}else refreshFinancialDisplay();}const row=el.closest('[data-item-row]');row?.classList.toggle('has-error',Boolean(ui.errors.itemRows?.[i]));el.classList.remove('invalid');el.removeAttribute('aria-invalid');const lineField=el.closest('.line-field');lineField?.querySelector('.line-error')?.remove();if(field==='description'){const count=row?.querySelector('.item-char-count,.packing-char-count');if(count)count.textContent=`${el.value.length}/5000`;}}));
   document.querySelector('[data-add-item]')?.addEventListener('click',()=>{ui.form.items.push(defaultItem());autosaveDraft();render()});
   document.querySelector('[data-add-blank]')?.addEventListener('click',()=>addEsiLine(defaultItem()));
   document.querySelector('[data-add-note]')?.addEventListener('click',()=>addEsiLine(defaultNote()));
@@ -1511,10 +1590,10 @@ function bindForm(){
   }
   if(ui.form.documentType==='esi'){
     const lookup=document.querySelector('#esiClientLookup');
-    const applySavedClient=()=>{ const name=(lookup?.value||'').trim(); const c=state.clients.find(x=>String(x.name||'').toLowerCase()===name.toLowerCase()); if(!c)return; Object.assign(ui.form,{customerName:c.name||'',customerAddress:c.address||'',customerTin:c.tin||'',customerContact:c.contact||'',customerEmail:c.email||'',customerPhone:c.phone||'',paymentTerms:c.paymentTerms||ui.form.paymentTerms,paymentTermsCustom:c.paymentTermsCustom||ui.form.paymentTermsCustom,currency:c.currency||ui.form.currency}); if(ui.form.currency==='PHP')ui.form.exchangeRate=1; if(!ui.form.dueDate)ui.form.dueDate=dueDateFromTerms(ui.form.date,ui.form.paymentTerms); if(state.settings.autosave)globalThis.WMModuleStore.setItem(AUTOSAVE_KEY,JSON.stringify(ui.form)); render(); toast(`Loaded ${c.name}`); };
+    const applySavedClient=()=>{ const name=(lookup?.value||'').trim(); const c=state.clients.find(x=>String(x.name||'').toLowerCase()===name.toLowerCase()); if(!c)return; Object.assign(ui.form,{customerName:c.name||'',customerAddress:c.address||'',customerTin:c.tin||'',customerContact:c.contact||'',customerEmail:c.email||'',customerPhone:c.phone||'',paymentTerms:c.paymentTerms||ui.form.paymentTerms,paymentTermsCustom:c.paymentTermsCustom||ui.form.paymentTermsCustom,currency:c.currency||ui.form.currency}); if(ui.form.currency==='PHP')ui.form.exchangeRate=1; if(!ui.form.dueDate)ui.form.dueDate=dueDateFromTerms(ui.form.date,ui.form.paymentTerms); if(state.settings.autosave)autosaveDraft(); render(); toast(`Loaded ${c.name}`); };
     lookup?.addEventListener('change',applySavedClient);
     lookup?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applySavedClient();}});
-    document.querySelector('[data-clear-client]')?.addEventListener('click',()=>{Object.assign(ui.form,{customerName:'',customerAddress:'',customerTin:'',customerContact:'',customerEmail:'',customerPhone:'',dueDate:'',poNumber:''}); if(state.settings.autosave)globalThis.WMModuleStore.setItem(AUTOSAVE_KEY,JSON.stringify(ui.form)); render();});
+    document.querySelector('[data-clear-client]')?.addEventListener('click',()=>{Object.assign(ui.form,{customerName:'',customerAddress:'',customerTin:'',customerContact:'',customerEmail:'',customerPhone:'',dueDate:'',poNumber:''}); if(state.settings.autosave)autosaveDraft(); render();});
     document.querySelector('[data-reset-rate]')?.addEventListener('click',()=>{ui.form.exchangeRate=1;delete ui.errors.exchangeRate;autosaveDraft();const input=form.querySelector('[name="exchangeRate"]');if(input){input.value='1';input.classList.remove('invalid');input.removeAttribute('aria-invalid');}refreshFinancialDisplay();toast('Exchange rate reset to 1 PHP');});
     form.querySelector('[name="paymentTerms"]')?.addEventListener('change',e=>{const suggested=dueDateFromTerms(ui.form.date,e.target.value); if(suggested&&!ui.form.dueDate){ui.form.dueDate=suggested;autosaveDraft();render();toast('Due date suggested from payment terms');}});
     form.querySelector('[name="customerTin"]')?.addEventListener('blur',e=>{const digits=e.target.value.replace(/\D/g,'').slice(0,12); if([9,12].includes(digits.length)){const formatted=digits.length===12?`${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6,9)}-${digits.slice(9)}`:`${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`; ui.form.customerTin=formatted;e.target.value=formatted;autosaveDraft();}});
@@ -1558,27 +1637,27 @@ function bindForm(){
     termsArea?.addEventListener('input',()=>{const count=document.querySelector('[data-payment-terms-count]');if(count)count.textContent=`${termsArea.value.length.toLocaleString()} / 10,000`;const badge=document.querySelector('[data-payment-terms-status]');if(badge){const value=termsArea.value,status=!value.trim()?'Empty':value===DEFAULT_TERMS.payment?'Standard':'Customized';badge.textContent=status;badge.className=`terms-status ${status.toLowerCase()}`;}});
     document.querySelector('[data-copy-payment-terms]')?.addEventListener('click',()=>{const text=String(ui.form.terms||'');if(!text.trim())return toast('There are no Payment AR terms to copy','error');if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>toast('Payment AR terms copied')).catch(()=>fallbackCopy(text));else fallbackCopy(text);});
     document.querySelector('[data-reset-payment-terms]')?.addEventListener('click',()=>{if(ui.form.terms===DEFAULT_TERMS.payment)return;if(ui.form.terms?.trim()&&!confirm('Restore the standard Payment Acknowledgement Terms & Conditions? Current custom terms will be replaced in this draft.'))return;ui.form.terms=DEFAULT_TERMS.payment;delete ui.errors.terms;autosaveDraft();render();toast('Standard Payment AR terms restored');});
-    document.querySelector('[data-toggle-payment-terms]')?.addEventListener('click',()=>{ui.termsExpanded=!ui.termsExpanded;globalThis.WMModuleStore.setItem(UI_KEY,JSON.stringify({...ui,form:undefined,errors:{},modal:null,companyPanelOpen:false}));const section=document.querySelector('[data-payment-terms-section]'),button=document.querySelector('[data-toggle-payment-terms]');section?.classList.toggle('is-expanded',ui.termsExpanded);if(button){button.setAttribute('aria-expanded',String(ui.termsExpanded));button.textContent=ui.termsExpanded?'Collapse':'Expand';}stableFocus(termsArea);});
+    document.querySelector('[data-toggle-payment-terms]')?.addEventListener('click',()=>{ui.termsExpanded=!ui.termsExpanded;persistDocumentView();const section=document.querySelector('[data-payment-terms-section]'),button=document.querySelector('[data-toggle-payment-terms]');section?.classList.toggle('is-expanded',ui.termsExpanded);if(button){button.setAttribute('aria-expanded',String(ui.termsExpanded));button.textContent=ui.termsExpanded?'Collapse':'Expand';}stableFocus(termsArea);});
   }
   if(ui.form.documentType==='packing'){
     const termsArea=form.querySelector('textarea[name="terms"]');
     termsArea?.addEventListener('input',()=>{const count=document.querySelector('[data-packing-terms-count]');if(count)count.textContent=`${termsArea.value.length.toLocaleString()} / 10,000`;const badge=document.querySelector('[data-packing-terms-status]');if(badge){const value=termsArea.value,status=!value.trim()?'Empty':value===DEFAULT_TERMS.packing?'Standard':'Customized';badge.textContent=status;badge.className=`terms-status ${status.toLowerCase()}`;}});
     document.querySelector('[data-copy-packing-terms]')?.addEventListener('click',()=>{const text=String(ui.form.terms||'');if(!text.trim())return toast('There are no Packing List terms to copy','error');if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>toast('Packing List terms copied')).catch(()=>fallbackCopy(text));else fallbackCopy(text);});
     document.querySelector('[data-reset-packing-terms]')?.addEventListener('click',()=>{if(ui.form.terms===DEFAULT_TERMS.packing)return;if(ui.form.terms?.trim()&&!confirm('Restore the standard Packing List Terms & Conditions? Current custom terms will be replaced in this draft.'))return;ui.form.terms=DEFAULT_TERMS.packing;delete ui.errors.terms;autosaveDraft();render();toast('Standard Packing List terms restored');});
-    document.querySelector('[data-toggle-packing-terms]')?.addEventListener('click',()=>{ui.termsExpanded=!ui.termsExpanded;globalThis.WMModuleStore.setItem(UI_KEY,JSON.stringify({...ui,form:undefined,errors:{},modal:null,companyPanelOpen:false}));const section=document.querySelector('[data-packing-terms-section]'),button=document.querySelector('[data-toggle-packing-terms]');section?.classList.toggle('is-expanded',ui.termsExpanded);if(button){button.setAttribute('aria-expanded',String(ui.termsExpanded));button.textContent=ui.termsExpanded?'Collapse':'Expand';}stableFocus(termsArea);});
+    document.querySelector('[data-toggle-packing-terms]')?.addEventListener('click',()=>{ui.termsExpanded=!ui.termsExpanded;persistDocumentView();const section=document.querySelector('[data-packing-terms-section]'),button=document.querySelector('[data-toggle-packing-terms]');section?.classList.toggle('is-expanded',ui.termsExpanded);if(button){button.setAttribute('aria-expanded',String(ui.termsExpanded));button.textContent=ui.termsExpanded?'Collapse':'Expand';}stableFocus(termsArea);});
   }
   if(ui.form.documentType==='esi'){
     const termsArea=form.querySelector('textarea[name="terms"]');
     termsArea?.addEventListener('input',()=>{const count=document.querySelector('[data-terms-count]');if(count)count.textContent=`${termsArea.value.length.toLocaleString()} / 10,000`;const badge=document.querySelector('[data-terms-status]');if(badge){const value=termsArea.value,status=!value.trim()?'Empty':value===DEFAULT_TERMS.esi?'Standard':'Customized';badge.textContent=status;badge.className=`terms-status ${status.toLowerCase()}`;}});
     document.querySelector('[data-copy-terms]')?.addEventListener('click',()=>{const text=String(ui.form.terms||'');if(!text.trim())return toast('There are no Terms & Conditions to copy','error');if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>toast('Terms & Conditions copied')).catch(()=>fallbackCopy(text));else fallbackCopy(text);});
     document.querySelector('[data-reset-terms]')?.addEventListener('click',()=>{if(ui.form.terms===DEFAULT_TERMS.esi)return;if(ui.form.terms?.trim()&&!confirm('Restore the standard Electronic SI Terms & Conditions? Your current custom terms will be replaced in this draft.'))return;ui.form.terms=DEFAULT_TERMS.esi;delete ui.errors.terms;autosaveDraft();render();toast('Standard Terms & Conditions restored');});
-    document.querySelector('[data-toggle-terms]')?.addEventListener('click',()=>{ui.termsExpanded=!ui.termsExpanded;globalThis.WMModuleStore.setItem(UI_KEY,JSON.stringify({...ui,form:undefined,errors:{},modal:null,companyPanelOpen:false}));const section=document.querySelector('[data-esi-terms-section]');const button=document.querySelector('[data-toggle-terms]');section?.classList.toggle('is-expanded',ui.termsExpanded);if(button){button.setAttribute('aria-expanded',String(ui.termsExpanded));button.textContent=ui.termsExpanded?'Collapse':'Expand';}stableFocus(termsArea);});
+    document.querySelector('[data-toggle-terms]')?.addEventListener('click',()=>{ui.termsExpanded=!ui.termsExpanded;persistDocumentView();const section=document.querySelector('[data-esi-terms-section]');const button=document.querySelector('[data-toggle-terms]');section?.classList.toggle('is-expanded',ui.termsExpanded);if(button){button.setAttribute('aria-expanded',String(ui.termsExpanded));button.textContent=ui.termsExpanded?'Collapse':'Expand';}stableFocus(termsArea);});
   }
   if(ui.form.documentType==='esi'){document.querySelectorAll('[data-scroll-section]').forEach(button=>button.addEventListener('click',()=>{const target=document.getElementById(button.dataset.scrollSection);if(!target)return;target.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?'auto':'smooth',block:'start'});requestAnimationFrame(()=>stableFocus(target));document.querySelectorAll('[data-scroll-section]').forEach(x=>x.classList.toggle('active',x===button));}));}
   document.querySelector('[data-template]')?.addEventListener('click',()=>toast('Document template defaults are already applied'));
   document.querySelector('[data-generate-pdf]')?.addEventListener('click',()=>toast('Save the document first to generate its PDF','error'));
   document.querySelectorAll('[data-generate-document-pdf]').forEach(button=>button.addEventListener('click',()=>generateDocumentPdf(button.dataset.generateDocumentPdf)));
-  document.querySelector('[data-cancel-form]')?.addEventListener('click',()=>{if(confirm('Discard the current form view? Committed records will not be changed.')){globalThis.WMModuleStore.removeItem(AUTOSAVE_KEY);ui.form=null;ui.editingId=null;setTab('documents')}});
+  document.querySelector('[data-cancel-form]')?.addEventListener('click',()=>{if(confirm('Discard the current form view? Committed records will not be changed.')){void removeDraftConfirmed().catch(()=>false);ui.form=null;ui.editingId=null;ui.editBaseUpdatedAt=null;setTab('documents')}});
 }
 
 function refreshPaymentDisplay(){
@@ -1675,7 +1754,7 @@ function generateDocumentPdf(id){
   const d=state.documents.find(x=>x.id===id);if(!d){toast('Save the document first to generate its PDF','error');return;}
   if(['quotation','po'].includes(d.documentType)&&approvalStatusForDocument(d)!=='Approved'){toast(`${d.documentNumber} must complete its assigned review and final approval before PDF generation.`,'error');return;}
   const win=window.open('','_blank');if(!win){toast('Pop-up blocked. Allow pop-ups to generate the PDF.','error');return;}
-  try{win.document.open();win.document.write(buildPdfDocumentHtml(d));win.document.close();addAudit('export','PDF generated',`${d.documentNumber} · ${createTypeLabel(d.documentType)}`);toast('PDF layout opened. Choose Save as PDF in the print dialog.');}catch(err){try{win.close()}catch{};toast(`Unable to generate PDF: ${err.message}`,'error');}
+  try{win.document.open();win.document.write(buildPdfDocumentHtml(d));win.document.close();recordAuditBestEffort('export','PDF generated',`${d.documentNumber} · ${createTypeLabel(d.documentType)}`,d.id);toast('PDF layout opened. Choose Save as PDF in the print dialog.');}catch(err){try{win.close()}catch{};toast(`Unable to generate PDF: ${err.message}`,'error');}
 }
 
 function renderModal(type,id){ ui.modal={type,id}; const host=document.querySelector('#modalHost'); if(!host)return; if(type==='preview'){
@@ -1686,7 +1765,7 @@ function renderModal(type,id){ ui.modal={type,id}; const host=document.querySele
   }
 }
 function closeModal(){ ui.modal=null; const host=document.querySelector('#modalHost'); if(host)host.innerHTML=''; }
-function exportState(){ const blob=new Blob([JSON.stringify({schema:'TradeLinkBackup',version:APP_VERSION,exportedAt:nowISO(),state,vendorAssets:collectVendorAssets()},null,2)],{type:'application/json'}); const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`TradeLink-backup-${todayISO()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);addAudit('export','Backup exported',`${state.documents.length} documents`);toast('Backup exported'); }
+function exportState(){ const blob=new Blob([JSON.stringify({schema:'TradeLinkBackup',version:APP_VERSION,exportedAt:nowISO(),state,vendorAssets:collectVendorAssets()},null,2)],{type:'application/json'}); const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`TradeLink-backup-${todayISO()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);recordAuditBestEffort('export','Backup exported',`${state.documents.length} documents`);toast('Backup exported'); }
 
 function importInput(){
   let input=document.querySelector('#importFile');
@@ -1759,67 +1838,65 @@ function makeRecoverySnapshot(sourceState,label){
 }
 
 async function importState(e){
-  const input=e?.target;
-  const file=input?.files?.[0];
-  if(!file)return;
+  const input=e?.target,file=input?.files?.[0];if(!file)return;
   const MAX_BACKUP_BYTES=25*1024*1024;
-  let previousState=null, previousPrimary=null, previousBackup=null, previousVendorAssets=null;
   try{
     if(file.size>MAX_BACKUP_BYTES)throw new Error('Backup exceeds the 25 MB safety limit.');
-    if(file.name && !/\.json$/i.test(file.name) && file.type!=='application/json')throw new Error('Select a JSON backup file.');
-    let text;
-    try{text=await file.text()}catch{throw new Error('The backup file could not be read.');}
-    let parsed;
-    try{parsed=JSON.parse(text)}catch{throw new Error('The backup contains invalid JSON.');}
-    const check=validateImportedBackup(parsed,file);
-    const importedCount=check.normalized.documents.length;
-    const when=check.exportedAt?`\nExported: ${fmtDate(check.exportedAt,true)}`:'';
+    if(file.name&&!/\.json$/i.test(file.name)&&file.type!=='application/json')throw new Error('Select a JSON backup file.');
+    let text;try{text=await file.text()}catch{throw new Error('The backup file could not be read.');}
+    let parsed;try{parsed=JSON.parse(text)}catch{throw new Error('The backup contains invalid JSON.');}
+    const check=validateImportedBackup(parsed,file),importedCount=check.normalized.documents.length,when=check.exportedAt?`\nExported: ${fmtDate(check.exportedAt,true)}`:'';
     if(!confirm(`Import ${importedCount} document${importedCount===1?'':'s'} from ${check.fileName}?${when}\n\nThis replaces the current cloud workspace. A recovery snapshot of the current workspace will be retained.`))return;
-
-    previousState=deepCopy(state);
-    previousPrimary=globalThis.WMModuleStore.getItem(STORAGE_KEY);
-    previousBackup=globalThis.WMModuleStore.getItem(BACKUP_KEY);
-    previousVendorAssets=collectVendorAssets();
-    const recovery=makeRecoverySnapshot(previousState,`Pre-import · ${check.fileName}`);
-    const imported=check.normalized;
-    const importedSnapshots=Array.isArray(imported.snapshots)?imported.snapshots:[];
-    const existingSnapshots=Array.isArray(previousState.snapshots)?previousState.snapshots:[];
-    imported.snapshots=[recovery,...existingSnapshots,...importedSnapshots]
-      .filter((snap,index,list)=>snap&&snap.id&&list.findIndex(x=>x?.id===snap.id)===index)
-      .slice(0,12);
-    imported.version=APP_VERSION;
-    state=imported;
-    if(check.hasVendorAssets)restoreVendorAssets(check.vendorAssets||{}, {clear:true});
-    addAudit('import','Backup imported',`${check.fileName} · ${importedCount} documents · source ${check.sourceVersion}`,null,false);
-    persist('import backup',false);
-    globalThis.WMModuleStore.removeItem(AUTOSAVE_KEY);
-    ui.editingId=null;ui.form=null;ui.errors={};ui.modal=null;ui.selectedDocumentIds=[];ui.page=1;ui.tab='documents';
-    persistDocumentView();
-    syncRoute('documents',true);
-    render();
-    toast(`Backup imported · ${importedCount} document${importedCount===1?'':'s'} restored`);
-  }catch(err){
-    if(previousState){
-      state=previousState;
+    await sharedMutationGate.run('import',()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{
+      await refreshAuthoritativeTradeLinkState();
+      const previousState=deepCopy(state),previousVendorAssets=collectVendorAssets();
+      const recovery=makeRecoverySnapshot(previousState,`Pre-import · ${check.fileName}`),imported=check.normalized,importedSnapshots=Array.isArray(imported.snapshots)?imported.snapshots:[],existingSnapshots=Array.isArray(previousState.snapshots)?previousState.snapshots:[];
+      imported.snapshots=[recovery,...existingSnapshots,...importedSnapshots].filter((snap,index,list)=>snap&&snap.id&&list.findIndex(x=>x?.id===snap.id)===index).slice(0,12);imported.version=APP_VERSION;state=imported;applyUserScopedPreferences();
+      let assetsChanged=false;
       try{
-        if(previousPrimary===null)globalThis.WMModuleStore.removeItem(STORAGE_KEY);else globalThis.WMModuleStore.setItem(STORAGE_KEY,previousPrimary);
-        if(previousBackup===null)globalThis.WMModuleStore.removeItem(BACKUP_KEY);else globalThis.WMModuleStore.setItem(BACKUP_KEY,previousBackup);
-        restoreVendorAssets(previousVendorAssets||{}, {clear:true});
-      }catch{}
-    }
-    toast(`Import failed: ${err.message}`,'error');
-  }finally{
-    if(input)input.value='';
-  }
+        if(check.hasVendorAssets){await restoreVendorAssetsConfirmed(check.vendorAssets||{},{clear:true});assetsChanged=true;}
+        addAudit('import','Backup imported',`${check.fileName} · ${importedCount} documents · source ${check.sourceVersion}`,null,false);
+        await persistSharedConfirmed('import backup',false);await removeDraftConfirmed().catch(()=>false);
+      }catch(error){if(assetsChanged)await restoreVendorAssetsConfirmed(previousVendorAssets,{clear:true}).catch(()=>{});state=previousState;throw error;}
+      ui.editingId=null;ui.editBaseUpdatedAt=null;ui.form=null;ui.errors={};ui.modal=null;ui.selectedDocumentIds=[];ui.page=1;ui.tab='documents';await persistUiConfirmed();syncRoute('documents',true);render();toast(`Backup imported · ${importedCount} document${importedCount===1?'':'s'} restored`);
+    }));
+  }catch(err){await refreshAuthoritativeTradeLinkState({renderUi:true}).catch(()=>{});toast(`Import failed: ${err.message}`,'error');}
+  finally{if(input)input.value='';}
 }
-function resetApp(){ if(!confirm('Reset all TradeLink cloud data? This is destructive. Export or snapshot first.'))return; if(!confirm('Final confirmation: permanently remove all cloud documents, audit events, and settings?'))return; for(const v of state.vendors){deleteVendorAsset(v.id,'logo');deleteVendorAsset(v.id,'qr')} globalThis.WMModuleStore.removeItem(STORAGE_KEY);globalThis.WMModuleStore.removeItem(BACKUP_KEY);globalThis.WMModuleStore.removeItem(AUTOSAVE_KEY);state=initialState();persist('reset',false);ui={...ui,tab:'create',editingId:null,form:null,modal:null};syncRoute('create',true);render();toast('TradeLink reset'); }
+async function resetApp(){
+  if(!confirm('Reset all TradeLink cloud data? This is destructive. Export or snapshot first.'))return false;
+  if(!confirm('Final confirmation: permanently remove all cloud documents, audit events, and settings?'))return false;
+  try{return await sharedMutationGate.run('reset',()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{
+    await refreshAuthoritativeTradeLinkState();const previousAssets=collectVendorAssets();
+    try{await restoreVendorAssetsConfirmed({}, {clear:true});state=initialState();applyUserScopedPreferences();addAudit('system','TradeLink reset','All shared TradeLink workspace data reset by an authorized user.',null,false);await persistSharedConfirmed('reset',false);await TRADELINK_STABILITY.confirmedRemove(BACKUP_KEY).catch(()=>false);await removeDraftConfirmed().catch(()=>false);}
+    catch(error){await restoreVendorAssetsConfirmed(previousAssets,{clear:true}).catch(()=>{});throw error;}
+    ui={...ui,tab:'create',editingId:null,editBaseUpdatedAt:null,form:null,modal:null,selectedDocumentIds:[]};await persistUiConfirmed();syncRoute('create',true);render();toast('TradeLink reset');return true;
+  }));}catch(error){await refreshAuthoritativeTradeLinkState({renderUi:true}).catch(()=>{});toast(`Reset failed: ${error.message}`,'error');return false;}
+}
 
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(ui.modal){e.preventDefault();closeModal();return;}if(ui.companyPanelOpen){e.preventDefault();ui.companyPanelOpen=false;render();requestAnimationFrame(()=>stableFocus(document.querySelector('#vendorTrigger')));}});
 
 window.addEventListener('hashchange',()=>{ const requested=location.hash; const next=ROUTE_TABS[requested]||LEGACY_ROUTE_REDIRECTS[requested]||'create'; if(requested==='#/activity')ui.recoveryPane='activity'; if(ui.tab!==next){ui.tab=next;ui.modal=null;render();window.scrollTo({top:0,behavior:scrollBehavior()});} if(location.hash!==TAB_ROUTES[next])syncRoute(next,true); });
-window.addEventListener('storage',e=>{ if(e.key===STORAGE_KEY&&e.newValue){try{state=normalizeState(JSON.parse(e.newValue));render();toast('Cloud data synchronized')}catch{}} });
+const tradeLinkStoreChangeBridge=TRADELINK_STABILITY.createStoreChangeBridge({
+  keys:[STORAGE_KEY,UI_KEY,AUTOSAVE_KEY,...state.vendors.flatMap(v=>[vendorAssetKey(v.id,'logo'),vendorAssetKey(v.id,'qr')])],
+  onChange:async({key})=>{
+    if(key===STORAGE_KEY){await refreshAuthoritativeTradeLinkState({renderUi:false});if(!ui.form&&!ui.modal){render();toast('Cloud data synchronized');}return;}
+    if(key===UI_KEY){applyUserScopedPreferences();if(!ui.form&&!ui.modal)render();return;}
+    if(key.startsWith(VENDOR_LOGO_PREFIX)||key.startsWith(VENDOR_QR_PREFIX)){if(!ui.form&&!ui.modal)render();}
+  }
+});
+window.addEventListener('pagehide',event=>{if(!event.persisted)tradeLinkStoreChangeBridge.dispose()});
 window.addEventListener('beforeunload',()=>{if(state.settings.autosave&&ui.form)try{globalThis.WMModuleStore.setItem(AUTOSAVE_KEY,JSON.stringify(ui.form))}catch{}});
 
-if(!state.audit.length){ addAudit('system','TradeLink initialized',`Authenticated cloud edition v${APP_VERSION}`,null,false); persist('initialization',false); }
+async function ensureTradeLinkInitializationAudit(){
+  if(state.audit.length)return true;
+  try{return await sharedMutationGate.run('initialization',()=>TRADELINK_STABILITY.withWorkspaceLock(async()=>{
+    await refreshAuthoritativeTradeLinkState();if(state.audit.length)return true;
+    addAudit('system','TradeLink initialized',`Authenticated cloud edition v${APP_VERSION}`,null,false);
+    await persistSharedConfirmed('initialization',false);return true;
+  }));}
+  catch(error){console.warn('TradeLink initialization audit could not be persisted.',error);return false;}
+}
 syncRoute(ui.tab,true);
 render();
+void ensureConfirmedStartupRecovery().then(()=>ensureTradeLinkInitializationAudit());

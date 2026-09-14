@@ -44,7 +44,7 @@ import {
   runPlatformDiagnostics,
   verifyModuleCompatibility,
 } from '../../core/platform.ts';
-import { downloadWorkspaceBackup, parseBackupFile, restoreWorkspaceBackup } from '../../core/backup.ts';
+import { downloadWorkspaceBackup, inspectBackupFile, restoreWorkspaceBackupGuarded } from '../../core/backup.ts';
 import { applicationManifest } from '../../../../config/application-manifest.ts';
 import { formatBytes } from '../../ui/format.ts';
 
@@ -161,11 +161,14 @@ export function createSettingsFeature({
     state.busy.add('import-backup');
     setActionBusy('import-backup', true);
     try {
-      const payload = await parseBackupFile(file, modules);
+      const inspection = await inspectBackupFile(file, modules);
+      const { payload, preflight } = inspection;
       const when = payload.createdAt ? new Date(payload.createdAt).toLocaleString() : 'unknown time';
-      const rejectedNote = payload.rejectedCount ? ` ${payload.rejectedCount} unsupported or invalid entr${payload.rejectedCount === 1 ? 'y was' : 'ies were'} excluded.` : '';
-      if (!confirm(`Restore ${payload.entryCount || Object.keys(payload.data).length} validated data entries from backup created ${when}? Current matching data will be overwritten.${rejectedNote}`)) return;
-      const result = await restoreWorkspaceBackup(payload);
+      const integrityNote = preflight.integrity === 'verified' ? ' SHA-256 integrity is verified.' : ' WARNING: this is a legacy backup without an M34 integrity manifest.';
+      const warningNote = preflight.warnings.length ? ` ${preflight.warnings.map((warning) => warning.message).join(' ')}` : '';
+      const checkpointNote = ' A pre-restore recovery checkpoint of the current workspace will be downloaded before any restore mutation begins.';
+      if (!confirm(`Restore ${payload.entryCount || Object.keys(payload.data).length} validated data entries from backup created ${when}?${integrityNote}${warningNote}${checkpointNote} Current matching data will be overwritten.`)) return;
+      const result = await restoreWorkspaceBackupGuarded(payload, modules);
       const next = getPreferences();
       applyTheme(next.theme);
       applyDensity(next.compact);
@@ -306,7 +309,7 @@ export function createSettingsFeature({
           <div class="settings-row"><div><span>STORAGE HEALTH</span><h2>Shell preference persistence</h2><p>${storageCopy}</p>${usagePct != null && health ? `<div class="storage-meter"><span style="width:${usagePct.toFixed(2)}%"></span></div><small>${fmtBytes(health.usage)} used of approximately ${fmtBytes(health.quota)}</small>` : '<small>Storage quota information is not available from this browser.</small>'}</div>${persistenceControl}</div>
           <div class="settings-row"><div><span>CLOUD & IDENTITY</span><h2>Authentication backend</h2><p>${auth.isCloudEnabled ? (auth.isConfigured ? (auth.isAuthenticated ? `Connected to Supabase as ${esc(auth.user?.email || 'authenticated user')}. Shell authorization is enforced by cloud role mappings.` : 'Supabase is configured. Sign in to activate cloud identity and module authorization.') : 'Cloud mode is enabled but the public Supabase URL or publishable key is missing.') : 'Local-only mode is active. Configure Supabase to enable login, registration, sessions, cloud profiles and module role mapping.'}</p><small>Server secrets are never stored in the GitHub Pages client. Workspace backups explicitly exclude authentication session tokens.</small></div><div class="settings-actions"><span class="status ${!auth.isConfigured ? 'warning' : 'success'}"><i></i>${auth.isConfigured ? 'Configured' : 'Setup required'}</span><button type="button" class="secondary-btn" data-account>${auth.isAuthenticated ? 'Open account' : 'Sign in'}</button></div></div>
           <div class="settings-row diagnostics-row"><div><span>SYSTEM DIAGNOSTICS</span><h2>Platform verification</h2><p>Run non-destructive checks for shell preferences, authenticated cloud configuration, module registry correctness, and active application runtime availability.</p>${resultList(state.diagnostics)}</div>${button('diagnostics', state.diagnostics ? 'Run again' : 'Run diagnostics')}</div>
-          <div class="settings-row"><div><span>BACKUP & RECOVERY</span><h2>Workspace backup</h2><p>Export Work Management plus all registered application data to JSON. Restore validates format, size, registered keys, and serialized values before writing, with rollback on write failure.</p></div><div class="settings-actions">${button('export-backup', 'Export backup', icons.download)}${button('import-backup', 'Restore backup', icons.upload)}</div></div>
+          <div class="settings-row"><div><span>BACKUP & RECOVERY</span><h2>Workspace backup</h2><p>Export an M34 recovery package with a SHA-256 integrity manifest. Restore performs integrity/preflight checks and downloads a pre-restore checkpoint before transactional recovery; legacy raw backups remain supported with an unverified warning.</p></div><div class="settings-actions">${button('export-backup', 'Export backup', icons.download)}${button('import-backup', 'Restore backup', icons.upload)}</div></div>
           <div class="settings-row danger-row"><div><span>PLATFORM RESET</span><h2>Reset shell preferences</h2><p>Reset Work Management theme, spacing, favorites, recent application history, and launcher filters only. Registered application data is explicitly excluded.</p></div>${button('reset-platform', 'Reset preferences')}</div>
         </section>
       </main>`;

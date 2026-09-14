@@ -1,0 +1,247 @@
+name: Work Management CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-and-release:
+    name: Govern, lint, verify, and build
+    runs-on: ubuntu-latest
+    env:
+      VITE_RUNTIME_ENV: ci
+    timeout-minutes: 35
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_BASE_PATH: ./
+      VITE_BUILD_SOURCEMAP: "false"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup governed Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Verify npm toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          npm --version
+          node -e "const [major, minor] = process.versions.node.split('.').map(Number); if (major !== 22 || minor < 12) process.exit(1)"
+          node -e "const pkg=require('./package.json'); if (pkg.packageManager !== 'npm@10.9.2') process.exit(1)"
+
+      - name: Install exact lockfile dependencies
+        run: npm ci
+
+      - name: Verify exact installed dependency graph
+        run: npm run dependencies:ensure
+
+      - name: Verify governed toolchain self-dispatch
+        run: npm run toolchain:dispatch:check
+
+      - name: Verify package governance and secret hygiene
+        run: npm run governance:check
+
+      - name: Run Stage A security baseline gate
+        run: npm run security:check
+
+      - name: Run Stage B React 19.2 composition boundary gate
+        run: npm run react:check
+
+      - name: Run Stage B Work Management React Design System source gate
+        run: npm run design-system:check
+
+      - name: Run M4/M5 governance synchronization regression gate
+        run: npm run governance:sync-check
+
+      - name: Run M4 corrective integrity gate
+        run: npm run corrective:check
+
+      - name: Run M4 vendor declaration compatibility gate
+        run: npm run vendor-types:check
+
+      - name: Run M4 production CSP serialization compatibility gate
+        run: npm run csp-dist:check
+
+      - name: Run Stage B primitive interaction architecture gate
+        run: npm run interactions:check
+
+      - name: Run Stage B runtime schema architecture gate
+        run: npm run runtime-schemas:check
+
+      - name: Stage B M7 Supabase client adapter
+        run: npm run supabase-client:check
+
+      - name: Stage B M8 TanStack Query migration
+        run: npm run tanstack-query:check
+
+      - name: Stage B M9 client-state ownership model
+        run: npm run client-state:check
+
+      - name: Stage C M10 React shell
+        run: npm run react-shell:check
+
+      - name: Stage C M11 global overlays
+        run: npm run global-overlays:check
+
+      - name: Stage C M12 Authentication UI
+        run: npm run authentication-ui:check
+      - name: Stage C M13 Account / Settings / User Management
+        run: npm run account-settings-users:check
+
+      - name: Stage C M14 Command Palette / Shared Application UI
+        run: npm run shared-app-ui:check
+
+
+      - name: Stage D M15 React Board presentation facade
+
+        run: npm run board-presentation:check
+
+      - name: Stage D M16 Board component decomposition
+        run: npm run board-components:check
+
+      - name: Stage D M17 TanStack Table evaluation
+        run: npm run tanstack-table-evaluation:check
+
+      - name: Stage D M18 Board virtualization
+        run: npm run board-virtualization:check
+
+      - name: Stage D M19 Drag-and-drop evaluation
+        run: npm run drag-drop-evaluation:check
+
+      - name: Stage D M20 Board collaborative Realtime
+        run: npm run board-realtime:check
+
+      - name: Stage D M21 Rich Item Workspace
+        run: npm run rich-item-workspace:check
+      - name: Verify M22 normalized module data
+        run: npm run normalized-module-data:check
+      - name: Stage E M23 TimeTracker stabilization
+        run: npm run timetracker-stabilization:check
+      - name: Stage E M24 FuelTrack+ stabilization
+        run: npm run fueltrack-stabilization:check
+      - name: Stage E M25 TradeLink stabilization
+        run: npm run tradelink-stabilization:check
+
+      - name: Stage E M26 iframe retirement
+        run: npm run iframe-retirement:check
+
+      - name: Stage F M27 Realtime platform architecture
+        run: npm run realtime-platform:check
+
+      - name: Stage F M28 Edge Functions
+        run: npm run edge-functions:check
+      - name: Stage F M29 Database/RLS test suite
+        run: npm run database-rls:check
+
+      - name: Stage F M30 Modern testing stack
+        run: npm run modern-tests:check
+
+      - name: Stage G M38 Runtime configuration/backend capability preflight
+        run: npm run backend-preflight:check && npm run backend-preflight:test
+
+      - name: Stage F M31 Performance engineering
+        run: npm run performance:check
+
+      - name: Run M31 hot-path performance benchmarks
+        run: npm run performance:bench
+
+      - name: Stage F M32 Observability
+        run: npm run observability:check
+
+      - name: Run M32 observability execution vectors
+        run: npm run observability:test
+
+      - name: Stage F M33 Service worker / update strategy
+        run: npm run service-worker-update:check
+
+      - name: Run M33 service-worker/update execution vectors
+        run: npm run service-worker-update:test
+
+      - name: Stage F M34 Backup and disaster recovery
+        run: npm run backup-dr:check
+
+      - name: Run M34 backup/disaster-recovery execution vectors
+        run: npm run backup-dr:test
+
+      - name: Stage F M35 Final legacy deletion
+        run: npm run legacy-deletion:check
+
+      - name: Run M35 final legacy deletion execution vectors
+        run: npm run legacy-deletion:test
+
+      - name: Stage F M36 Production cutover certification
+        run: npm run cutover:check
+
+      - name: Run M36 production cutover execution vectors
+        run: npm run cutover:test
+
+      - name: Stage G M37 Functional Regression Baseline
+        run: npm run functional-regression:check
+
+      - name: Run M37 functional regression source characterization
+        run: npm run functional-regression:test
+
+
+      - name: Run M30 modern unit/component suite
+        run: npm run modern-tests:test
+
+      - name: Run M30 Playwright application smoke
+        run: npm run modern-tests:e2e
+
+      - name: Run governed ESLint and TypeScript lint gate
+        run: npm run lint
+
+      - name: Audit dependencies for high or critical vulnerabilities
+        run: npm run audit:ci
+
+      - name: Run complete production release gate
+        run: npm run release:check
+
+      - name: Verify M36 production cutover artifact
+        run: npm run cutover:artifact
+
+      - name: Generate M36 production cutover evidence
+        run: npm run cutover:evidence
+
+      - name: Generate dist checksum manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          find dist -type f ! -name SHA256SUMS.txt -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            | sed 's#  dist/#  #' > dist/SHA256SUMS.txt
+          test -s dist/SHA256SUMS.txt
+
+      - name: Upload M36 production cutover evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: work-management-cutover-evidence-${{ github.sha }}
+          path: cutover-evidence
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload certified production artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: work-management-dist-${{ github.sha }}
+          path: dist
+          if-no-files-found: error
+          retention-days: 14

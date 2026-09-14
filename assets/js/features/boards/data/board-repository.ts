@@ -1,6 +1,6 @@
 import type { BoardRole } from '../../../../../src/types/auth.ts';
 import type { DiagnosticsPort } from '../../../../../src/platform/contracts/diagnostics.ts';
-import type { QueryClient, QueryKey } from '../../../../../src/platform/contracts/query.ts';
+import type { QueryClient, QueryKey, QueryKeyPart } from '../../../../../src/platform/contracts/query.ts';
 import type { AuthTransportPort, BackendClient } from '../../../../../src/platform/contracts/transport.ts';
 import type {
   BoardCellValue,
@@ -34,6 +34,7 @@ import {
   recordOf,
 } from './board-contracts.ts';
 import { serializeStatusConfig } from '../status-labels.ts';
+import { boardListQueryKey, boardListQueryPrefix, boardUserQueryScope } from '../../../../../src/features/boards/contracts/query-keys.ts';
 
 export interface BoardRepositoryOptions {
   readonly queryClient?: QueryClient | null;
@@ -108,9 +109,9 @@ export function createBoardRepository(auth: AuthTransportPort, options: BoardRep
   const backend = options.backendClient ?? createBackendClient(auth, { diagnostics });
   const queries = options.queryClient ?? createQueryClient({ diagnostics, defaultStaleTime: 8_000 });
 
-  const scope = (): readonly [string, string] => ['boards-user', String(auth.user?.id || 'anonymous')];
+  const scope = (): readonly QueryKeyPart[] => boardUserQueryScope(auth.user?.id) as readonly QueryKeyPart[];
   const key = (...parts: readonly (string | number | boolean | null)[]): QueryKey => [...scope(), ...parts];
-  const invalidationTargets = (): readonly QueryKey[] => [key('list'), key('board'), key('item-workspace'), key('events')];
+  const invalidationTargets = (): readonly QueryKey[] => [boardListQueryPrefix(auth.user?.id), key('board'), key('item-workspace'), key('events')];
 
   const invalidateBoardState = (): void => {
     for (const target of invalidationTargets()) queries.invalidateQueries(target);
@@ -146,7 +147,7 @@ export function createBoardRepository(auth: AuthTransportPort, options: BoardRep
 
     async list(status: BoardLifecycleStatus = 'active') {
       return queries.fetchQuery({
-        key: key('list', status),
+        key: boardListQueryKey(auth.user?.id, status),
         staleTime: 8_000,
         queryFn: async () => { const payload = await rpc('wm_list_boards', { p_status: status }); return mapExternalResponse('boards.list', () => mapBoardList(payload)); },
       });
@@ -375,7 +376,7 @@ export function createBoardRepository(auth: AuthTransportPort, options: BoardRep
       const data = recordOf(await backend.storageSign('work-board-files', file.storage_path, 120));
       const signed = typeof data?.signedURL === 'string' ? data.signedURL : typeof data?.signedUrl === 'string' ? data.signedUrl : '';
       if (!signed) throw new WorkManagementError('This attachment could not be opened securely. Try again.', { code: 'WM_FILE_SIGN', category: 'storage', retryable: true });
-      const url = signed.startsWith('http') ? signed : `${auth.backend.supabaseUrl}/storage/v1${signed}`;
+      const url = auth.supabase.resolveStorageSignedUrl(signed);
       window.open(url, '_blank', 'noopener,noreferrer');
     },
     async deleteItemFile(file: ItemWorkspaceFile) {

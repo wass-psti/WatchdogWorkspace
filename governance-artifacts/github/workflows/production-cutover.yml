@@ -1,0 +1,55 @@
+name: Production Cutover Certification
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  certify-cutover:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_BASE_PATH: ./
+      VITE_BUILD_SOURCEMAP: "false"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Require production public backend configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${VITE_SUPABASE_URL}" || { echo "::error::VITE_SUPABASE_URL is not configured."; exit 1; }
+          test -n "${VITE_SUPABASE_PUBLISHABLE_KEY}" || { echo "::error::VITE_SUPABASE_PUBLISHABLE_KEY is not configured."; exit 1; }
+          case "${VITE_SUPABASE_URL}" in https://*.supabase.co) ;; *) echo "::error::Unexpected Supabase URL."; exit 1;; esac
+      - run: npm ci
+      - run: npm run dependencies:ensure
+      - run: npm run governance:check
+      - run: npm run security:check
+      - run: npm run verify:historical-all
+      - run: npm run legacy-deletion:check
+      - name: Stage F M36 Production cutover certification
+        run: npm run cutover:check
+      - run: npm run cutover:test
+      - run: npm run release:check
+      - run: npm run cutover:artifact
+      - run: npm run cutover:evidence
+      - name: Upload certified production dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: work-management-v1.43.2-production-cutover-dist-${{ github.sha }}
+          path: dist
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload production cutover evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: work-management-v1.43.2-production-cutover-evidence-${{ github.sha }}
+          path: cutover-evidence
+          if-no-files-found: error
+          retention-days: 90

@@ -13,24 +13,19 @@ import type {
   ModuleHostOptions,
 } from '../../../src/platform/contracts/module-host.ts';
 import { parseModuleIdentityRequest } from '../core/cloud-module-data.ts';
+import { embeddedErrorMessageSchema, embeddedReadyMessageSchema } from '../../../src/runtime-schemas/index.ts';
 import { transitionEmbeddedLifecycle } from './module-lifecycle.ts';
 
-type UnknownRecord = Record<string, unknown>;
-const recordOf = (value: unknown): UnknownRecord | null => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as UnknownRecord : null;
-const stringOf = (value: unknown): string => typeof value === 'string' ? value : '';
-
 function parseReadyMessage(value: unknown, moduleId: ModuleId): EmbeddedReadyMessage | null {
-  const root = recordOf(value); const detail = recordOf(root?.detail);
-  if (!root || root.type !== 'wm:host:ready' || !detail || detail.moduleId !== moduleId) return null;
-  const name = stringOf(detail.name).trim();
-  return name ? Object.freeze({ type: 'wm:host:ready', detail: Object.freeze({ name, moduleId }) }) : null;
+  const parsed = embeddedReadyMessageSchema.safeParse(value);
+  if (!parsed.success || parsed.data.detail.moduleId !== moduleId) return null;
+  return Object.freeze(parsed.data) as EmbeddedReadyMessage;
 }
 
 function parseErrorMessage(value: unknown, moduleId: ModuleId): EmbeddedErrorMessage | null {
-  const root = recordOf(value); const detail = recordOf(root?.detail);
-  if (!root || root.type !== 'wm:host:error' || !detail || detail.moduleId !== moduleId) return null;
-  const name = stringOf(detail.name).trim(); const message = stringOf(detail.message).trim();
-  return name && message ? Object.freeze({ type: 'wm:host:error', detail: Object.freeze({ name, moduleId, message }) }) : null;
+  const parsed = embeddedErrorMessageSchema.safeParse(value);
+  if (!parsed.success || parsed.data.detail.moduleId !== moduleId) return null;
+  return Object.freeze(parsed.data) as EmbeddedErrorMessage;
 }
 
 /** Same-origin, runtime-validated host boundary for isolated application iframes. */

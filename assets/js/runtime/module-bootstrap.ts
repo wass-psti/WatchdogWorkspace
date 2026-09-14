@@ -15,7 +15,11 @@ const MODULE_IDS = new Set<ModuleId>(['time-tracker', 'fueltrack-plus', 'tradeli
 let activeHandle: EmbeddedModuleBootstrapHandle | null = null;
 
 const sanitize = (value: unknown): string => String(value ?? '').replace(/[<>&]/g, '');
-const resolveUrl = (value: string): string => new URL(value, document.baseURI).href;
+const resolveLocalScriptUrl = (value: string): string => {
+  const url = new URL(value, document.baseURI);
+  if (url.origin !== location.origin) throw new TypeError('Embedded runtime scripts must resolve to the Work Management origin.');
+  return url.href;
+};
 const errorMessage = (error: unknown, fallback = 'The authenticated cloud runtime is unavailable.'): string => error instanceof Error ? error.message : typeof error === 'string' ? error : fallback;
 
 function validateConfig(config: EmbeddedModuleBootstrapConfig): void {
@@ -41,7 +45,7 @@ function renderFailure(config: EmbeddedModuleBootstrapConfig, message: string): 
 export function loadEmbeddedScript(path: string): Promise<HTMLScriptElement> {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = resolveUrl(path);
+    script.src = resolveLocalScriptUrl(path);
     script.onload = () => resolve(script);
     script.onerror = () => reject(new Error(`Unable to load ${path}`));
     document.body.appendChild(script);
@@ -119,7 +123,7 @@ export function startEmbeddedModule(config: EmbeddedModuleBootstrapConfig): Embe
         }
       }
 
-      await import(resolveUrl(config.entry));
+      await import(resolveLocalScriptUrl(config.entry));
       for (const scriptPath of config.afterScripts ?? []) await loadEmbeddedScript(scriptPath);
       if (config.afterLoad) await config.afterLoad(context);
       if (disposed || state.generation !== generation) return null;

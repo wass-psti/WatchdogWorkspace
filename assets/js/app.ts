@@ -1,17 +1,33 @@
 import {
   modules, moduleRegistry, parseRoute, navigate,
-  PLATFORM_VERSION, applyTheme, applyDensity, getPreferences, registerServiceWorker,
+  PLATFORM_VERSION, applyTheme, applyDensity, getPreferences, registerServiceWorker, activateServiceWorkerUpdate,
   auth, AUTH_EVENT, installCloudModuleDataBridge, createBoardsFeature,
-  createWorkManagementClient, createModuleHost, createFeatureRegistry, createRouteController, installApplicationLifecycle, createAuthenticationFeature, createAccountFeature, createUserManagementFeature, createSettingsFeature, createHomeFeature, createCommandPaletteFeature, createRuntimeErrorBoundary, createPlatformServices, applicationManifest, validateApplicationManifest, icons, escapeHtml,
+  createWorkManagementClient, createModuleHost, createModulePresentationHost, nativeModuleRegistry, createFeatureRegistry, createRouteController, createRouteLifecycleCoordinator, installApplicationLifecycle, createHomeFeature, createCommandPaletteFeature, createRuntimeErrorBoundary, createPlatformServices, workManagementClientState, applicationManifest, validateApplicationManifest, sharedApplicationUiRuntime, globalOverlayRuntime, icons, escapeHtml,
 } from './runtime/index.ts';
 import { authorizationFingerprint, reconcileAuthorizationContext } from './runtime/authorization-context.ts';
 import type { ModuleId } from '../../src/types/identifiers.ts';
 import type { WorkManagementModuleDefinition } from '../../src/types/modules.ts';
+import type { BoardRecord } from '../../src/features/boards/contracts/domain.ts';
+import { boardListQueryKey } from '../../src/features/boards/contracts/query-keys.ts';
 import type { InstallPrompt, ToastTone, TransitionUpdate } from '../../src/platform/contracts/ui.ts';
 import type { WorkManagementMotionApi } from '../../src/platform/contracts/motion.ts';
 import type { RuntimeBoundaryContext } from './runtime/error-boundary.ts';
 import type { WorkManagementError } from './platform/errors/app-error.ts';
+import type { ShellNavigationMode, ShellSectionClientState, ShellSectionId } from '../../src/platform/contracts/client-state.ts';
 import { buttonClass, iconButtonClass, navigationItemClass, toolbarClass } from './platform/ui/primitives.ts';
+import { createAccountProfileMenu } from './features/account/profile-menu.ts';
+import { createShellTooltipController } from './platform/ui/tooltip-controller.ts';
+import { resolveRuntimeApplicationHost } from '../../src/app/composition/runtime-host.ts';
+import { presentationReadinessRuntime } from '../../src/app/composition/presentation-readiness-runtime.ts';
+import { createPresentationFrameToken, isPresentationFrameCurrent, type PresentationFrameToken } from './runtime/presentation-frame-guard.ts';
+import { reactShellRuntime, resolveReactShellRoot } from '../../src/app/shell/shell-runtime-bridge.ts';
+import { authenticationUiRuntime, type AuthenticationUIView } from '../../src/app/auth/authentication-ui-runtime.ts';
+import { authenticatedManagementUiRuntime, type AuthenticatedManagementUIView } from '../../src/app/management/authenticated-management-ui-runtime.ts';
+import { boardPresentationFacadeRuntime } from '../../src/app/boards/board-presentation-facade-runtime.ts';
+import { resolveBoardPresentationHost } from '../../src/app/boards/board-presentation-host.ts';
+import { installBrowserObservability } from './platform/observability/browser-observer.ts';
+import { backendCapabilityPreflight } from './platform/data/backend-capability-preflight.ts';
+import { M38_MODULE_REQUIREMENTS, type M38CapabilityModule } from '../../config/backend-capability-manifest.ts';
 
 type MotionMode = 'page' | 'module' | 'home' | string;
 type RuntimeRecord = Readonly<Record<string, unknown>>;
@@ -26,18 +42,40 @@ interface WorkManagementRuntimeGlobal {
   readonly getContext: ReturnType<typeof createWorkManagementClient>['getContext'];
   readonly features: () => unknown;
   readonly diagnostics: () => unknown;
+  readonly observability: () => unknown;
+  readonly observabilityStatus: () => unknown;
   readonly serverState: () => unknown;
+  readonly clientState: () => unknown;
 }
 
 const globalRuntime = globalThis as typeof globalThis & { WorkManagementRuntime?: WorkManagementRuntimeGlobal };
 const motionRuntime = (): WorkManagementMotionApi | undefined => globalThis.WorkManagementMotion;
 const recordOf = (value: unknown): RuntimeRecord => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as RuntimeRecord : Object.freeze({});
 const stringField = (value: unknown, key: string): string => { const field = recordOf(value)[key]; return typeof field === 'string' ? field : ''; };
-const app = (() => {
-  const host = document.querySelector<HTMLElement>('#app');
-  if (!host) throw new Error('Work Management application host is missing.');
-  return host;
-})();
+const app = resolveRuntimeApplicationHost();
+const reactShellRoot = resolveReactShellRoot();
+const shellQuery = <T extends Element>(selector: string): T | null => reactShellRoot.querySelector<T>(selector);
+const ROUTE_FOCUS_SELECTORS: Readonly<Record<string, string>> = Object.freeze({
+  auth: '[data-wm-authentication-ui-host]#main, [data-wm-authentication-ui-host] #main',
+  account: '[data-wm-authenticated-management-ui-host] #main',
+  settings: '[data-wm-authenticated-management-ui-host] #main',
+  'user-management': '[data-wm-authenticated-management-ui-host] #main',
+  boards: '[data-wm-board-presentation-host] #main',
+  home: '[data-wm-runtime-host] #main',
+  'module-host': '[data-wm-runtime-host] #main',
+  shell: '[data-wm-runtime-host] #main, [data-wm-runtime-host] .auth-panel',
+});
+const DEFAULT_ROUTE_FOCUS_SELECTOR = '[data-wm-board-presentation-host] #main, [data-wm-authenticated-management-ui-host] #main, [data-wm-authentication-ui-host]#main, [data-wm-authentication-ui-host] #main, [data-wm-runtime-host] #main, [data-wm-runtime-host] .auth-panel';
+const isVisibleRouteFocusTarget = (element: HTMLElement): boolean => {
+  if (!element.isConnected || element.hidden || element.getAttribute('aria-hidden') === 'true') return false;
+  const style = window.getComputedStyle(element);
+  return element.getClientRects().length > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+};
+const resolveShellRouteContentTarget = (owner: string | null = null): HTMLElement | null => {
+  const selector = owner ? ROUTE_FOCUS_SELECTORS[owner] ?? DEFAULT_ROUTE_FOCUS_SELECTOR : DEFAULT_ROUTE_FOCUS_SELECTOR;
+  return [...reactShellRoot.querySelectorAll<HTMLElement>(selector)].find(isVisibleRouteFocusTarget) ?? null;
+};
+
 const esc = escapeHtml;
 const primaryButtonClass = buttonClass({ tone: 'primary' }, 'primary-btn');
 const secondaryButtonClass = buttonClass({ tone: 'secondary' }, 'secondary-btn');
@@ -50,6 +88,73 @@ let swUpdate: ServiceWorkerRegistration | null = null;
 let moduleLoadTimer: number | null = null;
 const reducedMotionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
 const finePointerQuery = window.matchMedia?.('(pointer: fine)');
+const shellMobileQuery = window.matchMedia?.('(max-width: 620px)');
+const shellTabletQuery = window.matchMedia?.('(max-width: 900px) and (min-width: 621px)');
+type ShellNavigationPreference = Readonly<{ state: ShellNavigationMode; width: number; pinned: boolean }>;
+const SHELL_NAVIGATION_STORAGE_KEY = 'wm.platform.shell-navigation.v1';
+const shellNavigationTokenPx = (name: string, fallback: number): number => {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const parsed = Number.parseFloat(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+const shellNavigationWidthBounds = (): Readonly<{ min: number; defaultWidth: number; max: number }> => Object.freeze({
+  min: shellNavigationTokenPx('--wm-shell-sidebar-width-min', 224),
+  defaultWidth: shellNavigationTokenPx('--wm-shell-sidebar-width-default', 256),
+  max: shellNavigationTokenPx('--wm-shell-sidebar-width-max', 360),
+});
+const clampShellNavigationWidth = (width: number): number => {
+  const bounds = shellNavigationWidthBounds();
+  return Math.min(bounds.max, Math.max(bounds.min, Math.round(Number.isFinite(width) ? width : bounds.defaultWidth)));
+};
+const readShellNavigationPreference = (): ShellNavigationPreference => {
+  const bounds = shellNavigationWidthBounds();
+  try {
+    const raw = localStorage.getItem(SHELL_NAVIGATION_STORAGE_KEY);
+    if (raw === 'compact' || raw === 'expanded') return Object.freeze({ state: raw, width: bounds.defaultWidth, pinned: true });
+    const parsed = raw ? JSON.parse(raw) as Partial<Record<'state' | 'width' | 'pinned', unknown>> : {};
+    const pinned = parsed.pinned !== false;
+    const state: ShellNavigationMode = parsed.state === 'compact' || !pinned ? 'compact' : 'expanded';
+    const width = clampShellNavigationWidth(typeof parsed.width === 'number' ? parsed.width : bounds.defaultWidth);
+    return Object.freeze({ state, width, pinned });
+  } catch { return Object.freeze({ state:'expanded', width:bounds.defaultWidth, pinned:true }); }
+};
+const initialShellNavigationPreference = readShellNavigationPreference();
+let shellMobileRestoreFocus: HTMLElement | null = null;
+
+type ShellSectionState = ShellSectionClientState;
+const SHELL_SECTION_STORAGE_KEY = 'wm.platform.shell-sections.v1';
+const DEFAULT_SHELL_SECTION_STATE: ShellSectionState = Object.freeze({ favorites: true, applications: true, boards: true });
+const readShellSectionState = (): ShellSectionState => {
+  try {
+    const raw = localStorage.getItem(SHELL_SECTION_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) as Partial<Record<ShellSectionId, unknown>> : {};
+    return Object.freeze({
+      favorites: parsed.favorites !== false,
+      applications: parsed.applications !== false,
+      boards: parsed.boards !== false,
+    });
+  } catch { return DEFAULT_SHELL_SECTION_STATE; }
+};
+const writeShellSectionState = (state: ShellSectionState): void => {
+  try { localStorage.setItem(SHELL_SECTION_STORAGE_KEY, JSON.stringify(state)); } catch {}
+};
+workManagementClientState.hydratePersistentShell({
+  navigation: {
+    mode: initialShellNavigationPreference.state,
+    width: initialShellNavigationPreference.width,
+    pinned: initialShellNavigationPreference.pinned,
+  },
+  sections: readShellSectionState(),
+});
+const shellClientState = () => workManagementClientState.getSnapshot().shell;
+const shellNavigation = () => shellClientState().navigation;
+const writeShellNavigationPreference = (): void => {
+  const navigation = shellNavigation();
+  const value: ShellNavigationPreference = Object.freeze({ state:navigation.mode, width:clampShellNavigationWidth(navigation.width), pinned:navigation.pinned });
+  try { localStorage.setItem(SHELL_NAVIGATION_STORAGE_KEY, JSON.stringify(value)); } catch {}
+};
+let accountProfileMenu: ReturnType<typeof createAccountProfileMenu> | null = null;
+const shellTooltipController = createShellTooltipController();
 let motionFrame = 0;
 let motionCleanupTimer: number | null = null;
 let pointerActivationTarget: HTMLElement | null = null;
@@ -63,18 +168,41 @@ const entryAnimations = new WeakMap<HTMLElement, Animation>();
 const runtimeClient = createWorkManagementClient({
   context: { applicationId: applicationManifest.id, version: PLATFORM_VERSION, architectureVersion: applicationManifest.architectureVersion },
 });
+const routeLifecycle = createRouteLifecycleCoordinator();
 const platformServices = createPlatformServices({ auth });
-const { diagnostics, serverState } = platformServices;
+const { diagnostics, observability, serverState, clientState } = platformServices;
+const browserObservability = installBrowserObservability(observability);
+void browserObservability;
+window.addEventListener('wm:backup-dr', (event: Event) => {
+  const detail: RuntimeRecord = event instanceof CustomEvent ? recordOf(event.detail) : Object.freeze({});
+  const type = stringField(detail, 'type') || 'unknown';
+  const level = type === 'restore-failed' ? 'error' : type === 'import-preflight' && stringField(detail, 'status') === 'warning' ? 'warning' : 'info';
+  observability.log(level, `backup_dr.${type.replaceAll('-', '_')}`, `Backup/DR event: ${type}`, {
+    entryCount: typeof detail.entryCount === 'number' ? detail.entryCount : undefined,
+    boardCount: typeof detail.boardCount === 'number' ? detail.boardCount : undefined,
+    restored: typeof detail.restored === 'number' ? detail.restored : undefined,
+    warningCount: typeof detail.warningCount === 'number' ? detail.warningCount : undefined,
+    integrity: typeof detail.integrity === 'string' ? detail.integrity : undefined,
+    status: typeof detail.status === 'string' ? detail.status : undefined,
+    phase: typeof detail.phase === 'string' ? detail.phase : undefined,
+    code: typeof detail.code === 'string' ? detail.code : undefined,
+  });
+});
 diagnostics.info('RUNTIME_BOOT', 'Work Management runtime initialized.', {
   version: PLATFORM_VERSION,
   architectureVersion: applicationManifest.architectureVersion,
   runtime: applicationManifest.runtime,
 });
 runtimeClient.register('diagnostics', { snapshot: () => diagnostics.snapshot(), clear: () => diagnostics.clear() });
+runtimeClient.register('observability', { snapshot: () => observability.snapshot(), status: () => observability.status(), flush: (params: unknown) => observability.flush(stringField(params, 'reason') || 'runtime-client') });
 runtimeClient.register('server-state', {
   snapshot: () => serverState.snapshot(),
   invalidate: (params: unknown) => serverState.invalidateQueries(Array.isArray(recordOf(params).key) ? recordOf(params).key as readonly string[] : []),
   clear: () => serverState.clear(),
+});
+runtimeClient.register('client-state', {
+  snapshot: () => clientState.getSnapshot(),
+  resetTransient: () => clientState.resetTransientShellState(),
 });
 runtimeClient.register('router', {
   current: () => parseRoute(),
@@ -89,12 +217,29 @@ runtimeClient.register('identity', {
     const moduleId = stringField(params, 'moduleId');
     return moduleId ? auth.moduleIdentityContext(moduleId) : auth.snapshot?.() || null;
   },
+  revalidate: () => auth.revalidateAccessContext({ force: true, maxAgeMs: 5_000 }),
+});
+runtimeClient.register('backend-preflight', {
+  current: () => backendCapabilityPreflight.getSnapshot(),
+});
+runtimeClient.register('route-lifecycle', {
+  current: () => routeLifecycle.getSnapshot(),
+});
+runtimeClient.register('presentation-readiness', {
+  current: () => presentationReadinessRuntime.getSnapshot(),
 });
 const moduleHost = createModuleHost({ auth, origin: location.origin, onEvent: (event) => runtimeClient.emit(event.type, event) });
+const modulePresentationHost = createModulePresentationHost({
+  auth,
+  iframeHost: moduleHost,
+  nativeRegistry: nativeModuleRegistry,
+  normalizedData: platformServices.modules.normalizedData,
+  onEvent: (event) => runtimeClient.emit(event.type, event),
+});
 window.addEventListener('wm:module-store-invalidate', (event: Event) => {
   const detail: RuntimeRecord = event instanceof CustomEvent ? recordOf(event.detail) : Object.freeze({});
   const reason: ModuleInvalidateReason = detail.reason === 'backup-restore' ? 'backup-restore' : 'host-refresh';
-  moduleHost.invalidate(reason);
+  void modulePresentationHost.invalidate(reason);
 });
 const featureRegistry = createFeatureRegistry(applicationManifest);
 runtimeClient.register('features', {
@@ -115,7 +260,10 @@ globalRuntime.WorkManagementRuntime = Object.freeze({
   getContext: runtimeClient.getContext,
   features: () => featureRegistry.snapshot(),
   diagnostics: () => diagnostics.snapshot(),
+  observability: () => observability.snapshot(),
+  observabilityStatus: () => observability.status(),
   serverState: () => serverState.snapshot(),
+  clientState: () => clientState.getSnapshot(),
 });
 
 installCloudModuleDataBridge({ auth, getFrame: () => moduleFrame, getModuleId: () => activeModuleId });
@@ -132,18 +280,23 @@ const SHELL_ACTION_SELECTOR = [
   'button[data-theme]',
   'button[data-setting-action]',
   'button[data-reload-frame]',
-  'button[data-command-index]',
-  'button[data-apply-update]',
-  'button[data-dismiss-update]',
   'a.module-action[href]',
   'button.back-btn',
   'button[data-account]',
+  'button[data-account-menu-trigger]',
   'button[data-auth-action]',
   'button[data-resend-confirmation]',
   'button[data-confirm-verification]',
   'button[data-account-action]',
+  'button[data-shell-navigation-toggle]',
+  'button[data-shell-navigation-pin]',
+  'button[data-shell-navigation-mobile-toggle]',
+  'button[data-shell-navigation-dismiss]',
+  'button[data-shell-section-toggle]',
+  'button[data-shell-resource-search-clear]',
   'button[data-user-directory-refresh]',
-  'button[data-retry-route]'
+  'button[data-retry-route]',
+  'a[data-shell-skip]'
 ].join(',');
 
 const RIPPLE_ACTION_SELECTOR = [
@@ -158,16 +311,20 @@ const RIPPLE_ACTION_SELECTOR = [
   'button[data-theme]',
   'button[data-setting-action]',
   'button[data-reload-frame]',
-  'button[data-command-index]',
-  'button[data-apply-update]',
-  'button[data-dismiss-update]',
   'a.module-action[href]',
   'button.back-btn',
   'button[data-account]',
+  'button[data-account-menu-trigger]',
   'button[data-auth-action]',
   'button[data-resend-confirmation]',
   'button[data-confirm-verification]',
   'button[data-account-action]',
+  'button[data-shell-navigation-toggle]',
+  'button[data-shell-navigation-pin]',
+  'button[data-shell-navigation-mobile-toggle]',
+  'button[data-shell-navigation-dismiss]',
+  'button[data-shell-section-toggle]',
+  'button[data-shell-resource-search-clear]',
   'button[data-user-directory-refresh]',
   'button[data-retry-route]'
 ].join(',');
@@ -177,7 +334,28 @@ let updateDismissed = readUpdateDismissed();
 
 applyTheme(prefs.theme);
 applyDensity(prefs.compact);
-registerServiceWorker((registration) => { swUpdate = registration; updateDismissed = false; writeUpdateDismissed(false); showUpdateBanner(); });
+const recordServiceWorkerLifecycle = (event: import('../../src/platform/contracts/service-worker-update.ts').ServiceWorkerUpdateLifecycleEvent): void => {
+  const severity = event.type.endsWith('failed') ? 'warning' : 'info';
+  observability.log(severity, `service_worker.${event.type.replaceAll('-', '_')}`, event.detail || event.type, {
+    reason: event.reason ?? null,
+  });
+};
+sharedApplicationUiRuntime.configureUpdate({
+  dismiss: () => {
+    updateDismissed = true;
+    writeUpdateDismissed(true);
+    observability.log('info', 'service_worker.update_dismissed', 'A waiting application update was dismissed for this session.');
+  },
+  apply: () => {
+    if (!swUpdate?.waiting) throw new Error('The application update is no longer waiting to activate.');
+    activateServiceWorkerUpdate(swUpdate, recordServiceWorkerLifecycle);
+  },
+});
+registerServiceWorker((registration) => {
+  swUpdate = registration;
+  if (updateDismissed) return;
+  sharedApplicationUiRuntime.showUpdate();
+}, recordServiceWorkerLifecycle);
 
 
 
@@ -194,7 +372,7 @@ function queueEntranceMotion(mode: MotionMode = 'page'): void {
   // runtime. No scale or layout-affecting property is used here.
   const target = mode === 'module'
     ? app.querySelector<HTMLElement>('.frame-loading, .frame-error:not([hidden])')
-    : app.querySelector<HTMLElement>('#main, .auth-panel');
+    : resolveShellRouteContentTarget();
   if (!target) return;
 
   target.dataset.motion = mode;
@@ -244,7 +422,7 @@ function isNestedControlInsideModuleCard(target: EventTarget | null, card: HTMLE
 
 function resolveAppAction(target: EventTarget | null): HTMLElement | null {
   const action = closestShellAction(target);
-  if (!action || !app.contains(action)) return null;
+  if (!action || !reactShellRoot.contains(action)) return null;
   if (action.matches('article[data-open-module]') && isNestedControlInsideModuleCard(target, action)) return null;
   return action;
 }
@@ -338,30 +516,431 @@ function cloudModeLabel(): string {
 function accountControl(): string {
   if (!auth.isCloudEnabled) return '<div class="avatar" title="Local workspace">WM</div>';
   if (!auth.isAuthenticated) return `<button class="${buttonClass({ tone: 'secondary', size: 'lg' }, 'account-pill')}" data-account aria-label="Sign in">${icons.user}<span>Sign in</span></button>`;
-  return `<button class="${buttonClass({ tone: 'secondary', size: 'lg' }, 'account-pill')}" data-account aria-label="Open account"><span class="avatar mini">${esc(userInitials())}</span><span><b>${esc(userDisplayName())}</b><small>${esc(auth.platformRoleLabel)}</small></span></button>`;
+  return `<button class="${buttonClass({ tone: 'secondary', size: 'lg' }, 'account-pill')}" data-account-menu-trigger type="button" aria-label="Open account menu for ${esc(userDisplayName())}" aria-haspopup="menu" aria-expanded="false" aria-controls="wmShellAccountMenu"><span class="avatar mini">${esc(userInitials())}</span><span><b>${esc(userDisplayName())}</b><small>${esc(auth.platformRoleLabel)}</small></span></button>`;
+}
+
+const shellNavigationGlyphs = Object.freeze({
+  collapse: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.7 4.8-5.2 5.2 5.2 5.2"/></svg>',
+  menu: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5.25h14M3 10h14M3 14.75h14"/></svg>',
+  chevron: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6.4 7.6 3.6 3.7 3.6-3.7"/></svg>',
+  clear: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 6 8 8m0-8-8 8"/></svg>',
+  star: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m10 2.8 2.15 4.36 4.81.7-3.48 3.39.82 4.79L10 13.78l-4.3 2.26.82-4.79-3.48-3.39 4.81-.7L10 2.8Z"/></svg>',
+  pin: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 3.5h6M8 3.5v4l-2 2.25v1h8v-1L12 7.5v-4M10 10.75V17"/></svg>',
+});
+
+function shellActiveResourceKey(active: string): string {
+  const route = parseRoute();
+  if (route.name === 'app' && route.moduleId) return `app/${route.moduleId}`;
+  if (route.name === 'board' && route.boardId) return `boards/${route.boardId}`;
+  return active;
+}
+
+function navigationButtonMarkup({ id, label, icon, route = id, active, command = false, shortcut = '' }: {
+  readonly id: string;
+  readonly label: string;
+  readonly icon: string;
+  readonly route?: string;
+  readonly active: string;
+  readonly command?: boolean;
+  readonly shortcut?: string;
+}): string {
+  const selected = !command && active === id;
+  const classes = navigationItemClass({ active: selected }, `nav-item shell-primary-nav-item ${selected ? 'active' : ''}`);
+  const activation = command ? 'data-command' : `data-nav="${esc(route)}"`;
+  return `<button class="${classes}" ${activation} data-navigation-label="${esc(label)}" aria-label="${esc(label)}" data-shell-tooltip="${esc(label)}" data-shell-tooltip-mode="compact" ${selected ? 'aria-current="page"' : ''}><span class="shell-nav-icon">${icon}</span><b>${esc(label)}</b>${shortcut ? `<kbd>${esc(shortcut)}</kbd>` : ''}</button>`;
+}
+
+function shellResourceItemMarkup({ key, label, meta = '', icon, route, active, disabled = false, favorite = false, className = '' }: {
+  readonly key: string;
+  readonly label: string;
+  readonly meta?: string;
+  readonly icon: string;
+  readonly route: string;
+  readonly active: string;
+  readonly disabled?: boolean;
+  readonly favorite?: boolean;
+  readonly className?: string;
+}): string {
+  const selected = active === key;
+  const title = disabled ? `${label} — access restricted` : label;
+  return `<button type="button" class="shell-resource-item ${className} ${selected ? 'active' : ''}" ${disabled ? 'disabled aria-disabled="true"' : `data-nav="${esc(route)}"`} data-shell-resource-label="${esc(`${label} ${meta}`.trim().toLowerCase())}" aria-label="${esc(title)}" data-shell-tooltip="${esc(title)}" data-shell-tooltip-mode="compact" ${selected ? 'aria-current="page"' : ''}><span class="shell-resource-icon">${icon}</span><span class="shell-resource-copy"><b>${esc(label)}</b>${meta ? `<small>${esc(meta)}</small>` : ''}</span>${favorite ? `<span class="shell-resource-favorite" aria-hidden="true">${shellNavigationGlyphs.star}</span>` : ''}</button>`;
+}
+
+function shellModuleResourceMarkup(mod: WorkManagementModuleDefinition, active: string, { favorite = false }: { readonly favorite?: boolean } = {}): string {
+  const allowed = auth.canAccessModule(mod.id);
+  const role = auth.moduleRole(mod.id);
+  const meta = allowed ? `${mod.eyebrow} · ${role}` : `${mod.eyebrow} · Restricted`;
+  return shellResourceItemMarkup({
+    key: `app/${mod.id}`,
+    label: mod.name,
+    meta,
+    icon: `<span class="module-mini-icon shell-application-icon ${esc(mod.accent)}">${moduleIcon(mod)}</span>`,
+    route: `app/${mod.id}`,
+    active,
+    disabled: !allowed,
+    favorite,
+    className: 'shell-application-resource',
+  });
+}
+
+function shellBoardResourceSnapshot(): Readonly<{ rows: readonly BoardRecord[]; status: 'idle' | 'loading' | 'loaded' | 'error' }> {
+  if (!auth.isCloudEnabled || !auth.isAuthenticated) return Object.freeze({ rows: Object.freeze([]), status: 'loaded' });
+  const key = boardListQueryKey(auth.user?.id, 'active');
+  const rows = platformServices.boards.service.queryClient.getQueryData<readonly BoardRecord[]>(key) ?? Object.freeze([]);
+  const query = platformServices.boards.service.queryClient.getQueryState(key);
+  const status = query?.status === 'error'
+    ? 'error'
+    : query?.fetchStatus === 'fetching'
+      ? 'loading'
+      : query?.status === 'success'
+        ? 'loaded'
+        : 'idle';
+  return Object.freeze({ rows, status });
+}
+
+function shellBoardResourceRows(active: string): string {
+  if (!auth.isCloudEnabled || !auth.isAuthenticated) return '<div class="shell-resource-empty"><span>Boards</span><small>Sign in to load board resources.</small></div>';
+  const resource = shellBoardResourceSnapshot();
+  if ((resource.status === 'loading' || resource.status === 'idle') && !resource.rows.length) return '<div class="shell-resource-empty is-loading"><span>Loading boards…</span><small>Fetching your accessible boards.</small></div>';
+  if (resource.status === 'error' && !resource.rows.length) return '<div class="shell-resource-empty"><span>Boards unavailable</span><small>Open Boards to retry.</small></div>';
+  if (!resource.rows.length) return '<div class="shell-resource-empty"><span>No boards yet</span><small>Create a board from the Boards workspace.</small></div>';
+  const route = parseRoute();
+  const activeBoardId = route.name === 'board' ? String(route.boardId || '') : '';
+  const sorted = [...resource.rows].sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')));
+  const visible = sorted.slice(0, 10);
+  if (activeBoardId && !visible.some((board) => String(board.id) === activeBoardId)) {
+    const activeBoard = sorted.find((board) => String(board.id) === activeBoardId);
+    if (activeBoard) visible.splice(Math.max(0, visible.length - 1), 1, activeBoard);
+  }
+  return visible.map((board) => shellResourceItemMarkup({
+    key: `boards/${board.id}`,
+    label: board.name,
+    meta: typeof board.item_count === 'number' ? `${board.item_count} item${board.item_count === 1 ? '' : 's'}` : (board.member_role ? `${board.member_role}` : 'Board'),
+    icon: icons.boards,
+    route: `boards/${board.id}`,
+    active,
+    className: 'shell-board-resource',
+  })).join('');
+}
+
+function shellSectionMarkup(id: ShellSectionId, label: string, content: string, count: number | null = null): string {
+  const expanded = shellClientState().sections[id];
+  const contentId = `shellSection-${id}`;
+  return `<section class="shell-nav-section ${expanded ? 'is-expanded' : 'is-collapsed'}" data-shell-section="${id}"><div class="shell-nav-section-header"><button type="button" class="shell-nav-section-toggle" data-shell-section-toggle="${id}" aria-expanded="${expanded}" aria-controls="${contentId}"><span>${esc(label)}</span>${count === null ? '' : `<small>${count}</small>`}<span class="shell-nav-section-chevron">${shellNavigationGlyphs.chevron}</span></button></div><div id="${contentId}" class="shell-nav-section-body" ${expanded ? '' : 'hidden'}>${content}</div></section>`;
 }
 
 function sidebarNavMarkup(active: string = 'home'): string {
-  const navClass = (id: string): string => navigationItemClass({ active: active === id }, `nav-item ${active === id ? 'active' : ''}`);
-  return `
-    <button class="${navClass('home')}" data-nav="" ${active==='home'?'aria-current="page"':''}><span>${icons.grid}</span><b>Applications</b></button>
-    <button class="${navClass('boards')}" data-nav="boards" ${active==='boards'?'aria-current="page"':''}><span>${icons.boards}</span><b>Boards</b></button>
-    <button class="${navigationItemClass({}, 'nav-item')}" data-command><span>${icons.search}</span><b>Search</b><kbd>⌘K</kbd></button>
-    ${auth.canManageUsers ? `<button class="${navClass('users')}" data-nav="users" ${active==='users'?'aria-current="page"':''}><span>${icons.users}</span><b>Users</b></button>` : ''}
-    <button class="${navClass('settings')}" data-nav="settings" ${active==='settings'?'aria-current="page"':''}><span>${icons.settings}</span><b>Settings</b></button>
-    ${auth.isCloudEnabled ? `<button class="${navClass('account')}" data-nav="account" ${active==='account'?'aria-current="page"':''}><span>${icons.user}</span><b>Account</b></button>` : ''}`;
+  const activeKey = shellActiveResourceKey(active);
+  const preferences = getPreferences();
+  const favorites = modules.filter((mod) => preferences.favorites.includes(mod.id));
+  const favoriteMarkup = favorites.length
+    ? favorites.map((mod) => shellModuleResourceMarkup(mod, activeKey, { favorite:true })).join('')
+    : '<div class="shell-resource-empty"><span>No favorites yet</span><small>Star applications from the Applications workspace.</small></div>';
+  const applicationsMarkup = modules.map((mod) => shellModuleResourceMarkup(mod, activeKey, { favorite:preferences.favorites.includes(mod.id) })).join('');
+  return `<div class="shell-nav-primary" data-shell-primary-navigation>
+    ${navigationButtonMarkup({ id:'home', label:'Applications', icon:icons.grid, route:'', active:activeKey })}
+    ${navigationButtonMarkup({ id:'boards', label:'Boards', icon:icons.boards, active:activeKey })}
+    ${navigationButtonMarkup({ id:'search', label:'Search', icon:icons.search, active:activeKey, command:true, shortcut:'⌘K' })}
+    ${auth.canManageUsers ? navigationButtonMarkup({ id:'users', label:'Users', icon:icons.users, active:activeKey }) : ''}
+    ${navigationButtonMarkup({ id:'settings', label:'Settings', icon:icons.settings, active:activeKey })}
+    ${auth.isCloudEnabled ? navigationButtonMarkup({ id:'account', label:'Account', icon:icons.user, active:activeKey }) : ''}
+  </div>
+  <div class="shell-resource-navigation" data-shell-resource-navigation>
+    <label class="shell-resource-search" aria-label="Search navigation">${icons.search}<input type="search" data-shell-resource-search value="${esc(shellClientState().resourceSearchQuery)}" placeholder="Search apps and boards" aria-label="Search applications and boards" autocomplete="off"><button type="button" class="shell-resource-search-clear" data-shell-resource-search-clear aria-label="Clear navigation search" ${shellClientState().resourceSearchQuery ? '' : 'hidden'}>${shellNavigationGlyphs.clear}</button></label>
+    ${shellSectionMarkup('favorites', 'Favorites', favoriteMarkup, favorites.length)}
+    ${shellSectionMarkup('applications', 'Applications', applicationsMarkup, modules.length)}
+    ${shellSectionMarkup('boards', 'Boards', `<div class="shell-board-resource-list" data-shell-board-resource-list>${shellBoardResourceRows(activeKey)}</div>`, shellBoardResourceSnapshot().status === 'loaded' ? shellBoardResourceSnapshot().rows.length : null)}
+    <div class="shell-resource-filter-empty" data-shell-resource-filter-empty hidden><strong>No navigation matches</strong><small>Try another app or board name.</small></div>
+  </div>`;
 }
 
-function shell(content: string, active: string = 'home'): string {
-  const online = navigator.onLine;
-  return `<div class="shell" data-workspace-shell>
-    <aside class="sidebar" aria-label="Primary navigation">
-      <button class="brand" data-nav="" aria-label="Work Management home"><span class="brand-mark"><i></i><i></i><i></i><i></i></span><span class="brand-copy"><strong>Work</strong><small>Management</small></span></button>
-      <nav data-shell-nav>${sidebarNavMarkup(active)}</nav>
-      <div class="sidebar-foot"><span class="health-dot ${online?'':'offline'}"></span><div><strong>${online?'Platform ready':'Offline mode'}</strong><small>v${PLATFORM_VERSION} · ${esc(cloudModeLabel())}</small></div></div>
-    </aside>
-    <section class="workspace" data-workspace-root>${content}</section>
-  </div><div id="overlayRoot"></div><div id="toastRoot" class="toast-root" aria-live="polite" aria-atomic="true"></div>`;
+function setShellSectionExpanded(id: ShellSectionId, expanded: boolean): void {
+  const sections = workManagementClientState.setShellSection(id, expanded).shell.sections;
+  writeShellSectionState(sections);
+  const section = shellQuery<HTMLElement>(`[data-shell-section="${id}"]`);
+  const toggle = section?.querySelector<HTMLButtonElement>('[data-shell-section-toggle]');
+  const body = section?.querySelector<HTMLElement>('.shell-nav-section-body');
+  section?.classList.toggle('is-expanded', expanded);
+  section?.classList.toggle('is-collapsed', !expanded);
+  toggle?.setAttribute('aria-expanded', String(expanded));
+  if (body) body.hidden = !expanded;
+}
+
+function applyShellResourceFilter(): void {
+  const root = shellQuery<HTMLElement>('[data-shell-resource-navigation]');
+  if (!root) return;
+  const query = shellClientState().resourceSearchQuery.trim().toLowerCase();
+  let totalMatches = 0;
+  root.querySelectorAll<HTMLElement>('[data-shell-resource-label]').forEach((item) => {
+    const match = !query || (item.dataset.shellResourceLabel || '').includes(query);
+    item.hidden = !match;
+    if (match) totalMatches += 1;
+  });
+  root.querySelectorAll<HTMLElement>('[data-shell-section]').forEach((section) => {
+    const matches = [...section.querySelectorAll<HTMLElement>('[data-shell-resource-label]')].some((item) => !item.hidden);
+    const hasResourceRows = section.querySelector('[data-shell-resource-label]') !== null;
+    const id = section.dataset.shellSection as ShellSectionId | undefined;
+    const body = section.querySelector<HTMLElement>('.shell-nav-section-body');
+    const toggle = section.querySelector<HTMLButtonElement>('[data-shell-section-toggle]');
+    section.hidden = Boolean(query && hasResourceRows && !matches);
+    if (!id) return;
+    if (!query) {
+      const expanded = shellClientState().sections[id];
+      if (body) body.hidden = !expanded;
+      toggle?.setAttribute('aria-expanded', String(expanded));
+      section.classList.toggle('is-expanded', expanded);
+      section.classList.toggle('is-collapsed', !expanded);
+      return;
+    }
+    if (matches) {
+      if (body) body.hidden = false;
+      toggle?.setAttribute('aria-expanded', 'true');
+      section.classList.add('is-expanded');
+      section.classList.remove('is-collapsed');
+    }
+  });
+  const empty = root.querySelector<HTMLElement>('[data-shell-resource-filter-empty]');
+  if (empty) empty.hidden = !query || totalMatches > 0;
+  const clear = root.querySelector<HTMLButtonElement>('[data-shell-resource-search-clear]');
+  if (clear) clear.hidden = !query;
+}
+
+async function refreshShellBoardResources(): Promise<void> {
+  if (!auth.isCloudEnabled || !auth.isAuthenticated) return;
+  const frameToken = captureShellFrameOwnership();
+  try {
+    await platformServices.boards.service.list('active');
+  } catch (error: unknown) {
+    diagnostics.warn('SHELL_BOARD_RESOURCES_UNAVAILABLE', 'Sidebar board resources could not be loaded.', { message:error instanceof Error ? error.message : String(error ?? '') });
+  } finally {
+    // Sidebar resource hydration is asynchronous and must never become a second
+    // presentation writer. A same-URL route/auth transition can commit a newer
+    // lifecycle generation while the board list request is in flight.
+    if (!shellFrameStillCurrent(frameToken)) return;
+    const list = shellQuery<HTMLElement>('[data-shell-board-resource-list]');
+    if (list) {
+      list.innerHTML = shellBoardResourceRows(shellActiveResourceKey(parseRoute().name));
+      const section = list.closest<HTMLElement>('[data-shell-section="boards"]');
+      const count = section?.querySelector<HTMLElement>('.shell-nav-section-toggle small');
+      const resource = shellBoardResourceSnapshot();
+      if (count && resource.status === 'loaded') count.textContent = String(resource.rows.length);
+      applyShellResourceFilter();
+      motionRuntime()?.refreshIndicators(list);
+    }
+  }
+}
+
+// Stage F M35: the obsolete imperative shell serializer and its private markup helpers were deleted.
+
+function announceShellNavigationStatus(message: string): void {
+  const status = shellQuery<HTMLElement>('[data-shell-navigation-status]');
+  if (!status) return;
+  status.textContent = '';
+  window.requestAnimationFrame(() => { if (status.isConnected) status.textContent = message; });
+}
+
+function shellNavigationDesktopInteractive(): boolean {
+  return !shellMobileQuery?.matches && !shellTabletQuery?.matches;
+}
+
+function syncShellNavigationPresentation(): void {
+  const host = shellQuery<HTMLElement>('[data-workspace-shell]');
+  const sidebar = shellQuery<HTMLElement>('#primarySidebar');
+  const workspace = app.hasAttribute('data-workspace-root') ? app : null;
+  const collapse = shellQuery<HTMLButtonElement>('[data-shell-navigation-toggle]');
+  const pin = shellQuery<HTMLButtonElement>('[data-shell-navigation-pin]');
+  const resizer = shellQuery<HTMLButtonElement>('[data-shell-resizer]');
+  const mobileTrigger = shellQuery<HTMLButtonElement>('[data-shell-navigation-mobile-toggle]');
+  if (!host || !sidebar || !workspace) return;
+
+  const normalizedWidth = clampShellNavigationWidth(shellNavigation().width);
+  if (normalizedWidth !== shellNavigation().width) workManagementClientState.updateShellNavigation({ width: normalizedWidth });
+  let navigation = shellNavigation();
+  host.dataset.shellNavigationState = navigation.mode;
+  host.dataset.shellNavigationPinned = String(shellNavigation().pinned);
+  host.dataset.shellNavigationPeek = String(shellNavigation().peek && !shellNavigation().pinned);
+  host.toggleAttribute('data-shell-navigation-resizing', shellNavigation().resizing);
+  host.style.setProperty('--wm-shell-navigation-user-width', `${shellNavigation().width}px`);
+
+  const mobile = Boolean(shellMobileQuery?.matches);
+  const tablet = Boolean(shellTabletQuery?.matches);
+  const desktopInteractive = !mobile && !tablet;
+  const visuallyExpanded = shellNavigation().mode === 'expanded' || (desktopInteractive && !shellNavigation().pinned && shellNavigation().peek);
+  if (collapse) {
+    const label = mobile ? 'Close navigation' : (visuallyExpanded ? 'Collapse navigation' : 'Expand navigation');
+    collapse.setAttribute('aria-expanded', String(mobile ? shellNavigation().mobileOpen : visuallyExpanded));
+    collapse.setAttribute('aria-label', label);
+    collapse.dataset.shellTooltip = label;
+  }
+  if (pin) {
+    const label = shellNavigation().pinned ? 'Unpin navigation' : 'Pin navigation';
+    pin.setAttribute('aria-pressed', String(shellNavigation().pinned));
+    pin.setAttribute('aria-label', label);
+    pin.dataset.shellTooltip = label;
+    pin.disabled = !desktopInteractive || !visuallyExpanded;
+    pin.tabIndex = pin.disabled ? -1 : 0;
+  }
+  if (resizer) {
+    const bounds = shellNavigationWidthBounds();
+    const available = desktopInteractive && visuallyExpanded;
+    resizer.setAttribute('aria-valuemin', String(bounds.min));
+    resizer.setAttribute('aria-valuemax', String(bounds.max));
+    resizer.setAttribute('aria-valuenow', String(shellNavigation().width));
+    resizer.setAttribute('aria-valuetext', `${shellNavigation().width} pixels`);
+    resizer.setAttribute('aria-disabled', String(!available));
+    resizer.disabled = !available;
+    resizer.tabIndex = available ? 0 : -1;
+  }
+
+  const presentationPatch: { mobileOpen?: boolean; peek?: boolean } = {};
+  if ((!mobile && navigation.mobileOpen) || (tablet && navigation.peek)) presentationPatch.mobileOpen = false;
+  if (!desktopInteractive && navigation.peek) presentationPatch.peek = false;
+  if (Object.keys(presentationPatch).length) { workManagementClientState.updateShellNavigation(presentationPatch); navigation = shellNavigation(); }
+  host.toggleAttribute('data-shell-mobile-open', mobile && shellNavigation().mobileOpen);
+  if (mobileTrigger) {
+    const label = mobile && shellNavigation().mobileOpen ? 'Close navigation' : 'Open navigation';
+    mobileTrigger.setAttribute('aria-expanded', String(mobile && shellNavigation().mobileOpen));
+    mobileTrigger.setAttribute('aria-label', label);
+    mobileTrigger.dataset.shellTooltip = label;
+  }
+  if (mobile) {
+    sidebar.setAttribute('aria-hidden', shellNavigation().mobileOpen ? 'false' : 'true');
+    sidebar.setAttribute('role', 'dialog');
+    sidebar.setAttribute('aria-label', 'Navigation menu');
+    if (shellNavigation().mobileOpen) sidebar.setAttribute('aria-modal', 'true');
+    else sidebar.removeAttribute('aria-modal');
+  } else {
+    sidebar.removeAttribute('aria-hidden');
+    sidebar.removeAttribute('role');
+    sidebar.removeAttribute('aria-modal');
+    sidebar.setAttribute('aria-label', 'Primary navigation');
+  }
+  workspace.inert = mobile && shellNavigation().mobileOpen;
+  document.body.classList.toggle('shell-navigation-open', mobile && shellNavigation().mobileOpen);
+  document.body.classList.toggle('shell-navigation-resizing', shellNavigation().resizing);
+}
+
+function setShellNavigationState(next: ShellNavigationMode): void {
+  const navigation = shellNavigation();
+  if (next === 'expanded' && !navigation.pinned && shellNavigationDesktopInteractive()) {
+    workManagementClientState.updateShellNavigation({ mode: 'compact', peek: true });
+  } else {
+    workManagementClientState.updateShellNavigation({ mode: next, ...(next === 'compact' ? { peek: false } : {}) });
+  }
+  writeShellNavigationPreference();
+  syncShellNavigationPresentation();
+}
+
+function setShellNavigationPinned(pinned: boolean): void {
+  workManagementClientState.updateShellNavigation(pinned
+    ? { pinned: true, mode: 'expanded', peek: false }
+    : { pinned: false, mode: 'compact', peek: shellNavigationDesktopInteractive() });
+  writeShellNavigationPreference();
+  syncShellNavigationPresentation();
+  announceShellNavigationStatus(pinned ? `Navigation pinned at ${shellNavigation().width} pixels.` : 'Navigation unpinned. It will preview when hovered or focused.');
+}
+
+function setShellNavigationPeek(open: boolean): void {
+  const navigation = shellNavigation();
+  const next = Boolean(open && shellNavigationDesktopInteractive() && !navigation.pinned && navigation.mode === 'compact');
+  if (navigation.peek === next) return;
+  workManagementClientState.updateShellNavigation({ peek: next });
+  syncShellNavigationPresentation();
+}
+
+function setShellNavigationWidth(next: number, { persist = true, announce = false }: { persist?: boolean; announce?: boolean } = {}): void {
+  const clamped = clampShellNavigationWidth(next);
+  if (clamped === shellNavigation().width && !announce) return;
+  workManagementClientState.updateShellNavigation({ width: clamped });
+  if (persist) writeShellNavigationPreference();
+  syncShellNavigationPresentation();
+  if (announce) announceShellNavigationStatus(`Navigation width ${shellNavigation().width} pixels.`);
+}
+
+function resetShellNavigationWidth(): void {
+  setShellNavigationWidth(shellNavigationWidthBounds().defaultWidth, { persist:true, announce:true });
+}
+
+function startShellNavigationResize(event: PointerEvent, resizer: HTMLButtonElement): void {
+  if (!shellNavigationDesktopInteractive() || resizer.disabled) return;
+  if (event.pointerType === 'mouse' && event.button !== 0) return;
+  const sidebar = shellQuery<HTMLElement>('#primarySidebar');
+  if (!sidebar) return;
+  event.preventDefault();
+  const pointerId = event.pointerId;
+  const left = sidebar.getBoundingClientRect().left;
+  workManagementClientState.updateShellNavigation({ resizing: true });
+  syncShellNavigationPresentation();
+  try { resizer.setPointerCapture(pointerId); } catch {}
+
+  const move = (moveEvent: PointerEvent): void => {
+    if (moveEvent.pointerId !== pointerId) return;
+    setShellNavigationWidth(moveEvent.clientX - left, { persist:false });
+  };
+  const finish = (upEvent: PointerEvent): void => {
+    if (upEvent.pointerId !== pointerId) return;
+    resizer.removeEventListener('pointermove', move);
+    resizer.removeEventListener('pointerup', finish);
+    resizer.removeEventListener('pointercancel', finish);
+    try { if (resizer.hasPointerCapture(pointerId)) resizer.releasePointerCapture(pointerId); } catch {}
+    workManagementClientState.updateShellNavigation({ resizing: false });
+    writeShellNavigationPreference();
+    syncShellNavigationPresentation();
+    announceShellNavigationStatus(`Navigation width ${shellNavigation().width} pixels.`);
+  };
+  resizer.addEventListener('pointermove', move);
+  resizer.addEventListener('pointerup', finish);
+  resizer.addEventListener('pointercancel', finish);
+}
+
+function setShellMobileOpen(open: boolean, { restoreFocus = true } = {}): void {
+  if (!shellMobileQuery?.matches && open) return;
+  const trigger = shellQuery<HTMLButtonElement>('[data-shell-navigation-mobile-toggle]');
+  if (open) shellMobileRestoreFocus = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  workManagementClientState.updateShellNavigation({ mobileOpen: open });
+  syncShellNavigationPresentation();
+  if (open) {
+    window.requestAnimationFrame(() => shellQuery<HTMLElement>('#primarySidebar [data-nav], #primarySidebar [data-command]')?.focus());
+  } else if (restoreFocus) {
+    window.requestAnimationFrame(() => shellMobileRestoreFocus?.isConnected && shellMobileRestoreFocus.focus());
+  }
+}
+
+function handleShellNavigationKeydown(event: KeyboardEvent): void {
+  const target = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-shell-resizer]') : null;
+  if (target && !target.disabled) {
+    const bounds = shellNavigationWidthBounds();
+    const step = event.shiftKey
+      ? shellNavigationTokenPx('--wm-shell-sidebar-resize-step-large', 24)
+      : shellNavigationTokenPx('--wm-shell-sidebar-resize-step', 8);
+    let next: number | null = null;
+    if (event.key === 'ArrowLeft') next = shellNavigation().width - step;
+    else if (event.key === 'ArrowRight') next = shellNavigation().width + step;
+    else if (event.key === 'Home') next = bounds.min;
+    else if (event.key === 'End') next = bounds.max;
+    if (next !== null) {
+      event.preventDefault();
+      setShellNavigationWidth(next, { persist:true, announce:true });
+      return;
+    }
+  }
+
+  if (!shellNavigation().mobileOpen || !shellMobileQuery?.matches) return;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    setShellMobileOpen(false);
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const sidebar = shellQuery<HTMLElement>('#primarySidebar');
+  if (!sidebar) return;
+  const focusable = [...sidebar.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],[tabindex]:not([tabindex="-1"])')].filter((element) => element.getClientRects().length > 0);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (!first || !last) return;
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
 }
 
 let workspaceRouteKey = '';
@@ -392,51 +971,169 @@ function patchWorkspaceContent(workspace: HTMLElement, content: string): void {
   syncElementAttributes(currentMain, nextMain);
   currentMain.innerHTML = nextMain.innerHTML;
 }
-function syncPersistentShell(active: string = 'home'): void {
-  const nav = app.querySelector<HTMLElement>('[data-shell-nav]');
-  if (!nav) return;
-  const hasUsers = Boolean(nav.querySelector('[data-nav="users"]'));
-  const shouldHaveUsers = Boolean(auth.canManageUsers);
-  const hasAccount = Boolean(nav.querySelector('[data-nav="account"]'));
-  const shouldHaveAccount = Boolean(auth.isCloudEnabled);
-  if (hasUsers !== shouldHaveUsers || hasAccount !== shouldHaveAccount) {
-    nav.innerHTML = sidebarNavMarkup(active);
-  } else {
-    nav.querySelectorAll<HTMLElement>('.nav-item[data-nav]').forEach((item) => {
-      const route = item.dataset.nav || 'home';
-      const selected = route === active;
-      item.classList.toggle('active', selected);
-      if (selected) item.setAttribute('aria-current','page');
-      else item.removeAttribute('aria-current');
-    });
-  }
-  const foot = app.querySelector<HTMLElement>('.sidebar-foot');
-  motionRuntime()?.refreshIndicators(nav);
-  if (foot) {
-    const online = navigator.onLine;
-    foot.querySelector('.health-dot')?.classList.toggle('offline', !online);
-    const strong = foot.querySelector('strong');
-    const small = foot.querySelector('small');
-    if (strong) strong.textContent = online ? 'Platform ready' : 'Offline mode';
-    if (small) small.textContent = `v${PLATFORM_VERSION} · ${cloudModeLabel()}`;
-  }
+function syncPersistentShell(active: string = 'home', preserveManagement = false, preserveBoardPresentation = false): void {
+  const workspaceMode = reactShellRuntime.getSnapshot().workspaceMode;
+  const owner = routeLifecycle.getSnapshot().owner;
+  if (owner === 'auth') return;
+  const managementOwned = owner === 'account' || owner === 'settings' || owner === 'user-management';
+  const boardOwned = owner === 'boards';
+  publishReactShell(active, workspaceMode, preserveManagement || managementOwned, preserveBoardPresentation || boardOwned);
+  const nav = shellQuery<HTMLElement>('[data-shell-nav]');
+  if (nav) motionRuntime()?.refreshIndicators(nav);
+  applyShellResourceFilter();
+  syncShellNavigationPresentation();
+}
+
+function captureShellFrameOwnership(): PresentationFrameToken {
+  return createPresentationFrameToken(location.hash || '#/', routeLifecycle.getSnapshot());
+}
+
+function shellFrameStillCurrent(token: PresentationFrameToken): boolean {
+  return isPresentationFrameCurrent(
+    token,
+    location.hash || '#/',
+    routeLifecycle.getSnapshot(),
+    reactShellRuntime.getSnapshot().mode === 'shell',
+  );
+}
+
+function focusShellMainContent({ preventScroll = false, owner = null }: { preventScroll?: boolean; owner?: string | null } = {}): boolean {
+  const main = resolveShellRouteContentTarget(owner);
+  if (!main) return false;
+  main.tabIndex = -1;
+  try { main.focus({ preventScroll }); } catch { main.focus(); }
+  if (!preventScroll) main.scrollIntoView({ block: 'start', inline: 'nearest' });
+  return document.activeElement === main;
+}
+
+function acknowledgeCurrentPresentationTarget(target: HTMLElement | null): void {
+  const owner = routeLifecycle.getSnapshot().owner;
+  if (!owner || !target) return;
+  presentationReadinessRuntime.acknowledge(owner, target);
+}
+
+function publishReactShell(active: string = 'home', workspaceMode: 'page' | 'module' = 'page', preserveManagement = false, preserveBoardPresentation = false): void {
+  authenticationUiRuntime.hide();
+  if (!preserveManagement) authenticatedManagementUiRuntime.hide();
+  if (!preserveBoardPresentation) boardPresentationFacadeRuntime.hide();
+  reactShellRuntime.showShell({
+    navigationMarkup: sidebarNavMarkup(active),
+    online: navigator.onLine,
+    cloudModeLabel: cloudModeLabel(),
+    platformVersion: PLATFORM_VERSION,
+    activeRoute: shellActiveResourceKey(active),
+    workspaceMode,
+  });
+}
+
+function showStandaloneAuthentication(view: Exclude<AuthenticationUIView, 'hidden'>): void {
+  authenticatedManagementUiRuntime.hide();
+  boardPresentationFacadeRuntime.hide();
+  reactShellRuntime.showStandalone(view);
+  accountProfileMenu?.close({ restoreFocus:false });
+  shellTooltipController.close();
+  app.replaceChildren();
+  authenticationUiRuntime.show(view);
+}
+
+function showAuthenticatedManagement(view: Exclude<AuthenticatedManagementUIView, 'hidden'>): void {
+  const frameToken = captureShellFrameOwnership();
+  const routeKey = frameToken.routeKey;
+  const routeChanged = workspaceRouteKey !== routeKey;
+  publishReactShell(view, 'page', true);
+  accountProfileMenu?.close({ restoreFocus:false });
+  shellTooltipController.close();
+  app.replaceChildren();
+  workspaceRouteKey = routeKey;
+  authenticatedManagementUiRuntime.show(view);
+  window.requestAnimationFrame(() => {
+    if (!shellFrameStillCurrent(frameToken) || authenticatedManagementUiRuntime.getSnapshot().view !== view || !auth.isAuthenticated) return;
+    syncPersistentShell(view, true);
+    syncShellNavigationPresentation();
+    applyShellResourceFilter();
+    void refreshShellBoardResources();
+    if (routeChanged) queueEntranceMotion('page');
+  });
+}
+
+function backendPreflightMarkup(module: M38CapabilityModule): string {
+  const preflight = backendCapabilityPreflight.getSnapshot();
+  const moduleStatus = preflight.modules[module];
+  const detail = moduleStatus?.missing?.length ? moduleStatus.missing.join(', ') : preflight.message;
+  const title = preflight.state === 'checking' || preflight.state === 'idle' ? 'Checking backend requirements' : 'Backend capability unavailable';
+  const message = preflight.state === 'checking' || preflight.state === 'idle'
+    ? 'Work Management is verifying the Supabase services required by this module before it is exposed.'
+    : preflight.message;
+  return `${topbar('Backend preflight','Runtime configuration and backend capability verification')}
+    <main id="main" class="page settings-page" tabindex="-1" data-wm-backend-preflight="${esc(module)}">
+      <section class="settings-card"><div class="section-title"><div><span>STAGE G · M38</span><h3>${esc(title)}</h3></div></div>
+      <p>${esc(message)}</p><p><strong>Module:</strong> ${esc(module)}</p><p><strong>Environment:</strong> ${esc(preflight.environment)}</p><p><strong>Configuration source:</strong> ${esc(preflight.configurationSource)}</p><p><strong>Project:</strong> ${esc(preflight.projectHost || 'not configured')}</p><p><strong>Code:</strong> ${esc(preflight.code || 'WM_BACKEND_PREFLIGHT_PENDING')}</p>
+      <p><strong>Details:</strong> ${esc(detail || 'Pending capability result.')}</p>
+      <div class="top-actions"><button class="${secondaryButtonClass}" type="button" data-retry-backend-preflight>Retry backend preflight</button></div></section>
+    </main>`;
+}
+
+function renderBackendCapabilityPreflight(module: M38CapabilityModule, active: string): void {
+  const preflight = backendCapabilityPreflight.getSnapshot();
+  renderWorkspace(backendPreflightMarkup(module), active);
+  if (preflight.state === 'idle') void backendCapabilityPreflight.ensure(auth).then(() => render());
+}
+
+function backendCapabilityRequirement(route: Readonly<{ name: string; moduleId?: string }>): Readonly<{ module: M38CapabilityModule; active: string }> | null {
+  if (route.name === 'account') return Object.freeze({ module: 'account', active: 'account' });
+  if (route.name === 'settings') return Object.freeze({ module: 'settings', active: 'settings' });
+  if (route.name === 'users') return Object.freeze({ module: 'users', active: 'users' });
+  if (route.name === 'boards' || route.name === 'board') return Object.freeze({ module: 'boards', active: 'boards' });
+  if (route.name === 'app' && route.moduleId && Object.prototype.hasOwnProperty.call(M38_MODULE_REQUIREMENTS, route.moduleId)) return Object.freeze({ module: route.moduleId as M38CapabilityModule, active: 'applications' });
+  return null;
 }
 
 function renderWorkspace(content: string, active: string = 'home', motionMode: MotionMode = 'page'): void {
-  let workspace = app.querySelector<HTMLElement>('[data-workspace-root]');
-  const routeKey = location.hash || '#/';
+  const workspace = app;
+  const frameToken = captureShellFrameOwnership();
+  const routeKey = frameToken.routeKey;
   const routeChanged = workspaceRouteKey !== routeKey;
-  if (!workspace) {
-    app.innerHTML = shell('', active);
-    workspace = app.querySelector<HTMLElement>('[data-workspace-root]');
-  } else {
-    syncPersistentShell(active);
-  }
-  if (!workspace) throw new Error('Workspace host could not be created.');
+  publishReactShell(active, motionMode === 'module' ? 'module' : 'page');
+  accountProfileMenu?.close({ restoreFocus:false });
+  shellTooltipController.close();
   patchWorkspaceContent(workspace, content);
+  const routeMain = workspace.querySelector<HTMLElement>('#main');
+  if (routeMain) routeMain.tabIndex = -1;
+  acknowledgeCurrentPresentationTarget(routeMain);
   workspaceRouteKey = routeKey;
+  window.requestAnimationFrame(() => {
+    if (!shellFrameStillCurrent(frameToken)) return;
+    syncPersistentShell(active);
+    syncShellNavigationPresentation();
+    applyShellResourceFilter();
+    void refreshShellBoardResources();
+  });
   // Entrance motion is route-scoped. State refreshes inside the same route are
   // updated without replaying page animations.
+  if (routeChanged && motionMode) queueEntranceMotion(motionMode);
+}
+
+function renderBoardWorkspace(content: string, active: string = 'boards', motionMode: MotionMode = 'page'): void {
+  const workspace = resolveBoardPresentationHost();
+  const frameToken = captureShellFrameOwnership();
+  const routeKey = frameToken.routeKey;
+  const routeChanged = workspaceRouteKey !== routeKey;
+  publishReactShell(active, 'page', false, true);
+  accountProfileMenu?.close({ restoreFocus:false });
+  shellTooltipController.close();
+  app.replaceChildren();
+  patchWorkspaceContent(workspace, content);
+  const routeMain = workspace.querySelector<HTMLElement>('#main');
+  if (routeMain) routeMain.tabIndex = -1;
+  acknowledgeCurrentPresentationTarget(routeMain);
+  workspaceRouteKey = routeKey;
+  window.requestAnimationFrame(() => {
+    if (!shellFrameStillCurrent(frameToken) || boardPresentationFacadeRuntime.getSnapshot().view === 'hidden') return;
+    syncPersistentShell(active, false, true);
+    syncShellNavigationPresentation();
+    applyShellResourceFilter();
+    void refreshShellBoardResources();
+  });
   if (routeChanged && motionMode) queueEntranceMotion(motionMode);
 }
 
@@ -444,20 +1141,14 @@ function topbar(title: string, subtitle: string = '', actions: string = ''): str
   return `<header class="topbar"><div><span class="top-eyebrow">WORK MANAGEMENT</span><h1>${esc(title)}</h1><p>${esc(subtitle)}</p></div><div class="${topActionToolbarClass}">${actions}<span class="connection-pill ${navigator.onLine?'':'offline'}"><i></i>${navigator.onLine?'Online':'Offline'}</span><button class="${iconButtonClass({ tone: 'secondary' }, 'icon-btn mobile-command')}" data-command aria-label="Search">${icons.search}</button>${accountControl()}</div></header>`;
 }
 
-const authFeature = createAuthenticationFeature({
-  authService: auth,
-  host: app,
-  navigate,
-  escapeHtml: esc,
-  queueEntranceMotion,
-});
-const boardsFeature = createBoardsFeature({ auth, renderWorkspace, topbar, toast, navigate, icons, diagnostics, queryClient:serverState, service:platformServices.boards.service, commands:platformServices.boards.commands });
-const accountFeature = createAccountFeature({
-  auth, modules, moduleIcon, topbar, renderWorkspace, navigate, toast, escapeHtml: esc, authShell: authFeature.shell, queueEntranceMotion,
-  setAuthFeedback: authFeature.setFeedback,
-});
-const userManagementFeature = createUserManagementFeature({
-  auth, topbar, renderWorkspace, toast, icons, escapeHtml: esc, currentRoute: parseRoute,
+const boardsFeature = createBoardsFeature({ auth, renderWorkspace: renderBoardWorkspace, topbar, toast, navigate, icons, diagnostics, queryClient:serverState, service:platformServices.boards.service, commands:platformServices.boards.commands, realtime:platformServices.boards.realtime });
+const boardsPresentationFeature = Object.freeze({
+  activate(context: unknown): void { boardsFeature.activate?.(context); },
+  deactivate(context: unknown): void {
+    boardsFeature.deactivate?.(context);
+    boardPresentationFacadeRuntime.hide();
+    resolveBoardPresentationHost().replaceChildren();
+  },
 });
 const homeFeature = createHomeFeature({
   auth,
@@ -470,18 +1161,26 @@ const homeFeature = createHomeFeature({
   getInstallPrompt: () => deferredInstall,
   consumeInstallPrompt: () => { deferredInstall = null; },
 });
-const settingsFeature = createSettingsFeature({
-  auth,
-  modules,
-  topbar,
-  renderWorkspace,
-  toast,
-  icons,
-  escapeHtml: esc,
-  currentRoute: parseRoute,
+authenticatedManagementUiRuntime.configure({
+  navigate,
+  toast: (message, tone = 'success') => toast(message, tone),
   onPreferencesChanged: (next) => { prefs = next; homeFeature.syncPreferences(next); },
   resetLauncherFilters: () => homeFeature.resetFilters(),
+  setAuthenticationFeedback: authenticationUiRuntime.setFeedback,
 });
+
+accountProfileMenu = createAccountProfileMenu({
+  auth,
+  navigate,
+  escapeHtml: esc,
+  onPreferencesChanged: (next) => { prefs = next; homeFeature.syncPreferences(next); },
+  onSignOut: async () => {
+    await auth.signOut({ scope:'local' });
+    authenticationUiRuntime.setFeedback('', 'success');
+    navigate('login');
+  },
+});
+
 const commandFeature = createCommandPaletteFeature({
   auth,
   navigate,
@@ -496,18 +1195,22 @@ const commandFeature = createCommandPaletteFeature({
 // lifecycle-aware without forcing renderers to know about other features.
 featureRegistry.register('shell', {}, { kind: 'shell' });
 featureRegistry.register('home', homeFeature, { kind: 'native-feature' });
-featureRegistry.register('commands', commandFeature, { kind: 'cross-cutting-feature' });
-featureRegistry.register('auth', authFeature, { kind: 'native-feature' });
-featureRegistry.register('account', accountFeature, { kind: 'native-feature' });
-featureRegistry.register('boards', boardsFeature, { kind: 'native-feature' });
+featureRegistry.register('commands', commandFeature, { kind: 'react-feature', boundary: 'src/app/shared-ui/SharedApplicationUI.tsx' });
+featureRegistry.register('auth', authenticationUiRuntime, { kind: 'react-feature', boundary: 'src/app/auth/AuthenticationUI.tsx' });
+featureRegistry.register('account', authenticatedManagementUiRuntime, { kind: 'react-feature', boundary: 'src/app/management/AuthenticatedManagementUI.tsx' });
+featureRegistry.register('boards', boardsPresentationFeature, { kind: 'react-feature', boundary: 'src/app/boards/BoardPresentationFacade.tsx', engine: 'assets/js/boards-ui.ts' });
 featureRegistry.register('modules', moduleRegistry, { kind: 'module-registry' });
-featureRegistry.register('settings', settingsFeature, { kind: 'native-feature' });
-featureRegistry.register('user-management', userManagementFeature, { kind: 'native-feature' });
-featureRegistry.register('module-host', moduleHost, { kind: 'runtime-host' });
+featureRegistry.register('settings', authenticatedManagementUiRuntime, { kind: 'react-feature', boundary: 'src/app/management/AuthenticatedManagementUI.tsx' });
+featureRegistry.register('user-management', authenticatedManagementUiRuntime, { kind: 'react-feature', boundary: 'src/app/management/AuthenticatedManagementUI.tsx' });
+featureRegistry.register('module-host', modulePresentationHost, { kind: 'hybrid-module-presentation-host', iframeCompatibility: true, nativeRetirementGate: true });
 const featureValidation = featureRegistry.validate();
 if (!featureValidation.valid) console.error('[Work Management] Runtime feature registry is incomplete', featureValidation.missing);
 
 function moduleIcon(mod: WorkManagementModuleDefinition | null | undefined): string { if (mod?.icon === 'fuel') return icons.fuel; if (mod?.icon === 'trade') return icons.trade; return icons.clock; }
+
+function moduleBrowserPermissions(mod: WorkManagementModuleDefinition): string {
+  return (mod.browserPermissions || []).join('; ');
+}
 
 function renderModule(moduleId: string | null | undefined): void {
   workspaceRouteKey = '';
@@ -518,16 +1221,38 @@ function renderModule(moduleId: string | null | undefined): void {
   homeFeature.recordRecent(mod.id);
   activeModuleId = mod.id;
   auth.publishIdentityContext();
+  const iframeMode = mod.presentationMode === 'same-origin-iframe';
   const actions = `<button class="module-action" data-command title="Search workspace">${icons.search}<span>Search</span></button><button class="module-action" data-reload-frame title="Reload module">${icons.reload}<span>Reload</span></button>`;
+  const moduleSurface = iframeMode
+    ? `<iframe id="moduleFrame" title="${esc(mod.name)}" src="${esc(mod.route)}" ${moduleBrowserPermissions(mod) ? `allow="${esc(moduleBrowserPermissions(mod))}" ` : ''}referrerpolicy="same-origin"></iframe>`
+    : `<section id="nativeModuleHost" class="native-module-host" data-native-module="${esc(mod.id)}" aria-label="${esc(mod.name)}"></section>`;
+  const loadingCopy = iframeMode ? 'Loading the isolated compatibility runtime.' : 'Mounting the host-native module runtime.';
   const content = `<header class="module-topbar"><button class="back-btn" data-nav="">${icons.back}<span>Work Management</span></button><div class="module-identity"><div class="module-mini-icon ${esc(mod.accent)}">${moduleIcon(mod)}</div><div><strong>${esc(mod.name)}</strong><small>${esc(mod.eyebrow)} · v${esc(mod.version)}</small></div></div><div class="module-actions">${actions}</div></header>
-  <main id="main" class="module-stage"><div class="frame-loading" id="frameLoading"><span></span><strong>Opening ${esc(mod.name)}</strong><small>Loading the isolated module runtime.</small></div><iframe id="moduleFrame" title="${esc(mod.name)}" src="${esc(mod.route)}" allow="geolocation; clipboard-read; clipboard-write" referrerpolicy="same-origin"></iframe><div class="frame-error" id="frameError" hidden><strong>Module is taking longer than expected.</strong><p>Retry the authenticated cloud runtime without leaving Work Management.</p><div><button class="secondary-btn" data-reload-frame>Retry</button></div></div></main>`;
-  app.innerHTML = `<div class="module-shell">${content}</div><div id="overlayRoot"></div><div id="toastRoot" class="toast-root" aria-live="polite" aria-atomic="true"></div>`;
-  moduleFrame = document.querySelector<HTMLIFrameElement>('#moduleFrame');
-  if (!moduleFrame) throw new Error(`Embedded module frame for ${mod.id} was not created.`);
-  moduleHost.attach(moduleFrame, mod);
+  <main id="main" class="module-stage"><div class="frame-loading" id="frameLoading"><span></span><strong>Opening ${esc(mod.name)}</strong><small>${loadingCopy}</small></div>${moduleSurface}<div class="frame-error" id="frameError" hidden><strong>Module is taking longer than expected.</strong><p>Retry the authenticated module runtime without leaving Work Management.</p><div><button class="secondary-btn" data-reload-frame>Retry</button></div></div></main>`;
+  renderWorkspace(content, `app/${mod.id}`, 'module');
   runtimeClient.setContext({ route: 'app', moduleId: mod.id, authenticated: auth.isAuthenticated });
-  monitorModuleFrameLoad();
-  queueEntranceMotion('module');
+  if (iframeMode) {
+    moduleFrame = document.querySelector<HTMLIFrameElement>('#moduleFrame');
+    if (!moduleFrame) throw new Error(`Embedded module frame for ${mod.id} was not created.`);
+    modulePresentationHost.attachIframe(moduleFrame, mod);
+    monitorModuleFrameLoad();
+    return;
+  }
+  moduleFrame = null;
+  const nativeHost = document.querySelector<HTMLElement>('#nativeModuleHost');
+  if (!nativeHost) throw new Error(`Native module host for ${mod.id} was not created.`);
+  const loading = document.querySelector<HTMLElement>('#frameLoading');
+  void modulePresentationHost.mountNative(nativeHost, mod).then((mounted) => {
+    if (!mounted) return;
+    loading?.classList.add('done');
+    window.setTimeout(() => { if (loading) loading.hidden = true; }, 180);
+    runtimeClient.emit('module:loaded', { moduleId: activeModuleId, presentationMode: 'native-host' });
+  }).catch((error: unknown) => {
+    if (loading) loading.hidden = true;
+    const frameError = document.querySelector<HTMLElement>('#frameError');
+    if (frameError) frameError.hidden = false;
+    diagnostics.error('NATIVE_MODULE_MOUNT_FAILURE', error instanceof Error ? error.message : 'Native module mount failed.', { moduleId: mod.id });
+  });
 }
 
 function monitorModuleFrameLoad(): void {
@@ -543,6 +1268,7 @@ function monitorModuleFrameLoad(): void {
   const onLoad = () => {
     completed = true;
     if (moduleLoadTimer !== null) window.clearTimeout(moduleLoadTimer);
+    moduleLoadTimer = null;
     if (error) error.hidden = true;
     moduleFrame?.classList.add('module-frame-ready');
     moduleHost.publishIdentity();
@@ -552,6 +1278,7 @@ function monitorModuleFrameLoad(): void {
   };
   moduleFrame.addEventListener('load', onLoad, { once: true });
   moduleLoadTimer = window.setTimeout(() => {
+    moduleLoadTimer = null;
     if (completed) return;
     loading?.classList.add('done');
     if (loading) loading.hidden = true;
@@ -579,42 +1306,77 @@ function renderAccessDenied(mod: WorkManagementModuleDefinition): void {
   renderWorkspace(`${topbar('Access restricted', 'Your account is not authorized for this application.')}<main id="main" class="page"><div class="empty"><strong>${icons.lock}</strong><h2>${esc(mod.name)} is restricted</h2><p>Your current cloud role is ${esc(auth.moduleRole(mod.id))}. Contact a platform administrator if access is required.</p><button class="${primaryButtonClass}" data-nav="">Return to applications</button></div></main>`, 'access-denied', 'page');
 }
 
-function toast(message: string, tone: ToastTone = 'success'): void {
-  let root = document.querySelector<HTMLElement>('#globalToastRoot');
-  if (!root) {
-    root = document.createElement('div');
-    root.id = 'globalToastRoot';
-    root.className = 'toast-root';
-    root.setAttribute('aria-live', 'polite');
-    root.setAttribute('aria-atomic', 'true');
-    document.body.appendChild(root);
+function renderRouteAuthorizationDenied(route: ReturnType<typeof parseRoute>): void {
+  if (route.name === 'app' && route.moduleId) {
+    const mod = modules.find((entry) => entry.id === route.moduleId);
+    if (mod) return renderAccessDenied(mod);
   }
-  const node = document.createElement('div');
-  node.className = `toast ${tone}`;
-  node.innerHTML = `<span>${tone === 'success' ? icons.check : '!'}</span><strong>${esc(message)}</strong>`;
-  root.appendChild(node);
-  requestAnimationFrame(() => node.classList.add('visible'));
-  setTimeout(() => { node.classList.remove('visible'); setTimeout(() => node.remove(), 220); }, 3600);
+  renderWorkspace(`${topbar('Access restricted', 'Your current role does not authorize this route.')}<main id="main" class="page"><div class="empty"><strong>${icons.lock}</strong><h2>Administrator access required</h2><p>This route is protected by the current platform role and module-assignment policy. Refresh access after an administrator changes your permissions.</p><button class="${primaryButtonClass}" data-nav="">Return to applications</button></div></main>`, 'access-denied', 'page');
 }
 
-function showUpdateBanner(): void {
-  if (!swUpdate || updateDismissed || document.querySelector('.update-banner')) return;
-  const banner = document.createElement('div');
-  banner.className = 'update-banner';
-  banner.innerHTML = `<span>A newer Work Management build is ready.</span><button data-apply-update>Update now</button><button data-dismiss-update aria-label="Dismiss update">×</button>`;
-  document.body.appendChild(banner);
+function toast(message: string, tone: ToastTone = 'success'): void {
+  sharedApplicationUiRuntime.pushToast(message, tone);
 }
 
 function deactivateModuleRoute(): void {
+  if (moduleLoadTimer !== null) {
+    window.clearTimeout(moduleLoadTimer);
+    moduleLoadTimer = null;
+  }
+  modulePresentationHost.detach();
   moduleFrame = null;
   activeModuleId = null;
 }
 
 function rememberAuthReturnRoute(): void {
+  const route = parseRoute();
+  if (route.name === 'login' || route.name === 'register' || route.name === 'verify') return;
   try { sessionStorage.setItem('wm.platform.auth.return-to.v1', location.hash || '#/'); } catch {}
 }
 
 const routeErrorBoundary = createRuntimeErrorBoundary({ diagnostics, onError:renderRouteFailure });
+
+function prepareRoutePresentationTransition(): void {
+  presentationReadinessRuntime.cancel();
+  commandFeature.deactivate();
+  accountProfileMenu?.close({ restoreFocus: false });
+  shellTooltipController.close();
+  globalOverlayRuntime.reset();
+  if (shellNavigation().mobileOpen) setShellMobileOpen(false, { restoreFocus: false });
+}
+
+function commitRoutePresentationTransition(transition: Readonly<{ revision: number; route: Readonly<{ name: string }>; owner: string }>): void {
+  runtimeClient.emit('route:lifecycle-committed', { revision: transition.revision, route: transition.route.name, owner: transition.owner });
+  const requestCommittedRouteFocus = (): boolean => presentationReadinessRuntime.requestFocus({
+    revision: transition.revision,
+    owner: transition.owner as Parameters<typeof presentationReadinessRuntime.acknowledge>[0],
+    isCurrent: (revision) => routeLifecycle.isCurrent(revision),
+    preventScroll: false,
+  });
+  requestCommittedRouteFocus();
+
+  // Overlay teardown is React-owned and can finish after the imperative route
+  // renderer commits. If removal of the previously focused overlay control
+  // drops document focus back to BODY, reconcile once on the next frame. The
+  // generation guard prevents stale routes from stealing focus and the fallback
+  // only runs when no interactive element owns focus.
+  window.requestAnimationFrame(() => {
+    if (!routeLifecycle.isCurrent(transition.revision)) return;
+    const active = document.activeElement;
+    if (active && active !== document.body && active !== document.documentElement) return;
+    requestCommittedRouteFocus();
+  });
+}
+
+function resolveBackendCapabilityPresentation({ route, decision, defaultOwner, defaultRenderer }: Parameters<NonNullable<Parameters<typeof createRouteController>[0]['resolvePresentation']>>[0]) {
+  if (decision.kind !== 'allow') return Object.freeze({ owner: defaultOwner, renderer: defaultRenderer });
+  const requirement = backendCapabilityRequirement(route);
+  if (!requirement || backendCapabilityPreflight.moduleReady(requirement.module)) return Object.freeze({ owner: defaultOwner, renderer: defaultRenderer });
+  return Object.freeze({
+    owner: 'shell' as const,
+    renderer: () => renderBackendCapabilityPreflight(requirement.module, requirement.active),
+  });
+}
 
 const routeController = createRouteController({
   auth,
@@ -623,40 +1385,71 @@ const routeController = createRouteController({
   runtimeClient,
   featureRegistry,
   moduleHost,
+  lifecycle: routeLifecycle,
+  resolvePresentation: resolveBackendCapabilityPresentation,
+  beforeTransition: prepareRoutePresentationTransition,
+  afterTransition: commitRoutePresentationTransition,
   deactivateModule: deactivateModuleRoute,
   rememberReturnRoute: rememberAuthReturnRoute,
   errorBoundary: routeErrorBoundary,
   routePolicy: platformServices.routing,
   renderers: {
     home: () => homeFeature.render(),
-    settings: () => settingsFeature.render(),
-    account: () => accountFeature.render(),
-    users: () => userManagementFeature.render(),
-    boards: () => boardsFeature.renderBoards(),
-    board: (route) => route.boardId ? boardsFeature.renderBoard(route.boardId) : renderNotFound(),
-    login: () => authFeature.renderLogin(),
-    register: () => authFeature.renderRegister(),
-    verify: () => authFeature.renderVerify(),
+    settings: () => showAuthenticatedManagement('settings'),
+    account: () => showAuthenticatedManagement('account'),
+    users: () => showAuthenticatedManagement('users'),
+    boards: () => { boardPresentationFacadeRuntime.showBoards(); return boardsFeature.renderBoards(); },
+    board: (route) => { if (!route.boardId) return renderNotFound(); boardPresentationFacadeRuntime.showBoard(route.boardId); return boardsFeature.renderBoard(route.boardId); },
+    login: () => showStandaloneAuthentication('login'),
+    register: () => showStandaloneAuthentication('register'),
+    verify: () => showStandaloneAuthentication('verify'),
+    wait: () => showStandaloneAuthentication('boot'),
     app: (route) => route.moduleId ? renderModule(route.moduleId) : renderNotFound(),
-    disabled: () => accountFeature.renderDisabled(),
+    disabled: () => showStandaloneAuthentication('disabled'),
+    'auth-recovery': () => { rememberAuthReturnRoute(); showStandaloneAuthentication('recovery'); },
+    forbidden: (route) => renderRouteAuthorizationDenied(route),
     'not-found': () => renderNotFound(),
   },
 });
 
 function render(): void {
   routeController.render();
-  if (swUpdate) showUpdateBanner();
+  if (swUpdate && !updateDismissed) sharedApplicationUiRuntime.showUpdate();
 }
 
-app.addEventListener('click', async (event) => {
+reactShellRoot.addEventListener('click', async (event) => {
   // Backdrop closing is intentionally limited to the backdrop itself. Clicking dialog content is inert.
   if (await commandFeature.handleAction(null, event.target instanceof Element ? event.target : null)) return;
 
   const action = resolveAppAction(event.target);
   if (!action || !isValidActivation(event, action)) return;
 
+  if (action.matches('a[data-shell-skip]')) { event.preventDefault(); focusShellMainContent(); return; }
   if (action.matches('button[data-retry-route]')) { render(); return; }
-  if (action.matches('button[data-nav]')) { navigate(action.dataset.nav ?? ''); return; }
+  if (action.matches('button[data-retry-backend-preflight]')) { void backendCapabilityPreflight.ensure(auth, { force:true }).then(() => render()); return; }
+  if (action.matches('button[data-shell-navigation-toggle]')) {
+    if (shellMobileQuery?.matches) setShellMobileOpen(false);
+    else if (!shellNavigation().pinned && shellNavigation().peek) setShellNavigationPeek(false);
+    else setShellNavigationState(shellNavigation().mode === 'expanded' ? 'compact' : 'expanded');
+    return;
+  }
+  if (action.matches('button[data-shell-navigation-pin]')) { setShellNavigationPinned(!shellNavigation().pinned); return; }
+  if (action.matches('button[data-shell-navigation-mobile-toggle]')) { setShellMobileOpen(!shellNavigation().mobileOpen); return; }
+  if (action.matches('button[data-shell-navigation-dismiss]')) { setShellMobileOpen(false); return; }
+  if (action.matches('button[data-shell-section-toggle]')) {
+    const id = action.dataset.shellSectionToggle as ShellSectionId | undefined;
+    if (id && Object.prototype.hasOwnProperty.call(shellClientState().sections, id)) setShellSectionExpanded(id, !shellClientState().sections[id]);
+    return;
+  }
+  if (action.matches('button[data-shell-resource-search-clear]')) {
+    workManagementClientState.setShellResourceSearchQuery('');
+    const input = shellQuery<HTMLInputElement>('[data-shell-resource-search]');
+    if (input) input.value = '';
+    applyShellResourceFilter();
+    input?.focus();
+    return;
+  }
+  if (action.matches('button[data-nav]')) { if (shellNavigation().mobileOpen) setShellMobileOpen(false, { restoreFocus:false }); if (!shellNavigation().pinned) setShellNavigationPeek(false); navigate(action.dataset.nav ?? ''); return; }
   if (action.matches('[data-open-module]')) { const moduleId = action.dataset.openModule; if (moduleId) navigate(`app/${moduleId}`); return; }
   if (await commandFeature.handleAction(action)) return;
   if (await homeFeature.handleAction(action)) return;
@@ -665,48 +1458,72 @@ app.addEventListener('click', async (event) => {
       monitorModuleFrameLoad();
       try { moduleFrame.contentWindow?.location?.reload?.(); }
       catch { moduleFrame.src = moduleFrame.src; }
+    } else if (activeModuleId) {
+      renderModule(activeModuleId);
     }
     return;
   }
+  if (action.matches('button[data-account-menu-trigger]')) { accountProfileMenu?.toggle(action as HTMLButtonElement); return; }
   if (action.matches('button[data-account]')) { navigate(auth.isAuthenticated ? 'account' : 'login'); return; }
-  if (await accountFeature.handleAction(action)) return;
-  if (await authFeature.handleAction(action)) return;
-  if (await settingsFeature.handleAction(action)) return;
-  if (await userManagementFeature.handleAction(action)) return;
 });
 
-
-document.addEventListener('submit', async (event) => {
-  const target = event.target instanceof Element ? event.target : null;
-  const userAccessForm = target?.closest<HTMLFormElement>('[data-user-access-form]') ?? null;
-  if (userAccessForm) {
-    event.preventDefault();
-    await userManagementFeature.handleSubmit(userAccessForm);
-    return;
-  }
-  const accountForm = target?.closest<HTMLFormElement>('[data-account-form]') ?? null;
-  if (accountForm) {
-    event.preventDefault();
-    await accountFeature.handleSubmit(accountForm);
-    return;
-  }
-  const authForm = target?.closest<HTMLFormElement>('[data-auth-form]') ?? null;
-  if (authForm) {
-    event.preventDefault();
-    await authFeature.handleSubmit(authForm);
-  }
+reactShellRoot.addEventListener('pointerdown', (event) => {
+  const resizer = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-shell-resizer]') : null;
+  if (resizer) startShellNavigationResize(event, resizer);
 });
 
+reactShellRoot.addEventListener('dblclick', (event) => {
+  const resizer = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-shell-resizer]') : null;
+  if (!resizer || resizer.disabled) return;
+  event.preventDefault();
+  resetShellNavigationWidth();
+});
 
-app.addEventListener('keydown', (event) => {
+reactShellRoot.addEventListener('pointerover', (event) => {
+  if (shellNavigation().pinned || !shellNavigationDesktopInteractive()) return;
+  const sidebar = event.target instanceof Element ? event.target.closest<HTMLElement>('#primarySidebar') : null;
+  const fromSidebar = event.relatedTarget instanceof Element ? event.relatedTarget.closest<HTMLElement>('#primarySidebar') : null;
+  if (sidebar && !fromSidebar) setShellNavigationPeek(true);
+});
+
+reactShellRoot.addEventListener('pointerout', (event) => {
+  if (shellNavigation().pinned || shellNavigation().resizing || !shellNavigationDesktopInteractive()) return;
+  const sidebar = event.target instanceof Element ? event.target.closest<HTMLElement>('#primarySidebar') : null;
+  const toSidebar = event.relatedTarget instanceof Element ? event.relatedTarget.closest<HTMLElement>('#primarySidebar') : null;
+  if (!sidebar || toSidebar) return;
+  if (document.activeElement instanceof Element && sidebar.contains(document.activeElement)) return;
+  setShellNavigationPeek(false);
+});
+
+reactShellRoot.addEventListener('focusin', (event) => {
+  if (shellNavigation().pinned || !shellNavigationDesktopInteractive()) return;
+  if (event.target instanceof Element && event.target.closest('#primarySidebar')) setShellNavigationPeek(true);
+});
+
+reactShellRoot.addEventListener('focusout', (event) => {
+  if (shellNavigation().pinned || !shellNavigationDesktopInteractive()) return;
+  const sidebar = event.target instanceof Element ? event.target.closest<HTMLElement>('#primarySidebar') : null;
+  if (!sidebar) return;
+  window.requestAnimationFrame(() => {
+    if (!sidebar.isConnected) return;
+    const focusInside = document.activeElement instanceof Element && sidebar.contains(document.activeElement);
+    if (!focusInside && !sidebar.matches(':hover')) setShellNavigationPeek(false);
+  });
+});
+
+reactShellRoot.addEventListener('keydown', (event) => {
+  handleShellNavigationKeydown(event);
   homeFeature.handleKeydown(event);
 });
 
 document.addEventListener('input', (event) => {
+  if (event.target instanceof HTMLInputElement && event.target.matches('[data-shell-resource-search]')) {
+    workManagementClientState.setShellResourceSearchQuery(event.target.value);
+    applyShellResourceFilter();
+    return;
+  }
   if (commandFeature.handleInput(event.target)) return;
   if (homeFeature.handleInput(event.target)) return;
-  if (userManagementFeature.handleInput(event.target)) return;
-  if (authFeature.handleInput(event.target instanceof Element ? event.target : null)) return;
 });
 
 
@@ -714,12 +1531,23 @@ document.addEventListener('keydown', (event) => {
   commandFeature.handleKeydown(event);
 });
 
+window.addEventListener('resize', () => accountProfileMenu?.reposition(), { passive:true });
+window.addEventListener('scroll', () => accountProfileMenu?.reposition(), { passive:true, capture:true });
+
 function handleStorageChange(event: StorageEvent): void {
   const route = parseRoute();
   if (event.key === 'wm.platform.auth.session.v1') { auth.init({ forceStorage:true }).then(() => render()); return; }
+  if (event.key === SHELL_NAVIGATION_STORAGE_KEY) {
+    const next = readShellNavigationPreference();
+    workManagementClientState.hydratePersistentShell({ navigation: { mode: next.state, width: next.width, pinned: next.pinned } });
+    workManagementClientState.updateShellNavigation({ peek: false });
+    syncShellNavigationPresentation();
+    return;
+  }
   if (event.key === 'wm.platform.preferences.v1') {
     prefs = getPreferences(); applyTheme(prefs.theme); applyDensity(prefs.compact);
     if (route.name === 'home' || route.name === 'settings') render();
+    else syncPersistentShell(route.name);
     return;
   }
   if (route.name === 'home' && event.key?.startsWith('timetracker.')) homeFeature.render();
@@ -734,10 +1562,10 @@ function handleConnectivityChange(): void {
 async function revalidateSessionOnResume(): Promise<void> {
   if (document.visibilityState === 'hidden' || !auth.hasSession) return;
   const token = await auth.ensureValidSession({ reason:'resume' });
-  if (!token) { authFeature.setFeedback('Your session expired or was revoked. Sign in again.', 'warning'); navigate('login'); }
+  if (!token) { authenticationUiRuntime.setFeedback('Your session expired or was revoked. Sign in again.', 'warning'); navigate('login'); }
 }
 installApplicationLifecycle({
-  hashchange: () => { commandFeature.close({ immediate: true }); transitionUpdate(render, 'route'); },
+  hashchange: () => { transitionUpdate(() => { render(); }, 'route'); },
   storage: handleStorageChange,
   online: handleConnectivityChange,
   offline: handleConnectivityChange,
@@ -748,6 +1576,9 @@ installApplicationLifecycle({
   error: (event) => { const error=event.error||new Error(event.message||'Unhandled error'); diagnostics.error('WINDOW_ERROR',error.message,{route:parseRoute().name,stack:error.stack?.split('\n').slice(0,4).join('\n')||null}); console.error('[Work Management] Unhandled error',error); },
   unhandledrejection: (event) => { const error=event.reason instanceof Error?event.reason:new Error(String(event.reason||'Unhandled rejection')); diagnostics.error('UNHANDLED_REJECTION',error.message,{route:parseRoute().name,stack:error.stack?.split('\n').slice(0,4).join('\n')||null}); console.error('[Work Management] Unhandled rejection',error); },
 });
+
+shellMobileQuery?.addEventListener('change', () => syncShellNavigationPresentation());
+shellTabletQuery?.addEventListener('change', () => syncShellNavigationPresentation());
 
 document.addEventListener('pointerdown', (event) => {
   rememberPointerActivation(event);
@@ -763,24 +1594,17 @@ document.addEventListener('pointerout', (event) => {
   resetPointerMotion(event);
 }, { passive: true });
 
-document.addEventListener('click', (event) => {
-  const target = event.target instanceof Element ? event.target : null;
-  if (!target) return;
-  if (target.closest('[data-dismiss-update]')) { updateDismissed = true; writeUpdateDismissed(true); target.closest('.update-banner')?.remove(); }
-  if (target.closest('[data-apply-update]') && swUpdate?.waiting) { swUpdate.waiting.postMessage({ type:'SKIP_WAITING' }); navigator.serviceWorker.addEventListener('controllerchange', () => location.reload(), { once:true }); }
-});
-
 async function bootstrap(): Promise<void> {
-  if (auth.hasAuthCallback) {
-    authFeature.renderCallbackProgress();
-  } else {
-    app.innerHTML = '<main class="boot-screen"><span></span><strong>Starting Work Management</strong><small>Initializing workspace and identity services.</small></main>';
-  }
+  reactShellRuntime.showStandalone(auth.hasAuthCallback ? 'verify' : 'boot');
+  app.replaceChildren();
+  if (auth.hasAuthCallback) authenticationUiRuntime.showCallbackProgress();
+  else authenticationUiRuntime.show('boot');
   await auth.init();
+  authenticationUiRuntime.completeCallbackProgress();
   if (auth.state?.notice) {
-    authFeature.setFeedback(auth.state.notice, 'success');
+    authenticationUiRuntime.setFeedback(auth.state.notice, 'success');
   } else if (auth.state?.error && !auth.isAuthenticated) {
-    authFeature.setFeedback(auth.state.error, 'warning');
+    authenticationUiRuntime.setFeedback(auth.state.error, 'warning');
   }
   render();
 }
@@ -796,10 +1620,13 @@ function revalidateAuthorizationContext(): void {
 }
 
 auth.addEventListener(AUTH_EVENT, () => {
+  if (!auth.isAuthenticated) backendCapabilityPreflight.reset();
+  else if (backendCapabilityPreflight.getSnapshot().state === 'idle') void backendCapabilityPreflight.ensure(auth).then(() => render());
   const reconciliation = reconcileAuthorizationContext({
     auth,
     previousFingerprint: lastAuthorizationFingerprint,
     serverState,
+    clientState,
     moduleHost,
     activeModuleId,
     deactivateModule: deactivateModuleRoute,

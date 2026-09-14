@@ -36,7 +36,7 @@ export function createMemberWorkflows({ commands, state, dialog, toast, escapeHt
       const button = target?.closest<HTMLButtonElement>('[data-remove-member]') ?? null;
       if (!button || ticket !== generation) return;
       event.preventDefault();
-      if (!confirmAction('Remove this member’s board access? They will no longer be able to open or edit this board.')) return;
+      if (!await confirmAction('Remove this member’s board access? They will no longer be able to open or edit this board.')) return;
       const member = members.find((entry) => String(entry.user_id) === String(button.dataset.removeMember));
       if (!member) return;
       button.disabled = true;

@@ -3,6 +3,7 @@ import type {
   OverlayManagerOptions,
   OverlayRegistration,
 } from '../../../../src/platform/contracts/overlay.ts';
+import { globalOverlayRuntime } from './global-overlay-runtime.ts';
 
 type OverlayEntry = Readonly<{
   id: string;
@@ -25,15 +26,26 @@ export function createOverlayManager({
 }: OverlayManagerOptions = {}): OverlayManager {
   const stack: OverlayEntry[] = [];
   const abort = new AbortController();
+  const instanceId = `${String(scope)}:${Math.random().toString(36).slice(2)}`;
   let closing = false;
   let suppressClickTarget: Element | null = null;
   const doc = documentRef;
   const indexOf = (id: string): number => stack.findIndex((entry) => entry.id === id);
   const top = (): OverlayEntry | null => stack.at(-1) ?? null;
 
+  const syncGlobalOwnership = (): void => {
+    const rootEntry = stack.find((entry) => entry.parentId === null) ?? null;
+    if (!rootEntry) {
+      globalOverlayRuntime.release(instanceId);
+      return;
+    }
+    globalOverlayRuntime.update(instanceId, top()?.id ?? rootEntry.id);
+  };
+
   const release = (id: string): void => {
     const index = indexOf(id);
     if (index >= 0) stack.splice(index, 1);
+    syncGlobalOwnership();
   };
 
   const invokeClose = (entry: OverlayEntry | null, restoreFocus = false): void => {
@@ -81,11 +93,24 @@ export function createOverlayManager({
       close,
       parentId: parentId ? String(parentId) : null,
     }));
+    if (!parentId) {
+      globalOverlayRuntime.claim({
+        instanceId,
+        scope: String(scope),
+        rootId: String(id),
+        topId: String(id),
+        documentRef: doc,
+        closeAll: () => closeAll({ restoreFocus: false }),
+      });
+    } else {
+      syncGlobalOwnership();
+    }
     return true;
   };
 
   const containsTarget = (entry: OverlayEntry | null, target: EventTarget | null): boolean =>
     Boolean(entry && target instanceof Node && (entry.element.contains(target) || entry.trigger?.contains(target)));
+
 
   doc?.addEventListener('pointerdown', (event) => {
     if (!stack.length) return;
@@ -133,6 +158,7 @@ export function createOverlayManager({
       suppressClickTarget = null;
       abort.abort();
       closeAll();
+      globalOverlayRuntime.release(instanceId);
     },
     scope: String(scope),
   });

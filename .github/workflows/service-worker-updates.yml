@@ -1,0 +1,36 @@
+name: Service Worker Update Strategy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  service-worker-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install exact dependencies
+        run: npm ci
+      - name: Verify M33 architecture
+        run: npm run service-worker-update:check
+      - name: Execute M33 worker/update vectors
+        run: npm run service-worker-update:test
+      - name: Lint
+        run: npm run lint:eslint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build production service worker
+        run: npm run build
+      - name: Verify production service-worker/update artifact
+        run: npm run service-worker-update:dist
+      - name: Verify production preview
+        run: npm run verify:preview

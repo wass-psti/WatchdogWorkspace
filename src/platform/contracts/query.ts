@@ -7,7 +7,7 @@ export type QueryKey = QueryKeyPart | readonly QueryKeyPart[];
 
 export interface QueryFetchOptions<T> {
   readonly key: QueryKey;
-  readonly queryFn: () => Promise<T> | T;
+  readonly queryFn: (context: Readonly<{ signal: AbortSignal; queryKey: readonly unknown[] }>) => Promise<T> | T;
   readonly staleTime?: number;
   readonly force?: boolean;
 }
@@ -27,6 +27,14 @@ export interface QuerySnapshotEntry {
   readonly error: string | null;
 }
 
+
+export interface QueryStateSnapshot {
+  readonly status: 'pending' | 'success' | 'error';
+  readonly fetchStatus: 'fetching' | 'paused' | 'idle';
+  readonly hasData: boolean;
+  readonly error: string | null;
+}
+
 export type QueryEvent<T = unknown> =
   | Readonly<{ type: 'query:set'; key: string; data: T }>
   | Readonly<{ type: 'query:success'; key: string; data: T }>
@@ -42,6 +50,7 @@ export interface QueryClient {
   fetchQuery<T>(options: QueryFetchOptions<T>): Promise<T>;
   mutate<TInput, TResult>(options: QueryMutationOptions<TInput, TResult>): Promise<TResult>;
   getQueryData<T = unknown>(key: QueryKey): T | undefined;
+  getQueryState(key: QueryKey): QueryStateSnapshot | undefined;
   setQueryData<T>(key: QueryKey, data: T, options?: Readonly<{ updatedAt?: number }>): T;
   invalidateQueries(prefix: QueryKey): number;
   removeQueries(prefix: QueryKey): number;

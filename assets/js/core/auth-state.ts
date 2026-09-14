@@ -7,6 +7,7 @@ export type AuthStatus =
   | 'expired'
   | 'invalid'
   | 'terminated'
+  | 'access-error'
   | 'setup-required';
 
 export type AuthLifecycleState =
@@ -18,6 +19,7 @@ export type AuthLifecycleState =
   | Readonly<{ kind: 'expired'; generation: number }>
   | Readonly<{ kind: 'invalid'; generation: number }>
   | Readonly<{ kind: 'terminated'; generation: number }>
+  | Readonly<{ kind: 'access-error'; generation: number }>
   | Readonly<{ kind: 'setup-required'; generation: number }>;
 
 
@@ -79,6 +81,7 @@ export function deriveAuthLifecycle(source: AuthLifecycleSource): AuthLifecycleS
     case 'expired': return Object.freeze({ kind: 'expired', generation });
     case 'invalid': return Object.freeze({ kind: 'invalid', generation });
     case 'terminated': return Object.freeze({ kind: 'terminated', generation });
+    case 'access-error': return Object.freeze({ kind: 'access-error', generation });
     case 'setup-required': return Object.freeze({ kind: 'setup-required', generation });
   }
 }

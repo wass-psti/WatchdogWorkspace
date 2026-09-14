@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "release": "1.43.2",
+  "architectureVersion": 44,
+  "deploymentTarget": "github-pages-dist-only",
+  "requiredSourceGates": [
+    "governance",
+    "security",
+    "historical-regression",
+    "stage-f-m27-through-m35",
+    "database-rls-local",
+    "modern-tests-coverage",
+    "playwright",
+    "bounded-cdp",
+    "eslint-typescript",
+    "dependency-audit"
+  ],
+  "requiredArtifactGates": [
+    "vite-production-build",
+    "performance-budgets",
+    "dist-verification",
+    "service-worker-update-verification",
+    "preview-smoke",
+    "no-production-source-maps",
+    "no-development-references",
+    "no-executable-source-entry-references",
+    "sha256-manifest",
+    "cutover-provenance"
+  ],
+  "requiredDeploymentGates": [
+    "dist-only-pages-upload",
+    "https-entrypoint-smoke",
+    "https-service-worker-smoke"
+  ],
+  "rollback": {
+    "mode": "redeploy-last-known-good-certified-dist",
+    "sourceSha256Required": true,
+    "distArtifactRequired": true,
+    "automaticDatabaseRollback": false
+  },
+  "failClosed": true
+}

@@ -1,10 +1,19 @@
 import type { ModuleId } from '../../../src/types/identifiers.ts';
+import { normalizedModuleDataRegistry } from '../../../config/modules.ts';
 import type {
   ModuleActivityEventInput,
   ModuleDataRequest,
   ModuleDataResponse,
   ModuleStateScope,
 } from '../../../src/platform/contracts/module-data.ts';
+import {
+  embeddedHostInvalidateMessageSchema,
+  moduleActivityEventSchema,
+  moduleActivityItemSchema,
+  moduleDataResponseSchema,
+  moduleDirectoryEntrySchema,
+  moduleStateRowSchema,
+} from '../../../src/runtime-schemas/index.ts';
 import type {
   EmbeddedModuleActivity,
   EmbeddedModuleAttendance,
@@ -30,6 +39,8 @@ const numberOf = (value: unknown, fallback = 0): number => { const n = Number(va
 const errorMessage = (error: unknown): string => error instanceof Error ? error.message : typeof error === 'string' ? error : 'Cloud persistence failed.';
 
 function userScopedKeys(moduleId: ModuleId): ReadonlySet<string> {
+  const normalized = normalizedModuleDataRegistry.list(moduleId).filter((descriptor) => descriptor.scope === 'user').map((descriptor) => descriptor.legacyKey);
+  if (normalized.length > 0) return new Set(normalized);
   if (moduleId === 'time-tracker') return new Set(['timetracker.ui.v1', 'timetracker.auto-gps-cache.v1']);
   if (moduleId === 'fueltrack-plus') return new Set(['fueltrackplus.preferences.v3', 'fueltrackplus.activity.workspace.v1']);
   return new Set(['tradelink_ui_v1', 'tradelink_draft_v1']);
@@ -49,23 +60,28 @@ function normalizeCloudError(error: unknown): Error {
 function normalizeStateRow(value: unknown): ModuleStateRow | null {
   const row = recordOf(value);
   if (!row) return null;
-  const stateKey = stringOf(row.state_key);
-  if (!stateKey || typeof row.value !== 'string' || (row.scope !== 'shared' && row.scope !== 'user')) return null;
-  return Object.freeze({ state_key: stateKey, value: row.value, scope: row.scope, revision: Math.max(0, Math.trunc(numberOf(row.revision))) });
+  const candidate = {
+    state_key: stringOf(row.state_key),
+    value: row.value,
+    scope: row.scope,
+    revision: Math.max(0, Math.trunc(numberOf(row.revision))),
+  };
+  const parsed = moduleStateRowSchema.safeParse(candidate);
+  return parsed.success ? Object.freeze(parsed.data) as ModuleStateRow : null;
 }
 
 function normalizeDirectoryEntry(value: unknown): ModuleDirectoryEntry | null {
-  const row = recordOf(value);
-  return row ? Object.freeze({ ...row }) : null;
+  const parsed = moduleDirectoryEntrySchema.safeParse(value);
+  return parsed.success ? Object.freeze(parsed.data) as ModuleDirectoryEntry : null;
 }
 
 function normalizeActivityRow(value: unknown): ModuleActivityItem {
   const row = recordOf(value) ?? {};
   const payload = recordOf(row.payload) ?? {};
-  return Object.freeze({
+  const candidate = {
     ...row,
     id: stringOf(row.event_id) || stringOf(row.id),
-    sequence: numberOf(row.sequence),
+    sequence: Math.max(0, Math.trunc(numberOf(row.sequence))),
     type: stringOf(row.event_type) || stringOf(row.type) || 'system',
     title: stringOf(row.title) || 'Activity event',
     message: stringOf(row.message),
@@ -76,22 +92,16 @@ function normalizeActivityRow(value: unknown): ModuleActivityItem {
     actorRole: stringOf(row.actor_role) || stringOf(row.actorRole),
     at: stringOf(row.occurred_at) || stringOf(row.at) || new Date().toISOString(),
     payload: Object.freeze({ ...payload }),
-  });
+  };
+  const parsed = moduleActivityItemSchema.safeParse(candidate);
+  if (!parsed.success) throw new TypeError('Cloud activity row is invalid.');
+  return Object.freeze(parsed.data) as ModuleActivityItem;
 }
 
 function normalizeActivityEvent(value: unknown): ModuleActivityEventInput {
-  const row = recordOf(value);
-  if (!row) throw new TypeError('Activity event must be an object.');
-  const id = stringOf(row.id).trim();
-  const type = stringOf(row.type) || 'system';
-  const title = stringOf(row.title).trim();
-  const message = stringOf(row.message);
-  const requestId = row.requestId == null ? null : stringOf(row.requestId).trim();
-  const payload = recordOf(row.payload) ?? {};
-  if (id.length < 8 || id.length > 160) throw new TypeError('Activity event id is invalid.');
-  if (!['submit', 'review', 'issue', 'system'].includes(type)) throw new TypeError('Activity event type is invalid.');
-  if (!title || title.length > 240 || message.length > 4000) throw new TypeError('Activity event text is invalid.');
-  return Object.freeze({ id, type: type as ModuleActivityEventInput['type'], title, message, requestId: requestId || null, payload: Object.freeze({ ...payload }) });
+  const parsed = moduleActivityEventSchema.safeParse(value);
+  if (!parsed.success) throw new TypeError('Activity event is invalid.');
+  return Object.freeze({ ...parsed.data, payload: Object.freeze({ ...parsed.data.payload }) }) as ModuleActivityEventInput;
 }
 
 function parseJson(value: string): unknown {
@@ -189,23 +199,17 @@ export function installModuleCloudStore({ moduleId, identityReady }: CloudStoreI
 
   window.addEventListener('message', (event: MessageEvent<unknown>) => {
     if (event.origin !== location.origin || event.source !== window.parent) return;
-    const response = recordOf(event.data);
-    if (!response) return;
-    if (response.type === 'wm:host:invalidate') {
-      const invalidatedModuleId = stringOf(response.moduleId);
-      const reason = response.reason;
-      if (invalidatedModuleId === moduleId && (reason === 'backup-restore' || reason === 'host-refresh')) void refresh();
+    const invalidation = embeddedHostInvalidateMessageSchema.safeParse(event.data);
+    if (invalidation.success) {
+      if (invalidation.data.moduleId === moduleId) void refresh();
       return;
     }
-    if (response.type !== 'wm:data:response') return;
-    const requestId = stringOf(response.requestId);
-    const active = pending.get(requestId);
+    const parsedResponse = moduleDataResponseSchema.safeParse(event.data);
+    if (!parsedResponse.success) return;
+    const typed = Object.freeze(parsedResponse.data) as ModuleDataResponse;
+    const active = pending.get(typed.requestId);
     if (!active) return;
-    window.clearTimeout(active.timer); pending.delete(requestId);
-    const typed: ModuleDataResponse = {
-      type: 'wm:data:response', requestId, ok: response.ok === true,
-      payload: response.payload, error: response.error == null ? null : stringOf(response.error),
-    };
+    window.clearTimeout(active.timer); pending.delete(typed.requestId);
     typed.ok ? active.resolve(typed.payload) : active.reject(new Error(typed.error || 'Cloud persistence failed.'));
   }, { signal: abort.signal });
 

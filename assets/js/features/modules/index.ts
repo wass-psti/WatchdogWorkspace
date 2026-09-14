@@ -16,4 +16,6 @@ export const moduleRegistry: ModuleRegistry = Object.freeze({
   has(id: ModuleId | string) { return modules.some((module) => module.id === id); },
 });
 
-export { modules } from '../../../../config/modules.ts';
+export { modules, normalizedModuleDataRegistry } from '../../../../config/modules.ts';
+
+export { nativeModuleRegistry, registerNativeModuleAdapter } from './native-module-registry.ts';

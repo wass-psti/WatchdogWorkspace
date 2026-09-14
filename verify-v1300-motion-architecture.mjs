@@ -22,7 +22,7 @@ const dialog = read('assets/js/features/boards/controllers/dialog-controller.ts'
 const browser = read('tests/browser/run-cdp.mjs');
 
 assert(platform.includes("PLATFORM_VERSION = '1.43.2'"), 'platform release is v1.30.0');
-assert(manifest.includes("version: '1.43.2'") && manifest.includes('architectureVersion: 15'), 'application keeps Architecture Version 7 with v1.30 presentation release');
+assert(manifest.includes("version: '1.43.2'") && Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0) >= 24, 'application keeps Architecture Version 7 with v1.30 presentation release');
 assert(sw.includes("work-management-v1.43.2"), 'service-worker cache advances to v1.30.0');
 assert(assets.includes("./assets/js/runtime/motion-orchestrator.ts"), 'motion orchestrator is included in the authoritative runtime cache manifest');
 

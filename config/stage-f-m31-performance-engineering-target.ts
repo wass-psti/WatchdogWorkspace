@@ -1,0 +1,43 @@
+export type M31ActivationState = 'implementation-complete-pending-certification' | 'active-pending-release-certification' | 'active-certified';
+export const stageFM31PerformanceEngineeringTarget = Object.freeze({
+  milestone: 31, stage: 'F', name: 'Performance engineering',
+  activationState: 'active-certified' as M31ActivationState,
+  prerequisite: Object.freeze({ milestone: 30, requiredState: 'active-certified' as const }),
+  architectureVersion: 39,
+  authority: Object.freeze({
+    budgets: 'config/performance-budgets.json',
+    benchmarkRunner: 'scripts/run-performance-benchmarks.mjs',
+    benchmarkExecution: 'node-22-experimental-strip-types-v1',
+    bundleVerifier: 'scripts/verify-performance-budgets.mjs',
+    bundleAnalysisLibrary: 'scripts/lib/performance-budget-analysis.mjs',
+    bundleAnalysisFixtureVerifier: 'scripts/verify-performance-budget-analysis.mjs',
+    verifier: 'verify-stage-f-m31-performance-engineering.mjs',
+    startupInstrumentation: 'src/main.ts',
+  }),
+  budgets: Object.freeze({
+    initialJsRawBytes: 650000,
+    initialCssRawBytes: 590000,
+    largestInitialChunkRawBytes: 420000,
+    totalManifestJsRawBytes: 1800000,
+    largestAnyJsChunkRawBytes: 600000,
+    totalBuildRawBytes: 6500000,
+    boardColumnWindowP95Ms: 1.5,
+    routePolicyP95Microseconds: 40,
+  }),
+  optimizations: Object.freeze([
+    'board-column-prefix-width-accounting-v1',
+    'route-policy-canonical-decision-reuse-v1',
+    'startup-performance-marks-v1',
+    'vite-manifest-static-entry-budgeting-v2',
+    'echarts-tree-shakeable-analytics-runtime-v1',
+    'entry-aware-platform-code-splitting-v1',
+  ]),
+  measurement: Object.freeze({ warmupIterations: 250, sampleIterations: 1500, percentile: 95, releaseGateRequired: true, nodeTypeScriptExecutionFlag: '--experimental-strip-types', bundleEntrySource: 'index.html', initialClosureMode: 'vite-manifest-static-import-closure-v1', dynamicImportsIncludedInInitialBudget: false }),
+  compatibilityBoundaries: Object.freeze([
+    Object.freeze({ id: 'm30-production-css-baseline', status: 'measured-baseline-with-headroom' as const, reason: 'Initial CSS is measured from the Vite entry manifest. The 590000-byte gate is anchored to the observed 566180-byte M30/M31 production CSS artifact rather than the prior incorrect 260000-byte all-dist interpretation.' }),
+    Object.freeze({ id: 'machine-sensitive-wall-clock-benchmarks', status: 'generous-regression-budget' as const, reason: 'Microbenchmarks use warmup and p95 with deliberately generous ceilings; bundle budgets remain deterministic and are the primary release regression authority.' }),
+    Object.freeze({ id: 'legacy-cdp-browser-harness', status: 'retained-parity-backstop' as const, reason: 'M30 bounded-CDP parity remains retained while M31 performance work layers on top of Playwright rather than replacing browser coverage.' }),
+    Object.freeze({ id: 'embedded-module-performance', status: 'host-budget-plus-existing-module-verifiers' as const, reason: 'TimeTracker, FuelTrack+, and TradeLink remain compatibility islands; M31 governs host bundle/startup and existing module verification without rewriting embedded runtimes.' }),
+  ]),
+  databaseChanges: Object.freeze({ migrationRequired: false, schemaChangeRequired: false, productionDataRewriteRequired: false }),
+});

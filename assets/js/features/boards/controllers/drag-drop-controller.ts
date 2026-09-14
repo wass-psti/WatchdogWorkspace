@@ -88,10 +88,80 @@ export function createBoardDragDropController({ commands, state: _state, canEdit
     Object.assign(item, { group_id: groupId, position: target, status });
   }
 
+  async function keyboardReorder(root: HTMLElement, itemId: BoardItemId, targetPosition: number): Promise<void> {
+    if (!canEdit()) return;
+    const items = getItems();
+    const item = items.find((entry) => String(entry.id) === String(itemId));
+    if (!item || isArchived(item)) return;
+    const peers = items
+      .filter((entry) => !isArchived(entry) && String(entry.group_id) === String(item.group_id))
+      .sort((a, b) => a.position - b.position);
+    const currentIndex = peers.findIndex((entry) => String(entry.id) === String(item.id));
+    if (currentIndex < 0) return;
+    const nextIndex = Math.max(0, Math.min(targetPosition, peers.length - 1));
+    if (nextIndex === currentIndex) {
+      announce(root, 'Item is already at that boundary.');
+      return;
+    }
+
+    const before = snapshot(items);
+    const old = { groupId: item.group_id, position: item.position, status: item.status };
+    applyLocalMove(items, item, item.group_id, nextIndex, item.status);
+    renderBoard();
+    requestAnimationFrame(() => root.querySelector<HTMLElement>(`[data-item-drag="${CSS.escape(String(item.id))}"]`)?.focus());
+    try {
+      await commands.moveItem({ itemId: item.id, groupId: item.group_id, position: item.position, status: item.status });
+      announce(root, `Item moved to position ${nextIndex + 1} of ${peers.length}.`);
+      const after = snapshot(items);
+      history?.push({
+        label: 'item move',
+        undo: async () => {
+          restore(items, before);
+          renderBoard();
+          await commands.moveItem({ itemId: item.id, groupId: old.groupId, position: old.position, status: old.status });
+        },
+        redo: async () => {
+          restore(items, after);
+          renderBoard();
+          const moved = items.find((entry) => String(entry.id) === String(item.id));
+          if (!moved) return;
+          await commands.moveItem({ itemId: item.id, groupId: moved.group_id, position: moved.position, status: moved.status });
+        },
+      });
+    } catch (error) {
+      restore(items, before);
+      renderBoard();
+      requestAnimationFrame(() => root.querySelector<HTMLElement>(`[data-item-drag="${CSS.escape(String(item.id))}"]`)?.focus());
+      toast(errorMessage(error), 'warning');
+      announce(root, 'Item could not be reordered.');
+    }
+  }
+
   function bind(root: HTMLElement): () => void {
     cleanup?.();
     const abort = new AbortController();
     const options: AddEventListenerOptions = { signal: abort.signal };
+
+    root.addEventListener('keydown', (event: KeyboardEvent) => {
+      const handle = eventElement(event)?.closest<HTMLElement>('[data-item-drag]') ?? null;
+      if (!handle || !canEdit() || !['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+      const id = handle.dataset.itemDrag;
+      if (!id) return;
+      const item = getItems().find((entry) => String(entry.id) === String(id));
+      if (!item || isArchived(item)) return;
+      const peers = getItems()
+        .filter((entry) => !isArchived(entry) && String(entry.group_id) === String(item.group_id))
+        .sort((a, b) => a.position - b.position);
+      const current = peers.findIndex((entry) => String(entry.id) === String(id));
+      if (current < 0) return;
+      let next = current;
+      if (event.key === 'ArrowUp') next = Math.max(0, current - 1);
+      if (event.key === 'ArrowDown') next = Math.min(peers.length - 1, current + 1);
+      if (event.key === 'Home') next = 0;
+      if (event.key === 'End') next = peers.length - 1;
+      event.preventDefault();
+      void keyboardReorder(root, id, next);
+    }, options);
 
     root.addEventListener('dragstart', (event: DragEvent) => {
       const target = eventElement(event);

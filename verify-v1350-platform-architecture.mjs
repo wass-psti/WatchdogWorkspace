@@ -10,7 +10,7 @@ const read=(path)=>fs.readFileSync(path,'utf8');
 const exists=(path)=>fs.existsSync(path);
 
 assert.equal(applicationManifest.version,'1.43.2','application manifest version mismatch');
-assert.equal(applicationManifest.architectureVersion,15,'architecture version mismatch');
+assert.ok(applicationManifest.architectureVersion>=24,'current Stage C package must expose Architecture Version 24 or newer while preserving the v1.35 platform boundary');
 assert.equal(applicationManifest.architecture?.style,'modular-platform','platform architecture metadata missing');
 assert.equal(validateApplicationManifest(applicationManifest).valid,true,'application manifest should validate');
 assert.equal(exists('supabase/migrations/v1.35.0-platform-modernization.sql'),false,'architecture-only v1.35 must not invent a database migration');
@@ -64,6 +64,7 @@ assert.equal(diagnostic.context.nested.safe,'ok');
 const coreBoards=read('assets/js/core/boards.ts');
 const repo=read('assets/js/features/boards/data/board-repository.ts');
 const backend=read('assets/js/platform/data/backend-client.ts');
+const supabaseAdapter=read('assets/js/platform/data/supabase-client-adapter.ts');
 const boardUi=read('assets/js/boards-ui.ts');
 const boardController=read('assets/js/features/boards/boards-controller.ts');
 const auth=read('assets/js/core/auth.ts');
@@ -77,14 +78,15 @@ const architecture=read('docs/architecture/PLATFORM-MODERNIZATION-v1.35.md');
 
 assert.ok(coreBoards.includes('createBoardRepository')&&!coreBoards.includes('/rest/v1/rpc/'),'core Boards path should be a transport-free compatibility facade');
 assert.ok(repo.includes("rpc('wm_list_boards'")&&repo.includes('createBackendClient')&&repo.includes('queries.fetchQuery'),'Board repository should own RPC semantics and query state');
-assert.ok(backend.includes('/rest/v1/rpc/${name}')&&backend.includes('/storage/v1/object/'),'backend client should own Supabase transport construction');
+assert.ok(backend.includes('auth.supabase.rpc')&&backend.includes('auth.supabase.storageUpload')&&backend.includes('auth.supabase.storageDelete')&&backend.includes('auth.supabase.storageSign'),'backend client should preserve authenticated RPC/Storage abstraction while delegating provider transport to the M7 Supabase adapter');
+assert.ok(supabaseAdapter.includes('/rest/v1/rpc/${assertRpcName(name)}')&&supabaseAdapter.includes('/storage/v1/object/'),'M7 Supabase adapter should own provider-specific RPC and Storage URL construction');
 assert.equal(boardUi.includes('/rest/v1/rpc/'),false,'Board UI must not construct backend RPC URLs');
 assert.ok(boardController.includes('createService')&&boardController.includes('createView'),'Boards controller should consume an injected domain-service factory');
 assert.ok(auth.includes('CAPABILITIES')&&auth.includes('canAccessModuleByPolicy'),'authentication service should delegate capability policy');
 assert.ok(overlayAdapter.includes('createOverlayManager'),'Boards should adapt the shared overlay lifecycle');
 for(const token of ['parentId','closeTop','closeAll','pointerdown','Escape']) assert.ok(overlay.includes(token),`shared overlay manager missing ${token}`);
 assert.ok(app.includes('createPlatformServices')&&app.includes('createRuntimeErrorBoundary')&&app.includes('renderRouteFailure'),'shell should compose platform services and route recovery');
-for(const token of ['createQueryClient','createBackendClient','createOverlayManager','CAPABILITIES','createPlatformServices']) assert.ok(runtime.includes(token),`runtime gateway missing ${token}`);
+for(const token of ['createQueryClient','createBackendClient','createSupabaseClientAdapter','createOverlayManager','CAPABILITIES','createPlatformServices']) assert.ok(runtime.includes(token),`runtime gateway missing ${token}`);
 for(const asset of [
   './assets/js/runtime/error-boundary.ts',
   './assets/js/runtime/platform-services.ts',
@@ -92,6 +94,7 @@ for(const asset of [
   './assets/js/platform/observability/diagnostics.ts',
   './assets/js/platform/data/query-client.ts',
   './assets/js/platform/data/backend-client.ts',
+  './assets/js/platform/data/supabase-client-adapter.ts',
   './assets/js/platform/auth/permissions.ts',
   './assets/js/platform/ui/overlay-manager.ts',
   './assets/js/features/boards/data/board-contracts.ts',

@@ -1,0 +1,21 @@
+name: Stage G M39 Auth Session Access Context
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run dependencies:ensure
+      - run: npm run auth-stabilization:check
+      - run: npm run auth-stabilization:test
+      - run: npm run auth-stabilization:browser
+      - run: npm run typecheck
+      - run: npm run lint:eslint

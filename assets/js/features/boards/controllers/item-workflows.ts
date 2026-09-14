@@ -93,7 +93,7 @@ export function createItemWorkflows({
     if (!itemId) return false;
     const item = state.board?.items.find((entry) => String(entry.id) === String(itemId));
     if (!item) return false;
-    if (archiveItem && !confirmAction('Archive this item? It will be hidden from the active board until you show archived items or restore it.')) return false;
+    if (archiveItem && !await confirmAction('Archive this item? It will be hidden from the active board until you show archived items or restore it.')) return false;
     try {
       await commands.archiveItem(item.id, archiveItem);
       toast(archiveItem ? 'Item archived and hidden from the active board.' : 'Item restored to the active board.');

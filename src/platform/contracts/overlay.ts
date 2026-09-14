@@ -30,6 +30,33 @@ export interface OverlayManager {
   dispose(): void;
 }
 
+
+export interface GlobalOverlayClaim {
+  readonly instanceId: string;
+  readonly scope: string;
+  readonly rootId: string;
+  readonly topId: string;
+  readonly documentRef: Document | null;
+  readonly closeAll: () => void;
+}
+
+export interface GlobalOverlayRuntimeSnapshot {
+  readonly active: boolean;
+  readonly ownerInstanceId: string | null;
+  readonly ownerScope: string | null;
+  readonly rootId: string | null;
+  readonly topId: string | null;
+}
+
+export interface GlobalOverlayRuntime {
+  getSnapshot(): GlobalOverlayRuntimeSnapshot;
+  subscribe(listener: () => void): () => void;
+  claim(claim: GlobalOverlayClaim): void;
+  update(instanceId: string, topId: string): void;
+  release(instanceId: string): void;
+  reset(): void;
+}
+
 export interface OverlayManagerOptions {
   readonly scope?: string;
   readonly documentRef?: Document | null;

@@ -1,0 +1,87 @@
+name: Stage G M42 Certified Baseline
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit_sha:
+        description: Exact Git commit SHA to certify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m42-certified-baseline-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  certify-m42:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CI: "true"
+      VITE_RUNTIME_ENV: ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.117.0
+      - name: Verify hosted certification capabilities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v22.16.0"
+          test "$(npm --version)" = "10.9.2"
+          test "$(supabase --version | sed 's/^v//')" = "2.117.0"
+          test "${{ inputs.expected_commit_sha }}" = "$GITHUB_SHA"
+          docker version --format '{{.Server.Version}}'
+          test -z "$(git status --porcelain)"
+      - name: Run fail-closed M42 certification and finalization
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/finalize-stage-g-m42.sh
+      - name: Verify certified M42 artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP="../Work-Management-App-v1.43.2-Stage-G-M42-Certified-Baseline.zip"
+          PASS="../Work-Management-App-v1.43.2-Stage-G-M42-Certified-Baseline-PASS.txt"
+          DIR="../Work-Management-App-v1.43.2-Stage-G-M42-Certified-Baseline"
+          test -f "$ZIP"
+          test -f "$PASS"
+          test -d "$DIR"
+          unzip -t "$ZIP" >/dev/null
+          SHA="$(sha256sum "$ZIP" | awk '{print $1}')"
+          SOURCE_SHA="$(node scripts/lib/stage-g-m42-certification-tree.mjs .)"
+          grep -Fq "RESULT: PASS" "$PASS"
+          grep -Fq "CERTIFICATION STATE: active-certified" "$PASS"
+          grep -Fq "CERTIFIED ZIP SHA-256: $SHA" "$PASS"
+          grep -Fq "CERTIFIED SOURCE TREE SHA-256: $SOURCE_SHA" "$PASS"
+          grep -Fq "CERTIFIED SOURCE COMMIT: $GITHUB_SHA" "$PASS"
+          grep -Fq -- '- **State:** active-certified' "$DIR/RELEASE-STATUS-v1.43.2-STAGE-G-M42-USERS-RBAC-FUNCTIONAL-RECOVERY.md"
+          (
+            cd "$DIR"
+            sha256sum -c CHECKSUMS.sha256 >/dev/null
+          )
+          {
+            echo '## Stage G M42 certification'
+            echo
+            echo '**Result:** PASS'
+            echo '**State:** active-certified'
+            echo "**Certified ZIP SHA-256:** \`$SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload certified M42 baseline
+        uses: actions/upload-artifact@v4
+        with:
+          name: work-management-v1.43.2-stage-g-m42-certified-${{ github.sha }}
+          path: |
+            ../Work-Management-App-v1.43.2-Stage-G-M42-Certified-Baseline.zip
+            ../Work-Management-App-v1.43.2-Stage-G-M42-Certified-Baseline-PASS.txt
+          if-no-files-found: error
+          retention-days: 90

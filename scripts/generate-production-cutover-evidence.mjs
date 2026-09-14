@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+const root=path.resolve(import.meta.dirname,'..');
+const dist=path.join(root,'dist');
+if(!fs.existsSync(dist))throw new Error('dist/ is required before generating production cutover evidence.');
+const files=[];const walk=(d)=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=path.join(d,e.name);if(e.isDirectory())walk(f);else if(path.basename(f)!=='SHA256SUMS.txt')files.push(f)}};walk(dist);files.sort();
+const hash=(file)=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const lines=files.map((f)=>`${hash(f)}  ${path.relative(dist,f).split(path.sep).join('/')}`);
+fs.writeFileSync(path.join(dist,'SHA256SUMS.txt'),lines.join('\n')+'\n');
+const evidenceDir=path.join(root,'cutover-evidence');fs.mkdirSync(evidenceDir,{recursive:true});
+const packageLock=path.join(root,'package-lock.json');
+const provenance={schemaVersion:1,application:'work-management',version:'1.43.2',architectureVersion:44,sourceCommit:process.env.GITHUB_SHA||process.env.WM_SOURCE_COMMIT||null,sourcePackageLockSha256:hash(packageLock),distFileCount:files.length,distManifestSha256:hash(path.join(dist,'SHA256SUMS.txt')),buildWorkflow:process.env.GITHUB_WORKFLOW||null,buildRunId:process.env.GITHUB_RUN_ID||null,generatedAt:new Date().toISOString()};
+fs.writeFileSync(path.join(evidenceDir,'CUTOVER-PROVENANCE.json'),JSON.stringify(provenance,null,2)+'\n');
+fs.copyFileSync(path.join(dist,'SHA256SUMS.txt'),path.join(evidenceDir,'DIST-SHA256SUMS.txt'));
+console.log(`Production cutover evidence generated: PASS (files=${files.length}; evidence=cutover-evidence/)`);

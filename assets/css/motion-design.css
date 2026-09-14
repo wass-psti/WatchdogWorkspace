@@ -200,98 +200,30 @@ body[data-wm-surface="shell"] {
   --radius: var(--motion-radius-lg);
 }
 
-body[data-wm-surface="shell"] .shell {
-  grid-template-columns: 278px minmax(0,1fr);
-  gap: 0;
-}
 
-body[data-wm-surface="shell"] .sidebar {
-  inset: 14px auto 14px 14px;
-  width: 250px;
-  height: calc(100vh - 28px);
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at 20% 0%, rgba(108,124,255,.18), transparent 18rem),
-    radial-gradient(circle at 85% 102%, rgba(255,106,61,.16), transparent 20rem),
-    linear-gradient(160deg,#090e1a,#10182a 66%,#111a29);
-  box-shadow: 0 24px 70px rgba(7,12,23,.28), inset 0 1px rgba(255,255,255,.07);
-  padding: 22px 16px;
-  overflow: hidden auto;
-}
 
-body[data-wm-surface="shell"] .sidebar::before {
-  content:"";
-  position:absolute;
-  inset:-30% -50% auto;
-  height:240px;
-  background:radial-gradient(circle,rgba(108,124,255,.18),transparent 66%);
-  pointer-events:none;
-  animation:wmMotionDrift 12s ease-in-out infinite;
-}
 
-body[data-wm-surface="shell"] .workspace { margin-left: 278px; }
 
-body[data-wm-surface="shell"] .brand {
-  position:relative;
-  padding: 5px 8px 26px;
-}
-body[data-wm-surface="shell"] .brand-mark {
-  width: 40px;
-  height: 40px;
-  gap: 4px;
-  transform: rotate(-4deg);
-  transition: transform var(--motion-medium) var(--motion-ease-spring);
-}
-body[data-wm-surface="shell"] .brand:hover .brand-mark { transform: rotate(5deg) scale(1.05); }
-body[data-wm-surface="shell"] .brand-mark i {
-  border-radius: 10px;
-  background: rgba(255,255,255,.18);
-  box-shadow: inset 0 1px rgba(255,255,255,.12);
-}
-body[data-wm-surface="shell"] .brand-mark i:first-child {
-  background: linear-gradient(135deg,var(--motion-accent),#ff9f75);
-  box-shadow: 0 8px 20px rgba(255,106,61,.28);
-}
-body[data-wm-surface="shell"] .brand-copy strong { font-size:17px; letter-spacing:-.025em; }
-body[data-wm-surface="shell"] .brand-copy small { color:#77849a; }
 
-body[data-wm-surface="shell"] .sidebar nav { gap: 7px; position:relative; z-index:1; }
-body[data-wm-surface="shell"] .nav-item {
-  position:relative;
-  overflow:hidden;
-  min-height:46px;
-  border-radius:14px;
-  color:#8997ad;
-  padding:11px 13px;
-}
-body[data-wm-surface="shell"] .nav-item::before {
-  content:"";
-  position:absolute;
-  left:0;
-  top:10px;
-  bottom:10px;
-  width:3px;
-  border-radius:999px;
-  background:linear-gradient(180deg,var(--motion-accent),var(--motion-accent-2));
-  transform:scaleY(0);
-  opacity:0;
-  transition:transform var(--motion-medium) var(--motion-ease-spring),opacity var(--motion-medium) ease;
-}
-body[data-wm-surface="shell"] .nav-item:hover {
-  background:rgba(255,255,255,.055);
-  color:#f2f5fb;
-  transform:translateX(3px);
-}
-body[data-wm-surface="shell"] .nav-item.active {
-  color:#fff;
-  border-color:rgba(255,255,255,.09);
-  background:linear-gradient(90deg,rgba(108,124,255,.16),rgba(255,255,255,.06));
-  box-shadow:inset 0 1px rgba(255,255,255,.05);
-}
-body[data-wm-surface="shell"] .nav-item.active::before { transform:scaleY(1); opacity:1; }
-body[data-wm-surface="shell"] .nav-item.active span { color:#d9e1ff; }
-body[data-wm-surface="shell"] .sidebar-foot { position:relative; z-index:1; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 body[data-wm-surface="shell"] .health-dot,
 body[data-wm-surface="shell"] .activity-dot.live {
   animation: wmMotionGlow 2.2s ease-in-out infinite;
@@ -942,22 +874,16 @@ body[data-wm-surface="tradelink"] .create-type-tabs button.active { box-shadow:0
 
 /* ---------- responsive motion surfaces ---------- */
 @media (max-width: 900px) {
-  body[data-wm-surface="shell"] .shell { grid-template-columns:86px minmax(0,1fr); }
-  body[data-wm-surface="shell"] .sidebar { width:72px; }
-  body[data-wm-surface="shell"] .workspace { margin-left:86px; }
+  
+  
+  
   body[data-wm-surface="shell"] .topbar { margin-right:12px; }
   body[data-wm-surface="shell"] .page { padding-left:24px; padding-right:24px; }
 }
 
 @media (max-width: 620px) {
-  body[data-wm-surface="shell"] .workspace { margin-left:0; padding-bottom:78px; }
-  body[data-wm-surface="shell"] .sidebar {
-    inset:auto 10px 10px;
-    width:auto;
-    height:68px;
-    border-radius:22px;
-    padding:7px 10px;
-  }
+  
+  
   body[data-wm-surface="shell"] .topbar {
     top:8px;
     margin:8px 10px 0;
@@ -1452,19 +1378,8 @@ body[data-wm-surface] select:not([multiple]):disabled {
 /* ================================================================
    Work Management shell — persistent chrome + content-focused motion
    ================================================================ */
-body[data-wm-surface="shell"] .shell,
-body[data-wm-surface="shell"] .sidebar,
-body[data-wm-surface="shell"] .workspace,
-body[data-wm-surface="shell"] .topbar {
-  transform:none !important;
-  animation:none !important;
-}
-body[data-wm-surface="shell"] .workspace {
-  min-height:100vh;
-  background:
-    linear-gradient(90deg,transparent 0,transparent 92%,color-mix(in srgb,var(--motion-accent-2) 2%,transparent)),
-    transparent;
-}
+
+
 body[data-wm-surface="shell"] .topbar {
   background:color-mix(in srgb,var(--motion-surface-strong) 88%,transparent) !important;
   backdrop-filter:blur(22px) saturate(145%) !important;
@@ -1480,13 +1395,9 @@ body[data-wm-surface="shell"] [data-shell-nav].wm-motion-nav[data-wm-indicator-m
   border-radius:999px;
   box-shadow:0 0 18px rgba(108,124,255,.34);
 }
-body[data-wm-surface="shell"] .nav-item {
-  transform:none;
-}
-body[data-wm-surface="shell"] .nav-item:hover { transform:translateX(2px); }
-body[data-wm-surface="shell"] .nav-item.active {
-  background:linear-gradient(90deg,rgba(108,124,255,.15),rgba(255,255,255,.045));
-}
+
+
+
 body[data-wm-surface="shell"] .page {
   container-type:inline-size;
 }

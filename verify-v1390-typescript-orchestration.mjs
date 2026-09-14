@@ -25,16 +25,22 @@ for (const path of migrated) {
 pass('migrated orchestration layers avoid broad unsafe TypeScript escapes');
 
 const { createPlatformServices } = await import('./assets/js/runtime/platform-services.ts');
+const fakeSupabase = {
+  async rpc() { return []; }, async storageDelete() { return true; }, async storageUpload() { return true; },
+  async storageSign() { return { signedURL: '/object/sign/test' }; }, resolveStorageSignedUrl(value) { return value; },
+};
 const fakeAuth = {
   isAuthenticated: true,
   user: { id: 'user-1' },
   backend: { supabaseUrl: 'https://example.supabase.co', publishableKey: 'public-key' },
+  supabase: fakeSupabase,
   async ensureAccessToken() { return 'token'; },
   headers(token, extra = {}) { return { apikey: this.backend.publishableKey, Authorization: `Bearer ${token}`, ...extra }; },
   async request() { return []; },
 };
 const platform = createPlatformServices({ auth: fakeAuth, queryStaleTime: 1234, diagnosticLimit: 32 });
 assert.equal(platform.auth, fakeAuth);
+assert.equal(platform.supabase, fakeSupabase);
 assert.equal(platform.boards.repository.queryClient, platform.serverState);
 assert.equal(platform.boards.service.queryClient, platform.serverState);
 assert.equal(platform.manifest.value.version, '1.43.2');

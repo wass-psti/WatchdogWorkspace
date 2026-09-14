@@ -3759,3 +3759,6 @@ a { color: inherit; }
 @media(prefers-reduced-motion:reduce){.activity-view-tab{transition:none!important}}
 /* Context menus must be allowed to escape the event-card paint box. */
 .activity-event-card{contain:layout style;overflow:visible}
+
+/* Stage E M24 — route-lazy ECharts enhancement; the existing trend markup remains as the accessible fallback. */
+.analytics-echarts-shell{position:relative;min-height:280px}.analytics-echarts-canvas{width:100%;height:280px;min-height:280px}.analytics-echarts-shell [hidden]{display:none!important}@media(max-width:640px){.analytics-echarts-shell,.analytics-echarts-canvas{min-height:240px;height:240px}}@media(prefers-reduced-motion:reduce){.analytics-echarts-canvas *{animation:none!important;transition:none!important}}

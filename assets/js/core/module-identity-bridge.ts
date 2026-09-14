@@ -1,5 +1,5 @@
-import type { PlatformRole } from '../../../src/types/auth.ts';
 import type { ModuleId } from '../../../src/types/identifiers.ts';
+import { embeddedModuleIdentityContextSchema } from '../../../src/runtime-schemas/index.ts';
 import type {
   EmbeddedModuleAccess,
   EmbeddedModuleIdentityContext,
@@ -11,34 +11,23 @@ interface IdentityBridgeHandle {
   dispose(): void;
 }
 
-type UnknownRecord = Record<string, unknown>;
-const PLATFORM_ROLES = new Set<PlatformRole>(['admin_general_manager', 'hr', 'supervisor', 'employee']);
-const recordOf = (value: unknown): UnknownRecord | null => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as UnknownRecord : null;
-const stringOf = (value: unknown): string => typeof value === 'string' ? value : '';
-
 function parseIdentityContext(value: unknown, expectedModuleId: ModuleId): EmbeddedModuleIdentityContext | null {
-  const root = recordOf(value);
-  if (!root || root.type !== 'wm:identity-context' || root.version !== 1 || root.moduleId !== expectedModuleId) return null;
-  const user = recordOf(root.user);
-  const module = recordOf(root.module);
-  const platformRole = stringOf(root.platformRole);
-  if (!user || !module || !PLATFORM_ROLES.has(platformRole as PlatformRole)) return null;
-  const userId = stringOf(user.id).trim();
-  const email = stringOf(user.email).trim();
-  const displayName = stringOf(user.displayName).trim();
-  const role = module.role === null ? null : stringOf(module.role).trim() || null;
-  if (!userId || !email) return null;
+  const parsed = embeddedModuleIdentityContextSchema.safeParse(value);
+  if (!parsed.success || parsed.data.moduleId !== expectedModuleId) return null;
+  const role = parsed.data.module.role?.trim() || null;
+  const displayName = parsed.data.user.displayName.trim() || parsed.data.user.email;
   return Object.freeze({
-    type: 'wm:identity-context',
-    version: 1,
+    ...parsed.data,
     moduleId: expectedModuleId,
-    user: Object.freeze({ id: userId, email, displayName: displayName || email }),
-    platformRole: platformRole as PlatformRole,
-    accountStatus: stringOf(root.accountStatus),
-    module: Object.freeze({ role, enabled: module.enabled === true }),
-    updatedAt: stringOf(root.updatedAt),
-    allowed: Boolean(userId && root.accountStatus === 'active' && module.enabled === true && role),
-  });
+    user: Object.freeze({ ...parsed.data.user, displayName }),
+    module: Object.freeze({ ...parsed.data.module, role }),
+    allowed: Boolean(
+      parsed.data.user.id
+      && parsed.data.accountStatus === 'active'
+      && parsed.data.module.enabled
+      && role
+    ),
+  }) as EmbeddedModuleIdentityContext;
 }
 
 function publishGlobals(moduleId: ModuleId, context: EmbeddedModuleIdentityContext | null): void {

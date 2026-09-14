@@ -26,7 +26,7 @@ const schema = read('supabase/schema.sql');
 const css = read('assets/css/app.css');
 const motion = read('assets/css/motion-design.css');
 
-must(manifest.includes("version: '1.43.2'") && manifest.includes('architectureVersion: 15'), 'v1.31 manifest and Architecture Version 8 are declared');
+must(manifest.includes("version: '1.43.2'") && Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0) >= 24, 'v1.31 manifest and Architecture Version 8 are declared');
 must(platform.includes("PLATFORM_VERSION = '1.43.2'"), 'platform version is v1.31.0');
 must(serviceWorker.includes("work-management-v1.43.2"), 'service worker cache is v1.31.0');
 for (const module of ['history-controller.ts','selection-controller.ts','inline-edit-controller.ts','column-resize-controller.ts','structure-drag-controller.ts']) {

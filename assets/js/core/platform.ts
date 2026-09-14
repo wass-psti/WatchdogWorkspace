@@ -2,6 +2,8 @@ import type { ApplicationManifest } from '../../../src/types/manifest.ts';
 import type { ModuleId } from '../../../src/types/identifiers.ts';
 import type { WorkManagementModuleDefinition } from '../../../src/types/modules.ts';
 import { storage } from './storage.ts';
+import { activateWaitingServiceWorker, registerManagedServiceWorker } from '../platform/update/service-worker-update.ts';
+import type { ServiceWorkerUpdateLifecycleEvent } from '../../../src/platform/contracts/service-worker-update.ts';
 
 export const PLATFORM_VERSION = '1.43.2';
 
@@ -235,20 +237,17 @@ export async function runPlatformDiagnostics(modules: readonly WorkManagementMod
   return Object.freeze({ checkedAt: new Date().toISOString(), checks: Object.freeze(checks), passed: checks.every((check) => check.ok) });
 }
 
-export function registerServiceWorker(onUpdate?: ((registration: ServiceWorkerRegistration) => void) | null): void {
-  if (isDevelopmentBuild() || !('serviceWorker' in navigator) || location.protocol === 'file:') return;
-  addEventListener('load', async () => {
-    try {
-      const registration = await navigator.serviceWorker.register('./service-worker.js');
-      if (registration.waiting) onUpdate?.(registration);
-      registration.addEventListener('updatefound', () => {
-        const worker = registration.installing;
-        worker?.addEventListener('statechange', () => {
-          if (worker.state === 'installed' && navigator.serviceWorker.controller) onUpdate?.(registration);
-        });
-      });
-    } catch (error) {
-      console.warn('[Work Management] Service worker registration failed', error);
-    }
-  }, { once: true });
+export function registerServiceWorker(
+  onUpdate?: ((registration: ServiceWorkerRegistration) => void) | null,
+  onLifecycle?: ((event: ServiceWorkerUpdateLifecycleEvent) => void) | null,
+): void {
+  if (isDevelopmentBuild()) return;
+  registerManagedServiceWorker({ onUpdate, onLifecycle });
+}
+
+export function activateServiceWorkerUpdate(
+  registration: ServiceWorkerRegistration,
+  onLifecycle?: ((event: ServiceWorkerUpdateLifecycleEvent) => void) | null,
+): void {
+  activateWaitingServiceWorker(registration, onLifecycle);
 }

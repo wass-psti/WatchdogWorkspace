@@ -12,6 +12,7 @@ const platform = read('assets/js/core/platform.ts');
 const sw = read('service-worker.js');
 const home = read('assets/js/features/home/index.ts');
 const commands = read('assets/js/features/commands/index.ts');
+const sharedCommandUi = read('src/app/shared-ui/SharedApplicationUI.tsx');
 const registrySource = read('assets/js/features/commands/command-registry.ts');
 const boardsUi = read('assets/js/boards-ui.ts');
 const boardsFeature = read('assets/js/features/boards/index.ts');
@@ -26,7 +27,7 @@ const checklist = read('docs/architecture/RESTRUCTURE-CHECKLIST.md');
 
 assert.ok(platform.includes("PLATFORM_VERSION = '1.43.2'"), 'platform version is not v1.27.0');
 assert.ok(sw.includes('work-management-v1.43.2'), 'service-worker cache is not v1.27.0');
-assert.ok(manifest.includes("version: '1.43.2'") && manifest.includes('architectureVersion: 15'), 'manifest version/architecture mismatch');
+assert.ok(manifest.includes("version: '1.43.2'") && Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0) >= 24, 'manifest version/architecture mismatch');
 assert.ok(manifest.includes("{ id: 'home', pattern: '#/', owner: 'home' }"), 'Home route is not independently owned');
 assert.ok(manifest.includes("id: 'commands'"), 'Commands feature is not declared');
 
@@ -42,8 +43,13 @@ for (const legacy of ['let commandSelection', 'let commandItems', 'let lastFocus
 for (const token of ['moduleCard(', 'recentSection(', 'data-toggle-favorites', 'recordRecent', 'syncPreferences', 'resetFilters', 'function activate()']) {
   assert.ok(home.includes(token), `Home feature missing ${token}`);
 }
-for (const token of ['createCommandRegistry', 'Mod+K', 'data-command-index', 'handleKeydown', 'workspace:backup', 'navigate:boards']) {
+for (const token of ['createCommandRegistry', 'Mod+K', 'handleKeydown', 'workspace:backup', 'navigate:boards']) {
   assert.ok(commands.includes(token), `Command feature missing ${token}`);
+}
+if (Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0) >= 24) {
+  assert.ok(sharedCommandUi.includes('data-command-index'), 'React shared command palette missing the historical command-index presentation contract');
+} else {
+  assert.ok(commands.includes('data-command-index'), 'Command feature missing data-command-index');
 }
 for (const token of ['commands.has(id)', 'requires a run function', 'when:', 'snapshot']) {
   assert.ok(registrySource.includes(token), `Command registry missing ${token}`);
@@ -80,7 +86,17 @@ for (const token of ['groupWorkflows.reset()', 'itemWorkflows.reset()', 'memberW
 
 assert.ok(boardsUi.includes("board-workspace-view.ts") && boardsUi.includes('renderBoardHeader({') && boardsUi.includes('renderBoardColumnHeader({'), 'Board workspace presentation is not extracted');
 for (const token of ['export function renderBoardHeader', 'export function renderBoardControls', 'export function renderBoardItemRow', 'export function renderBoardColumnHeader']) assert.ok(boardWorkspace.includes(token), `Board workspace view missing ${token}`);
-assert.ok(boardsFeature.includes("architecture: 'stable-workspace-controller-state-service-views-workflow-and-interaction-controllers'"), 'Boards architecture metadata is stale');
+const boardArchitecturePreservesPhaseFive =
+  boardsFeature.includes("architecture: 'stable-workspace-controller-state-service-views-workflow-and-interaction-controllers'") ||
+  ([
+    "architecture: 'react-route-facade-with-typed-compatibility-board-engine'",
+    "architecture: 'react-route-facade-with-typed-rich-item-workspace-v1'",
+  ].some((marker) => boardsFeature.includes(marker)) &&
+    boardsFeature.includes("presentation: 'react-board-presentation-facade-v1'") &&
+    boardsFeature.includes("presentationEngine: 'assets/js/boards-ui.ts'") &&
+    boardsFeature.includes('createBoardsController') &&
+    boardsFeature.includes('createBoardCommandService'));
+assert.ok(boardArchitecturePreservesPhaseFive, 'Boards feature metadata must preserve Phase Five workspace/workflow/controller guarantees or declare the M15 React facade over that compatibility engine');
 
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
 const header = renderBoardHeader({ board:{ member_role:'owner', name:'Example', description:'Board' }, canEdit:true, canManage:true, icons:{ back:'←' }, escapeHtml:esc });

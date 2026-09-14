@@ -7,6 +7,7 @@ const themes = read('assets/css/foundation/themes.css');
 const primitives = read('assets/css/foundation/primitives.css');
 const bridge = read('assets/css/foundation/module-unification.css');
 const appCss = read('assets/css/app.css');
+const shellCss = read('assets/css/shell-navigation.css');
 const vite = read('vite.config.js');
 const runtimeAssets = read('config/runtime-assets.js');
 
@@ -28,7 +29,7 @@ assert.match(primitives, /focus-visible/);
 assert.match(primitives, /prefers-reduced-motion/);
 assert.match(appCss, /Operational Enterprise presentation foundation/);
 assert.match(appCss, /--bg:var\(--wm-color-canvas\)/);
-assert.match(appCss, /--wm-sidebar-width/);
+assert.match(shellCss, /--wm-shell-sidebar-width-default/);
 
 for (const [surface, file] of [
   ['time-tracker','apps/time-tracker/index.html'],

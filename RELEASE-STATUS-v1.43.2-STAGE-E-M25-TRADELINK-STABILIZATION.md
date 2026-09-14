@@ -1,0 +1,24 @@
+# Work Management v1.43.2 — Stage E M25 TradeLink stabilization
+
+- State: `implementation-complete-pending-certification`
+- Prerequisite: M24 `active-certified`
+- Architecture: 33
+- Production runtime: `apps/tradelink/app.v1.42.0-wm1.js`
+- Stability runtime: `apps/tradelink/stability-runtime.js`
+- Distributed workspace serialization: implemented
+- Post-lock authoritative refresh: implemented
+- Document-number race protection: implemented
+- Stale-document overwrite protection: implemented
+- Confirmed workflow/recovery/vendor persistence: implemented
+- Snapshot vendor-asset rollback on failed shared restore commit: implemented
+- Shared business commits decoupled from user-UI write failures: implemented
+- Export/activity audits moved off fire-and-forget whole-workspace persistence: implemented
+- Legacy whole-workspace `persist()` authority: removed from active runtime
+- Backup-to-primary startup recovery: distributed + confirmed
+- Embedded vendor asset migration: distributed + confirmed + rollback
+- Direct module-store write: retained only for user-scoped beforeunload draft fallback
+- User-scoped company/page-size preferences: implemented
+- Dual cloud synchronization + BFCache: implemented
+- TradeLink iframe: retained compatibility boundary
+- New dependency: none
+- Supabase migration: none

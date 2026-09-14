@@ -1,0 +1,41 @@
+name: Stage G M37 Functional Regression Baseline
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'assets/**'
+      - 'src/**'
+      - 'config/**'
+      - 'tests/modern/e2e/**'
+      - 'scripts/**'
+      - 'regression-baseline/**'
+      - 'verify-stage-g-m37-functional-regression-baseline.mjs'
+      - '.github/workflows/functional-regression-baseline.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  characterize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+      - run: npm ci
+      - name: Stage G M37 static baseline
+        run: npm run functional-regression:check
+      - name: Stage G M37 execution characterization
+        run: npm run functional-regression:test
+      - name: Stage G M37 browser characterization
+        run: npm run functional-regression:browser
+      - name: Stage G M37 evidence summary
+        run: npm run functional-regression:evidence
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m37-functional-regression-evidence
+          path: m37-evidence/
+          if-no-files-found: error

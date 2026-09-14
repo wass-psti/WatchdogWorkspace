@@ -1,4 +1,5 @@
 import type { EmbeddedLifecycleEvent, EmbeddedLifecycleState } from '../../../src/platform/contracts/embedded-module.ts';
+import { embeddedLifecycleEventSchema, embeddedLifecycleStateSchema } from '../../../src/runtime-schemas/index.ts';
 
 export class EmbeddedLifecycleTransitionError extends Error {
   readonly state: EmbeddedLifecycleState;
@@ -12,6 +13,9 @@ export class EmbeddedLifecycleTransitionError extends Error {
 }
 
 export function transitionEmbeddedLifecycle(state: EmbeddedLifecycleState, event: EmbeddedLifecycleEvent): EmbeddedLifecycleState {
+  if (!embeddedLifecycleStateSchema.safeParse(state).success || !embeddedLifecycleEventSchema.safeParse(event).success) {
+    throw new EmbeddedLifecycleTransitionError(state, event);
+  }
   if (event.type === 'initialize') {
     return Object.freeze({ kind: 'initializing', generation: state.generation + 1, moduleId: event.moduleId });
   }

@@ -1,0 +1,45 @@
+name: Work Management Modern Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: modern-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  modern-tests:
+    name: Vitest unit/component and coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup governed Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install exact application lockfile dependencies
+        run: npm ci
+
+      - name: Verify M30 testing architecture
+        run: npm run modern-tests:check
+
+      - name: Run modern unit/component tests
+        run: npm run modern-tests:test
+
+      - name: Enforce V8 coverage thresholds
+        run: npm run modern-tests:coverage
+
+      - name: Run Playwright application smoke
+        run: npm run modern-tests:e2e

@@ -1,3 +1,9 @@
+import {
+  MutationObserver,
+  hashKey,
+  type QueryClient as TanStackQueryClient,
+  type QueryKey as TanStackQueryKey,
+} from '@tanstack/react-query';
 import type {
   QueryClient,
   QueryClientOptions,
@@ -7,181 +13,235 @@ import type {
   QueryKeyPart,
   QueryMutationOptions,
   QuerySnapshotEntry,
+  QueryStateSnapshot,
 } from '../../../../src/platform/contracts/query.ts';
-
-interface QueryCacheEntry {
-  readonly data?: unknown;
-  readonly updatedAt: number;
-  readonly promise: Promise<unknown> | null;
-  readonly error: unknown | null;
-}
+import { createTanStackQueryClient } from './tanstack-query-client.ts';
 
 type QueryListener = (event: QueryEvent) => void;
-
-function stableEncode(value: QueryKeyPart): string {
-  if (value === null) return 'null';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  if (Array.isArray(value)) return `[${value.map((entry) => stableEncode(entry)).join(',')}]`;
-  const entries = Object.entries(value)
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([key, entry]) => `${JSON.stringify(key)}:${stableEncode(entry)}`);
-  return `{${entries.join(',')}}`;
-}
 
 const topLevelParts = (value: QueryKey): readonly QueryKeyPart[] =>
   Array.isArray(value) ? value : [value as QueryKeyPart];
 
-export const queryKey = (...parts: QueryKeyPart[]): string => parts.map(stableEncode).join('::');
+const toTanStackKey = (value: QueryKey): TanStackQueryKey => topLevelParts(value);
+
+/**
+ * Preserve the pre-M8 Work Management prefix contract rather than adopting
+ * TanStack's broader object-partial matching semantics. Each top-level key
+ * segment must match structurally; only additional trailing segments are
+ * considered descendants.
+ */
+const matchesWorkManagementPrefix = (candidate: TanStackQueryKey, prefix: QueryKey): boolean => {
+  const target = toTanStackKey(prefix);
+  if (target.length > candidate.length) return false;
+  return target.every((part, index) => hashKey([part]) === hashKey([candidate[index]]));
+};
+
+export const queryKey = (...parts: QueryKeyPart[]): string => hashKey(parts);
 
 function errorMessage(error: unknown): string | null {
   return error instanceof Error ? error.message : typeof error === 'string' ? error : null;
 }
 
-export function createQueryClient(options: QueryClientOptions = {}): QueryClient {
+const abortedReason = (signal: AbortSignal): unknown => {
+  if ('reason' in signal && signal.reason !== undefined) return signal.reason;
+  return new DOMException('The operation was aborted.', 'AbortError');
+};
+
+/**
+ * Compatibility facade over TanStack Query v5.
+ *
+ * Existing non-React repositories continue to consume the Work Management-owned
+ * QueryClient contract while TanStack Query owns query hashing, cache state,
+ * request de-duplication, invalidation, mutation state, and garbage collection.
+ *
+ * Compatibility rules retained during M8:
+ * - repository query functions begin in a microtask, matching the pre-M8 client;
+ * - fresh cache hits and de-duplicated followers do not emit duplicate events;
+ * - prefix invalidation/removal matches whole top-level key segments exactly;
+ * - synchronous repository mutation functions remain supported.
+ */
+export function createQueryClient(
+  options: QueryClientOptions = {},
+  nativeClient: TanStackQueryClient = createTanStackQueryClient(
+    options.defaultStaleTime === undefined
+      ? {}
+      : { defaultStaleTime: options.defaultStaleTime },
+  ),
+): QueryClient {
   const diagnostics = options.diagnostics ?? null;
   const defaultStaleTime = Math.max(0, Number(options.defaultStaleTime ?? 10_000) || 0);
-  const cache = new Map<string, QueryCacheEntry>();
   const listeners = new Set<QueryListener>();
 
   const notify = (event: QueryEvent): void => {
     for (const listener of [...listeners]) {
-      try { listener(event); } catch { /* subscriber failures must not corrupt server state */ }
+      try {
+        listener(event);
+      } catch {
+        // Subscriber failures must never corrupt server-state progression.
+      }
     }
   };
 
-  const keyId = (key: QueryKey): string => queryKey(...topLevelParts(key));
-  const getEntry = (key: QueryKey): QueryCacheEntry | null => cache.get(keyId(key)) ?? null;
-
-  const getQueryData = <T = unknown>(key: QueryKey): T | undefined => getEntry(key)?.data as T | undefined;
-
-  const setQueryData = <T>(key: QueryKey, data: T, setOptions: Readonly<{ updatedAt?: number }> = {}): T => {
-    const id = keyId(key);
-    const previous = cache.get(id);
-    cache.set(id, {
-      data,
-      updatedAt: setOptions.updatedAt ?? Date.now(),
-      promise: null,
-      error: null,
-      ...(previous?.data === undefined ? {} : {}),
-    });
-    notify({ type: 'query:set', key: id, data });
-    return data;
-  };
+  const keyId = (key: QueryKey): string => hashKey(toTanStackKey(key));
 
   const fetchQuery = async <T>(fetchOptions: QueryFetchOptions<T>): Promise<T> => {
     if (typeof fetchOptions.queryFn !== 'function') throw new TypeError('queryFn must be a function.');
+
+    const tanstackKey = toTanStackKey(fetchOptions.key);
     const id = keyId(fetchOptions.key);
     const staleTime = Math.max(0, Number(fetchOptions.staleTime ?? defaultStaleTime) || 0);
-    const current = cache.get(id);
+    const currentState = nativeClient.getQueryState<T>(tanstackKey);
+    const currentData = nativeClient.getQueryData<T>(tanstackKey);
     const now = Date.now();
 
-    if (!fetchOptions.force && current?.data !== undefined && now - current.updatedAt <= staleTime) {
-      return current.data as T;
-    }
-    if (current?.promise) return current.promise as Promise<T>;
+    // Preserve the pre-M8 fast-path: a fresh cache read produces no fetch
+    // diagnostic/event and does not schedule a query function.
+    const isFresh = !fetchOptions.force
+      && currentData !== undefined
+      && currentState !== undefined
+      && !currentState.isInvalidated
+      && now - currentState.dataUpdatedAt <= staleTime;
+    if (isFresh) return currentData;
 
-    diagnostics?.debug('QUERY_FETCH', 'Fetching server state.', { key: id });
-    const promise = Promise.resolve()
-      .then(fetchOptions.queryFn)
-      .then((data) => {
-        cache.set(id, { data, updatedAt: Date.now(), promise: null, error: null });
-        diagnostics?.debug('QUERY_SUCCESS', 'Server state refreshed.', { key: id });
+    // TanStack owns request de-duplication. Track whether this facade call is
+    // the request owner so followers don't duplicate Work Management events.
+    const ownsFetch = currentState?.fetchStatus === undefined || currentState.fetchStatus === 'idle';
+
+    if (fetchOptions.force && ownsFetch && currentState !== undefined) {
+      // Explicit invalidation guarantees a force request even if updatedAt was
+      // manually written into the future. Refetching is still performed below.
+      await nativeClient.invalidateQueries({
+        queryKey: tanstackKey,
+        exact: true,
+        refetchType: 'none',
+      });
+    }
+
+    if (ownsFetch) {
+      diagnostics?.debug('QUERY_FETCH', 'Fetching server state through TanStack Query.', { key: id });
+    }
+
+    try {
+      const data = await nativeClient.fetchQuery<T>({
+        queryKey: tanstackKey,
+        staleTime,
+        queryFn: ({ signal, queryKey: resolvedKey }) => Promise.resolve().then(() => {
+          if (signal.aborted) throw abortedReason(signal);
+          return fetchOptions.queryFn({ signal, queryKey: resolvedKey });
+        }),
+      });
+      if (ownsFetch) {
+        diagnostics?.debug('QUERY_SUCCESS', 'Server state resolved through TanStack Query.', { key: id });
         notify({ type: 'query:success', key: id, data });
-        return data;
-      })
-      .catch((error: unknown) => {
-        const previous = cache.get(id);
-        cache.set(id, {
-          ...(previous?.data === undefined ? {} : { data: previous.data }),
-          updatedAt: previous?.updatedAt ?? 0,
-          promise: null,
-          error,
-        });
+      }
+      return data;
+    } catch (error: unknown) {
+      if (ownsFetch) {
         diagnostics?.warn('QUERY_FAILURE', errorMessage(error) || 'Server-state request failed.', {
           key: id,
           code: typeof error === 'object' && error !== null && 'code' in error ? String(error.code ?? '') || null : null,
         });
         notify({ type: 'query:error', key: id, error });
-        throw error;
-      });
-
-    cache.set(id, {
-      ...(current?.data === undefined ? {} : { data: current.data }),
-      updatedAt: current?.updatedAt ?? 0,
-      promise,
-      error: current?.error ?? null,
-    });
-    return promise;
+      }
+      throw error;
+    }
   };
 
   const invalidateQueries = (prefix: QueryKey): number => {
-    const target = keyId(prefix);
-    let count = 0;
-    for (const [id, entry] of cache.entries()) {
-      if (id === target || id.startsWith(`${target}::`)) {
-        cache.set(id, { ...entry, updatedAt: 0 });
-        count += 1;
-      }
+    const id = keyId(prefix);
+    const predicate = (query: { readonly queryKey: TanStackQueryKey }): boolean =>
+      matchesWorkManagementPrefix(query.queryKey, prefix);
+    const count = nativeClient.getQueryCache().findAll({ predicate }).length;
+    if (count > 0) {
+      void nativeClient.invalidateQueries({ predicate, refetchType: 'none' });
+      notify({ type: 'query:invalidate', key: id, count });
     }
-    if (count > 0) notify({ type: 'query:invalidate', key: target, count });
     return count;
   };
 
   const removeQueries = (prefix: QueryKey): number => {
-    const target = keyId(prefix);
-    let count = 0;
-    for (const id of [...cache.keys()]) {
-      if (id === target || id.startsWith(`${target}::`)) {
-        cache.delete(id);
-        count += 1;
-      }
+    const id = keyId(prefix);
+    const predicate = (query: { readonly queryKey: TanStackQueryKey }): boolean =>
+      matchesWorkManagementPrefix(query.queryKey, prefix);
+    const count = nativeClient.getQueryCache().findAll({ predicate }).length;
+    if (count > 0) {
+      nativeClient.removeQueries({ predicate });
+      notify({ type: 'query:remove', key: id, count });
     }
-    if (count > 0) notify({ type: 'query:remove', key: target, count });
     return count;
   };
 
   const mutate = async <TInput, TResult>(mutation: QueryMutationOptions<TInput, TResult>): Promise<TResult> => {
     if (typeof mutation.mutationFn !== 'function') throw new TypeError('mutationFn must be a function.');
     const id = keyId(mutation.key);
+    const observer = new MutationObserver<TResult, unknown, TInput, unknown>(nativeClient, {
+      mutationKey: toTanStackKey(mutation.key),
+      mutationFn: async (input) => mutation.mutationFn(input),
+      retry: false,
+    });
+
     notify({ type: 'mutation:start', key: id });
-    diagnostics?.debug('MUTATION_START', 'Persisting server-state mutation.', { key: id });
+    diagnostics?.debug('MUTATION_START', 'Persisting server-state mutation through TanStack Query.', { key: id });
     try {
-      const result = await mutation.mutationFn(mutation.input);
+      const result = await observer.mutate(mutation.input);
       for (const target of mutation.invalidate ?? []) invalidateQueries(target);
-      diagnostics?.debug('MUTATION_SUCCESS', 'Server-state mutation persisted.', { key: id });
+      diagnostics?.debug('MUTATION_SUCCESS', 'Server-state mutation persisted through TanStack Query.', { key: id });
       notify({ type: 'mutation:success', key: id, data: result });
       return result;
     } catch (error: unknown) {
       diagnostics?.warn('MUTATION_FAILURE', errorMessage(error) || 'Server-state mutation failed.', { key: id });
       notify({ type: 'mutation:error', key: id, error });
       throw error;
+    } finally {
+      observer.reset();
     }
   };
 
   const client: QueryClient = {
     fetchQuery,
     mutate,
-    getQueryData,
-    setQueryData,
+    getQueryData<T = unknown>(key: QueryKey): T | undefined {
+      return nativeClient.getQueryData<T>(toTanStackKey(key));
+    },
+    getQueryState(key: QueryKey): QueryStateSnapshot | undefined {
+      const state = nativeClient.getQueryState(toTanStackKey(key));
+      if (!state) return undefined;
+      return Object.freeze({
+        status: state.status,
+        fetchStatus: state.fetchStatus,
+        hasData: state.data !== undefined,
+        error: errorMessage(state.error),
+      });
+    },
+    setQueryData<T>(key: QueryKey, data: T, setOptions: Readonly<{ updatedAt?: number }> = {}): T {
+      nativeClient.setQueryData<T>(
+        toTanStackKey(key),
+        data,
+        setOptions.updatedAt === undefined ? undefined : { updatedAt: setOptions.updatedAt },
+      );
+      notify({ type: 'query:set', key: keyId(key), data });
+      return data;
+    },
     invalidateQueries,
     removeQueries,
     clear(): void {
-      cache.clear();
+      nativeClient.clear();
       notify({ type: 'query:clear' });
     },
     subscribe(listener: QueryListener): () => void {
       if (typeof listener !== 'function') return () => undefined;
       listeners.add(listener);
-      return () => { listeners.delete(listener); };
+      return () => {
+        listeners.delete(listener);
+      };
     },
     snapshot(): readonly QuerySnapshotEntry[] {
-      return Object.freeze([...cache.entries()].map(([key, entry]) => Object.freeze({
-        key,
-        updatedAt: entry.updatedAt,
-        pending: Boolean(entry.promise),
-        hasData: entry.data !== undefined,
-        error: errorMessage(entry.error),
+      return Object.freeze(nativeClient.getQueryCache().getAll().map((query) => Object.freeze({
+        key: query.queryHash,
+        updatedAt: query.state.isInvalidated ? 0 : query.state.dataUpdatedAt,
+        pending: query.state.fetchStatus !== 'idle',
+        hasData: query.state.data !== undefined,
+        error: errorMessage(query.state.error),
       })));
     },
   };

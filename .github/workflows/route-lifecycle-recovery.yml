@@ -1,0 +1,21 @@
+name: Stage G M40 Route Lifecycle Recovery
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run dependencies:ensure
+      - run: npm run route-lifecycle:check
+      - run: npm run route-lifecycle:test
+      - run: npm run route-lifecycle:browser
+      - run: npm run typecheck
+      - run: npm run lint:eslint

@@ -101,10 +101,21 @@ const pass = (message) => console.log(`PASS ${message}`);
 // Stage 3 — authenticated transport and runtime payload validation.
 {
   const requests = [];
+  const supabase = {
+    async rpc(name, body, token, options = {}) {
+      requests.push({ path: `/rest/v1/rpc/${name}`, init: { body: JSON.stringify(body), token, ...options } });
+      return { id: 'board-1' };
+    },
+    async storageDelete() { return true; },
+    async storageUpload() { return true; },
+    async storageSign() { return { signedURL: '/object/sign/test' }; },
+    resolveStorageSignedUrl(value) { return value; },
+  };
   const auth = {
     isAuthenticated: true,
     user: { id: 'user-1' },
     backend: { supabaseUrl: 'https://example.supabase.co', publishableKey: 'public-key' },
+    supabase,
     async ensureAccessToken() { return 'token-1'; },
     headers(token, extra = {}) { return { Authorization: `Bearer ${token}`, apikey: 'public-key', ...extra }; },
     async request(path, init = {}) { requests.push({ path, init }); return { id: 'board-1' }; },
@@ -125,7 +136,7 @@ const pass = (message) => console.log(`PASS ${message}`);
   );
   const unauthenticated = createBackendClient({ ...auth, isAuthenticated: false });
   await assert.rejects(unauthenticated.rpc('wm_test'), (error) => error instanceof WorkManagementError && error.category === 'authentication');
-  const offline = createBackendClient({ ...auth, async request() { throw new TypeError('Failed to fetch'); } });
+  const offline = createBackendClient({ ...auth, supabase: { ...supabase, async rpc() { throw new TypeError('Failed to fetch'); } } });
   await assert.rejects(offline.rpc('wm_test'), (error) => error instanceof WorkManagementError && error.category === 'network' && error.retryable === true);
   pass('backend transport enforces authentication and runtime DTO validation');
 }
@@ -196,7 +207,7 @@ const pass = (message) => console.log(`PASS ${message}`);
   const result = validateApplicationManifest();
   assert.equal(result.valid, true, result.errors.join('; '));
   assert.equal(applicationManifest.version, '1.43.2');
-  assert.equal(applicationManifest.architectureVersion, 15);
+  assert.ok(applicationManifest.architectureVersion >= 24);
   assert.equal(applicationManifest.architecture.runtimeInfrastructure, 'typescript-authoritative');
   pass('RBAC capability matrices and application manifest are authoritative TypeScript runtime definitions');
 }

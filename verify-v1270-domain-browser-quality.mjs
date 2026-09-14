@@ -30,9 +30,19 @@ const browserCdp = read('tests/browser/run-cdp.mjs');
 
 assert.ok(platform.includes("PLATFORM_VERSION = '1.43.2'"), 'platform version is not v1.27.0');
 assert.ok(sw.includes('work-management-v1.43.2'), 'service-worker cache is not v1.27.0');
-assert.ok(manifest.includes("version: '1.43.2'") && manifest.includes('architectureVersion: 15'), 'manifest version/architecture mismatch');
+assert.ok(manifest.includes("version: '1.43.2'") && Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0) >= 24, 'manifest version/architecture mismatch');
 assert.ok(manifest.includes("'item-workspace-controller', 'item-panel-renderer', 'drag-drop-controller'"), 'Boards manifest dependencies do not expose interaction controllers');
-assert.ok(boardsFeature.includes("architecture: 'stable-workspace-controller-state-service-views-workflow-and-interaction-controllers'"), 'Boards architecture metadata does not reflect interaction-controller extraction');
+const boardArchitecturePreservesInteractionExtraction =
+  boardsFeature.includes("architecture: 'stable-workspace-controller-state-service-views-workflow-and-interaction-controllers'") ||
+  ([
+    "architecture: 'react-route-facade-with-typed-compatibility-board-engine'",
+    "architecture: 'react-route-facade-with-typed-rich-item-workspace-v1'",
+  ].some((marker) => boardsFeature.includes(marker)) &&
+    boardsFeature.includes("presentation: 'react-board-presentation-facade-v1'") &&
+    boardsFeature.includes("presentationEngine: 'assets/js/boards-ui.ts'") &&
+    boardsFeature.includes('createBoardsController') &&
+    boardsFeature.includes('createBoardCommandService'));
+assert.ok(boardArchitecturePreservesInteractionExtraction, 'Boards feature metadata must preserve the interaction-controller extraction boundary or declare the M15 React facade over that typed compatibility engine');
 
 const beforeBootstrap = (html, script) => html.indexOf(script) >= 0 && html.indexOf(script) < html.indexOf('module-bootstrap.ts');
 assert.ok(beforeBootstrap(timeHtml, './domain-config.js'), 'TimeTracker domain config must load before module bootstrap');
@@ -40,7 +50,11 @@ assert.ok(beforeBootstrap(fuelHtml, './domain-config.js'), 'FuelTrack+ domain co
 assert.ok(beforeBootstrap(tradeHtml, './domain-config.js'), 'TradeLink domain config must load before module bootstrap');
 
 assert.ok(timeConfig.includes('globalThis.WMTimeTrackerDomain') && timeConfig.includes('PH_HOLIDAYS_2026') && timeConfig.includes('ATTENDANCE_POLICY'), 'TimeTracker domain config is incomplete');
-assert.ok(timeApp.startsWith('const { LOCATIONS') && timeApp.includes('globalThis.WMTimeTrackerDomain'), 'TimeTracker runtime does not consume the domain boundary');
+const timeTrackerDomainConsumption =
+  timeApp.includes('const { LOCATIONS, DEPARTMENTS, ROLES') &&
+  timeApp.includes('globalThis.WMTimeTrackerDomain') &&
+  timeApp.indexOf('globalThis.WMTimeTrackerDomain') < timeApp.indexOf('const emptyState');
+assert.ok(timeTrackerDomainConsumption, 'TimeTracker runtime does not consume the domain boundary before application state initialization');
 assert.ok(!timeApp.includes('const PH_HOLIDAYS_2026 = ['), 'TimeTracker holiday catalog is still duplicated in the monolith');
 
 assert.ok(fuelConfig.includes('globalThis.WMFuelTrackDomain') && fuelConfig.includes('function createInitialState') && fuelConfig.includes('VALID_TRANSITIONS'), 'FuelTrack+ domain config is incomplete');

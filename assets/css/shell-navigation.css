@@ -1,0 +1,1155 @@
+/*
+ * Work Management Shell — Navigation System (Shell Milestones 1–8)
+ *
+ * This stylesheet is the authoritative owner of host-navigation geometry and
+ * interaction state. Shell M8 retired the pre-reconstruction sidebar sizing,
+ * bottom-rail mobile navigation and duplicate motion-layer navigation rules.
+ * Application routing, authentication and module authorization stay outside
+ * this presentation layer.
+ */
+
+body[data-wm-surface="shell"] .shell {
+  --wm-shell-navigation-user-width: var(--wm-shell-sidebar-width-default);
+  --wm-shell-navigation-layout-width: var(--wm-shell-sidebar-width-default);
+  --wm-shell-navigation-panel-width: var(--wm-shell-sidebar-width-default);
+  --wm-shell-navigation-current-width: var(--wm-shell-navigation-layout-width);
+  display: block;
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  isolation: isolate;
+  background: var(--wm-color-canvas);
+}
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-state="expanded"] {
+  --wm-shell-navigation-layout-width: clamp(var(--wm-shell-sidebar-width-min), var(--wm-shell-navigation-user-width), var(--wm-shell-sidebar-width-max));
+  --wm-shell-navigation-panel-width: var(--wm-shell-navigation-layout-width);
+}
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"]:not([data-shell-navigation-peek="true"]) {
+  --wm-shell-navigation-layout-width: var(--wm-shell-sidebar-width-compact);
+  --wm-shell-navigation-panel-width: var(--wm-shell-sidebar-width-compact);
+}
+
+/* Unpinned navigation keeps the compact workspace footprint while providing a
+ * full-width preview on pointer/focus interaction. The preview overlays content
+ * instead of causing layout movement. */
+body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"][data-shell-navigation-pinned="false"][data-shell-navigation-peek="true"] {
+  --wm-shell-navigation-layout-width: var(--wm-shell-sidebar-width-compact);
+  --wm-shell-navigation-panel-width: clamp(var(--wm-shell-sidebar-width-min), var(--wm-shell-navigation-user-width), var(--wm-shell-sidebar-width-max));
+}
+
+body[data-wm-surface="shell"] .sidebar {
+  --wm-shell-sidebar-effective-padding-inline: var(--wm-shell-sidebar-padding-inline);
+  position: fixed;
+  z-index: 20;
+  inset: 0 auto 0 0;
+  width: var(--wm-shell-navigation-panel-width);
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--wm-shell-sidebar-padding-block) var(--wm-shell-sidebar-effective-padding-inline);
+  background: var(--wm-shell-navigation-surface);
+  color: var(--wm-shell-navigation-text);
+  border-inline-end: var(--wm-shell-sidebar-divider-width) solid var(--wm-shell-navigation-border);
+  box-shadow: var(--wm-shell-navigation-shadow);
+  overflow: visible;
+  contain: layout;
+  transform: none!important;
+  translate: none!important;
+  scale: none!important;
+  will-change: auto;
+  transition:
+    width var(--wm-shell-navigation-motion-standard) var(--wm-shell-navigation-motion-ease-out),
+    box-shadow var(--wm-shell-navigation-motion-standard) var(--wm-shell-navigation-motion-ease-out),
+    visibility 0s linear;
+}
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-pinned="false"][data-shell-navigation-peek="true"] .sidebar {
+  z-index: 40;
+  box-shadow: var(--wm-shell-navigation-preview-shadow);
+}
+
+body[data-wm-surface="shell"] .workspace {
+  position: relative;
+  z-index: 0;
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin-left: var(--wm-shell-navigation-layout-width);
+  width: calc(100% - var(--wm-shell-navigation-layout-width));
+  isolation: isolate;
+  overflow-anchor: none;
+  background: var(--wm-color-canvas);
+  transition:
+    margin-left var(--wm-shell-navigation-motion-standard) var(--wm-shell-navigation-motion-ease-out),
+    width var(--wm-shell-navigation-motion-standard) var(--wm-shell-navigation-motion-ease-out);
+}
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-resizing] :is(.sidebar,.workspace) {
+  transition: none!important;
+}
+
+/* Embedded applications now remain inside the same host shell instead of
+ * replacing it. The isolated iframe runtime and module authorization model are
+ * unchanged; only the host geometry becomes persistent. */
+body[data-wm-surface="shell"] .workspace.module-workspace {
+  height: 100vh;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 64px minmax(0,1fr);
+  overflow: hidden;
+  background: var(--wm-color-canvas);
+}
+
+body[data-wm-surface="shell"] .workspace.module-workspace > .module-topbar {
+  grid-row: 1;
+  min-width: 0;
+}
+
+body[data-wm-surface="shell"] .workspace.module-workspace > .module-stage {
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Header / brand ---------------------------------------------------------- */
+body[data-wm-surface="shell"] .shell-sidebar-header {
+  position: relative;
+  min-height: var(--wm-shell-sidebar-brand-height);
+  flex: 0 0 auto;
+}
+
+body[data-wm-surface="shell"] .sidebar .brand {
+  width: 100%;
+  min-height: var(--wm-shell-sidebar-brand-height);
+  display: flex;
+  align-items: center;
+  gap: var(--wm-shell-navigation-label-gap);
+  padding: var(--wm-space-050) var(--wm-shell-navigation-inline-padding) var(--wm-shell-navigation-section-gap);
+  border: 0;
+  border-radius: var(--wm-shell-navigation-radius);
+  background: transparent;
+  color: var(--wm-shell-navigation-text);
+  text-align: start;
+  cursor: pointer;
+}
+
+body[data-wm-surface="shell"] .sidebar .brand-mark {
+  width: var(--wm-shell-brand-mark-size);
+  height: var(--wm-shell-brand-mark-size);
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--wm-shell-brand-mark-gap);
+  transform: rotate(-4deg);
+  transition: transform var(--wm-shell-navigation-motion-standard) var(--wm-shell-navigation-motion-ease-out);
+}
+
+body[data-wm-surface="shell"] .sidebar .brand:hover .brand-mark { transform: rotate(2deg); }
+body[data-wm-surface="shell"] .sidebar .brand-mark i {
+  border-radius: var(--wm-shell-brand-mark-radius);
+  background: color-mix(in srgb,var(--wm-shell-navigation-text) 18%,transparent);
+  box-shadow: inset 0 1px color-mix(in srgb,var(--wm-shell-navigation-text) 12%,transparent);
+}
+body[data-wm-surface="shell"] .sidebar .brand-mark i:first-child {
+  background: linear-gradient(135deg,var(--wm-color-accent),var(--wm-color-accent-hover));
+  box-shadow: 0 8px 20px color-mix(in srgb,var(--wm-color-accent) 28%,transparent);
+}
+
+body[data-wm-surface="shell"] .sidebar .brand-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+body[data-wm-surface="shell"] .sidebar .brand-copy strong {
+  font-size: var(--wm-text-lg);
+  font-weight: var(--wm-font-weight-semibold);
+}
+
+body[data-wm-surface="shell"] .sidebar .brand-copy small {
+  color: var(--wm-shell-navigation-text-muted);
+  font-size: var(--wm-shell-navigation-meta-font-size);
+}
+
+body[data-wm-surface="shell"] .shell-sidebar-header-actions {
+  --wm-shell-header-collapse-size: var(--wm-shell-sidebar-collapse-size);
+  position: absolute;
+  z-index: 43;
+  top: 50%;
+  inset-inline-end: calc(0px - var(--wm-shell-sidebar-effective-padding-inline) - var(--wm-shell-header-collapse-size) / 2 - var(--wm-shell-sidebar-divider-width));
+  display: flex;
+  align-items: center;
+  gap: var(--wm-space-050);
+  transform: translateY(-50%);
+}
+
+/* The header action rail is the single structural anchor for pin + collapse.
+ * It follows the actual visible sidebar edge horizontally, but its vertical
+ * coordinate never changes when expanded/compact/preview state changes. */
+body[data-wm-surface="shell"] .shell-sidebar-header .brand {
+  padding-inline-end: calc(var(--wm-shell-navigation-inline-padding) + var(--wm-shell-sidebar-pin-size) + var(--wm-shell-sidebar-collapse-size) + var(--wm-space-150));
+}
+
+body[data-wm-surface="shell"] .shell-sidebar-pin {
+  width: var(--wm-shell-sidebar-pin-size);
+  height: var(--wm-shell-sidebar-pin-size);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--wm-shell-navigation-radius);
+  background: transparent;
+  color: var(--wm-shell-navigation-text-subtle);
+  cursor: pointer;
+  transition:
+    background-color var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease),
+    color var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease),
+    transform var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease-out);
+}
+
+body[data-wm-surface="shell"] .shell-sidebar-pin svg {
+  width: var(--wm-shell-navigation-icon-size);
+  height: var(--wm-shell-navigation-icon-size);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body[data-wm-surface="shell"] .shell-sidebar-pin:is(:hover,:focus-visible),
+body[data-wm-surface="shell"] .shell-sidebar-pin[aria-pressed="true"] {
+  background: var(--wm-shell-navigation-surface-hover);
+  color: var(--wm-shell-navigation-text);
+}
+
+body[data-wm-surface="shell"] .shell-sidebar-pin:active:not(:disabled) {
+  transform: translateY(var(--wm-shell-navigation-press-offset));
+}
+
+body[data-wm-surface="shell"] .shell-sidebar-pin:disabled {
+  display: none;
+}
+
+body[data-wm-surface="shell"] .shell-sidebar-collapse {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  width: var(--wm-shell-sidebar-collapse-size);
+  height: var(--wm-shell-sidebar-collapse-size);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--wm-shell-navigation-border);
+  border-radius: var(--wm-radius-round);
+  background: var(--wm-shell-navigation-surface-raised);
+  color: var(--wm-shell-navigation-text-muted);
+  box-shadow: 0 2px 8px rgba(2,6,23,.16);
+  cursor: pointer;
+  transition:
+    background-color var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease),
+    border-color var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease),
+    color var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease),
+    box-shadow var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease);
+}
+
+body[data-wm-surface="shell"] .shell-sidebar-collapse svg,
+body[data-wm-surface="shell"] .shell-mobile-navigation-trigger svg {
+  width: var(--wm-shell-navigation-icon-size);
+  height: var(--wm-shell-navigation-icon-size);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body[data-wm-surface="shell"] .shell-sidebar-collapse svg {
+  transition: transform var(--wm-shell-navigation-motion-standard) var(--wm-shell-navigation-motion-ease-out);
+}
+
+body[data-wm-surface="shell"] .shell-sidebar-collapse:is(:hover,:focus-visible) {
+  background: var(--wm-shell-navigation-surface-hover);
+  border-color: var(--wm-shell-navigation-active-border);
+  color: var(--wm-shell-navigation-text);
+}
+
+body[data-wm-surface="shell"] .shell-sidebar-collapse:active {
+  box-shadow: 0 1px 4px rgba(2,6,23,.18);
+}
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"]:not([data-shell-navigation-peek="true"]) .shell-sidebar-collapse svg {
+  transform: rotate(180deg);
+}
+
+/* Navigation -------------------------------------------------------------- */
+body[data-wm-surface="shell"] .shell-navigation-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: visible;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--wm-shell-navigation-scrollbar) transparent;
+}
+
+body[data-wm-surface="shell"] .shell-navigation-scroll::-webkit-scrollbar,
+body[data-wm-surface="shell"] .sidebar nav::-webkit-scrollbar {
+  width: var(--wm-shell-navigation-scrollbar-size);
+  height: var(--wm-shell-navigation-scrollbar-size);
+}
+
+body[data-wm-surface="shell"] .shell-navigation-scroll::-webkit-scrollbar-thumb,
+body[data-wm-surface="shell"] .sidebar nav::-webkit-scrollbar-thumb {
+  background: var(--wm-shell-navigation-scrollbar);
+  border-radius: var(--wm-radius-round);
+}
+
+body[data-wm-surface="shell"] .sidebar nav {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--wm-shell-navigation-item-gap);
+  min-width: 0;
+  overflow: visible;
+}
+
+body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item) {
+  position: relative;
+  width: 100%;
+  display: grid;
+  align-items: center;
+  text-align: start;
+  cursor: pointer;
+  user-select: none;
+  min-height: var(--wm-shell-navigation-row-height);
+  padding: 0 var(--wm-shell-navigation-inline-padding);
+  grid-template-columns: var(--wm-shell-navigation-icon-size) minmax(0,1fr) auto;
+  gap: var(--wm-shell-navigation-label-gap);
+  border: 1px solid transparent;
+  border-radius: var(--wm-shell-navigation-radius);
+  background: transparent;
+  color: var(--wm-shell-navigation-text-muted);
+  font-size: var(--wm-shell-navigation-font-size);
+  transition:
+    background-color var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease),
+    border-color var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease),
+    color var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease),
+    box-shadow var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease);
+}
+
+body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item) > .shell-nav-icon,
+body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item) > .shell-nav-icon svg,
+body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item) > span:first-child,
+body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item) > span:first-child svg {
+  width: var(--wm-shell-navigation-icon-size);
+  height: var(--wm-shell-navigation-icon-size);
+}
+
+body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item) b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--wm-shell-navigation-font-size);
+  font-weight: var(--wm-font-weight-medium);
+}
+
+body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item) kbd {
+  border-color: var(--wm-shell-navigation-border);
+  color: var(--wm-shell-navigation-text-subtle);
+  background: var(--wm-shell-navigation-surface-raised);
+}
+
+body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item):hover {
+  background: var(--wm-shell-navigation-surface-hover);
+  color: var(--wm-shell-navigation-text);
+}
+
+body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item).active,
+body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item)[aria-current="page"] {
+  background: var(--wm-shell-navigation-surface-active);
+  color: var(--wm-shell-navigation-text);
+  border-color: var(--wm-shell-navigation-active-border);
+  box-shadow: inset var(--wm-shell-navigation-active-indicator-width) 0 0 var(--wm-shell-navigation-active-indicator);
+}
+
+body[data-wm-surface="shell"] :is(.brand,.nav-item,.wm-nav-item,.shell-resource-item,.shell-nav-section-toggle,.shell-resource-search-clear,.shell-sidebar-collapse,.shell-sidebar-pin,.shell-mobile-navigation-trigger,.shell-sidebar-resizer):focus-visible {
+  outline: var(--wm-shell-navigation-focus-width) solid var(--wm-shell-navigation-focus);
+  outline-offset: var(--wm-shell-navigation-focus-offset);
+}
+
+body[data-wm-surface="shell"] :is(.shell-resource-item,.shell-nav-section-toggle,.shell-resource-search-clear):focus-visible {
+  outline: var(--wm-shell-navigation-focus-width) solid var(--wm-shell-navigation-focus);
+  outline-offset: var(--wm-shell-navigation-focus-offset);
+}
+
+
+/* Shell M3 — Sections, applications and resource navigation -------------- */
+body[data-wm-surface="shell"] .shell-nav-primary {
+  display: grid;
+  gap: var(--wm-shell-navigation-item-gap);
+  padding-bottom: var(--wm-shell-navigation-section-gap);
+  border-bottom: var(--wm-shell-sidebar-divider-width) solid var(--wm-shell-navigation-border);
+}
+
+body[data-wm-surface="shell"] .shell-resource-navigation {
+  display: grid;
+  gap: var(--wm-space-100);
+  min-width: 0;
+  padding-top: var(--wm-shell-navigation-section-gap);
+}
+
+body[data-wm-surface="shell"] .shell-resource-search {
+  position: relative;
+  min-width: 0;
+  min-height: var(--wm-shell-navigation-resource-search-height);
+  display: grid;
+  grid-template-columns: var(--wm-shell-navigation-icon-size) minmax(0,1fr) var(--wm-shell-navigation-control-size);
+  align-items: center;
+  gap: var(--wm-space-075);
+  padding-inline-start: var(--wm-shell-navigation-inline-padding);
+  border: 1px solid var(--wm-shell-navigation-border);
+  border-radius: var(--wm-shell-navigation-radius);
+  background: var(--wm-shell-navigation-surface-raised);
+  color: var(--wm-shell-navigation-text-muted);
+}
+
+body[data-wm-surface="shell"] .shell-resource-search > svg {
+  width: var(--wm-shell-navigation-icon-size);
+  height: var(--wm-shell-navigation-icon-size);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body[data-wm-surface="shell"] .shell-resource-search input {
+  min-width: 0;
+  width: 100%;
+  height: calc(var(--wm-shell-navigation-resource-search-height) - 2px);
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--wm-shell-navigation-text);
+  font-size: var(--wm-shell-navigation-font-size);
+}
+
+body[data-wm-surface="shell"] .shell-resource-search input::placeholder {
+  color: var(--wm-shell-navigation-text-subtle);
+  opacity: 1;
+}
+
+body[data-wm-surface="shell"] .shell-resource-search:focus-within {
+  border-color: var(--wm-shell-navigation-focus);
+  box-shadow: 0 0 0 1px var(--wm-shell-navigation-focus);
+}
+
+body[data-wm-surface="shell"] .shell-resource-search-clear {
+  width: var(--wm-shell-navigation-control-size);
+  height: var(--wm-shell-navigation-control-size);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--wm-shell-navigation-radius);
+  background: transparent;
+  color: var(--wm-shell-navigation-text-muted);
+  cursor: pointer;
+}
+
+body[data-wm-surface="shell"] .shell-resource-search-clear:is(:hover,:focus-visible) {
+  background: var(--wm-shell-navigation-surface-hover);
+  color: var(--wm-shell-navigation-text);
+}
+
+body[data-wm-surface="shell"] .shell-resource-search-clear svg {
+  width: var(--wm-shell-navigation-icon-size);
+  height: var(--wm-shell-navigation-icon-size);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+
+body[data-wm-surface="shell"] .shell-nav-section {
+  min-width: 0;
+}
+
+body[data-wm-surface="shell"] .shell-nav-section[hidden] {
+  display: none;
+}
+
+body[data-wm-surface="shell"] .shell-nav-section-header {
+  min-height: var(--wm-shell-navigation-section-header-height);
+  display: flex;
+  align-items: center;
+}
+
+body[data-wm-surface="shell"] .shell-nav-section-toggle {
+  width: 100%;
+  min-height: var(--wm-shell-navigation-section-header-height);
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto var(--wm-shell-navigation-section-chevron-size);
+  align-items: center;
+  gap: var(--wm-space-075);
+  padding: 0 var(--wm-shell-navigation-section-indent);
+  border: 0;
+  border-radius: var(--wm-shell-navigation-radius);
+  background: transparent;
+  color: var(--wm-shell-navigation-text-muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+body[data-wm-surface="shell"] .shell-nav-section-toggle > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--wm-shell-navigation-section-font-size);
+  font-weight: var(--wm-font-weight-semibold);
+  letter-spacing: .04em;
+}
+
+body[data-wm-surface="shell"] .shell-nav-section-toggle small {
+  min-width: var(--wm-shell-navigation-section-count-min-width);
+  color: var(--wm-shell-navigation-text-subtle);
+  font-size: var(--wm-shell-navigation-meta-font-size);
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+body[data-wm-surface="shell"] .shell-nav-section-toggle:is(:hover,:focus-visible) {
+  background: var(--wm-shell-navigation-surface-hover);
+  color: var(--wm-shell-navigation-text);
+}
+
+body[data-wm-surface="shell"] .shell-nav-section-chevron,
+body[data-wm-surface="shell"] .shell-nav-section-chevron svg {
+  width: var(--wm-shell-navigation-section-chevron-size);
+  height: var(--wm-shell-navigation-section-chevron-size);
+}
+
+body[data-wm-surface="shell"] .shell-nav-section-chevron {
+  display: grid;
+  place-items: center;
+  transition: transform var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease);
+}
+
+body[data-wm-surface="shell"] .shell-nav-section-chevron svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body[data-wm-surface="shell"] .shell-nav-section.is-collapsed .shell-nav-section-chevron {
+  transform: rotate(-90deg);
+}
+
+body[data-wm-surface="shell"] .shell-nav-section-body {
+  display: grid;
+  gap: var(--wm-shell-navigation-item-gap);
+  min-width: 0;
+  padding-top: var(--wm-space-025);
+}
+
+body[data-wm-surface="shell"] .shell-nav-section-body[hidden] {
+  display: none;
+}
+
+body[data-wm-surface="shell"] .shell-resource-item {
+  position: relative;
+  width: 100%;
+  min-height: var(--wm-shell-navigation-resource-row-height);
+  display: grid;
+  grid-template-columns: var(--wm-shell-navigation-resource-icon-size) minmax(0,1fr) auto;
+  align-items: center;
+  gap: var(--wm-shell-navigation-label-gap);
+  padding: var(--wm-space-050) var(--wm-shell-navigation-inline-padding);
+  border: 1px solid transparent;
+  border-radius: var(--wm-shell-navigation-radius);
+  background: transparent;
+  color: var(--wm-shell-navigation-text-muted);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease),
+    border-color var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease),
+    color var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease);
+}
+
+body[data-wm-surface="shell"] .shell-resource-item[hidden] {
+  display: none;
+}
+
+body[data-wm-surface="shell"] .shell-resource-item:is(:hover,:focus-visible):not(:disabled) {
+  background: var(--wm-shell-navigation-surface-hover);
+  color: var(--wm-shell-navigation-text);
+}
+
+body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item,.shell-resource-item,.shell-nav-section-toggle,.shell-resource-search-clear):active:not(:disabled) {
+  background: var(--wm-shell-navigation-surface-active);
+}
+
+body[data-wm-surface="shell"] .shell-resource-item.active,
+body[data-wm-surface="shell"] .shell-resource-item[aria-current="page"] {
+  background: var(--wm-shell-navigation-surface-active);
+  border-color: var(--wm-shell-navigation-active-border);
+  color: var(--wm-shell-navigation-text);
+  box-shadow: inset var(--wm-shell-navigation-active-indicator-width) 0 0 var(--wm-shell-navigation-active-indicator);
+}
+
+body[data-wm-surface="shell"] .shell-resource-item:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+body[data-wm-surface="shell"] .shell-resource-icon {
+  width: var(--wm-shell-navigation-resource-icon-size);
+  height: var(--wm-shell-navigation-resource-icon-size);
+  display: grid;
+  place-items: center;
+  border-radius: calc(var(--wm-shell-navigation-radius) - 2px);
+  color: var(--wm-shell-navigation-text-muted);
+}
+
+body[data-wm-surface="shell"] .shell-resource-icon > svg,
+body[data-wm-surface="shell"] .shell-resource-icon .shell-application-icon,
+body[data-wm-surface="shell"] .shell-resource-icon .shell-application-icon svg {
+  width: var(--wm-shell-navigation-resource-icon-size);
+  height: var(--wm-shell-navigation-resource-icon-size);
+}
+
+body[data-wm-surface="shell"] .shell-resource-icon > svg {
+  width: var(--wm-shell-navigation-icon-size);
+  height: var(--wm-shell-navigation-icon-size);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body[data-wm-surface="shell"] .shell-application-icon {
+  border-radius: calc(var(--wm-shell-navigation-radius) - 2px);
+}
+
+body[data-wm-surface="shell"] .shell-application-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+body[data-wm-surface="shell"] .shell-resource-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+body[data-wm-surface="shell"] .shell-resource-copy b,
+body[data-wm-surface="shell"] .shell-resource-copy small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body[data-wm-surface="shell"] .shell-resource-copy b {
+  color: inherit;
+  font-size: var(--wm-shell-navigation-font-size);
+  font-weight: var(--wm-font-weight-medium);
+}
+
+body[data-wm-surface="shell"] .shell-resource-copy small {
+  color: var(--wm-shell-navigation-text-subtle);
+  font-size: var(--wm-shell-navigation-meta-font-size);
+}
+
+body[data-wm-surface="shell"] .shell-resource-favorite,
+body[data-wm-surface="shell"] .shell-resource-favorite svg {
+  width: var(--wm-shell-navigation-icon-size);
+  height: var(--wm-shell-navigation-icon-size);
+}
+
+body[data-wm-surface="shell"] .shell-resource-favorite {
+  color: var(--wm-shell-navigation-active-indicator);
+}
+
+body[data-wm-surface="shell"] .shell-resource-favorite svg {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1;
+}
+
+body[data-wm-surface="shell"] .shell-resource-empty,
+body[data-wm-surface="shell"] .shell-resource-filter-empty {
+  min-width: 0;
+  padding: var(--wm-space-100) var(--wm-shell-navigation-inline-padding);
+  border-radius: var(--wm-shell-navigation-radius);
+  color: var(--wm-shell-navigation-text-subtle);
+}
+
+body[data-wm-surface="shell"] .shell-resource-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+body[data-wm-surface="shell"] .shell-resource-empty span,
+body[data-wm-surface="shell"] .shell-resource-filter-empty strong {
+  color: var(--wm-shell-navigation-text-muted);
+  font-size: var(--wm-shell-navigation-section-font-size);
+}
+
+body[data-wm-surface="shell"] .shell-resource-empty small,
+body[data-wm-surface="shell"] .shell-resource-filter-empty small {
+  font-size: var(--wm-shell-navigation-meta-font-size);
+  line-height: 1.45;
+}
+
+body[data-wm-surface="shell"] .shell-resource-filter-empty {
+  display: grid;
+  gap: 3px;
+  text-align: center;
+}
+
+body[data-wm-surface="shell"] .shell-resource-filter-empty[hidden] {
+  display: none;
+}
+
+/* Compact desktop/tablet state ------------------------------------------- */
+body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"]:not([data-shell-navigation-peek="true"]) .sidebar {
+  --wm-shell-sidebar-effective-padding-inline: var(--wm-space-100);
+  padding-inline: var(--wm-shell-sidebar-effective-padding-inline);
+}
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"]:not([data-shell-navigation-peek="true"]) .brand {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"]:not([data-shell-navigation-peek="true"]) :is(.brand-copy,.nav-item b,.nav-item kbd,.sidebar-foot div) {
+  display: none;
+}
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"]:not([data-shell-navigation-peek="true"]) :is(.nav-item,.wm-nav-item) {
+  grid-template-columns: 1fr;
+  place-items: center;
+  padding-inline: 0;
+}
+
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"]:not([data-shell-navigation-peek="true"]) :is(.shell-resource-search,.shell-nav-section-header,[data-shell-section="favorites"],[data-shell-section="boards"],.shell-resource-filter-empty) {
+  display: none;
+}
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"]:not([data-shell-navigation-peek="true"]) [data-shell-section="applications"] .shell-nav-section-body {
+  display: grid!important;
+  padding-top: 0;
+}
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"]:not([data-shell-navigation-peek="true"]) .shell-resource-navigation {
+  padding-top: var(--wm-shell-navigation-section-gap);
+}
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"]:not([data-shell-navigation-peek="true"]) .shell-resource-item {
+  min-height: var(--wm-shell-navigation-row-height);
+  grid-template-columns: 1fr;
+  place-items: center;
+  padding: var(--wm-space-050) 0;
+}
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"]:not([data-shell-navigation-peek="true"]) :is(.shell-resource-copy,.shell-resource-favorite) {
+  display: none;
+}
+
+/* Footer ------------------------------------------------------------------ */
+body[data-wm-surface="shell"] .sidebar-foot {
+  margin-top: var(--wm-shell-navigation-section-gap);
+  padding: var(--wm-shell-navigation-section-gap) var(--wm-shell-navigation-inline-padding) var(--wm-space-050);
+  border-top: var(--wm-shell-sidebar-divider-width) solid var(--wm-shell-navigation-border);
+  display: flex;
+  align-items: center;
+  gap: var(--wm-space-100);
+  flex: 0 0 auto;
+}
+
+body[data-wm-surface="shell"] .sidebar-foot > div { display: flex; flex-direction: column; min-width: 0; }
+body[data-wm-surface="shell"] .health-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: var(--wm-radius-round);
+  background: var(--wm-color-positive);
+  box-shadow: 0 0 0 4px color-mix(in srgb,var(--wm-color-positive) 12%,transparent);
+}
+
+body[data-wm-surface="shell"] .sidebar-foot strong {
+  color: var(--wm-shell-navigation-text);
+  font-size: var(--wm-shell-navigation-section-font-size);
+}
+
+body[data-wm-surface="shell"] .sidebar-foot small {
+  color: var(--wm-shell-navigation-text-subtle);
+  font-size: var(--wm-shell-navigation-meta-font-size);
+}
+
+/* Shell M4 — pointer + keyboard resizing -------------------------------- */
+body[data-wm-surface="shell"] :is(.shell-sidebar-resizer,[data-shell-resizer]) {
+  position: absolute;
+  z-index: 6;
+  inset-block: 0;
+  inset-inline-end: calc((var(--wm-shell-sidebar-resizer-hit-width) - var(--wm-shell-sidebar-resizer-visual-width)) / -2);
+  width: var(--wm-shell-sidebar-resizer-hit-width);
+  display: none;
+  padding: 0;
+  border: 0;
+  outline-offset: calc(var(--wm-shell-navigation-focus-offset) * -1);
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-state="expanded"] :is(.shell-sidebar-resizer,[data-shell-resizer]),
+body[data-wm-surface="shell"] .shell[data-shell-navigation-pinned="false"][data-shell-navigation-peek="true"] :is(.shell-sidebar-resizer,[data-shell-resizer]) {
+  display: block;
+}
+
+body[data-wm-surface="shell"] :is(.shell-sidebar-resizer,[data-shell-resizer])::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: var(--wm-shell-sidebar-resizer-visual-width);
+  background: var(--wm-shell-navigation-resizer);
+  transform: translateX(-50%);
+  transition:
+    width var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease),
+    background-color var(--wm-shell-navigation-motion-fast) var(--wm-shell-navigation-motion-ease);
+}
+
+body[data-wm-surface="shell"] :is(.shell-sidebar-resizer,[data-shell-resizer]):is(:hover,:focus-visible)::after,
+body[data-wm-surface="shell"] .shell[data-shell-navigation-resizing] :is(.shell-sidebar-resizer,[data-shell-resizer])::after {
+  width: var(--wm-shell-sidebar-resizer-active-width);
+  background: var(--wm-shell-navigation-resizer-hover);
+}
+
+body.shell-navigation-resizing,
+body.shell-navigation-resizing * {
+  cursor: col-resize!important;
+  user-select: none!important;
+}
+
+body[data-wm-surface="shell"] .shell[data-shell-navigation-resizing] .sidebar {
+  box-shadow: var(--wm-shell-navigation-preview-shadow);
+}
+
+/* Mobile drawer ----------------------------------------------------------- */
+body[data-wm-surface="shell"] .shell-mobile-navigation-trigger,
+body[data-wm-surface="shell"] .shell-sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width:900px) and (min-width:621px) {
+  body[data-wm-surface="shell"] :is(.shell-sidebar-header-actions,.shell-sidebar-resizer,[data-shell-resizer]) {
+    display: none!important;
+  }
+}
+
+@media (max-width:900px) and (min-width:621px) {
+  body[data-wm-surface="shell"] .shell {
+    --wm-shell-navigation-current-width: var(--wm-shell-sidebar-width-compact);
+  }
+
+  body[data-wm-surface="shell"] .sidebar {
+    --wm-shell-sidebar-effective-padding-inline: var(--wm-space-100);
+    width: var(--wm-shell-sidebar-width-compact);
+    padding-inline: var(--wm-shell-sidebar-effective-padding-inline);
+  }
+
+  body[data-wm-surface="shell"] .workspace {
+    margin-left: var(--wm-shell-navigation-current-width);
+    width: calc(100% - var(--wm-shell-navigation-current-width));
+  }
+
+  body[data-wm-surface="shell"] :is(.brand-copy,.nav-item b,.nav-item kbd,.sidebar-foot div,.shell-sidebar-collapse) {
+    display: none;
+  }
+
+  body[data-wm-surface="shell"] .brand {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item) {
+    min-height: var(--wm-shell-navigation-row-touch-height);
+    grid-template-columns: 1fr;
+    place-items: center;
+    padding-inline: 0;
+  }
+
+  body[data-wm-surface="shell"] :is(.shell-resource-search,.shell-nav-section-header,[data-shell-section="favorites"],[data-shell-section="boards"],.shell-resource-filter-empty) {
+    display: none;
+  }
+
+  body[data-wm-surface="shell"] [data-shell-section="applications"] .shell-nav-section-body {
+    display: grid!important;
+    padding-top: 0;
+  }
+
+  body[data-wm-surface="shell"] .shell-resource-item {
+    min-height: var(--wm-shell-navigation-row-touch-height);
+    grid-template-columns: 1fr;
+    place-items: center;
+    padding-inline: 0;
+  }
+
+  body[data-wm-surface="shell"] :is(.shell-resource-copy,.shell-resource-favorite) {
+    display: none;
+  }
+}
+
+@media (max-width:620px) {
+  body[data-wm-surface="shell"] .shell {
+    --wm-shell-navigation-current-width: 0px;
+    display: block;
+  }
+
+  body[data-wm-surface="shell"] .workspace {
+    width: 100%;
+    margin-left: 0;
+    padding-bottom: 0;
+  }
+
+  body[data-wm-surface="shell"] .workspace.module-workspace {
+    height: 100dvh;
+    grid-template-rows: 58px minmax(0,1fr);
+  }
+
+  body[data-wm-surface="shell"] .sidebar {
+    --wm-shell-sidebar-effective-padding-inline: var(--wm-shell-sidebar-padding-inline);
+    position: fixed;
+    z-index: 70;
+    inset: 0 auto 0 0;
+    width: min(var(--wm-shell-sidebar-mobile-width), calc(100vw - var(--wm-space-500)));
+    min-width: min(var(--wm-shell-sidebar-width-min), calc(100vw - var(--wm-space-500)));
+    height: 100dvh!important;
+    min-height: 100dvh;
+    padding: max(var(--wm-shell-sidebar-padding-block), env(safe-area-inset-top)) var(--wm-shell-sidebar-padding-inline) max(var(--wm-shell-sidebar-padding-block), env(safe-area-inset-bottom));
+    border-inline-end: var(--wm-shell-sidebar-divider-width) solid var(--wm-shell-navigation-border);
+    border-top: 0;
+    box-shadow: var(--wm-shell-navigation-shadow);
+    left: calc(0px - var(--wm-shell-sidebar-mobile-width));
+    transform: none!important;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  body[data-wm-surface="shell"] .shell[data-shell-mobile-open="true"] .sidebar {
+    left: 0;
+    transform: none!important;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"] .sidebar,
+  body[data-wm-surface="shell"] .shell[data-shell-navigation-state="expanded"] .sidebar {
+    padding-inline: var(--wm-shell-sidebar-padding-inline);
+  }
+
+  body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"] .brand-copy { display:flex; }
+  body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"] .nav-item b { display:block; }
+  body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"] .nav-item kbd { display:inline-block; }
+  body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"] .sidebar-foot div { display:flex; }
+  body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"] .shell-resource-search { display:grid; }
+  body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"] .shell-nav-section-header { display:flex; }
+  body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"] :is([data-shell-section="favorites"],[data-shell-section="boards"]):not([hidden]) { display:block; }
+  body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"] .shell-resource-item {
+    min-height: var(--wm-shell-navigation-resource-row-touch-height);
+    grid-template-columns: var(--wm-shell-navigation-resource-icon-size) minmax(0,1fr) auto;
+    place-items: initial;
+    align-items: center;
+    padding: var(--wm-space-050) var(--wm-shell-navigation-inline-padding);
+  }
+  body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"] :is(.shell-resource-copy,.shell-resource-favorite) { display:flex; }
+
+  body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"] .brand,
+  body[data-wm-surface="shell"] .brand {
+    justify-content: flex-start;
+    padding-inline: var(--wm-shell-navigation-inline-padding);
+  }
+
+  body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"] :is(.nav-item,.wm-nav-item),
+  body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item) {
+    display: grid;
+    grid-template-columns: var(--wm-shell-navigation-icon-size) minmax(0,1fr) auto;
+    place-items: initial;
+    align-items: center;
+    min-height: var(--wm-shell-navigation-row-touch-height);
+    padding-inline: var(--wm-shell-navigation-inline-padding);
+  }
+
+  body[data-wm-surface="shell"] .sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wm-shell-navigation-item-gap);
+    overflow: visible;
+  }
+
+  body[data-wm-surface="shell"] .shell-sidebar-header-actions {
+    display: flex;
+    inset-inline-end: 0;
+  }
+
+  body[data-wm-surface="shell"] .shell-sidebar-pin {
+    display: none!important;
+  }
+
+  body[data-wm-surface="shell"] .shell-sidebar-header .brand {
+    padding-inline-end: calc(var(--wm-shell-navigation-inline-padding) + var(--wm-shell-sidebar-collapse-size) + var(--wm-space-100));
+  }
+
+  body[data-wm-surface="shell"] .shell-sidebar-collapse {
+    display: grid;
+    transform: none!important;
+  }
+
+  body[data-wm-surface="shell"] .shell-sidebar-backdrop {
+    position: fixed;
+    z-index: 60;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: var(--wm-shell-navigation-backdrop);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--wm-shell-navigation-motion-standard) var(--wm-shell-navigation-motion-ease);
+  }
+
+  body[data-wm-surface="shell"] .shell[data-shell-mobile-open="true"] .shell-sidebar-backdrop {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  body[data-wm-surface="shell"] .shell-mobile-navigation-trigger {
+    position: fixed;
+    z-index: 45;
+    top: max(var(--wm-space-150), env(safe-area-inset-top));
+    left: max(var(--wm-space-150), env(safe-area-inset-left));
+    width: var(--wm-shell-navigation-control-touch-size);
+    height: var(--wm-shell-navigation-control-touch-size);
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--wm-color-border-default);
+    border-radius: var(--wm-shell-navigation-radius);
+    background: var(--wm-color-surface-elevated);
+    color: var(--wm-color-text-primary);
+    box-shadow: var(--wm-shadow-sm);
+    cursor: pointer;
+  }
+
+  body[data-wm-surface="shell"] .workspace > .topbar {
+    padding-inline-start: calc(var(--wm-space-200) + var(--wm-shell-navigation-control-touch-size) + var(--wm-space-150));
+  }
+
+  body[data-wm-surface="shell"] .workspace > .module-topbar {
+    padding-inline-start: calc(var(--wm-space-100) + var(--wm-shell-navigation-control-touch-size) + var(--wm-space-100));
+  }
+
+  body.shell-navigation-open {
+    overflow: hidden;
+  }
+}
+
+@media (pointer:coarse) {
+  body[data-wm-surface="shell"] .shell-sidebar-header-actions {
+    --wm-shell-header-collapse-size: var(--wm-shell-navigation-control-touch-size);
+  }
+
+  body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item) {
+    min-height: var(--wm-shell-navigation-row-touch-height);
+  }
+
+  body[data-wm-surface="shell"] .shell-resource-item {
+    min-height: var(--wm-shell-navigation-resource-row-touch-height);
+  }
+
+  body[data-wm-surface="shell"] .shell-nav-section-toggle,
+  body[data-wm-surface="shell"] .shell-resource-search {
+    min-height: var(--wm-shell-navigation-control-touch-size);
+  }
+
+  body[data-wm-surface="shell"] .shell-resource-search-clear {
+    width: var(--wm-shell-navigation-control-touch-size);
+    height: var(--wm-shell-navigation-control-touch-size);
+  }
+
+  body[data-wm-surface="shell"] :is(.shell-sidebar-resizer,[data-shell-resizer]) {
+    width: var(--wm-shell-navigation-control-touch-size);
+  }
+
+  body[data-wm-surface="shell"] .shell-sidebar-collapse {
+    width: var(--wm-shell-navigation-control-touch-size);
+    height: var(--wm-shell-navigation-control-touch-size);
+  }
+
+  body[data-wm-surface="shell"] .shell-sidebar-pin {
+    width: var(--wm-shell-navigation-control-touch-size);
+    height: var(--wm-shell-navigation-control-touch-size);
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  body[data-wm-surface="shell"] :is(.sidebar,.workspace,.nav-item,.wm-nav-item,.shell-resource-item,.shell-nav-section-chevron,.shell-sidebar-collapse,.shell-sidebar-pin,.shell-mobile-navigation-trigger,.shell-sidebar-backdrop,.shell-sidebar-resizer,[data-shell-resizer]),
+  body[data-wm-surface="shell"] :is(.shell-sidebar-resizer,[data-shell-resizer])::after {
+    transition-duration: .01ms!important;
+  }
+}
+
+@media (forced-colors:active) {
+  body[data-wm-surface="shell"] .sidebar {
+    border-color: CanvasText;
+  }
+
+  body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item).active,
+  body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item)[aria-current="page"] {
+    border-color: Highlight;
+    outline: 1px solid Highlight;
+    box-shadow: none;
+  }
+
+  body[data-wm-surface="shell"] .shell-resource-item[aria-current="page"] {
+    border-color: Highlight;
+    outline: 1px solid Highlight;
+    box-shadow: none;
+  }
+
+  body[data-wm-surface="shell"] :is(.brand,.nav-item,.wm-nav-item,.shell-resource-item,.shell-nav-section-toggle,.shell-resource-search-clear,.shell-sidebar-collapse,.shell-sidebar-pin,.shell-mobile-navigation-trigger,.shell-sidebar-resizer):focus-visible {
+    outline-color: Highlight;
+  }
+
+  body[data-wm-surface="shell"] :is(.shell-sidebar-collapse,.shell-mobile-navigation-trigger) {
+    border-color: ButtonText;
+  }
+
+  body[data-wm-surface="shell"] .shell-sidebar-backdrop {
+    background: Canvas;
+    opacity: .72;
+  }
+}

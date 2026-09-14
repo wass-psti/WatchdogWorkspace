@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import { createWorkManagementClientStateService, workManagementClientState, ZUSTAND_VERSION } from '../assets/js/platform/state/client-state-store.ts';
+import { boardListQueryKey, boardListQueryPrefix } from '../src/features/boards/contracts/query-keys.ts';
+
+assert.equal(ZUSTAND_VERSION, '5.0.15');
+assert.deepEqual(boardListQueryPrefix('user-1'), ['boards-user', 'user-1', 'list']);
+assert.deepEqual(boardListQueryKey('user-1', 'active'), ['boards-user', 'user-1', 'list', 'active']);
+const state = createWorkManagementClientStateService();
+assert.deepEqual(state.getSnapshot().shell.sections, { favorites: true, applications: true, boards: true });
+assert.equal(state.getSnapshot().shell.navigation.mode, 'expanded');
+
+let notifications = 0;
+const unsubscribe = state.subscribe(() => { notifications += 1; });
+state.hydratePersistentShell({ navigation: { mode: 'compact', width: 312, pinned: false }, sections: { boards: false } });
+assert.equal(state.getSnapshot().shell.navigation.mode, 'compact');
+assert.equal(state.getSnapshot().shell.navigation.width, 312);
+assert.equal(state.getSnapshot().shell.navigation.pinned, false);
+assert.equal(state.getSnapshot().shell.sections.boards, false);
+state.updateShellNavigation({ peek: true, resizing: true, mobileOpen: true });
+state.setShellResourceSearchQuery('roadmap');
+state.setShellSection('applications', false);
+assert.equal(state.getSnapshot().shell.resourceSearchQuery, 'roadmap');
+assert.equal(state.getSnapshot().shell.sections.applications, false);
+state.resetTransientShellState();
+const reset = state.getSnapshot().shell;
+assert.equal(reset.navigation.peek, false);
+assert.equal(reset.navigation.resizing, false);
+assert.equal(reset.navigation.mobileOpen, false);
+assert.equal(reset.resourceSearchQuery, '');
+assert.equal(reset.navigation.mode, 'compact', 'transient reset must preserve persistent navigation mode');
+assert.equal(reset.navigation.width, 312, 'transient reset must preserve persistent navigation width');
+assert.equal(reset.navigation.pinned, false, 'transient reset must preserve persistent pin state');
+assert.equal(reset.sections.boards, false, 'transient reset must preserve section preferences');
+assert.ok(notifications >= 5);
+unsubscribe();
+assert.equal(workManagementClientState, workManagementClientState, 'page-lifetime singleton must be stable');
+console.log('Stage B M9 client-state execution vectors: PASS');

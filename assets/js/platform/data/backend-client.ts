@@ -8,27 +8,12 @@ import type {
   TransportValidator,
 } from '../../../../src/platform/contracts/transport.ts';
 import { normalizeAppError, WorkManagementError } from '../errors/app-error.ts';
-import { createRequestSignal, timeoutError } from './request-signal.ts';
-
-type UnknownRecord = Record<string, unknown>;
 
 const STORAGE_REQUEST_TIMEOUT_MS = 20_000;
 const STORAGE_UPLOAD_TIMEOUT_MS = 60_000;
 let requestSequence = 0;
 const nextRequestId = (): string => `wm-${Date.now().toString(36)}-${(++requestSequence).toString(36)}`;
 
-const recordOf = (value: unknown): UnknownRecord | null =>
-  value !== null && typeof value === 'object' && !Array.isArray(value) ? value as UnknownRecord : null;
-
-const storageMessage = (payload: unknown, status: number): string => {
-  const record = recordOf(payload);
-  const message = typeof record?.message === 'string' ? record.message : typeof record?.error === 'string' ? record.error : '';
-  return message || `Storage request failed with HTTP ${status}`;
-};
-
-async function responsePayload(response: Response): Promise<unknown> {
-  try { return await response.json(); } catch { return null; }
-}
 
 function validatePayload<T>(value: unknown, validator: TransportValidator<T> | undefined, operation: string): T | unknown {
   if (!validator) return value;
@@ -48,6 +33,7 @@ function validatePayload<T>(value: unknown, validator: TransportValidator<T> | u
 /** Supabase transport adapter. Feature/domain code should depend on repositories, not this client. */
 export function createBackendClient(auth: AuthTransportPort, options: BackendClientOptions = {}): BackendClient {
   const diagnostics = options.diagnostics ?? null;
+  const observability = options.observability ?? null;
 
   async function accessToken(): Promise<string> {
     if (!auth.isAuthenticated) {
@@ -76,17 +62,17 @@ export function createBackendClient(auth: AuthTransportPort, options: BackendCli
     const operation = `rpc.${name}`;
     const prefer = rpcOptions.prefer ?? 'return=representation';
     const requestId = nextRequestId();
+    const span = observability?.startSpan('rpc.request', { 'rpc.system.name': 'supabase', 'rpc.method': name, requestId });
     try {
       const token = await accessToken();
       diagnostics?.debug('API_RPC', 'Calling backend RPC.', { operation, requestId });
-      const payload = await auth.request(`/rest/v1/rpc/${name}`, {
-        method: 'POST',
-        headers: auth.headers(token, prefer ? { Prefer: prefer } : {}),
-        body: JSON.stringify(body),
-        ...(rpcOptions.signal ? { signal: rpcOptions.signal } : {}),
+      const payload = await auth.supabase.rpc(name, body, token, {
+        prefer,
+        signal: rpcOptions.signal,
       });
       const validated = validatePayload(payload, rpcOptions.validate, operation);
       diagnostics?.debug('API_RPC_SUCCESS', 'Backend RPC completed.', { operation, requestId });
+      span?.end({ status: 'ok' });
       return validated;
     } catch (error: unknown) {
       const normalized = normalizeAppError(error, { operation, metadata: { requestId } });
@@ -97,110 +83,81 @@ export function createBackendClient(auth: AuthTransportPort, options: BackendCli
         status: normalized.status,
         retryable: normalized.retryable,
       });
+      span?.end({ status: 'error', error: normalized, attributes: { 'error.type': normalized.code, status: normalized.status } });
       throw normalized;
     }
   }
 
-  const storageUrl = (bucket: string, path: string): string => {
-    const normalizedPath = String(path || '').split('/').map(encodeURIComponent).join('/');
-    return `${auth.backend.supabaseUrl}/storage/v1/object/${encodeURIComponent(bucket)}/${normalizedPath}`;
-  };
-
   async function storageDelete(bucket: string, path: string, deleteOptions: StorageDeleteOptions = {}): Promise<boolean> {
     const operation = `storage.delete.${bucket}`;
-    const ignoreMissing = deleteOptions.ignoreMissing ?? true;
     const requestId = nextRequestId();
-    const requestSignal = createRequestSignal(deleteOptions.signal, STORAGE_REQUEST_TIMEOUT_MS);
+    const span = observability?.startSpan('storage.delete', { bucket, requestId });
     try {
       const token = await accessToken();
       diagnostics?.debug('STORAGE_DELETE', 'Deleting private storage object.', { operation, requestId, bucket });
-      const response = await fetch(storageUrl(bucket, path), {
-        method: 'DELETE',
-        headers: { apikey: auth.backend.publishableKey, Authorization: `Bearer ${token}` },
-        signal: requestSignal.signal,
+      const result = await auth.supabase.storageDelete(bucket, path, token, {
+        ignoreMissing: deleteOptions.ignoreMissing,
+        signal: deleteOptions.signal,
+        timeoutMs: STORAGE_REQUEST_TIMEOUT_MS,
       });
-      if (response.ok || (ignoreMissing && response.status === 404)) return true;
-      const payload = await responsePayload(response);
-      throw new WorkManagementError(storageMessage(payload, response.status), {
-        code: 'WM_STORAGE_DELETE',
-        category: 'storage',
-        status: response.status,
-        retryable: response.status >= 500,
-        operation,
-        metadata: { bucket, requestId },
-        cause: payload,
-      });
+      span?.end({ status: 'ok' });
+      return result;
     } catch (error: unknown) {
-      const cause = requestSignal.timedOut() ? timeoutError('The storage service did not respond in time.') : error;
-      throw normalizeAppError(cause, {
+      const normalized = normalizeAppError(error, {
         operation,
         fallbackMessage: 'The file could not be removed. Try again.',
-        categoryHint: cause instanceof WorkManagementError ? null : requestSignal.timedOut() ? 'timeout' : 'storage',
+        categoryHint: error instanceof WorkManagementError ? null : 'storage',
         metadata: { bucket, requestId },
       });
-    } finally {
-      requestSignal.dispose();
+      span?.end({ status: 'error', error: normalized, attributes: { 'error.type': normalized.code } });
+      throw normalized;
     }
   }
 
   async function storageUpload(bucket: string, path: string, file: Blob, uploadOptions: StorageUploadOptions = {}): Promise<boolean> {
     const operation = `storage.upload.${bucket}`;
     const requestId = nextRequestId();
-    const requestSignal = createRequestSignal(uploadOptions.signal, STORAGE_UPLOAD_TIMEOUT_MS);
+    const span = observability?.startSpan('storage.upload', { bucket, requestId, size: file.size });
     try {
       const token = await accessToken();
       diagnostics?.debug('STORAGE_UPLOAD', 'Uploading private storage object.', { operation, requestId, bucket, size: file.size });
-      const response = await fetch(storageUrl(bucket, path), {
-        method: 'POST',
-        headers: {
-          apikey: auth.backend.publishableKey,
-          Authorization: `Bearer ${token}`,
-          'Content-Type': uploadOptions.contentType || file.type || 'application/octet-stream',
-          'x-upsert': uploadOptions.upsert ? 'true' : 'false',
-        },
-        body: file,
-        signal: requestSignal.signal,
+      const result = await auth.supabase.storageUpload(bucket, path, file, token, {
+        contentType: uploadOptions.contentType,
+        upsert: uploadOptions.upsert,
+        signal: uploadOptions.signal,
+        timeoutMs: STORAGE_UPLOAD_TIMEOUT_MS,
       });
-      if (response.ok) return true;
-      const payload = await responsePayload(response);
-      throw new WorkManagementError(storageMessage(payload, response.status), {
-        code: 'WM_STORAGE_UPLOAD',
-        category: 'storage',
-        status: response.status,
-        retryable: response.status >= 500,
-        operation,
-        metadata: { bucket, size: file.size, requestId },
-        cause: payload,
-      });
+      span?.end({ status: 'ok' });
+      return result;
     } catch (error: unknown) {
-      const cause = requestSignal.timedOut() ? timeoutError('The storage upload did not respond in time.') : error;
-      throw normalizeAppError(cause, {
+      const normalized = normalizeAppError(error, {
         operation,
         fallbackMessage: 'The file could not be uploaded. Try again.',
-        categoryHint: cause instanceof WorkManagementError ? null : requestSignal.timedOut() ? 'timeout' : 'storage',
+        categoryHint: error instanceof WorkManagementError ? null : 'storage',
         metadata: { bucket, size: file.size, requestId },
       });
-    } finally {
-      requestSignal.dispose();
+      span?.end({ status: 'error', error: normalized, attributes: { 'error.type': normalized.code } });
+      throw normalized;
     }
   }
 
   async function storageSign(bucket: string, path: string, expiresIn = 120): Promise<unknown> {
     const operation = `storage.sign.${bucket}`;
+    const span = observability?.startSpan('storage.sign', { bucket });
     try {
       const token = await accessToken();
-      return await auth.request(`/storage/v1/object/sign/${encodeURIComponent(bucket)}/${String(path || '').split('/').map(encodeURIComponent).join('/')}`, {
-        method: 'POST',
-        headers: auth.headers(token),
-        body: JSON.stringify({ expiresIn }),
-      });
+      const result = await auth.supabase.storageSign(bucket, path, token, expiresIn);
+      span?.end({ status: 'ok' });
+      return result;
     } catch (error: unknown) {
-      throw normalizeAppError(error, {
+      const normalized = normalizeAppError(error, {
         operation,
         fallbackMessage: 'The file could not be opened securely. Try again.',
         categoryHint: error instanceof WorkManagementError ? null : 'storage',
         metadata: { bucket },
       });
+      span?.end({ status: 'error', error: normalized, attributes: { 'error.type': normalized.code } });
+      throw normalized;
     }
   }
 

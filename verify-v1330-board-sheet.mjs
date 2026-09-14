@@ -17,7 +17,13 @@ assert.ok(table.includes('group-accent-rail')&&table.includes('data-group-accent
 assert.ok(table.includes('board-group-add-row')&&table.includes('Add new group'),'per-group add-item footer and trailing group action exist');
 assert.ok(table.includes('add-column-head')&&table.includes('<span>Column</span>'),'end-of-schema Add Column action is explicit');
 assert.ok(workspace.includes('data-column-quick-sort')&&workspace.includes('item-title-edit-button'),'quick sorting and explicit rename affordance are rendered');
-assert.ok(workspace.includes('data-open-item="${item.id}" title="Open'),'item name opens the item workspace directly');
+assert.ok(
+  workspace.includes('class="item-inline-title"')
+    && workspace.includes('data-open-item="${item.id}"')
+    && ui.includes("btn.matches('[data-open-item]')")
+    && ui.includes('itemWorkspace.open(itemId)'),
+  'item name opens the item workspace directly'
+);
 assert.ok(ui.includes("querySelectorAll<HTMLElement>('.board-table-scroll')")&&ui.includes('syncingBoardTableScroll'),'group table horizontal scroll is synchronized');
 assert.ok(ui.includes("[data-column-sort],[data-column-quick-sort]")&&ui.includes("direction === 'none'"),'quick sorting cycles and clears safely');
 assert.ok(group.includes('openAccent')&&group.includes('group-accent-picker'),'group accent workflow exists');

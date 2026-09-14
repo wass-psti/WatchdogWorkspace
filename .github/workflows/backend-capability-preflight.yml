@@ -1,0 +1,23 @@
+name: Stage G M38 Backend Capability Preflight
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  m38:
+    runs-on: ubuntu-latest
+    env:
+      VITE_RUNTIME_ENV: ci
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run dependencies:ensure
+      - run: npm run backend-preflight:config
+      - run: npm run backend-preflight:check
+      - run: npm run backend-preflight:test
+      - run: npm run backend-preflight:browser

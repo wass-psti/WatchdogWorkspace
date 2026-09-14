@@ -1,0 +1,31 @@
+{
+  "schema": "wm-backup-dr-policy-v1",
+  "recoveryObjectives": {
+    "rpoTargetHours": 24,
+    "rtoTargetMinutes": 60
+  },
+  "applicationBackup": {
+    "format": "wm-recovery-package-v1",
+    "payloadFormat": "work-management-backup-v4",
+    "integrity": "SHA-256/json-stable-v1",
+    "retentionTarget": {
+      "daily": 7,
+      "weekly": 4,
+      "monthly": 12
+    },
+    "encryptionBoundary": "external-encrypted-access-controlled-storage-required",
+    "authenticityBoundary": "integrity-digest-does-not-provide-origin-authenticity"
+  },
+  "restore": {
+    "preflightRequired": true,
+    "preRestoreCheckpointRequired": true,
+    "cloudMutation": "transactional-rpc-wm_restore_workspace_backup_v4",
+    "localRollback": "best-effort-on-cloud-transaction-failure",
+    "postRestoreVerification": "transaction-counts-plus-cache-invalidation"
+  },
+  "infrastructure": {
+    "databaseProviderBackup": "external-operational-prerequisite",
+    "githubPagesArtifact": "rebuild-from-certified-source-baseline",
+    "secrets": "restore-from-approved-secret-manager-not-backup-package"
+  }
+}

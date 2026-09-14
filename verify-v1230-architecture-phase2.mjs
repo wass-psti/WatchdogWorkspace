@@ -29,7 +29,18 @@ for (const token of ['createFeatureRegistry', 'createRouteController', 'installA
   assert.ok(runtime.includes(token), `runtime gateway missing ${token}`);
   assert.ok(app.includes(token), `shell missing ${token}`);
 }
-assert.ok(routeSource.includes('transitionOwnership(route)') && routeSource.includes('navigate(decision.target)') && routePolicySource.includes("target:'login'"), 'central route policy incomplete');
+if (applicationManifest.architectureVersion >= 48) {
+  assert.ok(
+    routeSource.includes('transitionOwnership(route, nextOwner)')
+      && routeSource.includes('resolveRoutePresentationOwner')
+      && routeSource.includes("decision.kind === 'redirect'")
+      && routeSource.includes('navigate(decision.target)')
+      && routePolicySource.includes("target:'login'"),
+    'central route policy incomplete for Architecture 48 route-presentation ownership'
+  );
+} else {
+  assert.ok(routeSource.includes('transitionOwnership(route)') && routeSource.includes('navigate(decision.target)') && routePolicySource.includes("target:'login'"), 'central route policy incomplete');
+}
 assert.ok(registrySource.includes('ownerForRoute') && registrySource.includes('Feature id is required'), 'feature registry safeguards incomplete');
 assert.ok(lifecycle.includes('removeEventListener') && lifecycle.includes('dispose()'), 'application lifecycle is not disposable');
 assert.ok(app.includes("runtimeClient.register('features'"), 'feature registry is not exposed through runtime service contract');
@@ -50,7 +61,7 @@ assert.ok(
   boardUi.includes('function deactivate()')
     && boardUi.includes('dataController.cancelPending()')
     && boardUi.includes('preferencePersistence.cancel()')
-    && boardUi.includes('dragDrop.dispose()')
+    && (boardUi.includes('dragDrop.dispose()') || boardUi.includes('dragDrop?.dispose()'))
     && boardUi.includes('itemWorkspace.reset()')
     && boardUi.includes('columnWorkflows.reset()')
     && boardUi.includes('dialogs.closeAll()'),

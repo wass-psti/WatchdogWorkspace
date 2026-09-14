@@ -20,7 +20,7 @@ export interface BoardDialogOptions {
 
 export type BoardDialog = (options: BoardDialogOptions) => BoardDialogHandle;
 export type ReloadBoard = () => void | Promise<unknown>;
-export type ConfirmAction = (message: string) => boolean;
+export type ConfirmAction = (message: string) => boolean | Promise<boolean>;
 
 export interface BoardWorkflowBaseDependencies {
   readonly commands: BoardCommandService;

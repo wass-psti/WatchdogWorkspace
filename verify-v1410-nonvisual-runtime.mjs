@@ -70,7 +70,7 @@ try {
   assert.match(host, /parseModuleIdentityRequest/);
   assert.match(store, /AbortController/);
   assert.match(bridge, /installModuleIdentityBridge/);
-  assert.match(app, /wm:module-store-invalidate[\s\S]+moduleHost\.invalidate/);
+  assert.match(app, /wm:module-store-invalidate[\s\S]+modulePresentationHost\.invalidate/);
   assert.match(backup, /wm_restore_workspace_backup_v4/);
   assert.match(migration, /'verified',true/);
   assert.match(migration, /Board cell references an item outside the restored board/);

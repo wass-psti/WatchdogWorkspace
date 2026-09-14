@@ -1,3 +1,4 @@
+const { createConfirmedStateWriter, createMutationGate, installModuleStoreChangeBridge } = globalThis.WMTimeTrackerStability || (() => { throw new Error('TimeTracker stabilization runtime failed to load.'); })();
 const { LOCATIONS, DEPARTMENTS, ROLES, DEFAULT_ROLE, RBAC_KEY, RBAC_BACKUP_KEY, PERMISSIONS, ROLE_DEFINITIONS, ADMIN_ROLES, ATTENDANCE_POLICY, AUTO_GPS_CACHE_KEY, AUTO_GPS_FALLBACK_MAX_AGE_MS, AUTO_GPS_RETRY_DELAY_MS, STORAGE_KEY, BACKUP_KEY, UI_KEY, AUDIT_KEY, AUDIT_BACKUP_KEY, OT_KEY, OT_BACKUP_KEY, OT_ACTIVITY_KEY, OT_ACTIVITY_BACKUP_KEY, PH_HOLIDAYS_2026 } = globalThis.WMTimeTrackerDomain || (() => { throw new Error('TimeTracker domain configuration failed to load.'); })();
 const emptyState = () => ({ version: 1, records: [], selection: { location: '', department: '' } });
 const emptyUi = () => ({
@@ -129,6 +130,9 @@ let attendanceActionBusy = false;
 let leafletMap = null;
 let leafletLayer = null;
 let leafletRecordId = null;
+const confirmedStateWriter = createConfirmedStateWriter(globalThis.WMModuleStore);
+const attendanceRecordMutationGate = createMutationGate();
+const otMutationGate = createMutationGate();
 
 function uid() {
   return globalThis.crypto?.randomUUID?.() ?? `tt-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -192,53 +196,43 @@ function loadUi() {
   }
 }
 
-function saveState() {
-  // Attendance records are shared workspace data. Clock form selection is a per-account UI preference
-  // and must never be allowed to overwrite another employee's active form state.
-  if (typeof ui !== 'undefined') {
-    ui.clock = ui.clock || { selection: { location: '', department: '' } };
-    ui.clock.selection = { ...state.selection };
-    saveUi();
-  }
-  const current = globalThis.WMModuleStore.getItem(STORAGE_KEY);
-  if (current) globalThis.WMModuleStore.setItem(BACKUP_KEY, current);
-  const shared = { ...state, selection: { location: '', department: '' } };
-  globalThis.WMModuleStore.setItem(STORAGE_KEY, JSON.stringify(shared));
+function saveClockSelection() {
+  ui.clock = ui.clock || { selection: { location: '', department: '' } };
+  ui.clock.selection = { ...state.selection };
+  saveUi();
 }
 
 async function saveStateConfirmed() {
-  // Critical attendance actions do not report success until Supabase confirms the
-  // authoritative shared state write. This prevents a transient in-memory clock
-  // state from being mistaken for a durable attendance record.
-  if (typeof ui !== 'undefined') {
-    ui.clock = ui.clock || { selection: { location: '', department: '' } };
-    ui.clock.selection = { ...state.selection };
-    try {
-      if (globalThis.WMModuleStore.setItemAsync) await globalThis.WMModuleStore.setItemAsync(UI_KEY, JSON.stringify(ui));
-      else globalThis.WMModuleStore.setItem(UI_KEY, JSON.stringify(ui));
-    } catch (error) {
-      console.warn('Clock UI preference could not be synchronized; attendance persistence will continue.', error);
-    }
-  }
-  const current = globalThis.WMModuleStore.getItem(STORAGE_KEY);
-  if (current) {
-    try {
-      if (globalThis.WMModuleStore.setItemAsync) await globalThis.WMModuleStore.setItemAsync(BACKUP_KEY, current);
-      else globalThis.WMModuleStore.setItem(BACKUP_KEY, current);
-    } catch (error) {
-      console.warn('Attendance recovery-copy update failed; primary commit will still be attempted.', error);
-    }
-  }
+  // Shared attendance is committed only for actual ledger mutations. Clock form
+  // selection is user-scoped UI state and is never allowed to churn the shared
+  // attendance revision or race another employee's cloud write.
+  saveClockSelection();
   const shared = { ...state, selection: { location: '', department: '' } };
-  if (globalThis.WMModuleStore.setItemAsync) await globalThis.WMModuleStore.setItemAsync(STORAGE_KEY, JSON.stringify(shared));
-  else {
-    globalThis.WMModuleStore.setItem(STORAGE_KEY, JSON.stringify(shared));
-    await globalThis.WMModuleStore.flush?.();
-  }
+  await confirmedStateWriter.write({ key: STORAGE_KEY, backupKey: BACKUP_KEY, value: JSON.stringify(shared) });
 }
 
 function saveUi() {
   globalThis.WMModuleStore.setItem(UI_KEY, JSON.stringify(ui));
+}
+
+async function saveOtConfirmed() {
+  await confirmedStateWriter.write({ key: OT_KEY, backupKey: OT_BACKUP_KEY, value: JSON.stringify(ot) });
+}
+
+async function recoverAttendanceAfterFailedCommit(beforeState) {
+  state = parseState(beforeState) || state;
+  await refreshAuthoritativeAttendance({ renderUi: false });
+}
+
+async function recoverOtAfterFailedCommit(beforeState) {
+  ot = parseOt(beforeState) || ot;
+  try {
+    await globalThis.WMModuleStore?.refresh?.();
+    const authoritative = parseOt(globalThis.WMModuleStore?.getItem?.(OT_KEY));
+    if (authoritative) ot = authoritative;
+  } catch (error) {
+    console.warn('TimeTracker could not reload authoritative OT state after a failed commit.', error);
+  }
 }
 
 
@@ -280,11 +274,6 @@ function loadOt() {
   // or otherwise superseded OT state after refresh or authentication changes.
   const primary = parseOt(globalThis.WMModuleStore.getItem(OT_KEY));
   return primary || { version: 1, requests: [] };
-}
-function saveOt() {
-  const current = globalThis.WMModuleStore.getItem(OT_KEY);
-  if (current) globalThis.WMModuleStore.setItem(OT_BACKUP_KEY, current);
-  globalThis.WMModuleStore.setItem(OT_KEY, JSON.stringify(ot));
 }
 function parseOtActivity(raw) {
   if (!raw) return [];
@@ -382,39 +371,77 @@ function otFilteredRequests() {
   return rows;
 }
 function otStatusClass(status='Draft') { return status.toLowerCase().replace(/\s+/g,'-'); }
-function createOtRequest(payload, submitNow=false) {
+async function createOtRequest(payload, submitNow=false) {
   if (!requirePermission(PERMISSIONS.OT_CREATE,'Your role cannot create OT requests.')) return;
-  const user=currentUser(); const nowIso=new Date().toISOString();
-  const request={id:`OT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`,ownerId:user.id,ownerName:user.name,ownerDepartment:user.department,...payload,status:submitNow?'Submitted':'Draft',createdAt:nowIso,updatedAt:nowIso,submittedAt:submitNow?nowIso:null,decision:null};
-  ot.requests.unshift(request); saveOt();
-  otActivityEvent('OT_CREATED',request,{message:'OT request created.'});
-  if(submitNow) otActivityEvent('OT_SUBMITTED',request,{message:'OT request submitted for approval.'});
-  closeModal(); render({animate:false}); notify(submitNow?'OT request created and submitted.':'OT draft created.','success');
+  const result = await otMutationGate.run(async () => {
+    const beforeState = JSON.stringify(ot);
+    const user=currentUser(); const nowIso=new Date().toISOString();
+    const request={id:`OT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`,ownerId:user.id,ownerName:user.name,ownerDepartment:user.department,...payload,status:submitNow?'Submitted':'Draft',createdAt:nowIso,updatedAt:nowIso,submittedAt:submitNow?nowIso:null,decision:null};
+    ot.requests.unshift(request);
+    try { await saveOtConfirmed(); }
+    catch (error) { await recoverOtAfterFailedCommit(beforeState); render({animate:false}); notify(error?.message||'OT request could not be committed to the cloud.','error'); return false; }
+    otActivityEvent('OT_CREATED',request,{message:'OT request created.'});
+    if(submitNow) otActivityEvent('OT_SUBMITTED',request,{message:'OT request submitted for approval.'});
+    closeModal(); render({animate:false}); notify(submitNow?'OT request created and submitted.':'OT draft created.','success');
+    return true;
+  });
+  if (!result.executed) notify('Another OT change is still being committed. Try again after it completes.','info');
 }
-function updateOtRequest(id,payload,submitNow=false) {
-  const r=ot.requests.find((x)=>x.id===id); if(!r||!canEditOtRequest(r)) return notify('This OT request cannot be modified.','error');
-  const before=JSON.parse(JSON.stringify(r)); Object.assign(r,payload,{updatedAt:new Date().toISOString()});
-  if(r.status==='Rejected'){ r.status='Draft'; r.decision=null; }
-  saveOt(); otActivityEvent('OT_MODIFIED',r,{message:'OT request modified.',changes:{before,after:JSON.parse(JSON.stringify(r))}});
-  if(submitNow) submitOtRequest(id,true); else { closeModal(); render({animate:false}); notify('OT request updated.','success'); }
+async function updateOtRequest(id,payload,submitNow=false) {
+  const result = await otMutationGate.run(async () => {
+    const r=ot.requests.find((x)=>x.id===id); if(!r||!canEditOtRequest(r)) return notify('This OT request cannot be modified.','error');
+    const beforeState=JSON.stringify(ot); const before=JSON.parse(JSON.stringify(r)); Object.assign(r,payload,{updatedAt:new Date().toISOString()});
+    if(r.status==='Rejected'){ r.status='Draft'; r.decision=null; }
+    if(submitNow){ r.status='Submitted'; r.submittedAt=new Date().toISOString(); r.updatedAt=r.submittedAt; r.decision=null; }
+    try { await saveOtConfirmed(); }
+    catch (error) { await recoverOtAfterFailedCommit(beforeState); render({animate:false}); notify(error?.message||'OT request update could not be committed to the cloud.','error'); return false; }
+    otActivityEvent('OT_MODIFIED',r,{message:'OT request modified.',changes:{before,after:JSON.parse(JSON.stringify(r))}});
+    if(submitNow) otActivityEvent('OT_SUBMITTED',r,{message:'OT request submitted for approval.'});
+    closeModal(); render({animate:false}); notify(submitNow?'OT request updated and submitted.':'OT request updated.','success');
+    return true;
+  });
+  if (!result.executed) notify('Another OT change is still being committed. Try again after it completes.','info');
 }
-function submitOtRequest(id,fromEdit=false) {
-  const r=ot.requests.find((x)=>x.id===id); if(!r||!canSubmitOtRequest(r)) return notify('Only your Draft or Rejected OT request can be submitted.','error');
-  r.status='Submitted'; r.submittedAt=new Date().toISOString(); r.updatedAt=r.submittedAt; r.decision=null; saveOt(); otActivityEvent('OT_SUBMITTED',r,{message:'OT request submitted for approval.'});
-  if(fromEdit) closeModal(); render({animate:false}); notify('OT request submitted for approval.','success');
+async function submitOtRequest(id,fromEdit=false) {
+  const result = await otMutationGate.run(async () => {
+    const r=ot.requests.find((x)=>x.id===id); if(!r||!canSubmitOtRequest(r)) return notify('Only your Draft or Rejected OT request can be submitted.','error');
+    const beforeState=JSON.stringify(ot);
+    r.status='Submitted'; r.submittedAt=new Date().toISOString(); r.updatedAt=r.submittedAt; r.decision=null;
+    try { await saveOtConfirmed(); }
+    catch (error) { await recoverOtAfterFailedCommit(beforeState); render({animate:false}); notify(error?.message||'OT submission could not be committed to the cloud.','error'); return false; }
+    otActivityEvent('OT_SUBMITTED',r,{message:'OT request submitted for approval.'});
+    if(fromEdit) closeModal(); render({animate:false}); notify('OT request submitted for approval.','success');
+    return true;
+  });
+  if (!result.executed) notify('Another OT change is still being committed. Try again after it completes.','info');
 }
-function withdrawOtRequest(id) {
+async function withdrawOtRequest(id) {
   const r=ot.requests.find((x)=>x.id===id); if(!r||!canWithdrawOtRequest(r)) return notify('This OT request cannot be withdrawn.','error');
   if(!confirm('Withdraw this submitted OT request back to Draft?')) return;
-  const before=r.status; r.status='Draft'; r.submittedAt=null; r.updatedAt=new Date().toISOString(); saveOt(); otActivityEvent('OT_WITHDRAWN',r,{message:'Submitted OT request withdrawn to Draft.',changes:{before,after:'Draft'}}); render({animate:false}); notify('OT request returned to Draft.','success');
+  const result = await otMutationGate.run(async () => {
+    const current=ot.requests.find((x)=>x.id===id); if(!current||!canWithdrawOtRequest(current)) return notify('This OT request changed before it could be withdrawn. Refresh and try again.','info');
+    const beforeState=JSON.stringify(ot); const before=current.status; current.status='Draft'; current.submittedAt=null; current.updatedAt=new Date().toISOString();
+    try { await saveOtConfirmed(); }
+    catch (error) { await recoverOtAfterFailedCommit(beforeState); render({animate:false}); notify(error?.message||'OT withdrawal could not be committed to the cloud.','error'); return false; }
+    otActivityEvent('OT_WITHDRAWN',current,{message:'Submitted OT request withdrawn to Draft.',changes:{before,after:'Draft'}}); render({animate:false}); notify('OT request returned to Draft.','success');
+    return true;
+  });
+  if (!result.executed) notify('Another OT change is still being committed. Try again after it completes.','info');
 }
-function decideOtRequest(id,decision,reason='') {
-  const r=ot.requests.find((x)=>x.id===id); if(!r||!canApproveOtRequest(r)) return notify('You are not authorized to decide this OT request.','error');
+async function decideOtRequest(id,decision,reason='') {
   if(!['Approved','Rejected'].includes(decision)) return;
   reason=String(reason||'').trim(); if(decision==='Rejected' && reason.length<3) return notify('A rejection reason is required.','error');
-  const actor=currentUser(); const at=new Date().toISOString(); r.status=decision; r.updatedAt=at; r.decision={status:decision,byUserId:actor.id,byName:actor.name,byRole:actor.role,at,reason:reason||null}; saveOt();
-  otActivityEvent(decision==='Approved'?'OT_APPROVED':'OT_REJECTED',r,{message:decision==='Approved'?'OT request approved.':`OT request rejected: ${reason}`}); closeModal(); render({animate:false}); notify(`OT request ${decision.toLowerCase()}.`,decision==='Approved'?'success':'info');
+  const result = await otMutationGate.run(async () => {
+    const r=ot.requests.find((x)=>x.id===id); if(!r||!canApproveOtRequest(r)) return notify('You are not authorized to decide this OT request.','error');
+    const beforeState=JSON.stringify(ot); const actor=currentUser(); const at=new Date().toISOString(); r.status=decision; r.updatedAt=at; r.decision={status:decision,byUserId:actor.id,byName:actor.name,byRole:actor.role,at,reason:reason||null};
+    try { await saveOtConfirmed(); }
+    catch (error) { await recoverOtAfterFailedCommit(beforeState); render({animate:false}); notify(error?.message||'OT decision could not be committed to the cloud.','error'); return false; }
+    otActivityEvent(decision==='Approved'?'OT_APPROVED':'OT_REJECTED',r,{message:decision==='Approved'?'OT request approved.':`OT request rejected: ${reason}`}); closeModal(); render({animate:false}); notify(`OT request ${decision.toLowerCase()}.`,decision==='Approved'?'success':'info');
+    return true;
+  });
+  if (!result.executed) notify('Another OT change is still being committed. Try again after it completes.','info');
 }
+
 function otRequestsCsv(rows) {
   const header=['Request ID','Employee','Department','OT Date','Start','End','Duration Minutes','Duration','Location','Task','Reason','Status','Submitted At','Decision By','Decision At','Decision Reason'];
   return [header,...rows.map(r=>{const o=otRequestOwner(r);return[r.id,o?.name||r.ownerName||'',o?.department||r.ownerDepartment||'',r.date,r.start,r.end,r.durationMinutes,otDurationText(r.durationMinutes),r.location||'',r.task,r.reason,r.status,r.submittedAt||'',r.decision?.byName||'',r.decision?.at||'',r.decision?.reason||'']})].map(row=>row.map(escapeCsv).join(',')).join('\n');
@@ -901,12 +928,16 @@ async function attemptAutoClockOutGps(recordId, { recovery = false } = {}) {
   const lock = await acquireAutoGpsLock(recordId);
   if (!lock) return false;
   try {
+    // Re-read authoritative cloud state after obtaining the distributed lock. This
+    // prevents a stale tab from attaching GPS evidence to a session that another
+    // device already changed while this page was waiting for the lock.
+    if (!await refreshAuthoritativeAttendance({ renderUi: false })) return false;
     const current = state.records.find((item) => item.id === recordId);
     if (!current?.clockOut?.automatic || validGeoFix(current.clockOut.geo)) return Boolean(validGeoFix(current?.clockOut?.geo));
     const attemptAt = new Date().toISOString();
     const beforeAcquireState = JSON.stringify(state);
     current.autoClockOut = { ...(current.autoClockOut || {}), gpsState: 'acquiring', gpsLastAttemptAt: attemptAt, gpsAttemptCount: Number(current.autoClockOut?.gpsAttemptCount || 0) + 1 };
-    try { await saveStateConfirmed(); } catch (error) { state = parseState(beforeAcquireState) || state; console.error('Automatic GPS state could not be committed.', error); return false; }
+    try { await saveStateConfirmed(); } catch (error) { await recoverAttendanceAfterFailedCommit(beforeAcquireState); console.error('Automatic GPS state could not be committed.', error); return false; }
 
     const geo = await obtainAutoClockOutGeo(current, current.clockOut.timestamp);
     if (recovery && validGeoFix(geo) && geo.evidenceQuality === 'fresh-device-fix') geo.evidenceQuality = 'recovery-device-fix';
@@ -923,7 +954,7 @@ async function attemptAutoClockOutGps(recordId, { recovery = false } = {}) {
       gpsFailure: validGeoFix(geo) ? null : { status: geo.status, error: geo.error || null },
     };
     latest.updatedAt = new Date().toISOString();
-    try { await saveStateConfirmed(); } catch (error) { state = parseState(beforeAssociationState) || state; console.error('Automatic GPS evidence could not be committed.', error); return false; }
+    try { await saveStateConfirmed(); } catch (error) { await recoverAttendanceAfterFailedCommit(beforeAssociationState); console.error('Automatic GPS evidence could not be committed.', error); return false; }
     auditEvent(validGeoFix(geo) ? 'GPS_EVIDENCE' : 'GPS_CAPTURE', latest, {
       location: latest.clockOut.location,
       department: latest.clockOut.department,
@@ -970,13 +1001,20 @@ async function enforceAutoClockOut(at = Date.now(), { announce = true } = {}) {
   if (!due.length) return 0;
   let enforced = 0;
   for (const record of due) {
-    const effective = autoClockOutTimeForRecord(record);
+    const candidateEffective = autoClockOutTimeForRecord(record);
     const lock = await acquireAutoClockLock(record.id);
-    if (!effective || !lock) continue;
-    const beforeEnforcementState = JSON.stringify(state);
+    if (!candidateEffective || !lock) continue;
     try {
+      // The distributed lock serializes enforcement, but lock acquisition alone does
+      // not make this tab's pre-lock state current. Refresh after the lock so a
+      // cross-device manual Clock Out or OT approval cannot be overwritten by stale
+      // launch state.
+      if (!await refreshAuthoritativeAttendance({ renderUi: false })) continue;
       const current = state.records.find((item) => item.id === record.id);
-      if (!current || current.clockOut) continue;
+      if (!current || current.clockOut || !current.clockIn?.timestamp) continue;
+      const effective = autoClockOutTimeForRecord(current);
+      if (!effective || at < effective.getTime()) continue;
+      const beforeEnforcementState = JSON.stringify(state);
       const approvedOt = approvedOtForAttendance(current);
       const requiredWorkMs = ATTENDANCE_POLICY.requiredWorkMs + approvedOt.durationMs;
       const workMs = creditedWorkingMs(current.clockIn.timestamp, effective);
@@ -1015,7 +1053,7 @@ async function enforceAutoClockOut(at = Date.now(), { announce = true } = {}) {
       try {
         await saveStateConfirmed();
       } catch (error) {
-        state = parseState(beforeEnforcementState) || state;
+        await recoverAttendanceAfterFailedCommit(beforeEnforcementState);
         console.error('Automatic clock-out was not committed; it will be retried later.', error);
         continue;
       }
@@ -1039,9 +1077,7 @@ async function enforceAutoClockOut(at = Date.now(), { announce = true } = {}) {
       await releaseAutoClockLock(lock);
     }
   }
-  if (enforced) {
-    if (announce) notify(`${enforced === 1 ? 'Shift' : `${enforced} shifts`} automatically clocked out after reaching the applicable credited-work threshold, including approved OT where applicable. GPS acquisition will run during this launch session.`, 'success');
-  }
+  if (enforced && announce) notify(`${enforced === 1 ? 'Shift' : `${enforced} shifts`} automatically clocked out after reaching the applicable credited-work threshold, including approved OT where applicable. GPS acquisition will run during this launch session.`, 'success');
   return enforced;
 }
 
@@ -1777,7 +1813,7 @@ function loadRecordLeafletMap(recordId) {
   };
   if (globalThis.L) return init();
   if (!document.querySelector('link[data-leaflet]')) {
-    const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; link.dataset.leaflet = '1'; document.head.append(link);
+    const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY='; link.crossOrigin = 'anonymous'; link.dataset.leaflet = '1'; document.head.append(link);
   }
   const existing = document.querySelector('script[data-leaflet]');
   if (existing) {
@@ -1791,6 +1827,8 @@ function loadRecordLeafletMap(recordId) {
   }
   const script = document.createElement('script');
   script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+  script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+  script.crossOrigin = 'anonymous';
   script.dataset.leaflet = '1';
   script.onload = init;
   script.onerror = () => {
@@ -2800,56 +2838,71 @@ function recordOverlaps(id, startMs, endMs) {
   });
 }
 
-function saveEditedRecord(form) {
+async function saveEditedRecord(form) {
   if (!requirePermission(PERMISSIONS.ATTENDANCE_EDIT, 'Your role cannot modify attendance records.')) return;
-  const r = state.records.find((item) => item.id === editingRecordId);
-  if (!r) return closeModal();
-  const data = new FormData(form);
-  const inTime = new Date(data.get('clockInTime'));
-  if (Number.isNaN(inTime.getTime())) return notify('Enter a valid clock-in time.', 'error');
-  let outTime = null;
-  if (r.clockOut) {
-    outTime = new Date(data.get('clockOutTime'));
-    if (Number.isNaN(outTime.getTime())) return notify('Enter a valid clock-out time.', 'error');
-    if (outTime <= inTime) return notify('Clock-out must be later than clock-in.', 'error');
-  }
-  const proposedEnd = outTime ? outTime.getTime() : Date.now();
-  if (recordOverlaps(r.id, inTime.getTime(), proposedEnd)) return notify('This edit would overlap another attendance session.', 'error');
-  const inLocation = data.get('inLocation');
-  const inDepartment = data.get('inDepartment');
-  if (!LOCATIONS.includes(inLocation) || !DEPARTMENTS.includes(inDepartment)) return notify('Select valid clock-in context values.', 'error');
-  const beforeEdit = JSON.parse(JSON.stringify(r));
-  r.clockIn = { ...r.clockIn, timestamp: inTime.toISOString(), location: inLocation, department: inDepartment, geo: r.clockIn.geo || null };
-  if (r.clockOut) {
-    const outLocation = data.get('outLocation');
-    const outDepartment = data.get('outDepartment');
-    if (!LOCATIONS.includes(outLocation) || !DEPARTMENTS.includes(outDepartment)) return notify('Select valid clock-out context values.', 'error');
-    r.clockOut = { ...r.clockOut, timestamp: outTime.toISOString(), location: outLocation, department: outDepartment, geo: r.clockOut.geo || null };
-  }
-  r.note = String(data.get('note') || '').trim() || undefined;
-  r.attendancePolicy = attendancePolicySnapshot(r);
-  r.updatedAt = new Date().toISOString();
-  state.records.sort((a, b) => new Date(b.clockIn.timestamp) - new Date(a.clockIn.timestamp));
-  saveState();
-  auditEvent('RECORD_EDIT', r, { message: 'Attendance record edited.', changes: { before: beforeEdit, after: JSON.parse(JSON.stringify(r)) } });
-  closeModal();
-  if (view === 'log') render({ animate: false });
-  notify('Attendance record updated.', 'success');
+  const result = await attendanceRecordMutationGate.run(async () => {
+    const r = state.records.find((item) => item.id === editingRecordId);
+    if (!r) return closeModal();
+    const data = new FormData(form);
+    const inTime = new Date(data.get('clockInTime'));
+    if (Number.isNaN(inTime.getTime())) return notify('Enter a valid clock-in time.', 'error');
+    let outTime = null;
+    if (r.clockOut) {
+      outTime = new Date(data.get('clockOutTime'));
+      if (Number.isNaN(outTime.getTime())) return notify('Enter a valid clock-out time.', 'error');
+      if (outTime <= inTime) return notify('Clock-out must be later than clock-in.', 'error');
+    }
+    const proposedEnd = outTime ? outTime.getTime() : Date.now();
+    if (recordOverlaps(r.id, inTime.getTime(), proposedEnd)) return notify('This edit would overlap another attendance session.', 'error');
+    const inLocation = data.get('inLocation');
+    const inDepartment = data.get('inDepartment');
+    if (!LOCATIONS.includes(inLocation) || !DEPARTMENTS.includes(inDepartment)) return notify('Select valid clock-in context values.', 'error');
+    const beforeState = JSON.stringify(state);
+    const beforeEdit = JSON.parse(JSON.stringify(r));
+    r.clockIn = { ...r.clockIn, timestamp: inTime.toISOString(), location: inLocation, department: inDepartment, geo: r.clockIn.geo || null };
+    if (r.clockOut) {
+      const outLocation = data.get('outLocation');
+      const outDepartment = data.get('outDepartment');
+      if (!LOCATIONS.includes(outLocation) || !DEPARTMENTS.includes(outDepartment)) return notify('Select valid clock-out context values.', 'error');
+      r.clockOut = { ...r.clockOut, timestamp: outTime.toISOString(), location: outLocation, department: outDepartment, geo: r.clockOut.geo || null };
+    }
+    r.note = String(data.get('note') || '').trim() || undefined;
+    r.attendancePolicy = attendancePolicySnapshot(r);
+    r.updatedAt = new Date().toISOString();
+    state.records.sort((a, b) => new Date(b.clockIn.timestamp) - new Date(a.clockIn.timestamp));
+    try { await saveStateConfirmed(); }
+    catch (error) { await recoverAttendanceAfterFailedCommit(beforeState); render({animate:false}); notify(error?.message||'Attendance record update could not be committed to the cloud.','error'); return false; }
+    auditEvent('RECORD_EDIT', r, { message: 'Attendance record edited.', changes: { before: beforeEdit, after: JSON.parse(JSON.stringify(r)) } });
+    closeModal();
+    if (view === 'log') render({ animate: false });
+    notify('Attendance record updated.', 'success');
+    return true;
+  });
+  if (!result.executed) notify('Another attendance record change is still being committed. Try again after it completes.','info');
 }
 
-function deleteRecord(id) {
+async function deleteRecord(id) {
   if (!requirePermission(PERMISSIONS.ATTENDANCE_DELETE, 'Only System Admin and IT Administrator can delete attendance records.')) return;
   const r = state.records.find((item) => item.id === id);
   if (!r || !canAccessRecord(r)) return notify('You do not have access to this attendance record.', 'error');
   if (!r.clockOut) return notify('An active attendance record cannot be deleted. Clock out first.', 'error');
   if (!window.confirm(`Delete the attendance record from ${fmtFullDate.format(new Date(r.clockIn.timestamp))}? This cannot be undone from the UI.`)) return;
-  auditEvent('RECORD_DELETE', r, { message: 'Completed attendance record deleted from the attendance ledger.', changes: { deletedRecord: JSON.parse(JSON.stringify(r)) } });
-  state.records = state.records.filter((item) => item.id !== id);
-  ui.log.expanded = (ui.log.expanded || []).filter((recordId) => recordId !== id);
-  saveState();
-  saveUi();
-  refreshLogRows();
-  notify('Attendance record deleted.', 'success');
+  const result = await attendanceRecordMutationGate.run(async () => {
+    const current = state.records.find((item) => item.id === id);
+    if (!current || !current.clockOut) return notify('This attendance record changed before deletion. Refresh and try again.', 'info');
+    const beforeState = JSON.stringify(state);
+    const deletedRecord = JSON.parse(JSON.stringify(current));
+    state.records = state.records.filter((item) => item.id !== id);
+    ui.log.expanded = (ui.log.expanded || []).filter((recordId) => recordId !== id);
+    try { await saveStateConfirmed(); }
+    catch (error) { await recoverAttendanceAfterFailedCommit(beforeState); render({animate:false}); notify(error?.message||'Attendance record deletion could not be committed to the cloud.','error'); return false; }
+    auditEvent('RECORD_DELETE', deletedRecord, { message: 'Completed attendance record deleted from the attendance ledger.', changes: { deletedRecord } });
+    saveUi();
+    refreshLogRows();
+    notify('Attendance record deleted.', 'success');
+    return true;
+  });
+  if (!result.executed) notify('Another attendance record change is still being committed. Try again after it completes.','info');
 }
 
 function notify(message, tone = 'info') {
@@ -2964,18 +3017,18 @@ function bindModalEvents() {
   });
   document.getElementById('editRecordForm')?.addEventListener('submit', (event) => {
     event.preventDefault();
-    saveEditedRecord(event.currentTarget);
+    void saveEditedRecord(event.currentTarget);
   });
   document.getElementById('otRequestForm')?.addEventListener('submit', (event) => {
     event.preventDefault();
     const form=event.currentTarget, data=Object.fromEntries(new FormData(form).entries());
     const checked=validateOtPayload(data); if(checked.error) return notify(checked.error,'error');
     const intent=event.submitter?.value||'draft';
-    if(editingOtRequestId) updateOtRequest(editingOtRequestId,checked.value,intent==='submit'); else createOtRequest(checked.value,intent==='submit');
+    if(editingOtRequestId) void updateOtRequest(editingOtRequestId,checked.value,intent==='submit'); else void createOtRequest(checked.value,intent==='submit');
   });
   document.getElementById('otDecisionForm')?.addEventListener('submit', (event) => {
     event.preventDefault(); const form=event.currentTarget; const data=new FormData(form);
-    decideOtRequest(form.dataset.otId,form.dataset.decision,String(data.get('reason')||''));
+    void decideOtRequest(form.dataset.otId,form.dataset.decision,String(data.get('reason')||''));
   });
 }
 
@@ -3013,11 +3066,11 @@ function bindEvents() {
   document.getElementById('locationSelect')?.addEventListener('change', (event) => {
     state.selection.location = event.target.value;
     if (!shouldShowWorkNote()) note = '';
-    saveState();
+    saveClockSelection();
     render({ animate: false });
     void maybePrefetchGps();
   });
-  document.getElementById('departmentSelect')?.addEventListener('change', (event) => { state.selection.department = event.target.value; saveState(); void maybePrefetchGps(); });
+  document.getElementById('departmentSelect')?.addEventListener('change', (event) => { state.selection.department = event.target.value; saveClockSelection(); void maybePrefetchGps(); });
   document.getElementById('noteInput')?.addEventListener('input', (event) => {
     note = event.target.value;
     const error = document.getElementById('workNoteError');
@@ -3074,7 +3127,7 @@ function bindEvents() {
     if (!target) return;
     if (target.dataset.toggleRecord) return toggleRecordExpanded(target.dataset.toggleRecord, target);
     if (target.dataset.editRecord) return openEditRecord(target.dataset.editRecord);
-    if (target.dataset.deleteRecord) return deleteRecord(target.dataset.deleteRecord);
+    if (target.dataset.deleteRecord) { void deleteRecord(target.dataset.deleteRecord); return; }
     if (target.dataset.loadRecordMap) return loadRecordLeafletMap(target.dataset.loadRecordMap);
     if (target.dataset.focusRecordMap) return focusRecordMap(target.dataset.focusRecordMap);
     if (target.dataset.exportRecord) return exportSingleRecord(target.dataset.exportRecord);
@@ -3111,38 +3164,64 @@ function bindEvents() {
   document.getElementById('toggleOtActivity')?.addEventListener('click',()=>{if(!requirePermission(PERMISSIONS.OT_ACTIVITY_VIEW,'Only System Admin and IT Administrator can view the OT Activity Log.'))return;ui.ot.activityOpen=!ui.ot.activityOpen;saveUi();render({animate:false});});
   document.getElementById('exportOtCsv')?.addEventListener('click',()=>{if(!requirePermission(PERMISSIONS.OT_VIEW,'Your role cannot access OT requests.'))return;const rows=otFilteredRequests();download(`timetracker-ot-${new Date().toISOString().slice(0,10)}.csv`,'text/csv;charset=utf-8',otRequestsCsv(rows));otActivityEvent('OT_EXPORTED',null,{message:`${rows.length} OT requests exported.`,status:null});notify(`${rows.length} OT requests exported.`,'success');});
   document.getElementById('exportOtActivity')?.addEventListener('click',()=>{if(!requirePermission(PERMISSIONS.OT_ACTIVITY_EXPORT,'Only System Admin and IT Administrator can export OT activity.'))return;const rows=accessibleOtActivity();download(`timetracker-ot-activity-${new Date().toISOString().slice(0,10)}.csv`,'text/csv;charset=utf-8',otActivityCsv(rows));notify(`${rows.length} OT activity events exported.`,'success');});
-  document.getElementById('otList')?.addEventListener('click',(event)=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.editOt)return openOtRequestModal(b.dataset.editOt);if(b.dataset.submitOt)return submitOtRequest(b.dataset.submitOt);if(b.dataset.withdrawOt)return withdrawOtRequest(b.dataset.withdrawOt);if(b.dataset.approveOt)return openOtDecisionModal(b.dataset.approveOt,'Approved');if(b.dataset.rejectOt)return openOtDecisionModal(b.dataset.rejectOt,'Rejected');});
+  document.getElementById('otList')?.addEventListener('click',(event)=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.editOt)return openOtRequestModal(b.dataset.editOt);if(b.dataset.submitOt){void submitOtRequest(b.dataset.submitOt);return;}if(b.dataset.withdrawOt){void withdrawOtRequest(b.dataset.withdrawOt);return;}if(b.dataset.approveOt)return openOtDecisionModal(b.dataset.approveOt,'Approved');if(b.dataset.rejectOt)return openOtDecisionModal(b.dataset.rejectOt,'Rejected');});
 
   document.getElementById('exportJson')?.addEventListener('click', exportJson);
 }
 
-window.addEventListener('storage', (event) => {
-  if (event.key !== STORAGE_KEY || event.newValue === event.oldValue) return;
-  const nextState = parseState(event.newValue) ?? loadState();
-  nextState.selection = { ...state.selection };
-  const structuralChange = JSON.stringify(nextState.records) !== JSON.stringify(state.records);
-  const workNoteVisibilityChanged = view === 'clock' && shouldShowWorkNote(nextState.selection?.location) !== shouldShowWorkNote(state.selection?.location);
-  state = nextState;
-  if (structuralChange || workNoteVisibilityChanged) render({ animate: false });
-  else {
-    const location = document.getElementById('locationSelect');
-    const department = document.getElementById('departmentSelect');
-    if (location && location.value !== state.selection.location) location.value = state.selection.location;
-    if (department && department.value !== state.selection.department) department.value = state.selection.department;
-    if (location) syncModernSelect(location);
-    if (department) syncModernSelect(department);
-    updateDynamicValues();
+function handleModuleStoreChange({ key, oldValue, newValue }) {
+  if (!key || newValue === oldValue) return;
+  if (key === STORAGE_KEY) {
+    const nextState = parseState(newValue) ?? loadState();
+    nextState.selection = { ...state.selection };
+    const structuralChange = JSON.stringify(nextState.records) !== JSON.stringify(state.records);
+    const workNoteVisibilityChanged = view === 'clock' && shouldShowWorkNote(nextState.selection?.location) !== shouldShowWorkNote(state.selection?.location);
+    state = nextState;
+    if (structuralChange || workNoteVisibilityChanged) render({ animate: false });
+    else {
+      const location = document.getElementById('locationSelect');
+      const department = document.getElementById('departmentSelect');
+      if (location && location.value !== state.selection.location) location.value = state.selection.location;
+      if (department && department.value !== state.selection.department) department.value = state.selection.department;
+      if (location) syncModernSelect(location);
+      if (department) syncModernSelect(department);
+      updateDynamicValues();
+    }
+    notify('Attendance state synchronized from the cloud.', 'info');
+    return;
   }
-  notify('Attendance state synchronized from another tab.', 'info');
-});
+  if (key === AUDIT_KEY) {
+    audit = parseAudit(newValue);
+    if (view === 'log') refreshLogRows();
+    return;
+  }
+  if (key === RBAC_KEY) {
+    const next = parseRbac(newValue);
+    if (next) {
+      rbac = next;
+      if (!hasPermission(PERMISSIONS.ROLES_VIEW) && view === 'roles') view = 'overview';
+      render({ animate: false });
+      notify('Access-control compatibility state synchronized.', 'info');
+    }
+    return;
+  }
+  if (key === OT_KEY) {
+    const next = parseOt(newValue);
+    if (next) {
+      ot = next;
+      if (view === 'ot' || view === 'clock') render({ animate: false });
+      notify('OT requests synchronized from the cloud.', 'info');
+    }
+    return;
+  }
+  if (key === OT_ACTIVITY_KEY) {
+    otActivity = parseOtActivity(newValue);
+    if (view === 'ot' && hasPermission(PERMISSIONS.OT_ACTIVITY_VIEW) && ui.ot.activityOpen) render({ animate: false });
+  }
+}
 
-window.addEventListener('storage',(event)=>{if(event.key===AUDIT_KEY&&event.newValue!==event.oldValue){audit=parseAudit(event.newValue);if(view==='log')refreshLogRows();}});
-
-window.addEventListener('storage',(event)=>{if(event.key===RBAC_KEY&&event.newValue!==event.oldValue){const next=parseRbac(event.newValue);if(next){rbac=next;if(!hasPermission(PERMISSIONS.ROLES_VIEW)&&view==='roles')view='overview';render({animate:false});notify('Access-control state synchronized from another tab.','info');}}});
-
-window.addEventListener('storage',(event)=>{if(event.key===OT_KEY&&event.newValue!==event.oldValue){const next=parseOt(event.newValue);if(next){ot=next;if(view==='ot'||view==='clock')render({animate:false});notify('OT requests synchronized from another tab.','info');}}});
-window.addEventListener('storage',(event)=>{if(event.key===OT_ACTIVITY_KEY&&event.newValue!==event.oldValue){otActivity=parseOtActivity(event.newValue);if(view==='ot'&&hasPermission(PERMISSIONS.OT_ACTIVITY_VIEW)&&ui.ot.activityOpen)render({animate:false});}});
-
+const moduleStoreChangeBridge = installModuleStoreChangeBridge(window, handleModuleStoreChange);
+window.addEventListener('pagehide', (event) => { if (!event.persisted) moduleStoreChangeBridge.dispose(); }, { once: true });
 
 window.addEventListener('wm:module-directory-change', () => {
   rbac = loadRbac();
@@ -3172,6 +3251,8 @@ async function initializeLaunchAttendanceEnforcement() {
   // A launch-time policy exception is isolated, surfaced, and retried on a later launch instead of
   // leaving the module on an empty boot screen.
   try {
+    const refreshed = await refreshAuthoritativeAttendance({ renderUi: false });
+    if (!refreshed) console.warn('TimeTracker launch will continue from the last hydrated attendance snapshot because the authoritative refresh failed.');
     enforced = await enforceAutoClockOut(launchAt, { announce: false });
   } catch (error) {
     enforcementError = error;
@@ -3180,6 +3261,18 @@ async function initializeLaunchAttendanceEnforcement() {
 
   render();
   globalThis.__TIMETRACKER_BOOTED__ = true;
+  globalThis.__TIMETRACKER_STABILIZATION__ = Object.freeze({
+    milestone: 'Stage E M23',
+    architecture: 31,
+    sharedSelectionWrites: false,
+    confirmedAttendanceRecordMutations: true,
+    confirmedOtMutations: true,
+    dualStoreChangeBridge: true,
+    postLockAuthoritativeRefresh: true,
+    exactCommitVerification: true,
+    failedCommitAuthoritativeRecovery: true,
+    bfcacheSafeStoreBridge: true,
+  });
 
   if (enforcementError) {
     notify('TimeTracker started, but launch-time attendance enforcement encountered an error. Existing attendance data was preserved; reload after reviewing the browser console.', 'error');

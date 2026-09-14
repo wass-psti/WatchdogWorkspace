@@ -81,7 +81,7 @@ export function createBoardSelectionController({
     }
     const count = selection.selectedItems().length;
     if (!count) return false;
-    if (!confirmAction(`Delete ${count} selected item${count === 1 ? '' : 's'} permanently? Their item data cannot be recovered.`)) return false;
+    if (!await confirmAction(`Delete ${count} selected item${count === 1 ? '' : 's'} permanently? Their item data cannot be recovered.`)) return false;
     return runEditable(
       () => selection.deleteSelected(),
       (deleted) => `${deleted} selected item${deleted === 1 ? '' : 's'} deleted permanently.`,

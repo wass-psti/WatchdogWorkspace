@@ -1,0 +1,15 @@
+export const STAGE_D_M15_REACT_BOARD_PRESENTATION_FACADE_TARGET = Object.freeze({
+  milestone: 'Stage D Milestone 15 — React Board presentation facade',
+  prerequisite: Object.freeze({ milestone: 'M14', state: 'active-certified' }),
+  activationState: 'active-certified',
+  architectureVersion: 25,
+  ownership: 'react-board-presentation-facade-v1',
+  reactFacade: 'src/app/boards/BoardPresentationFacade.tsx',
+  runtime: 'src/app/boards/board-presentation-facade-runtime.ts',
+  host: 'src/app/boards/board-presentation-host.ts',
+  compatibilityEngine: 'assets/js/boards-ui.ts',
+  serviceAuthority: 'assets/js/features/boards/services/board-domain-service.ts',
+  commandAuthority: 'assets/js/features/boards/services/board-command-service.ts',
+  persistenceAuthority: 'assets/js/features/boards/data/board-repository.ts',
+  noSupabaseMigration: true,
+} as const);

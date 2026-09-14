@@ -1,0 +1,10 @@
+import fs from 'node:fs';import path from 'node:path';const root=path.resolve(import.meta.dirname,'..');
+const read=(f)=>fs.readFileSync(path.join(root,f),'utf8');
+const state=read('config/stage-g-m37-functional-regression-baseline-target.ts').match(/activationState:\s*'([^']+)'/)?.[1]??'unknown';
+const arch=read('config/application-manifest.ts').match(/architectureVersion:\s*(\d+)/)?.[1]??'unknown';
+const inventory=JSON.parse(read('regression-baseline/m37-functional-regression-inventory.json'));
+console.log(`Stage G M37 Functional Regression Baseline status: ${state}`);
+console.log(`Architecture: ${arch}`);
+console.log(`Inventory: ${inventory.entries.length} characterized regressions/risks across Boards, Users, Settings, Account, and cross-module certification/environment boundaries`);
+console.log('M37 purpose: reproduce and characterize; remediation is intentionally deferred to M38+ recovery milestones.');
+console.log('Production readiness: NOT YET — reported functional regressions remain open by design after baseline capture.');

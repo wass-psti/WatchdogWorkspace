@@ -1,0 +1,72 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+const root = path.resolve(import.meta.dirname);
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const assert = (condition, message) => { if (!condition) throw new Error(message); };
+const target = read('config/stage-d-m21-rich-item-workspace-target.ts');
+const state = target.match(/activationState:\s*'([^']+)'/)?.[1] ?? 'unknown';
+const prerequisite = read('config/stage-d-m20-board-collaborative-realtime-target.ts').match(/activationState:\s*'([^']+)'/)?.[1] ?? 'unknown';
+const manifest = read('config/application-manifest.ts');
+const architectureVersion = Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0);
+const types = read('src/types/manifest.ts');
+const schema = read('src/runtime-schemas/manifest.ts');
+const viewState = read('src/features/boards/contracts/view-state.ts');
+const runtimeContract = read('src/features/boards/contracts/item-workspace.ts');
+const runtime = read('assets/js/features/boards/services/item-workspace-runtime.ts');
+const view = read('assets/js/features/boards/views/item-workspace-view.ts');
+const controller = read('assets/js/features/boards/controllers/item-workspace-controller.ts');
+const renderer = read('assets/js/features/boards/controllers/item-panel-renderer.ts');
+const engine = read('assets/js/boards-ui.ts');
+const css = read('assets/css/boards-monday.css');
+const feature = read('assets/js/features/boards/index.ts');
+const m20Verifier = read('verify-stage-d-m20-board-collaborative-realtime.mjs');
+const historicalBoardArchitectureVerifiers = [
+  ['Phase Four', read('verify-v1250-architecture-phase4.mjs')],
+  ['Phase Five', read('verify-v1260-architecture-phase5.mjs')],
+  ['Domain/browser quality', read('verify-v1270-domain-browser-quality.mjs')],
+];
+const stageD = read('scripts/certify-stage-d-platform.mjs');
+const cert = read('scripts/certify-stage-d-m21.sh');
+const packageJson = JSON.parse(read('package.json'));
+const projectVerifier = read('verify-project.sh');
+const doc = read('docs/WORK-MANAGEMENT-RICH-ITEM-WORKSPACE.md');
+const architectureDoc = read('docs/architecture/ARCHITECTURE.md');
+const statusDoc = read('RELEASE-STATUS-v1.43.2-STAGE-D-M21-RICH-ITEM-WORKSPACE.md');
+const runbook = read('M21-ACTIVATION-RUNBOOK.md');
+const browserCdp = read('tests/browser/run-cdp.mjs');
+const browserIntegration = read('tests/browser/integration.js');
+assert(prerequisite === 'active-certified', `M21 requires M20 active-certified; found ${prerequisite}.`);
+assert(['implementation-complete-pending-certification','active-pending-release-certification','active-certified'].includes(state), `M21 target exposes invalid state ${state}.`);
+assert(architectureVersion >= 29, `M21 requires runtime architecture >=29; found ${architectureVersion}.`);
+assert(target.includes("richItemWorkspace") || target.includes("tabs: Object.freeze(['overview'"), 'M21 target must define the Rich Item Workspace contract.');
+assert(manifest.includes("richItemWorkspace: 'typed-rich-item-workspace-v1'") && manifest.includes('richItemWorkspaceController') && manifest.includes('richItemWorkspaceRuntime'), 'Application manifest must declare M21 authorities.');
+assert(types.includes("richItemWorkspace?: 'typed-rich-item-workspace-v1'") && schema.includes("z.literal('typed-rich-item-workspace-v1')") && schema.includes('architectureVersion >= 29'), 'Manifest type/schema authority must enforce Architecture 29.');
+assert(viewState.includes("'overview' | 'updates' | 'files' | 'activity'") && viewState.includes('updateDraft: string'), 'Typed Item Workspace state must include Overview and resilient drafts.');
+assert(runtimeContract.includes('setUpdateDraft(value: unknown): void') && runtime.includes("new Set(['overview', 'updates', 'files', 'activity']") && runtime.includes('state.itemPanel.updateDraft'), 'Item Workspace runtime must own tab validation and update drafts.');
+for (const marker of ['data-rich-item-workspace="v1"', "tabButton('overview', 'Overview')", 'data-item-property-form', 'data-item-property-kind="cell"', 'data-item-file-drop', 'state.itemPanel.updateDraft']) assert(view.includes(marker), `Rich Item Workspace view missing ${marker}.`);
+for (const marker of ['commands: BoardCommandService', 'submitProperty', 'normalizeBoardCellValue', 'reloadBoard', 'handleFileDrag', 'runtime.setUpdateDraft']) assert(controller.includes(marker), `Rich Item Workspace controller missing ${marker}.`);
+assert(!controller.includes("addEventListener('blur'") && !controller.includes('onblur='), 'M21 must not introduce save-on-blur property persistence.');
+assert(renderer.includes('overview: 0') && engine.includes('submitProperty(event)') && engine.includes('handleFileDrag(event)'), 'Stable Item Workspace renderer/engine must support the M21 Overview and drag/drop interactions.');
+for (const marker of ['Stage D Milestone 21 — Rich Item Workspace', '.item-overview', '.item-rich-property-grid', '.item-file-drop.is-dragging', '@media (prefers-reduced-motion: reduce)']) assert(css.includes(marker), `M21 CSS missing ${marker}.`);
+assert(feature.includes("'overview', 'updates', 'files', 'activity', 'rich-properties', 'draft-resilience', 'file-drop'"), 'Boards feature capability contract must advertise M21 collaboration surfaces.');
+assert(m20Verifier.includes('architectureVersion>=28') && !m20Verifier.includes('architectureVersion===28'), 'Historical M20 verifier must allow Architecture 29 without rewriting the M20 target.');
+for (const [label, verifier] of historicalBoardArchitectureVerifiers) {
+  assert(verifier.includes("architecture: 'react-route-facade-with-typed-rich-item-workspace-v1'"), `${label} historical verifier must recognize the M21 Boards metadata refinement.`);
+  assert(verifier.includes("architecture: 'react-route-facade-with-typed-compatibility-board-engine'") && verifier.includes("architecture: 'stable-workspace-controller-state-service-views-workflow-and-interaction-controllers'"), `${label} historical verifier must retain the M15 and pre-M15 compatibility guarantees.`);
+}
+assert(packageJson.scripts['rich-item-workspace:check'] && packageJson.scripts['rich-item-workspace:status'] && packageJson.scripts['rich-item-workspace:activate:release'], 'package.json must expose M21 governed scripts.');
+assert(!Object.keys(packageJson.dependencies ?? {}).some((name) => /editor|tiptap|lexical|slate|prosemirror/i.test(name)), 'M21 must not add an ungoverned rich-editor dependency.');
+assert(stageD.includes('rich-item-workspace:activate:release') && stageD.includes('M21 Rich Item Workspace final status'), 'Stage D certification must include M21 activation and status.');
+assert(cert.includes('rich-item-workspace:check') && cert.includes('stage-d:certify'), 'M21 certification script must run M21 and complete Stage D certification.');
+assert(projectVerifier.includes('verify-stage-d-m21-rich-item-workspace.mjs') && projectVerifier.includes('scripts/verify-rich-item-workspace-execution.mjs'), 'Aggregate verifier must include M21 artifacts.');
+assert(doc.includes('explicit-save') && doc.includes('drag-and-drop') && doc.includes('no-save-on-blur'), 'M21 documentation must record interaction and persistence boundaries.');
+assert(architectureDoc.includes('## Stage D M21 — Rich Item Workspace'), 'Architecture documentation must retain the M21 Rich Item Workspace section.');
+assert(statusDoc.includes('implementation-complete-pending-certification') && statusDoc.includes('Architecture Version:** 29'), 'M21 release status must ship pending certification at Architecture 29.');
+assert(runbook.includes('scripts/certify-stage-d-m21.sh') && runbook.includes('rich-item-workspace:status'), 'M21 runbook must use the governed certification entrypoint.');
+assert(browserCdp.includes("querySelectorAll('[role=\"tab\"]')") && browserCdp.includes('length===4') && browserCdp.includes('data-item-panel-tab=\"overview\"'), 'Authoritative CDP browser harness must validate the four-tab M21 Item Workspace contract.');
+assert(browserIntegration.includes('length===4') && browserIntegration.includes('data-item-panel-tab="overview"'), 'Secondary browser integration fixture must remain synchronized with the four-tab M21 Item Workspace contract.');
+const execution = spawnSync(process.execPath, ['--experimental-strip-types','--disable-warning=ExperimentalWarning','scripts/verify-rich-item-workspace-execution.mjs'], { cwd: root, encoding: 'utf8' });
+if (execution.stdout) process.stdout.write(execution.stdout); if (execution.stderr) process.stderr.write(execution.stderr);
+assert(execution.status === 0, 'M21 Rich Item Workspace execution vectors failed.');
+console.log(`Stage D Milestone 21 Rich Item Workspace verification: PASS (state=${state}; architecture=${architectureVersion})`);

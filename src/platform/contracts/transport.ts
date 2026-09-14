@@ -1,4 +1,6 @@
 import type { DiagnosticsPort } from './diagnostics.ts';
+import type { ObservabilityService } from './observability.ts';
+import type { SupabaseClientAdapter } from './supabase-client.ts';
 
 export interface BackendIdentity {
   readonly supabaseUrl: string;
@@ -9,6 +11,7 @@ export interface AuthTransportPort {
   readonly isAuthenticated: boolean;
   readonly user?: Readonly<{ id?: string | null }> | null;
   readonly backend: BackendIdentity;
+  readonly supabase: SupabaseClientAdapter;
   ensureAccessToken(): Promise<string | null>;
   headers(token: string, extra?: Readonly<Record<string, string>>): Record<string, string>;
   request(path: string, init?: RequestInit): Promise<unknown>;
@@ -55,4 +58,5 @@ export interface BackendClient {
 
 export interface BackendClientOptions {
   readonly diagnostics?: DiagnosticsPort | null;
+  readonly observability?: ObservabilityService | null;
 }

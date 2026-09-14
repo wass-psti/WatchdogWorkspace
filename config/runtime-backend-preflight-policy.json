@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "milestone": 38,
+  "architectureVersion": 46,
+  "failClosed": true,
+  "runtimeEnvironments": ["local", "development", "ci", "production"],
+  "configurationAuthority": ["VITE_RUNTIME_ENV", "VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_KEY"],
+  "configurationPairRequired": true,
+  "privilegedBrowserKeysForbidden": true,
+  "authenticatedCapabilityRpc": "wm_runtime_capabilities",
+  "capabilitySchema": "1.43.2-m38-v2",
+  "gatedModules": ["account", "users", "settings", "boards", "time-tracker", "fueltrack-plus", "tradelink"],
+  "moduleSpecificGating": true,
+  "requiredResourceClasses": ["tables", "rpcs", "storage", "realtime"],
+  "productionRequiresExplicitConfiguration": true,
+  "ciMayUseDeterministicFixtures": true,
+  "secrets": {
+    "serviceRoleBrowserUse": false,
+    "secretKeyBrowserUse": false
+  }
+}

@@ -8,14 +8,20 @@ import type {
   WorkManagementClient,
   WorkManagementClientOptions,
 } from '../../../src/platform/contracts/runtime-client.ts';
+import { runtimeContextSchema } from '../../../src/runtime-schemas/index.ts';
 
 const asList = (value: string | readonly string[]): readonly string[] => Array.isArray(value) ? value : [value as string];
+const validatedContext = (value: unknown): RuntimeContext => {
+  const parsed = runtimeContextSchema.safeParse(value);
+  if (!parsed.success) throw new TypeError('Runtime context does not satisfy the Work Management schema.');
+  return Object.freeze(parsed.data) as RuntimeContext;
+};
 
 /** Typed dynamic service client used by the Work Management shell integration boundary. */
 export function createWorkManagementClient({ services = {}, context = {} }: WorkManagementClientOptions = {}): WorkManagementClient {
   const listeners = new Map<string, Set<RuntimeListener>>();
   const serviceMap = new Map<string, RuntimeService>(Object.entries(services));
-  let runtimeContext: RuntimeContext = Object.freeze({ ...context });
+  let runtimeContext: RuntimeContext = validatedContext(context);
   let destroyed = false;
 
   const assertActive = (): void => {
@@ -102,7 +108,7 @@ export function createWorkManagementClient({ services = {}, context = {} }: Work
     execute(operation: string, params?: unknown) { return invoke('execute', operation, params); },
     setContext(next: RuntimeContext) {
       assertActive();
-      runtimeContext = Object.freeze({ ...runtimeContext, ...next });
+      runtimeContext = validatedContext({ ...runtimeContext, ...next });
       emit('runtime:context-changed', runtimeContext);
       return runtimeContext;
     },

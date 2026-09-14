@@ -8,7 +8,10 @@ const read = (path) => fs.readFileSync(path, 'utf8');
 const pass = (message) => console.log(`PASS ${message}`);
 
 const waitForAbort = (signal, timeoutMs = 500) => new Promise((resolve, reject) => {
-  if (signal.aborted) return resolve();
+  if (signal.aborted) {
+    resolve();
+    return;
+  }
   const timer = setTimeout(() => reject(new Error('Abort signal did not fire in time.')), timeoutMs);
   signal.addEventListener('abort', () => { clearTimeout(timer); resolve(); }, { once: true });
 });
@@ -137,12 +140,15 @@ assert.match(authorizationSource, /moduleHost\.publishIdentity\(\)/);
 pass('shell revalidates authorization context and invalidates stale server state across sessions');
 
 const authSource = read('assets/js/core/auth.ts');
+const supabaseAdapterSource = read('assets/js/platform/data/supabase-client-adapter.ts');
 assert.match(authSource, /parseAuthUser\(/);
 assert.match(authSource, /parseProfile\(/);
 assert.match(authSource, /parseModuleAssignments\(/);
 assert.match(authSource, /revalidateAccessContext/);
-assert.match(authSource, /createRequestSignal\(options\.signal, REQUEST_TIMEOUT_MS\)/);
-pass('auth runtime validates external identity payloads and composes cancellation with timeouts');
+assert.match(authSource, /this\.supabase\.request<T>\(path, \{ \.\.\.options, timeoutMs: REQUEST_TIMEOUT_MS \}\)/);
+assert.match(supabaseAdapterSource, /createRequestSignal\(signal, timeoutMs\)/);
+assert.match(supabaseAdapterSource, /DEFAULT_REQUEST_TIMEOUT_MS = 15_000/);
+pass('auth runtime validates external identity payloads and delegates cancellation/timeouts to the Supabase adapter');
 
 const backendSource = read('assets/js/platform/data/backend-client.ts');
 assert.match(backendSource, /nextRequestId/);

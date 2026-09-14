@@ -12,6 +12,7 @@ assert.equal(pkg.devDependencies?.typescript, '5.8.3');
 assert.ok(String(pkg.scripts?.typecheck || '').includes('tsc --noEmit'));
 assert.ok(String(pkg.scripts?.['verify:types'] || '').includes('verify-typescript-foundation'));
 assert.equal(tsconfig.compilerOptions.strict, true);
+assert.equal(tsconfig.compilerOptions.skipLibCheck, true, 'third-party declaration internals are skipped while Work Management source remains strict');
 assert.equal(tsconfig.compilerOptions.allowJs, false, 'v1.42 must not rely on transitional JavaScript compilation');
 assert.equal(tsconfig.compilerOptions.noUnusedLocals, true);
 assert.equal(tsconfig.compilerOptions.noUnusedParameters, true);
@@ -21,7 +22,7 @@ assert.equal(tsconfig.compilerOptions.exactOptionalPropertyTypes, true);
 assert.equal(tsconfig.compilerOptions.useUnknownInCatchVariables, true);
 assert.ok(tsconfig.compilerOptions.paths['@platform/*']);
 assert.ok(vite.includes("alias:"), 'Vite aliases must mirror TypeScript path aliases.');
-assert.ok(manifest.includes('architectureVersion: 15'));
+assert.ok(Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0) >= 24);
 assert.ok(manifest.includes("typeSystem: 'typescript-incremental'"));
 assert.ok(manifest.includes("typecheck: 'strict-boundaries'"));
 

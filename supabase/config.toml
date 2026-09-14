@@ -1,0 +1,7 @@
+project_id = "work-management-local"
+
+# Work Management Stage F M28 Edge Function configuration.
+# Project linking remains environment-specific and is not committed here.
+
+[functions.admin-sync-auth-access]
+verify_jwt = true

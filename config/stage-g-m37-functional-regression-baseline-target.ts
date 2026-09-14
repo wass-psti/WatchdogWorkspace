@@ -1,0 +1,65 @@
+export type M37ActivationState =
+  | 'implementation-complete-pending-certification'
+  | 'active-pending-browser-certification'
+  | 'active-certified';
+
+export const stageGM37FunctionalRegressionBaselineTarget = Object.freeze({
+  milestone: 37,
+  stage: 'G',
+  name: 'Functional Regression Baseline',
+  activationState: 'active-certified' as M37ActivationState,
+  prerequisite: Object.freeze({ milestone: 36, requiredState: 'active-certified' as const }),
+  architectureVersion: 45,
+  scope: Object.freeze(['boards', 'users', 'settings', 'account'] as const),
+  authority: Object.freeze({
+    policy: 'config/functional-regression-baseline-policy.json',
+    inventory: 'regression-baseline/m37-functional-regression-inventory.json',
+    verifier: 'verify-stage-g-m37-functional-regression-baseline.mjs',
+    executionVerifier: 'scripts/verify-functional-regression-baseline-execution.mjs',
+    browserRunner: 'scripts/run-functional-regression-browser.mjs',
+    evidenceGenerator: 'scripts/generate-functional-regression-evidence.mjs',
+    activator: 'scripts/activate-stage-g-m37.mjs',
+    certifier: 'scripts/certify-stage-g-m37.sh',
+    workflow: '.github/workflows/functional-regression-baseline.yml',
+    runbook: 'docs/WORK-MANAGEMENT-FUNCTIONAL-REGRESSION-BASELINE.md',
+  }),
+  evidenceContract: Object.freeze({
+    consoleErrors: true,
+    pageErrors: true,
+    failedNetworkRequests: true,
+    backendResponses: true,
+    routeState: true,
+    authenticationState: true,
+    domOwnership: true,
+    runtimeContext: true,
+    sensitiveTokenCapture: false,
+    responseBodyLimitBytes: 2048,
+  }),
+  characterization: Object.freeze({
+    unconfiguredBackendScenarioRequired: true,
+    authenticatedFixtureScenarioRequired: true,
+    liveBackendScenarioOptionalForM37: true,
+    authenticatedFixtureBootstrapMustBeProvenBeforeRouteCharacterization: true,
+    fixtureFailureInjectionIsScenarioIsolated: true,
+    m30GenericBrowserSmokeExcludesM37Characterization: true,
+    sourceSignatureRequiredWhenExternalDependencyCannotBeReproducedLocally: true,
+    fixesOutOfScope: true,
+  }),
+  knownBoundaries: Object.freeze([
+    Object.freeze({ id: 'board-react-host-imperative-engine', status: 'temporary-characterized-boundary' as const, owner: 'Boards', reason: 'React owns the Board host element while the imperative Board engine owns descendants; M37 characterizes handoff timing and DOM ownership but does not migrate the engine.' }),
+    Object.freeze({ id: 'user-management-protected-rpc', status: 'retained-authoritative-boundary' as const, owner: 'Users', reason: 'list_user_directory/admin_set_user_access remain authoritative until the M28 Edge Function is externally deployed and separately cut over.' }),
+    Object.freeze({ id: 'public-supabase-runtime-env', status: 'required-environment-boundary' as const, owner: 'Account/Users/Boards', reason: 'VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY are required public client configuration; privileged secrets remain forbidden in the browser.' }),
+    Object.freeze({ id: 'm26-embedded-modules', status: 'certified-live-compatibility' as const, owner: 'TimeTracker/FuelTrack+/TradeLink', reason: 'Same-origin iframe compatibility islands remain outside the M37 four-module recovery scope.' }),
+  ]),
+  completionCriteria: Object.freeze([
+    'Every reported module has at least one deterministic browser characterization case.',
+    'Exactly eight required browser evidence files are produced: four unconfigured-route records plus four authenticated fixture records.',
+    'Authenticated fixture identity is proven before target-route characterization and unrelated fixture failures are disabled by default.',
+    'M30 generic Playwright smoke is isolated from M37 environment-specific characterization tests.',
+    'Every inventory entry has either a reproducible test id or a documented source/backend failure signature.',
+    'Browser evidence captures console/page errors, request failures, backend responses, route/auth state, runtime context, and DOM ownership without tokens.',
+    'The checked-in unconfigured public backend scenario is explicitly distinguished from authenticated fixture behavior.',
+    'Known architectural boundaries and downstream stabilization work are documented rather than silently treated as fixed.',
+  ]),
+  databaseChanges: Object.freeze({ migrationRequired: false, schemaChangeRequired: false, productionDataRewriteRequired: false }),
+});

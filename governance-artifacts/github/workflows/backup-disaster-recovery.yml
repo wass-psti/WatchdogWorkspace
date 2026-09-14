@@ -1,0 +1,22 @@
+name: Backup and Disaster Recovery
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  backup-dr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run backup-dr:check
+      - run: npm run backup-dr:test
+      - run: npm run database-rls:check
+      - run: npm run observability:check
+      - run: npm run service-worker-update:check
+      - run: npm run lint:eslint
+      - run: npm run typecheck

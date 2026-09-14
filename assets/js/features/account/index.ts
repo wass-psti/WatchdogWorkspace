@@ -8,12 +8,10 @@ type RenderWorkspace = (content: string, route: string, motion?: string) => void
 type Navigate = (route: string) => unknown;
 type Toast = (message: string, tone?: 'warning' | 'success') => void;
 type EscapeHtml = (value: unknown) => string;
-type AuthShell = (kicker: string, title: string, body: string) => string;
-type QueueEntranceMotion = (scope?: string) => void;
 interface AccountFeatureDeps {
   auth: AuthService; modules: readonly WorkManagementModuleDefinition[]; moduleIcon: ModuleIcon; topbar: Topbar;
-  renderWorkspace: RenderWorkspace; navigate: Navigate; toast: Toast; escapeHtml: EscapeHtml; authShell: AuthShell;
-  queueEntranceMotion: QueueEntranceMotion; setAuthFeedback?: (message?: string, tone?: 'warning'|'success') => void;
+  renderWorkspace: RenderWorkspace; navigate: Navigate; toast: Toast; escapeHtml: EscapeHtml;
+  setAuthFeedback?: (message?: string, tone?: 'warning'|'success') => void;
 }
 const messageOf = (error: unknown, fallback: string): string => error instanceof Error ? error.message : fallback;
 
@@ -32,8 +30,6 @@ export function createAccountFeature({
   navigate,
   toast,
   escapeHtml,
-  authShell,
-  queueEntranceMotion,
   setAuthFeedback = () => {},
 }: AccountFeatureDeps) {
   const esc = escapeHtml;
@@ -82,12 +78,6 @@ export function createAccountFeature({
     renderWorkspace(content, 'account', 'page');
   }
 
-  function renderDisabled(): void {
-    const markup = authShell('ACCOUNT RESTRICTED', 'This account is disabled', `<div class="auth-message warning"><strong>Access has been suspended.</strong><span>Contact a platform administrator to restore the account. No application modules can be opened while the account is disabled.</span></div><button type="button" class="primary-btn auth-full-button" data-account-action="signout">Sign out</button>`);
-    const app = document.querySelector<HTMLElement>('#app');
-    if (app) app.innerHTML = markup;
-    queueEntranceMotion('page');
-  }
 
   async function handleAction(action: Element | null): Promise<boolean> {
     if (!action?.matches?.('button[data-account-action]')) return false;
@@ -99,6 +89,11 @@ export function createAccountFeature({
         await auth.signOut({ scope: kind === 'signout-all' ? 'global' : 'local' });
         setAuthFeedback('', 'success');
         navigate('login');
+      } catch (error) {
+        const message = messageOf(error, 'Session revocation could not be completed.');
+        setAuthFeedback(message, 'warning');
+        toast(message, 'warning');
+        if (active) render();
       } finally { busy.delete(kind); }
       return true;
     }
@@ -151,7 +146,7 @@ export function createAccountFeature({
   function activate() { active = true; }
   function deactivate() { active = false; epoch += 1; }
 
-  return Object.freeze({ render, renderDisabled, handleAction, handleSubmit, activate, deactivate, state: () => Object.freeze({ active, busy: [...busy] }) });
+  return Object.freeze({ render, handleAction, handleSubmit, activate, deactivate, state: () => Object.freeze({ active, busy: [...busy] }) });
 }
 
 export const ACCOUNT_FEATURE = Object.freeze({

@@ -1,0 +1,18 @@
+export const STAGE_D_M16_BOARD_COMPONENT_DECOMPOSITION_TARGET = Object.freeze({
+  milestone: 'Stage D Milestone 16 — Board component decomposition',
+  prerequisite: Object.freeze({ milestone: 'M15', state: 'active-certified' }),
+  activationState: 'active-certified',
+  architectureVersion: 26,
+  ownership: 'react-board-component-decomposition-v1',
+  facade: 'src/app/boards/BoardPresentationFacade.tsx',
+  routeBoundary: 'src/app/boards/components/BoardPresentationRouteBoundary.tsx',
+  presentationSurface: 'src/app/boards/components/BoardPresentationSurface.tsx',
+  presentationModel: 'src/app/boards/components/board-presentation-model.ts',
+  compatibilityEngine: 'assets/js/boards-ui.ts',
+  serviceAuthority: 'assets/js/features/boards/services/board-domain-service.ts',
+  commandAuthority: 'assets/js/features/boards/services/board-command-service.ts',
+  persistenceAuthority: 'assets/js/features/boards/data/board-repository.ts',
+  serverStateAuthority: 'tanstack-query-v5',
+  clientStateAuthority: 'zustand-v5',
+  noSupabaseMigration: true,
+} as const);

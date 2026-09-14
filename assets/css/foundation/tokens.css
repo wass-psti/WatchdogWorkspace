@@ -73,6 +73,239 @@
   --wm-table-row-compact: 38px;
   --wm-table-row-default: 44px;
 
+  /* Work Management Shell — Navigation Foundation.
+   * These are shell-level roles for the persistent host navigation. They do
+   * not define application routes or embedded-module authorization; later
+   * shell milestones consume the same geometry for expanded, compact,
+   * resizable, and mobile-drawer navigation states. */
+  --wm-shell-sidebar-width-min: 224px;
+  --wm-shell-sidebar-width-default: 256px;
+  --wm-shell-sidebar-width-max: 360px;
+  --wm-shell-sidebar-width-compact: 60px;
+  --wm-shell-sidebar-mobile-height: 72px;
+  --wm-shell-sidebar-mobile-width: 304px;
+  --wm-shell-sidebar-padding-inline: var(--wm-space-150);
+  --wm-shell-sidebar-padding-block: var(--wm-space-200);
+  --wm-shell-sidebar-brand-height: 48px;
+  --wm-shell-brand-mark-size: 40px;
+  --wm-shell-brand-mark-gap: 4px;
+  --wm-shell-brand-mark-radius: 10px;
+  --wm-shell-sidebar-collapse-size: 28px;
+  --wm-shell-sidebar-pin-size: 28px;
+  --wm-shell-sidebar-divider-width: var(--wm-border-width);
+  --wm-shell-sidebar-resizer-visual-width: 1px;
+  --wm-shell-sidebar-resizer-active-width: 3px;
+  --wm-shell-sidebar-resizer-hit-width: 10px;
+  --wm-shell-sidebar-resize-step: 8px;
+  --wm-shell-sidebar-resize-step-large: 24px;
+  --wm-shell-navigation-row-height: 36px;
+  --wm-shell-navigation-row-touch-height: 44px;
+  --wm-shell-navigation-control-size: 32px;
+  --wm-shell-navigation-control-touch-size: 44px;
+  --wm-shell-navigation-icon-size: 16px;
+  --wm-shell-navigation-active-indicator-width: 3px;
+  --wm-shell-navigation-item-gap: var(--wm-space-050);
+  --wm-shell-navigation-label-gap: var(--wm-space-150);
+  --wm-shell-navigation-section-gap: var(--wm-space-200);
+  --wm-shell-navigation-inline-padding: var(--wm-space-125);
+  --wm-shell-navigation-section-indent: var(--wm-space-150);
+  --wm-shell-navigation-child-indent: var(--wm-space-300);
+  --wm-shell-navigation-scrollbar-size: 6px;
+  --wm-shell-navigation-font-size: var(--wm-text-sm);
+  --wm-shell-navigation-section-font-size: var(--wm-text-xs);
+  --wm-shell-navigation-meta-font-size: var(--wm-text-2xs);
+  --wm-shell-navigation-section-header-height: 32px;
+  --wm-shell-navigation-resource-row-height: 40px;
+  --wm-shell-navigation-resource-row-touch-height: 48px;
+  --wm-shell-navigation-resource-icon-size: 24px;
+  --wm-shell-navigation-resource-search-height: 34px;
+  --wm-shell-navigation-section-chevron-size: 14px;
+  --wm-shell-navigation-section-count-min-width: 20px;
+  --wm-shell-navigation-resource-max-visible: 10;
+  --wm-shell-navigation-radius: var(--wm-radius-100);
+  --wm-shell-navigation-focus-width: var(--wm-focus-width);
+  --wm-shell-navigation-focus-offset: 2px;
+  --wm-shell-navigation-motion-fast: var(--wm-motion-fast);
+  --wm-shell-navigation-motion-standard: var(--wm-motion-normal);
+  --wm-shell-navigation-motion-ease: var(--wm-motion-ease);
+  --wm-shell-navigation-motion-ease-out: var(--wm-motion-ease-out);
+  --wm-shell-navigation-press-offset: 1px;
+  --wm-shell-navigation-preview-shadow: 14px 0 34px rgba(2,6,23,.18);
+  /* Shell M6 shared host overlay/menu/tooltip geometry. */
+  --wm-shell-overlay-gutter: 12px;
+  --wm-shell-overlay-gap: 8px;
+  --wm-shell-overlay-padding: var(--wm-space-075);
+  --wm-shell-overlay-radius: var(--wm-radius-200);
+  --wm-shell-overlay-z: 1080;
+  --wm-shell-overlay-motion-fast: var(--wm-motion-fast);
+  --wm-shell-overlay-motion-standard: var(--wm-motion-normal);
+  --wm-shell-overlay-ease-out: var(--wm-motion-ease-out);
+  --wm-shell-tooltip-gap: 8px;
+  --wm-shell-tooltip-max-width: 240px;
+  --wm-shell-tooltip-action-max-width: 180px;
+  --wm-shell-tooltip-radius: var(--wm-radius-100);
+  /* Shell M5 account/profile menu geometry. */
+  --wm-shell-account-trigger-height: 40px;
+  --wm-shell-account-trigger-avatar: 30px;
+  --wm-shell-account-trigger-radius: var(--wm-radius-150);
+  --wm-shell-account-menu-width: 340px;
+  --wm-shell-account-submenu-width: 276px;
+  --wm-shell-account-menu-max-height: 640px;
+  --wm-shell-account-menu-gutter: 12px;
+  --wm-shell-account-menu-padding: var(--wm-space-075);
+  --wm-shell-account-menu-radius: var(--wm-radius-200);
+  --wm-shell-account-menu-item-radius: var(--wm-radius-100);
+  --wm-shell-account-menu-row-height: 42px;
+  --wm-shell-account-menu-row-touch-height: 48px;
+  --wm-shell-account-menu-icon-size: 18px;
+  --wm-shell-account-avatar-size: 42px;
+  --wm-shell-account-motion-fast: var(--wm-motion-fast);
+  --wm-shell-account-motion-standard: var(--wm-motion-normal);
+  --wm-shell-account-motion-ease: var(--wm-motion-ease);
+  --wm-shell-account-motion-ease-out: var(--wm-motion-ease-out);
+
+  /* Shell M7 — responsive/accessibility finalization. */
+  --wm-shell-skip-link-min-height: 44px;
+  --wm-shell-skip-link-inline-padding: var(--wm-space-150);
+  --wm-shell-skip-link-offset: var(--wm-space-150);
+  --wm-shell-route-focus-scroll-margin: 88px;
+  --wm-shell-a11y-outline-width: 2px;
+  --wm-shell-a11y-outline-offset: 3px;
+  --wm-shell-min-supported-viewport: 320px;
+  --wm-shell-mobile-content-gap: var(--wm-space-100);
+
+  /* Work Boards — semantic geometry and typography foundation.
+   * These tokens intentionally describe roles rather than individual selectors.
+   * The Board presentation layer may alias them locally, while domain/runtime
+   * behavior remains independent from the design system. */
+  --wm-board-space-micro: var(--wm-space-025);
+  --wm-board-space-tight: var(--wm-space-050);
+  --wm-board-space-compact: var(--wm-space-100);
+  --wm-board-space-control: var(--wm-space-150);
+  --wm-board-space-standard: var(--wm-space-200);
+  --wm-board-space-section: var(--wm-space-300);
+  --wm-board-space-major: var(--wm-space-400);
+
+  --wm-board-font-meta: var(--wm-text-2xs);
+  --wm-board-font-label: var(--wm-text-xs);
+  --wm-board-font-control: var(--wm-text-sm);
+  --wm-board-font-body: var(--wm-text-sm);
+  --wm-board-font-card-title: var(--wm-text-xl);
+  --wm-board-font-group-title: var(--wm-text-lg);
+  --wm-board-font-title-min: 1.625rem; /* 26 */
+  --wm-board-font-title-max: 2.125rem; /* 34 */
+  --wm-board-weight-regular: var(--wm-font-weight-regular);
+  --wm-board-weight-medium: var(--wm-font-weight-medium);
+  --wm-board-weight-semibold: var(--wm-font-weight-semibold);
+  --wm-board-weight-bold: var(--wm-font-weight-bold);
+  --wm-board-line-tight: var(--wm-line-height-tight);
+  --wm-board-line-body: var(--wm-line-height-normal);
+  --wm-board-tracking-title: -.035em;
+  --wm-board-tracking-group: -.015em;
+
+  --wm-board-control-compact: 30px;
+  --wm-board-control-small: 34px;
+  --wm-board-control-default: var(--wm-control-md);
+  --wm-board-control-touch: 44px;
+  --wm-board-icon-small: 16px;
+  --wm-board-icon-default: 20px;
+  --wm-board-view-tab-height: 42px;
+  --wm-board-toolbar-min-height: 56px;
+  --wm-board-group-header-height: 44px;
+  --wm-board-column-header-height: 40px;
+  --wm-board-row-compact: 40px;
+  --wm-board-row-default: 44px;
+  --wm-board-row-comfortable: 48px;
+  --wm-board-inline-row-height: 38px;
+  --wm-board-status-height: 32px;
+  --wm-board-accent-rail-width: 4px;
+  --wm-board-selection-cell-width: 32px;
+  --wm-board-drag-cell-width: 28px;
+  --wm-board-action-cell-width: 44px;
+  --wm-board-checkbox-size: 18px;
+  --wm-board-column-drag-width: 18px;
+  --wm-board-column-add-width: 54px;
+  --wm-board-column-resize-hit-width: 10px;
+  --wm-board-item-column-min-width: 220px;
+  --wm-board-table-min-width: 820px;
+  --wm-board-empty-state-min-height: 84px;
+  --wm-board-cell-padding-inline: 10px;
+  --wm-board-cell-icon-size: 16px;
+  --wm-board-cell-chip-height: 28px;
+  --wm-board-cell-chip-max-width: 100%;
+  --wm-board-avatar-size: 26px;
+  --wm-board-cell-editor-min-width: 280px;
+  --wm-board-cell-editor-max-width: 420px;
+  --wm-board-cell-editor-control-height: 36px;
+
+  /* Milestone 6 — transient Board surfaces and interaction geometry. */
+  --wm-board-overlay-gutter: 12px;
+  --wm-board-overlay-gap: 8px;
+  --wm-board-menu-min-width: 216px;
+  --wm-board-menu-max-width: 320px;
+  --wm-board-menu-item-height: 36px;
+  --wm-board-menu-icon-size: 16px;
+  --wm-board-menu-max-height: 420px;
+  --wm-board-popover-min-width: 280px;
+  --wm-board-popover-max-width: 420px;
+  --wm-board-popover-max-height: 520px;
+  --wm-board-dialog-width: 560px;
+  --wm-board-dialog-max-height: 84dvh;
+  --wm-board-dialog-backdrop-blur: 8px;
+  --wm-board-dialog-radius: var(--wm-radius-300);
+  --wm-board-overlay-offset-y: 4px;
+
+  /* Milestone 7 — Kanban and Item Workspace geometry. */
+  --wm-board-kanban-lane-width: 312px;
+  --wm-board-kanban-lane-min-height: 520px;
+  --wm-board-kanban-lane-header-height: 56px;
+  --wm-board-kanban-card-min-height: 124px;
+  --wm-board-kanban-avatar-size: 24px;
+  --wm-board-item-panel-width: 720px;
+  --wm-board-item-panel-min-width: 560px;
+  --wm-board-item-panel-header-min-height: 132px;
+  --wm-board-item-panel-tabs-height: 52px;
+  --wm-board-item-panel-content-max-width: 660px;
+  --wm-board-item-update-editor-min-height: 112px;
+  --wm-board-item-empty-min-height: 180px;
+
+  /* Milestone 8 — final responsive/accessibility production contracts. */
+  --wm-board-content-gutter: clamp(12px, 1.5vw, 24px);
+  --wm-board-readable-measure: 72ch;
+  --wm-board-scrollbar-size: 10px;
+  --wm-board-focus-offset: 2px;
+  --wm-board-keyboard-resize-step: 8px;
+  --wm-board-keyboard-resize-step-large: 24px;
+  --wm-board-safe-area-bottom: max(12px, env(safe-area-inset-bottom));
+  --wm-board-safe-area-inline: max(12px, env(safe-area-inset-left));
+
+  --wm-board-inline-input-min-width: 160px;
+  --wm-board-card-min-width: 300px;
+  --wm-board-card-min-height: 164px;
+  --wm-board-search-width: 240px;
+  --wm-board-search-min-width: 150px;
+  --wm-board-kanban-column-min-width: 290px;
+
+  --wm-board-radius-control: var(--wm-radius-050);
+  --wm-board-radius-card: var(--wm-radius-100);
+  --wm-board-radius-surface: var(--wm-radius-150);
+  --wm-board-radius-status: 2px;
+  --wm-board-radius-pill: var(--wm-radius-round);
+  --wm-board-border-width: var(--wm-border-width);
+  --wm-board-focus-width: var(--wm-focus-width);
+
+  --wm-board-shadow-rest: none;
+  --wm-board-shadow-card: var(--wm-shadow-xs);
+  --wm-board-shadow-raised: var(--wm-shadow-sm);
+  --wm-board-shadow-popover: var(--wm-shadow-md);
+  --wm-board-shadow-overlay: var(--wm-shadow-overlay);
+
+  --wm-board-motion-fast: var(--wm-motion-fast);
+  --wm-board-motion-standard: var(--wm-motion-normal);
+  --wm-board-motion-deliberate: var(--wm-motion-slow);
+  --wm-board-motion-ease: var(--wm-motion-ease);
+  --wm-board-motion-ease-out: var(--wm-motion-ease-out);
+
   /* Radius — restrained; data surfaces remain squarer than marketing UI. */
   --wm-radius-050: 4px;
   --wm-radius-100: 6px;

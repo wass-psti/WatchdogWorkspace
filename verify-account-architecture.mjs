@@ -5,7 +5,7 @@ const app = read('./assets/js/app.ts');
 const auth = read('./assets/js/core/auth.ts');
 const routeController = read('./assets/js/runtime/route-controller.ts');
 const routePolicy = read('./assets/js/runtime/services/route-policy.ts');
-const accountFeature = read('./assets/js/features/account/index.ts');
+const managementRuntime = read('./src/app/management/authenticated-management-ui-runtime.ts');
 const bridge = read('./assets/js/core/module-identity-bridge.ts');
 const host = read('./assets/js/runtime/module-host.ts');
 const bootstrap = read('./assets/js/runtime/module-bootstrap.ts');
@@ -18,7 +18,7 @@ assert.ok(config.includes('accountBased: true') && config.includes('enabled: tru
 assert.ok(routePolicy.includes("target:'login'") && routeController.includes('navigate(decision.target)') && routeController.includes('rememberReturnRoute') && app.includes("wm.platform.auth.return-to.v1"), 'protected routes must redirect through typed route policy/controller and preserve intended route');
 assert.ok(auth.includes('scheduleRefresh()') && auth.includes('ensureValidSession'), 'session restoration and proactive refresh must exist');
 assert.ok(auth.includes("BroadcastChannel") && auth.includes("signed-out"), 'cross-tab auth synchronization must exist');
-assert.ok(auth.includes("scope === 'global'") && accountFeature.includes('signout-all'), 'global secure session termination must exist');
+assert.ok(auth.includes("scope === 'global'") && managementRuntime.includes("scope === 'global' ? 'signout-all' : 'signout'"), 'global secure session termination must exist');
 assert.ok(auth.includes('updateProfile') && auth.includes('updatePassword'), 'account profile and password management must exist');
 assert.ok(schema.includes('update_own_profile') && schema.includes('enable row level security'), 'self-service profile RPC and RLS must exist');
 assert.ok(bridge.includes('wm:identity:request') && !bridge.includes('localStorage'), 'identity bridge must obtain sanitized identity from the authenticated parent without local persistence');

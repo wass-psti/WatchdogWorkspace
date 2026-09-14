@@ -1,6 +1,14 @@
 import type { WorkManagementModuleDefinition } from '../../../src/types/modules.ts';
 import { PLATFORM_VERSION } from './platform.ts';
 import { auth } from './auth.ts';
+import {
+  assessLegacyBackup,
+  assessRecoveryPackage,
+  createRecoveryPackage,
+  isRecoveryPackage,
+  verifyRecoveryPackage,
+} from '../platform/recovery/backup-disaster-recovery.ts';
+import type { RecoveryPackage, RecoveryPreflight } from '../../../src/platform/contracts/backup-disaster-recovery.ts';
 
 export const BACKUP_FORMAT = 'work-management-backup' as const;
 export const BACKUP_VERSION = 4 as const;
@@ -91,6 +99,29 @@ export interface RestoreOutcome {
   readonly boardRestored: number;
   readonly skippedModules: readonly string[];
   readonly phase: 'complete';
+}
+
+export interface BackupImportInspection {
+  readonly payload: WorkspaceBackupPayload;
+  readonly preflight: RecoveryPreflight;
+  readonly recoveryPackage: RecoveryPackage<unknown> | null;
+}
+
+export interface GuardedRestoreOutcome extends RestoreOutcome {
+  readonly checkpointDigest: string;
+}
+
+export type BackupDisasterRecoveryEventType =
+  | 'export-created'
+  | 'import-preflight'
+  | 'checkpoint-created'
+  | 'restore-started'
+  | 'restore-completed'
+  | 'restore-failed';
+
+function emitBackupDrEvent(type: BackupDisasterRecoveryEventType, detail: Readonly<Record<string, unknown>> = {}): void {
+  if (typeof window === 'undefined' || typeof CustomEvent === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('wm:backup-dr', { detail: Object.freeze({ type, ...detail }) }));
 }
 
 export class BackupValidationError extends Error {
@@ -350,20 +381,32 @@ export async function createWorkspaceBackup(modules: readonly WorkManagementModu
   });
 }
 
-export async function downloadWorkspaceBackup(modules: readonly WorkManagementModuleDefinition[]): Promise<number> {
-  const payload = await createWorkspaceBackup(modules);
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+function downloadRecoveryArtifact(pkg: RecoveryPackage<unknown>, prefix: string): void {
+  const blob = new Blob([JSON.stringify(pkg, null, 2)], { type: 'application/json' });
+  if (blob.size <= 0 || blob.size > MAX_BACKUP_BYTES) throw new BackupValidationError('Recovery package exceeds the 25 MB import/recovery safety limit.', 'input-acquisition', 'WM_BACKUP_PACKAGE_TOO_LARGE');
   const url = URL.createObjectURL(blob);
   try {
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `work-management-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.download = `${prefix}-${new Date().toISOString().replaceAll(':', '-').slice(0, 19)}.json`;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
   } finally {
     setTimeout(() => URL.revokeObjectURL(url), 0);
   }
+}
+
+export async function downloadWorkspaceBackup(modules: readonly WorkManagementModuleDefinition[]): Promise<number> {
+  const payload = await createWorkspaceBackup(modules);
+  const pkg = await createRecoveryPackage(payload);
+  downloadRecoveryArtifact(pkg, 'work-management-recovery');
+  emitBackupDrEvent('export-created', {
+    entryCount: payload.entryCount,
+    boardCount: payload.boardData.length,
+    integrity: 'sha256',
+    digest: pkg.integrity.digest,
+  });
   return payload.entryCount;
 }
 
@@ -515,12 +558,32 @@ export function parseBackupObject(input: unknown, modules: readonly WorkManageme
   });
 }
 
-export async function parseBackupFile(file: File, modules: readonly WorkManagementModuleDefinition[]): Promise<WorkspaceBackupPayload> {
+export async function inspectBackupFile(file: File, modules: readonly WorkManagementModuleDefinition[]): Promise<BackupImportInspection> {
   if (!(file instanceof File) || file.size <= 0 || file.size > MAX_BACKUP_BYTES) throw new BackupValidationError('Backup file is missing, empty, or exceeds the 25 MB safety limit.', 'input-acquisition', 'WM_BACKUP_FILE_INVALID');
   let parsed: unknown;
   try { parsed = JSON.parse(await file.text()); }
   catch { throw new BackupValidationError('The selected file is not valid JSON.', 'parsing', 'WM_BACKUP_JSON_INVALID'); }
-  return parseBackupObject(parsed, modules);
+
+  if (isRecoveryPackage(parsed)) {
+    let pkg: RecoveryPackage<unknown>;
+    try { pkg = await verifyRecoveryPackage(parsed); }
+    catch (error) { throw new BackupValidationError(errorMessage(error, 'Recovery package integrity verification failed.'), 'structural-validation', 'WM_BACKUP_INTEGRITY_FAILED'); }
+    const payload = parseBackupObject(pkg.payload, modules);
+    const plan = createRestorePlan(payload);
+    const preflight = assessRecoveryPackage(pkg, { expectedOrigin: location.origin, skippedModules: plan.skippedModules, validatedPayload: payload });
+    emitBackupDrEvent('import-preflight', { integrity: preflight.integrity, status: preflight.status, entryCount: preflight.entryCount, warningCount: preflight.warnings.length });
+    return Object.freeze({ payload, preflight, recoveryPackage: pkg });
+  }
+
+  const payload = parseBackupObject(parsed, modules);
+  const plan = createRestorePlan(payload);
+  const preflight = assessLegacyBackup(payload, plan.skippedModules);
+  emitBackupDrEvent('import-preflight', { integrity: preflight.integrity, status: preflight.status, entryCount: preflight.entryCount, warningCount: preflight.warnings.length });
+  return Object.freeze({ payload, preflight, recoveryPackage: null });
+}
+
+export async function parseBackupFile(file: File, modules: readonly WorkManagementModuleDefinition[]): Promise<WorkspaceBackupPayload> {
+  return (await inspectBackupFile(file, modules)).payload;
 }
 
 export function createRestorePlan(payload: WorkspaceBackupPayload): RestorePlan {
@@ -600,3 +663,31 @@ export async function restoreWorkspaceBackup(payload: WorkspaceBackupPayload): P
     throw new Error(`Restore failed: ${errorMessage(error, 'cloud transaction error')}`);
   }
 }
+
+export async function restoreWorkspaceBackupGuarded(
+  payload: WorkspaceBackupPayload,
+  modules: readonly WorkManagementModuleDefinition[],
+): Promise<GuardedRestoreOutcome> {
+  if (!auth.isAuthenticated) throw new Error('Sign in before restoring an authenticated workspace backup.');
+  let checkpoint: RecoveryPackage<WorkspaceBackupPayload>;
+  try {
+    const current = await createWorkspaceBackup(modules);
+    checkpoint = await createRecoveryPackage(current);
+    downloadRecoveryArtifact(checkpoint, 'work-management-pre-restore-checkpoint');
+    emitBackupDrEvent('checkpoint-created', { entryCount: current.entryCount, boardCount: current.boardData.length, digest: checkpoint.integrity.digest });
+  } catch (error) {
+    emitBackupDrEvent('restore-failed', { phase: 'pre-restore-checkpoint', code: 'WM_BACKUP_CHECKPOINT_FAILED' });
+    throw new Error(`Restore blocked because a pre-restore recovery checkpoint could not be created: ${errorMessage(error, 'checkpoint error')}`);
+  }
+
+  emitBackupDrEvent('restore-started', { entryCount: payload.entryCount, backupVersion: payload.backupVersion });
+  try {
+    const outcome = await restoreWorkspaceBackup(payload);
+    emitBackupDrEvent('restore-completed', { restored: outcome.restored, boardRestored: outcome.boardRestored, skippedModuleCount: outcome.skippedModules.length });
+    return Object.freeze({ ...outcome, checkpointDigest: checkpoint.integrity.digest });
+  } catch (error) {
+    emitBackupDrEvent('restore-failed', { phase: 'restore', code: 'WM_BACKUP_RESTORE_FAILED', checkpointDigest: checkpoint.integrity.digest });
+    throw error;
+  }
+}
+

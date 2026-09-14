@@ -16,7 +16,7 @@ const runtimeAssets=read('config/runtime-assets.js');
 const browser=read('tests/browser/run-cdp.mjs');
 const docs=read('docs/architecture/BOARD-OVERHAUL-v1.32.md');
 const readme=read('README.md');
-assert.ok(manifest.includes("version: '1.43.2'")&&manifest.includes('architectureVersion: 15'),'manifest release mismatch');
+assert.ok(manifest.includes("version: '1.43.2'")&&Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0) >= 24,'manifest release mismatch');
 assert.ok(platform.includes("PLATFORM_VERSION = '1.43.2'"),'platform release mismatch');
 assert.ok(sw.includes("work-management-v1.43.2"),'service worker cache mismatch');
 for(const token of ['createBoardMenuController','board-floating-menu','aria-expanded','ArrowDown','Escape','position:fixed']) assert.ok(`${menu}\n${css}`.includes(token),`unified Board menu missing ${token}`);

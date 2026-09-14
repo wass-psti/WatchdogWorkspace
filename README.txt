@@ -1,6 +1,5 @@
-Work Management App v1.43.2
-Production hardening baseline. Architecture Version 15.
-Controlled UI/rendering TypeScript runtime. Architecture Version 15.
-Work Management shell/UI, Boards interactions, Item Workspace, overlays, and motion runtimes are TypeScript-authoritative; embedded TimeTracker/FuelTrack+/TradeLink internals remain isolated compatibility islands.
-Source/compiler/historical/Chromium verification passes. Final Vite dev/build/dist/preview promotion remains pending a clean npm ci in a network-capable environment.
-See README.md and docs/architecture/TYPESCRIPT-UI-RUNTIME-v1.42.md.
+Work Management App v1.43.2 — Stage C Milestone 13 Account / Settings / User Management RC.
+Architecture Version 23.
+M10 React Shell, M11 Global Overlays, and M12 Authentication UI remain active-certified.
+React owns Account, Settings, and User Management route presentation; Supabase Auth/RPC/RLS, platform preferences, backup services, and TanStack Query retain their existing data/security authority boundaries.
+M13 requires no Supabase migration.

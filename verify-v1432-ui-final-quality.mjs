@@ -8,6 +8,7 @@ const primitives = read('assets/css/foundation/primitives.css');
 const components = read('assets/css/foundation/components.css');
 const modules = read('assets/css/foundation/module-unification.css');
 const migration = read('assets/css/foundation/application-migration.css');
+const shellNavigation = read('assets/css/shell-navigation.css');
 const browser = read('tests/browser/run-cdp.mjs');
 const distVerifier = read('scripts/verify-dist.mjs');
 const tradeVerify = read('apps/tradelink/verify-ui.sh');
@@ -37,8 +38,9 @@ assert.match(migration, /@media \(pointer:coarse\)[\s\S]*input:not\(\[type=\"che
 
 // Compact shell/Board behavior must avoid sticky overlap and clipped navigation.
 assert.match(migration, /@media \(max-width:1120px\)[\s\S]*\.board-list-toolbar\s*\{\s*position:static/s);
-assert.match(migration, /@media \(max-width:640px\)[\s\S]*\.sidebar nav\s*\{[^}]*display:flex[^}]*overflow-x:auto/s);
-assert.match(migration, /\.workspace\s*\{\s*padding-bottom:calc\(72px \+ env\(safe-area-inset-bottom\)\)/);
+assert.match(shellNavigation, /@media \(max-width:620px\)[\s\S]*\.sidebar\s*\{[^}]*position:\s*fixed[^}]*height:\s*100dvh/s);
+assert.match(shellNavigation, /data-shell-mobile-open=\"true\"[^}]*\.sidebar[\s\S]*left:\s*0/s);
+assert.doesNotMatch(migration, /padding-bottom:calc\(72px \+ env\(safe-area-inset-bottom\)\)/);
 assert.match(migration, /\.board-inline-popover,\.board-status-popover,\.column-quick-picker\)[^{]*\{[^}]*max-width:calc\(100vw - 12px\)[^}]*max-height:calc\(100dvh - 12px\)/s);
 
 // Automated viewport contract covers both themes, desktop-to-narrow layouts,
@@ -58,7 +60,7 @@ for (const marker of [
   'menu remains inside the viewport',
   'dialog remains vertically usable',
   'programmatic focus ownership remains stable',
-  'mobile shell navigation uses a single horizontal rail',
+  'Shell M2 mobile navigation uses a vertical drawer',
 ]) assert.ok(browser.includes(marker), `final browser audit is missing: ${marker}`);
 assert.doesNotMatch(browser, /CSS\.forcePseudoState/);
 

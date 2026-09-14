@@ -3,9 +3,11 @@ import { CAPABILITIES, hasPlatformCapability, platformAdminModuleRole as resolve
 import type { Capability, PlatformRole } from '../../../src/types/auth.ts';
 import type { ModuleId as PlatformModuleId } from '../../../src/types/identifiers.ts';
 import { deriveAuthLifecycle, normalizeAuthFailure } from './auth-state.ts';
-import { createRequestSignal, timeoutError } from '../platform/data/request-signal.ts';
+import { createSupabaseClientAdapter } from '../platform/data/supabase-client-adapter.ts';
+import type { SupabaseClientAdapter } from '../../../src/platform/contracts/supabase-client.ts';
 import type { AuthLifecycleState, AuthStatus } from './auth-state.ts';
 import type { EmbeddedModuleIdentityContext } from '../../../src/platform/contracts/embedded-module.ts';
+import { M39_AUTH_ACCESS_CONTEXT_SCHEMA_VERSION, type AuthSessionPersistence } from '../../../src/platform/contracts/auth-session-access-context.ts';
 type AccountStatus = 'active' | 'disabled';
 type VerificationStatus = 'processing' | 'awaiting-confirmation' | 'success' | 'error';
 type VerificationType = 'email' | 'signup' | 'invite' | 'recovery' | 'magiclink' | 'email_change' | '';
@@ -18,12 +20,13 @@ interface BackendConfig {
 interface AuthSession { access_token: string; refresh_token: string; token_type: string; expires_in: number; expires_at: number; }
 interface AuthUserRecord extends JsonRecord { id: string; email?: string; email_confirmed_at?: string | null; confirmed_at?: string | null; }
 interface ProfileRecord extends JsonRecord { id: string; email?: string; display_name?: string; platform_role: PlatformRole; status: AccountStatus; created_at?: string; updated_at?: string; }
-interface ModuleAssignmentRecord extends JsonRecord { module_id: PlatformModuleId; role?: string | null; enabled: boolean; updated_at?: string; }
+interface ModuleAssignmentRecord extends JsonRecord { user_id?: string | null; module_id: PlatformModuleId; role?: string | null; enabled: boolean; updated_at?: string; }
 interface VerificationState { status: VerificationStatus; code: string; message: string; sessionCreated: boolean; }
 interface AuthState {
   initialized: boolean; status: AuthStatus; mode: 'cloud'; configured: boolean; session: AuthSession | null;
   user: AuthUserRecord | null; profile: ProfileRecord | null; assignments: ModuleAssignmentRecord[];
   error: string | null; notice: string | null; verification: VerificationState | null;
+  sessionPersistence: AuthSessionPersistence; accessContextRevision: string | null;
 }
 interface AuthCallbackInfo { hasCallback: boolean; errorCode: string; errorDescription: string; tokenHash: string; type: VerificationType; hasImplicitSession: boolean; callbackMarker: string; requireExplicitConfirm: boolean; }
 interface AuthCallbackResult { handled: boolean; verified?: boolean; error?: boolean; awaitingConfirmation?: boolean; sessionCreated?: boolean; }
@@ -113,11 +116,13 @@ function parseModuleAssignment(value: unknown): ModuleAssignmentRecord {
   const moduleId = stringField(record, 'module_id').trim();
   if (!isPlatformModuleId(moduleId)) throw new TypeError('Module assignment payload contains an unsupported module id.');
   if (typeof record.enabled !== 'boolean') throw new TypeError('Module assignment payload is missing a boolean enabled flag.');
+  const userId = record.user_id == null ? null : stringField(record, 'user_id').trim() || null;
   const role = record.role == null ? null : stringField(record, 'role').trim() || null;
   const allowedRoles = MODULE_ROLES[moduleId] ?? [];
   if (role !== null && !allowedRoles.includes(role)) throw new TypeError(`Module assignment payload contains an unsupported role for ${moduleId}.`);
   return Object.freeze({
     ...record,
+    ...(userId ? { user_id: userId } : {}),
     module_id: moduleId,
     enabled: record.enabled,
     role,
@@ -216,22 +221,28 @@ function normalizeSession(payload: unknown, fallbackRefresh: string | null = nul
   const access = stringField(record, 'access_token');
   const refresh = stringField(record, 'refresh_token') || fallbackRefresh;
   if (!access || !refresh) return null;
+  const expiresIn = numberField(record, 'expires_in', 3600);
+  const explicitExpiry = numberField(record, 'expires_at', 0);
+  const normalizedExplicitExpiry = explicitExpiry > 10_000_000_000 ? explicitExpiry : explicitExpiry > 1_000_000_000 ? explicitExpiry * 1000 : 0;
   return {
     access_token: access,
     refresh_token: refresh,
     token_type: stringField(record, 'token_type') || 'bearer',
-    expires_in: numberField(record, 'expires_in', 3600),
-    expires_at: jwtExpiry(access) || Date.now() + numberField(record, 'expires_in', 3600) * 1000,
+    expires_in: expiresIn,
+    expires_at: jwtExpiry(access) || normalizedExplicitExpiry || Date.now() + expiresIn * 1000,
   };
 }
 
-function authError(payload: unknown, fallback: string, status: number | null = null): AuthError {
-  const record = asRecord(payload);
-  const error = new Error(stringField(record,'msg') || stringField(record,'message') || stringField(record,'error_description') || stringField(record,'error') || fallback) as AuthError;
-  error.code = stringField(record,'error_code') || stringField(record,'code') || stringField(record,'error');
-  error.status = status && status > 0 ? status : null;
-  return error;
+function isTerminalSessionFailure(error: unknown): boolean {
+  const failure = normalizeAuthFailure(error);
+  const code = failure.code.toLowerCase();
+  const message = failure.message.toLowerCase();
+  return failure.status === 401
+    || (failure.status === 400 && /refresh|token|session|grant/.test(`${code} ${message}`))
+    || ['refresh_token_not_found','invalid_grant','session_not_found','bad_jwt'].includes(code)
+    || /refresh token.*(invalid|expired|not found)|invalid refresh token|session.*not found/.test(message);
 }
+
 
 function applicationBaseUrl() {
   const url = new URL('./', location.href);
@@ -304,6 +315,7 @@ class AuthManager extends EventTarget {
   channel: BroadcastChannel | null = null;
   private generation = 0;
   private terminatedGeneration = -1;
+  private supabaseClientCache: { readonly key: string; readonly client: SupabaseClientAdapter } | null = null;
 
   constructor() {
     super();
@@ -319,6 +331,8 @@ class AuthManager extends EventTarget {
       error: null,
       notice: null,
       verification: null,
+      sessionPersistence: 'none',
+      accessContextRevision: null,
     };
     this.refreshPromise = null;
     this.refreshTimer = null;
@@ -344,13 +358,24 @@ class AuthManager extends EventTarget {
     });
   }
   get backend() { return config(); }
+  get supabase(): SupabaseClientAdapter {
+    const backend = this.backend;
+    const key = `${backend.supabaseUrl}\u0000${backend.publishableKey}`;
+    if (!this.supabaseClientCache || this.supabaseClientCache.key !== key) {
+      this.supabaseClientCache = Object.freeze({
+        key,
+        client: createSupabaseClientAdapter({ supabaseUrl: backend.supabaseUrl, publishableKey: backend.publishableKey }),
+      });
+    }
+    return this.supabaseClientCache.client;
+  }
   get callbackInfo() { return inspectAuthCallback(); }
   get hasAuthCallback() { return this.callbackInfo.hasCallback; }
   get isCloudEnabled() { return this.backend.accountBased; }
   get isConfigured() { return this.backend.configured; }
-  get isAuthenticated() { return Boolean(this.state.user && this.state.session && this.isAccountActive); }
+  get isAuthenticated() { return this.state.status === 'authenticated' && Boolean(this.state.user && this.state.session && this.isAccountActive); }
   get hasSession() { return Boolean(this.state.session); }
-  get isAccountActive() { return !this.state.profile || this.state.profile.status === 'active'; }
+  get isAccountActive() { return this.state.profile?.status === 'active'; }
   get user() { return this.state.user; }
   get profile() { return this.state.profile; }
   get assignments() { return this.state.assignments || []; }
@@ -382,29 +407,11 @@ class AuthManager extends EventTarget {
   }
 
   headers(accessToken: string | null = null, extra: Record<string,string> = {}): Record<string,string> {
-    const { publishableKey } = this.backend;
-    const headers: Record<string,string> = { apikey: publishableKey, 'Content-Type': 'application/json', ...extra };
-    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
-    return headers;
+    return this.supabase.headers(accessToken, extra);
   }
 
   async request<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
-    const { supabaseUrl } = this.backend;
-    if (!supabaseUrl) throw new Error('Supabase project URL is not configured.');
-    const requestSignal = createRequestSignal(options.signal, REQUEST_TIMEOUT_MS);
-    try {
-      const response = await fetch(`${supabaseUrl}${path}`, { ...options, signal: requestSignal.signal, cache: options.cache || 'no-store' });
-      const text = await response.text();
-      let payload: unknown = null;
-      try { payload = text ? JSON.parse(text) : null; } catch { payload = text; }
-      if (!response.ok) throw authError(payload, `Request failed with HTTP ${response.status}`, response.status);
-      return payload as T;
-    } catch (error) {
-      if (requestSignal.timedOut()) throw timeoutError('The authentication service did not respond in time.');
-      throw error;
-    } finally {
-      requestSignal.dispose();
-    }
+    return this.supabase.request<T>(path, { ...options, timeoutMs: REQUEST_TIMEOUT_MS });
   }
 
   async consumeAuthCallback({ force = false }: {force?: boolean} = {}): Promise<AuthCallbackResult> {
@@ -437,7 +444,7 @@ class AuthManager extends EventTarget {
           expires_in: hash.get('expires_in'),
         });
         if (!session) throw new Error('The verification callback did not contain a usable session.');
-        this.acceptSession(session);
+        this.acceptSession(session, { establishIdentity: true });
         this.state.verification = { status: 'success', code: '', message: 'Email confirmed successfully.', sessionCreated: true };
         this.state.notice = 'Email confirmed successfully.';
         history.replaceState(null, '', `${location.pathname}#/verify`);
@@ -452,7 +459,7 @@ class AuthManager extends EventTarget {
           body: JSON.stringify({ token_hash: info.tokenHash, type: info.type }),
         });
         const session = normalizeSession(payload);
-        if (session) this.acceptSession(session);
+        if (session) this.acceptSession(session, { establishIdentity: true });
         this.state.verification = { status: 'success', code: '', message: 'Email confirmed successfully.', sessionCreated: Boolean(session) };
         this.state.notice = session ? 'Email confirmed successfully.' : 'Email confirmed successfully. Sign in to continue.';
         history.replaceState(null, '', `${location.pathname}#/verify`);
@@ -485,12 +492,29 @@ class AuthManager extends EventTarget {
     return this.consumeAuthCallback({ force: true });
   }
 
-  acceptSession(session: AuthSession, { broadcast = false }: {broadcast?: boolean} = {}): void {
-    this.generation += 1;
+  acceptSession(session: AuthSession, { broadcast = false, establishIdentity = false }: {broadcast?: boolean;establishIdentity?: boolean} = {}): void {
+    if (establishIdentity) {
+      this.generation += 1;
+      this.terminatedGeneration = -1;
+    }
     this.state.session = session;
-    writeStoredSession(session);
+    const persisted = writeStoredSession(session);
+    this.state.sessionPersistence = persisted ? 'persistent' : 'memory-only';
+    if (!persisted) this.state.notice = 'This browser cannot persist the authentication session. Access will end when this application instance closes.';
     this.scheduleRefresh();
     if (broadcast) this.broadcast('session-updated');
+  }
+
+  suspendAuthorization(message: string): void {
+    this.accessContextValidatedAt = 0;
+    this.state.user = null;
+    this.state.profile = null;
+    this.state.assignments = [];
+    this.state.accessContextRevision = null;
+    this.state.initialized = true;
+    this.state.status = 'access-error';
+    this.state.error = message;
+    writeIdentityContext(null);
   }
 
   clearRuntimeIdentity({ preserveError = false }: {preserveError?: boolean} = {}): void {
@@ -505,6 +529,8 @@ class AuthManager extends EventTarget {
       user: null,
       profile: null,
       assignments: [],
+      sessionPersistence: 'none',
+      accessContextRevision: null,
       status: this.isConfigured ? 'anonymous' : 'setup-required',
       error: preserveError ? this.state.error : null,
     };
@@ -548,6 +574,7 @@ class AuthManager extends EventTarget {
         this.emit();
         return this.snapshot();
       }
+      const hadRuntimeSession = Boolean(this.state.session);
       let session = forceStorage ? readStoredSession() : (this.state.session || readStoredSession());
       if (!session) {
         this.clearRuntimeIdentity();
@@ -555,8 +582,11 @@ class AuthManager extends EventTarget {
         this.emit();
         return this.snapshot();
       }
+      this.state.status = 'restoring';
+      this.state.error = null;
+      this.acceptSession(session, { broadcast: false, establishIdentity: forceStorage || !hadRuntimeSession });
+      this.emit();
       if (!session.expires_at || session.expires_at < Date.now() + REFRESH_SKEW_MS) session = await this.refresh(session.refresh_token, { broadcast: false });
-      else this.acceptSession(session);
       await this.loadCurrentUserWithRetry();
       if (callbackResult.verified && !isEmailConfirmed(this.state.user)) throw new Error('Supabase returned a session, but the account is not marked as email-confirmed. Request a new verification link.');
       this.state.initialized = true;
@@ -565,9 +595,14 @@ class AuthManager extends EventTarget {
       this.publishIdentityContext();
     } catch (error) {
       console.warn('[Work Management] Existing cloud session could not be restored', error);
-      this.state.error = errorMessage(error, 'The saved session could not be restored.');
-      this.clearRuntimeIdentity({ preserveError: true });
-      this.state.initialized = true;
+      if (isTerminalSessionFailure(error)) {
+        this.state.error = 'Your saved session is no longer valid. Sign in again.';
+        this.clearRuntimeIdentity({ preserveError: true });
+        this.state.initialized = true;
+        this.state.status = 'expired';
+      } else {
+        this.suspendAuthorization(errorMessage(error, 'The saved session is still present, but Work Management could not validate its access context. Retry when connectivity and the backend are available.'));
+      }
     }
     this.emit();
     return this.snapshot();
@@ -622,7 +657,7 @@ class AuthManager extends EventTarget {
     });
     const session = normalizeSession(payload);
     if (!session) throw new Error('Authentication succeeded without a usable session.');
-    this.acceptSession(session, { broadcast: true });
+    this.acceptSession(session, { broadcast: true, establishIdentity: true });
     await this.loadCurrentUser(asRecord(payload).user && typeof asRecord(payload).user === 'object' ? asRecord(payload).user as AuthUserRecord : null);
     if (!this.isAccountActive) {
       await this.signOut({ scope: 'local', broadcast: false });
@@ -662,7 +697,7 @@ class AuthManager extends EventTarget {
     }
     const session = normalizeSession(payload);
     if (session) {
-      this.acceptSession(session, { broadcast: true });
+      this.acceptSession(session, { broadcast: true, establishIdentity: true });
       await this.loadCurrentUser(asRecord(payload).user && typeof asRecord(payload).user === 'object' ? asRecord(payload).user as AuthUserRecord : null);
       this.state.status = 'authenticated';
       this.publishIdentityContext();
@@ -708,24 +743,52 @@ class AuthManager extends EventTarget {
     }).then((payload) => {
       const session = normalizeSession(payload, refreshToken);
       if (!session) throw new Error('The refreshed session is invalid.');
-      this.acceptSession(session, { broadcast });
+      // Refresh-token rotation is the same authenticated principal. Do not advance the
+      // identity generation or access-context revalidation will reject its own refresh.
+      this.acceptSession(session, { broadcast, establishIdentity: false });
       return session;
     }).finally(() => { this.refreshPromise = null; });
     return this.refreshPromise;
   }
 
   async ensureValidSession({ reason = 'access' }: {reason?: string} = {}): Promise<string | null> {
-    const session = this.state.session || readStoredSession();
+    let session = this.state.session || readStoredSession();
     if (!session) return null;
+    if (!this.state.session) this.acceptSession(session, { establishIdentity: true });
     try {
-      if (!session.expires_at || session.expires_at < Date.now() + REFRESH_SKEW_MS) await this.refresh(session.refresh_token);
-      else if (!this.state.session) this.acceptSession(session);
-      if (!this.state.user) await this.loadCurrentUser();
+      if (!session.expires_at || session.expires_at < Date.now() + REFRESH_SKEW_MS) {
+        try {
+          session = await this.refresh(session.refresh_token);
+        } catch (error) {
+          if (isTerminalSessionFailure(error)) throw error;
+          if (session.expires_at > Date.now()) {
+            // The existing access token is still cryptographically valid. Preserve the
+            // current authorization briefly and retry refresh instead of forcing logout.
+            this.refreshTimer = window.setTimeout(() => { void this.ensureValidSession({ reason: 'refresh-retry' }); }, 5_000);
+            return session.access_token;
+          }
+          this.suspendAuthorization('Your saved session could not be refreshed because the authentication service is temporarily unavailable. Retry when connectivity is restored.');
+          this.emit();
+          return null;
+        }
+      }
+      if (!this.state.user) {
+        try {
+          await this.loadCurrentUser();
+        } catch (error) {
+          if (isTerminalSessionFailure(error)) throw error;
+          this.suspendAuthorization(errorMessage(error, 'Your session is still stored, but Work Management could not validate the current account and role context. Retry access validation.'));
+          this.emit();
+          return null;
+        }
+      }
       return this.state.session?.access_token || null;
     } catch (error) {
       console.warn(`[Work Management] Session validation failed during ${reason}`, error);
       this.state.error = 'Your session is no longer valid. Sign in again.';
       this.clearRuntimeIdentity({ preserveError: true });
+      this.state.status = 'expired';
+      this.state.initialized = true;
       this.broadcast('signed-out');
       this.emit();
       return null;
@@ -762,19 +825,32 @@ class AuthManager extends EventTarget {
     return user;
   }
 
+  async fetchAccessContext(token: string, userId: string): Promise<{ profile: ProfileRecord; assignments: ModuleAssignmentRecord[]; revision: string }> {
+    const payload = asRecord(await this.request<unknown>('/rest/v1/rpc/wm_auth_access_context', {
+      method: 'POST',
+      headers: this.headers(token),
+      body: '{}',
+    }));
+    const schemaVersion = stringField(payload, 'schema_version');
+    const payloadUserId = stringField(payload, 'user_id').trim();
+    if (schemaVersion !== M39_AUTH_ACCESS_CONTEXT_SCHEMA_VERSION) throw new Error(`Authentication access-context schema mismatch: expected ${M39_AUTH_ACCESS_CONTEXT_SCHEMA_VERSION}, received ${schemaVersion || 'missing'}.`);
+    if (!payloadUserId || payloadUserId !== userId) throw new Error('Authentication access-context user does not match the Supabase Auth session.');
+    const profile = parseProfile(payload.profile);
+    if (profile.id !== userId) throw new Error('Authentication profile identity does not match the Supabase Auth session.');
+    const assignments = parseModuleAssignments(payload.assignments);
+    for (const assignment of assignments) if (assignment.user_id && assignment.user_id !== userId) throw new Error(`Module assignment identity mismatch for ${assignment.module_id}.`);
+    return { profile, assignments, revision: stringField(payload, 'revision') || new Date().toISOString() };
+  }
+
   async loadAccessContext(expectedGeneration = this.generation): Promise<void> {
     const token = this.state.session?.access_token || await this.ensureAccessToken();
     const userId = this.state.user?.id;
     if (!token || !userId) return;
-    const [profiles, assignments] = await Promise.all([
-      this.request<unknown[]>(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,email,display_name,platform_role,status,created_at,updated_at`, { headers: this.headers(token) }),
-      this.request<unknown[]>(`/rest/v1/module_role_assignments?user_id=eq.${encodeURIComponent(userId)}&select=module_id,role,enabled,updated_at`, { headers: this.headers(token) }),
-    ]);
+    const context = await this.fetchAccessContext(token, userId);
     if (expectedGeneration !== this.generation || expectedGeneration === this.terminatedGeneration) return;
-    if (!Array.isArray(profiles)) throw new TypeError('Profile response must be an array.');
-    this.state.profile = profiles[0] == null ? null : parseProfile(profiles[0]);
-    this.state.assignments = parseModuleAssignments(assignments);
-    if (!this.state.profile) throw new Error('Your user profile is missing. Contact a platform administrator.');
+    this.state.profile = context.profile;
+    this.state.assignments = context.assignments;
+    this.state.accessContextRevision = context.revision;
 
     // v1.17.0 reconciliation: the known bootstrap account is promoted only by a
     // SECURITY DEFINER RPC that validates auth.uid() and the persisted profile email.
@@ -787,9 +863,10 @@ class AuthManager extends EventTarget {
           method: 'POST', headers: this.headers(token, { Prefer: 'return=representation' }), body: '{}',
         });
         if (Array.isArray(reconciled) && reconciled[0]) {
-          this.state.profile = parseProfile(reconciled[0]);
-          const refreshedAssignments = await this.request<unknown[]>(`/rest/v1/module_role_assignments?user_id=eq.${encodeURIComponent(userId)}&select=module_id,role,enabled,updated_at`, { headers: this.headers(token) });
-          this.state.assignments = parseModuleAssignments(refreshedAssignments);
+          const refreshed = await this.fetchAccessContext(token, userId);
+          this.state.profile = refreshed.profile;
+          this.state.assignments = refreshed.assignments;
+          this.state.accessContextRevision = refreshed.revision;
           this.state.notice = 'Bootstrap administrator access was reconciled from the database.';
         }
       } catch (error) {
@@ -805,7 +882,14 @@ class AuthManager extends EventTarget {
     if (!this.state.session || !this.state.user) return this.snapshot();
     const maxAge = Math.max(5_000, Math.trunc(maxAgeMs));
     if (!force && this.accessContextValidatedAt > 0 && Date.now() - this.accessContextValidatedAt < maxAge) return this.snapshot();
-    if (this.accessContextPromise) return this.accessContextPromise;
+    if (this.accessContextPromise) {
+      if (!force) return this.accessContextPromise;
+      // A forced revalidation is used after self role/status mutations. It must not
+      // be satisfied by an access-context request that began before the mutation.
+      // Let that older transaction settle, then start a fresh read below.
+      try { await this.accessContextPromise; } catch {}
+      if (!this.state.session || !this.state.user) return this.snapshot();
+    }
     const expectedGeneration = this.generation;
     this.accessContextPromise = (async () => {
       const token = await this.ensureValidSession({ reason: 'access-context-revalidation' });
@@ -822,10 +906,7 @@ class AuthManager extends EventTarget {
 
   async reloadAccessContext() {
     if (!this.state.user || !this.state.session) throw new Error('No authenticated session is available.');
-    await this.loadAccessContext();
-    this.state.status = this.isAccountActive ? 'authenticated' : 'disabled';
-    this.emit();
-    return this.snapshot();
+    return this.revalidateAccessContext({ force: true, maxAgeMs: 5_000 });
   }
 
   async updateProfile({ displayName }: {displayName:string}) {
@@ -861,18 +942,37 @@ class AuthManager extends EventTarget {
 
   async signOut({ scope = 'local', broadcast = true }: {scope?: 'local'|'global';broadcast?: boolean} = {}): Promise<void> {
     const token = this.state.session?.access_token;
+    const globalRevocation = scope === 'global';
+
+    // A global sign-out is a security action, not merely a local UI transition. Keep
+    // the current browser authenticated if Supabase cannot confirm revocation so the
+    // user can retry instead of being shown a false "all sessions signed out" state.
+    if (globalRevocation && token && this.isConfigured) {
+      try {
+        await this.request('/auth/v1/logout?scope=global', {
+          method: 'POST', headers: this.headers(token),
+        });
+      } catch (error) {
+        console.warn('[Work Management] Global session revocation was not confirmed; local session retained for retry', error);
+        throw new Error('All sessions could not be revoked. Your current browser remains signed in so you can retry.');
+      }
+    }
+
     this.clearRuntimeIdentity();
     this.state.initialized = true;
     this.state.status = 'anonymous';
     this.emit();
     if (broadcast) this.broadcast('signed-out');
-    if (!token || !this.isConfigured) return;
+
+    if (globalRevocation || !token || !this.isConfigured) return;
     try {
-      await this.request(`/auth/v1/logout?scope=${encodeURIComponent(scope === 'global' ? 'global' : 'local')}`, {
+      await this.request('/auth/v1/logout?scope=local', {
         method: 'POST', headers: this.headers(token),
       });
     } catch (error) {
-      console.warn('[Work Management] Remote sign-out failed after local session termination', error);
+      // The local credential is already destroyed. A failed best-effort remote local
+      // sign-out must not resurrect it or block leaving the current browser session.
+      console.warn('[Work Management] Remote local sign-out failed after local session termination', error);
     }
   }
 
@@ -982,8 +1082,8 @@ class AuthManager extends EventTarget {
     checks.push({ id:'backend-config', label:'Cloud backend configuration', ok:backend.configured, detail:backend.configured ? 'Supabase public client configuration is valid' : 'Account-based mode requires a valid Supabase URL and publishable key' });
     if (!backend.configured) return { checkedAt:new Date().toISOString(), checks, passed:false };
     try {
-      const response = await fetch(`${backend.supabaseUrl}/auth/v1/health`, { headers:{ apikey:backend.publishableKey }, cache:'no-store' });
-      checks.push({ id:'auth-health', label:'Supabase Auth endpoint', ok:response.ok, detail:`HTTP ${response.status}` });
+      const health = await this.supabase.health();
+      checks.push({ id:'auth-health', label:'Supabase Auth endpoint', ok:health.ok, detail:`HTTP ${health.status}` });
     } catch {
       checks.push({ id:'auth-health', label:'Supabase Auth endpoint', ok:false, detail:'Network request failed' });
     }

@@ -8,6 +8,9 @@ interface UserDirectoryRecord {
   readonly display_name: string;
   readonly platform_role: PlatformRole;
   readonly status: 'active' | 'disabled';
+  readonly is_bootstrap_admin: boolean;
+  readonly is_self: boolean;
+  readonly is_last_active_admin: boolean;
 }
 
 interface RoleOption {
@@ -54,7 +57,7 @@ function parseUserDirectoryRecord(value: unknown): UserDirectoryRecord | null {
   const role = typeof value.platform_role === 'string' && PLATFORM_ROLES.has(value.platform_role as PlatformRole) ? value.platform_role as PlatformRole : null;
   const status = value.status === 'active' || value.status === 'disabled' ? value.status : null;
   if (!id || !role || !status) return null;
-  return { id, email, display_name: displayName, platform_role: role, status };
+  return { id, email, display_name: displayName, platform_role: role, status, is_bootstrap_admin: value.is_bootstrap_admin === true, is_self: value.is_self === true, is_last_active_admin: value.is_last_active_admin === true };
 }
 
 function parseDirectory(rows: readonly unknown[]): UserDirectoryRecord[] {
@@ -100,12 +103,14 @@ export function createUserManagementFeature({ auth, topbar, renderWorkspace, toa
         ? `<div class="user-directory-state error"><strong>User directory unavailable</strong><p>${esc(state.error)}</p><button class="secondary-btn" data-user-directory-refresh>Retry</button></div>`
         : `<div class="user-toolbar"><label class="app-search">${icons.search}<input id="userDirectorySearch" value="${esc(state.filter)}" placeholder="Search name, email, role, or status" autocomplete="off"></label><button class="secondary-btn" data-user-directory-refresh>Refresh</button></div>
           <div class="user-directory" role="list">${rows.length ? rows.map((user) => {
-            const bootstrap = user.email.toLowerCase() === 'lmsenagan@watchdogautomation.com.ph';
+            const bootstrap = user.is_bootstrap_admin;
+            const roleLocked = bootstrap || user.is_last_active_admin;
+            const statusLocked = bootstrap || user.is_self || user.is_last_active_admin;
             const busy = state.busy.has(user.id);
             return `<form class="user-row" data-user-access-form data-user-id="${esc(user.id)}" role="listitem">
               <div class="user-identity"><span class="avatar mini">${esc((user.display_name || user.email || 'U').slice(0, 2).toUpperCase())}</span><span><strong>${esc(user.display_name || 'Unnamed user')}</strong><small>${esc(user.email)}</small>${bootstrap ? '<em>Bootstrap administrator</em>' : ''}</span></div>
-              <label><span>Role</span><select name="platformRole" ${bootstrap ? 'disabled' : ''}>${roleOptions(user.platform_role)}</select></label>
-              <label><span>Status</span><select name="status" ${bootstrap ? 'disabled' : ''}><option value="active" ${user.status === 'active' ? 'selected' : ''}>Active</option><option value="disabled" ${user.status === 'disabled' ? 'selected' : ''}>Disabled</option></select></label>
+              <label><span>Role</span><select name="platformRole" ${roleLocked ? 'disabled' : ''}>${roleOptions(user.platform_role)}</select></label>
+              <label><span>Status</span><select name="status" ${statusLocked ? 'disabled' : ''}><option value="active" ${user.status === 'active' ? 'selected' : ''}>Active</option><option value="disabled" ${user.status === 'disabled' ? 'selected' : ''}>Disabled</option></select></label>
               <div class="user-row-actions"><span class="status ${user.status === 'active' ? 'success' : 'warning'}"><i></i>${esc(user.status)}</span>${bootstrap ? '<span class="status success"><i></i>Protected</span>' : `<button class="secondary-btn" type="submit" ${busy ? 'disabled aria-busy="true"' : ''}>${busy ? 'Saving…' : 'Save'}</button>`}</div>
             </form>`;
           }).join('') : '<div class="user-directory-state"><strong>No matching accounts</strong><p>Adjust the search query to view other registered users.</p></div>'}</div>`;

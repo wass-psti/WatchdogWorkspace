@@ -1,0 +1,73 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+const root = path.resolve(import.meta.dirname);
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const assert = (condition, message) => { if (!condition) throw new Error(message); };
+const state = read('config/stage-d-m15-react-board-presentation-facade-target.ts').match(/activationState:\s*'([^']+)'/)?.[1] ?? 'unknown';
+const manifest = read('config/application-manifest.ts');
+const shell = read('src/app/shell/WorkManagementShell.tsx');
+const facade = read('src/app/boards/BoardPresentationFacade.tsx');
+const surface = read('src/app/boards/components/BoardPresentationSurface.tsx');
+const runtime = read('src/app/boards/board-presentation-facade-runtime.ts');
+const host = read('src/app/boards/board-presentation-host.ts');
+const app = read('assets/js/app.ts');
+const boardFeature = read('assets/js/features/boards/index.ts');
+const boardEngine = read('assets/js/boards-ui.ts');
+const appCss = read('assets/css/app.css');
+const types = read('src/types/manifest.ts');
+const schemas = read('src/runtime-schemas/manifest.ts');
+const packageJson = JSON.parse(read('package.json'));
+const stageD = read('scripts/certify-stage-d-platform.mjs');
+const cert = read('scripts/certify-stage-d-m15.sh');
+const projectVerifier = read('verify-project.sh');
+const doc = read('docs/WORK-MANAGEMENT-REACT-BOARD-PRESENTATION-FACADE.md');
+const status = read('RELEASE-STATUS-v1.43.2-STAGE-D-M15-REACT-BOARD-PRESENTATION-FACADE.md');
+const runbook = read('M15-ACTIVATION-RUNBOOK.md');
+const ci = read('.github/workflows/ci.yml');
+const deploy = read('.github/workflows/deploy-pages.yml');
+const governedCi = read('governance-artifacts/github/workflows/ci.yml');
+const governedDeploy = read('governance-artifacts/github/workflows/deploy-pages.yml');
+const historicalBoardArchitectureVerifiers = [
+  ['Phase Four', read('verify-v1250-architecture-phase4.mjs')],
+  ['Phase Five', read('verify-v1260-architecture-phase5.mjs')],
+  ['Domain/Browser Quality', read('verify-v1270-domain-browser-quality.mjs')],
+];
+const architectureVersion = Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0);
+assert(architectureVersion >= 25, `M15 requires application architecture version 25 or newer; found ${architectureVersion}.`);
+assert(manifest.includes("boundary: 'src/app/boards/BoardPresentationFacade.tsx'") && manifest.includes("boardPresentationOwnership: 'react-board-presentation-facade-v1'"), 'Boards manifest boundary must be the React facade.');
+assert(manifest.includes("boardPresentationEngine: 'assets/js/boards-ui.ts'"), 'Manifest must preserve the compatibility Board presentation engine authority.');
+assert(types.includes('boardPresentationFacadeRuntime') && types.includes("'react-board-presentation-facade-v1'"), 'Typed manifest contract must include M15 ownership.');
+assert(schemas.includes('boardPresentationFacadeRuntime') && schemas.includes('Architecture v25+'), 'Runtime manifest schema must validate M15 ownership.');
+assert(facade.includes('BoardPresentationRouteBoundary') && surface.includes('data-wm-board-presentation-host') && surface.includes('react-board-presentation-facade'), 'React facade must retain the dedicated Board presentation host through the M16 delegated surface component.');
+assert(surface.includes('React must never render children here'), 'Delegated Board surface must document its imperative-descendant compatibility boundary.');
+assert(runtime.includes("'hidden' | 'boards' | 'board'") && runtime.includes('showBoard(boardId: string)'), 'M15 runtime must model Board route presentation explicitly.');
+assert(host.includes('[data-wm-board-presentation-host]'), 'Board host resolver must resolve only the dedicated React facade host.');
+assert(shell.includes('<BoardPresentationFacade') && shell.includes('boardPresentationActive'), 'React shell must mount the Board facade and isolate the legacy route host while Boards is active.');
+assert(appCss.includes('[data-wm-board-presentation-host][hidden]{display:none!important}'), 'M15 facade host must remain non-painting while inactive even if workspace CSS sets display.');
+assert(app.includes('renderBoardWorkspace') && app.includes('resolveBoardPresentationHost()'), 'Board routes must render through the dedicated facade host.');
+assert(app.includes("featureRegistry.register('boards', boardsPresentationFeature, { kind: 'react-feature'"), 'Runtime registry must advertise React Board presentation ownership.');
+assert(app.includes('boardPresentationFacadeRuntime.showBoards()') && app.includes('boardPresentationFacadeRuntime.showBoard(route.boardId)'), 'Board route renderers must publish facade route state.');
+assert(boardFeature.includes("presentation: 'react-board-presentation-facade-v1'") && boardFeature.includes("presentationEngine: 'assets/js/boards-ui.ts'"), 'Board feature facade must declare the M15 presentation boundary.');
+for (const [label, verifier] of historicalBoardArchitectureVerifiers) {
+  assert(verifier.includes("architecture: 'react-route-facade-with-typed-compatibility-board-engine'"), `${label} historical verifier must retain recognition of the M15 Board facade architecture metadata.`);
+  assert(verifier.includes("architecture: 'react-route-facade-with-typed-rich-item-workspace-v1'"), `${label} historical verifier must recognize the M21 Rich Item Workspace refinement layered over the M15 Board facade.`);
+  assert(verifier.includes("architecture: 'stable-workspace-controller-state-service-views-workflow-and-interaction-controllers'"), `${label} historical verifier must retain the pre-M15 architecture compatibility guarantee.`);
+  assert(verifier.includes("presentation: 'react-board-presentation-facade-v1'") && verifier.includes("presentationEngine: 'assets/js/boards-ui.ts'"), `${label} historical verifier must require the React facade to remain layered over the compatibility Board engine.`);
+}
+assert(boardEngine.includes('createBoardDataController') && boardEngine.includes('createBoardInlineEditController') && boardEngine.includes('createBoardMenuController'), 'M15 must retain mature Board interaction/controller behavior behind the facade.');
+assert(packageJson.scripts['board-presentation:check'] && packageJson.scripts['stage-d:certify'], 'Package scripts must expose focused M15 and Stage D certification.');
+assert(packageJson.scripts.check.includes('board-presentation:check') && packageJson.scripts['release:check'].includes('board-presentation:check'), 'M15 focused gate must participate in check and release gates.');
+assert(stageD.includes('stage-c:certify') && stageD.includes('board-presentation:activate:release'), 'Stage D certification must revalidate Stage C and promote M15.');
+assert(cert.includes('M15 ARCHITECTURE PREFLIGHT') && cert.includes('npm run stage-d:certify'), 'Governed M15 certification entrypoint must exercise full Stage D certification.');
+assert(projectVerifier.includes('verify-stage-d-m15-react-board-presentation-facade.mjs') && projectVerifier.includes('src/app/boards/BoardPresentationFacade.tsx'), 'Aggregate verifier must require M15 artifacts.');
+assert(doc.includes('route-level presentation ownership') && doc.includes('No Supabase migration'), 'M15 documentation must record ownership and migration boundary.');
+assert(status.includes('implementation-complete-pending-certification') && status.includes('Architecture Version:** 25'), 'M15 status must ship pending certification at architecture 25.');
+assert(runbook.includes('scripts/certify-stage-d-m15.sh') && runbook.includes('board-presentation:status'), 'M15 runbook must use governed certification.');
+for (const [label, workflow] of [['CI', ci], ['deploy', deploy], ['governed CI', governedCi], ['governed deploy', governedDeploy]]) assert(workflow.includes('Stage D M15 React Board presentation facade') && workflow.includes('npm run board-presentation:check'), `${label} workflow must run M15 gate.`);
+assert(!fs.readdirSync(path.join(root, 'supabase/migrations')).some((name) => /m15|board.*facade|react.*board/i.test(name)), 'M15 must not introduce a Supabase migration.');
+const execution = spawnSync(process.execPath, ['--experimental-strip-types','--disable-warning=ExperimentalWarning','scripts/verify-board-presentation-facade-execution.mjs'], { cwd: root, encoding: 'utf8' });
+if (execution.stdout) process.stdout.write(execution.stdout);
+if (execution.stderr) process.stderr.write(execution.stderr);
+assert(execution.status === 0, 'M15 Board facade execution vectors failed.');
+console.log(`Stage D Milestone 15 React Board presentation facade verification: PASS (state=${state}; architecture=${architectureVersion})`);

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 const ui=fs.readFileSync('assets/js/boards-ui.ts','utf8');
 const workspaceView=fs.readFileSync('assets/js/features/boards/views/item-workspace-view.ts','utf8');
 const uiContract=ui+workspaceView;
-const api=fs.readFileSync('assets/js/features/boards/data/board-repository.ts','utf8')+fs.readFileSync('assets/js/platform/data/backend-client.ts','utf8');
+const api=fs.readFileSync('assets/js/features/boards/data/board-repository.ts','utf8')+fs.readFileSync('assets/js/platform/data/backend-client.ts','utf8')+fs.readFileSync('assets/js/platform/data/supabase-client-adapter.ts','utf8');
 const sql=fs.readFileSync('supabase/migrations/v1.21.6-item-workspace.sql','utf8');
 const css=fs.readFileSync('assets/css/app.css','utf8');
 const checks=[
@@ -12,7 +12,7 @@ const checks=[
  ['activity tab',workspaceView.includes("tabButton('activity'")],
  ['composer',uiContract.includes('data-item-update-form')],
  ['file input',uiContract.includes('data-item-file-input')],
- ['private signed files',api.includes('/storage/v1/object/sign/${encodeURIComponent(bucket)}/')],
+ ['private signed files',api.includes('/storage/v1/object/sign/')&&api.includes('storageSign')],
  ['20 MB client limit',/20\s*\*\s*1024\s*\*\s*1024/.test(api)],
  ['workspace rpc client',api.includes("wm_get_board_item_workspace")],
  ['updates table',sql.includes('work_board_item_updates')],

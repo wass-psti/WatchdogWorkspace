@@ -13,7 +13,7 @@ const browser=read('tests/browser/run-cdp.mjs');
 const docs=read('docs/architecture/BOARD-STABILIZATION-v1.31.1.md');
 const readme=read('README.md');
 
-assert.ok(manifest.includes("version: '1.43.2'") && manifest.includes('architectureVersion: 15'),'manifest version/architecture mismatch');
+assert.ok(manifest.includes("version: '1.43.2'") && Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0) >= 24,'manifest version/architecture mismatch');
 assert.ok(platform.includes("PLATFORM_VERSION = '1.43.2'"),'platform version mismatch');
 assert.ok(sw.includes('work-management-v1.43.2'),'service-worker cache mismatch');
 

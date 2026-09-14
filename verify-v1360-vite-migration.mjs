@@ -9,6 +9,7 @@ const exists = (path) => fs.existsSync(path);
 for (const path of [
   'package.json', 'vite.config.js', '.env.example', '.gitignore', 'src/main.ts',
   'scripts/clean.mjs', 'scripts/verify-dist.mjs', 'scripts/verify-vite-server.mjs',
+  'scripts/lib/browser-cdp-smoke.mjs', 'scripts/verify-vite-browser-cdp-execution.mjs',
   'public/manifest.webmanifest', 'public/assets/icon.svg', 'config/vite-runtime-config.ts', 'config/vite-runtime-config.ts',
   'docs/architecture/VITE-MIGRATION-v1.36.md', 'docs/architecture/VITE-VERIFICATION-STATUS-v1.36.md',
 ]) assert.ok(exists(path), `Vite migration file missing: ${path}`);
@@ -21,8 +22,9 @@ assert.equal(pkg.devDependencies?.vite, '8.2.2', 'Vite must be pinned for reprod
 for (const script of ['dev','start','build','preview','clean','verify','verify:vite','verify:dev','verify:dist','verify:preview','release:check']) {
   assert.ok(pkg.scripts?.[script], `package script missing: ${script}`);
 }
-assert.match(pkg.engines?.node || '', /20\.19/);
-assert.match(pkg.engines?.node || '', /22\.12/, 'Node engine must satisfy Vite 8 requirements');
+assert.equal(pkg.engines?.node, '>=22.12.0 <23', 'Node engine must match the governed Node 22 runtime used by TypeScript-stripping verifiers');
+assert.equal(pkg.engines?.npm, '>=10.9.0 <11', 'npm engine must match the governed npm 10 release line');
+assert.equal(pkg.packageManager, 'npm@10.9.2', 'packageManager must pin the governed npm CLI version');
 
 const vite = read('vite.config.js');
 for (const token of [
@@ -44,7 +46,7 @@ assert.ok(index.includes('%BASE_URL%manifest.webmanifest') && index.includes('%B
 const main = read('src/main.ts');
 for (const token of [
   "import '../assets/css/foundation/tokens.css'", "import '../assets/css/app.css'", "import '../assets/css/motion-design.css'",
-  "import '../config/backend-config.js'", 'const viteEnv =', 'applyViteRuntimeConfig(viteEnv)', "addEventListener('vite:preloadError'", "await import('../assets/js/app.ts')",
+  "import '../config/backend-config.js'", 'const viteEnv =', 'applyViteRuntimeConfig(viteEnv)', "addEventListener('vite:preloadError'", "await import('./app/composition/mount-react-composition.tsx')",
 ]) assert.ok(main.includes(token), `Vite entry missing ${token}`);
 
 const envExample = read('.env.example');
@@ -81,7 +83,7 @@ assert.equal(applied.publishableKey, overrideEnv.VITE_SUPABASE_PUBLISHABLE_KEY);
 if (previous === undefined) delete globalThis.WM_BACKEND_CONFIG; else globalThis.WM_BACKEND_CONFIG = previous;
 
 assert.equal(applicationManifest.version, '1.43.2');
-assert.equal(applicationManifest.architectureVersion, 15);
+assert.ok(applicationManifest.architectureVersion >= 24, 'current Stage C package must expose Architecture Version 24 or newer while preserving the Vite migration contract');
 assert.equal(applicationManifest.runtime, 'vite-esm');
 assert.equal(applicationManifest.architecture?.buildPipeline, 'vite-8');
 assert.equal(applicationManifest.architecture?.packageManager, 'npm');
@@ -102,13 +104,19 @@ for (const token of ['.vite/manifest.json','source maps','apps/time-tracker/inde
   assert.ok(distVerifier.includes(token), `dist verifier missing ${token}`);
 }
 const serverVerifier = read('scripts/verify-vite-server.mjs');
+const browserDriver = read('scripts/lib/browser-cdp-smoke.mjs');
+const browserDriverExecution = read('scripts/verify-vite-browser-cdp-execution.mjs');
 assert.ok(
   serverVerifier.includes('findBrowserBinary')
-    && serverVerifier.includes('runBrowser')
-    && serverVerifier.includes('BROWSER_BIN')
+    && serverVerifier.includes('captureBrowserDom')
     && serverVerifier.includes('/src/main.ts')
-    && serverVerifier.includes('/service-worker.js'),
-  'dev/preview verifier must discover and launch a browser and exercise development/production deployment assets',
+    && serverVerifier.includes('/service-worker.js')
+    && browserDriver.includes('BROWSER_BIN')
+    && browserDriver.includes('--remote-debugging-port=')
+    && browserDriver.includes('Browser DOM smoke timed out after')
+    && browserDriver.includes("browser.kill('SIGKILL')")
+    && browserDriverExecution.includes('Vite browser CDP execution vectors: PASS'),
+  'dev/preview verifier must discover and launch a bounded CDP browser and exercise development/production deployment assets',
 );
 
 console.log('v1.43.2 Vite migration architecture verification: PASS');

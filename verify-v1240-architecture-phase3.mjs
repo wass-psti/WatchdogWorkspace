@@ -8,8 +8,8 @@ import { renderItemWorkspace } from './assets/js/features/boards/views/item-work
 const read = (path) => fs.readFileSync(path, 'utf8');
 const app = read('assets/js/app.ts');
 const runtime = read('assets/js/runtime/index.ts');
-const account = read('assets/js/features/account/index.ts');
-const users = read('assets/js/features/user-management/index.ts');
+const managementUi = read('src/app/management/AuthenticatedManagementUI.tsx');
+const managementRuntime = read('src/app/management/authenticated-management-ui-runtime.ts');
 const authFacade = read('assets/js/features/auth/index.ts');
 const boardUi = read('assets/js/boards-ui.ts');
 const boardList = read('assets/js/features/boards/views/board-list-view.ts');
@@ -25,30 +25,55 @@ assert.ok(applicationManifest.architectureVersion >= 4, 'architecture version mu
 assert.equal(validateApplicationManifest(applicationManifest).valid, true, 'application manifest must validate');
 assert.equal(applicationManifest.routes.find((route) => route.id === 'account')?.owner, 'account', 'Account route must have its own feature owner');
 assert.equal(applicationManifest.routes.find((route) => route.id === 'users')?.owner, 'user-management', 'Users route ownership mismatch');
-assert.ok(applicationManifest.features.some((feature) => feature.id === 'account' && feature.boundary.includes('/account/')), 'Account feature declaration missing');
-assert.ok(applicationManifest.features.some((feature) => feature.id === 'user-management' && feature.boundary.includes('/user-management/')), 'User Management feature declaration missing');
+assert.ok(applicationManifest.features.some((feature) => feature.id === 'account' && feature.boundary === 'src/app/management/AuthenticatedManagementUI.tsx'), 'Account React feature declaration missing');
+assert.ok(applicationManifest.features.some((feature) => feature.id === 'user-management' && feature.boundary === 'src/app/management/AuthenticatedManagementUI.tsx'), 'User Management React feature declaration missing');
 
-for (const token of ['createAccountFeature', 'createUserManagementFeature']) {
-  assert.ok(runtime.includes(token), `runtime gateway missing ${token}`);
-  assert.ok(app.includes(token), `shell missing ${token}`);
+assert.ok(runtime.includes('authenticatedManagementUiRuntime'), 'runtime gateway missing M13 authenticated management authority');
+assert.ok(app.includes("featureRegistry.register('account', authenticatedManagementUiRuntime"), 'Account M13 runtime registration missing');
+assert.ok(app.includes("featureRegistry.register('user-management', authenticatedManagementUiRuntime"), 'User Management M13 runtime registration missing');
+for (const route of ['account', 'users']) {
+  const directDelegation = `${route}: () => showAuthenticatedManagement('${route}')`;
+  const gatedDelegation = `${route}: () => gateBackendCapability('${route}', '${route}', () => showAuthenticatedManagement('${route}'))`;
+  if (applicationManifest.architectureVersion >= 48) {
+    assert.ok(app.includes(directDelegation), `${route} route must delegate directly after the M40 precommit capability resolver selects M13 ownership`);
+    assert.ok(app.includes('resolveBackendCapabilityPresentation') && app.includes('backendCapabilityRequirement(route)'), `${route} route must preserve the M38 backend-capability gate through the M40 precommit resolver`);
+    assert.equal(app.includes(gatedDelegation), false, `${route} route must not re-check capability after ownership is chosen at Architecture 48+`);
+  } else if (applicationManifest.architectureVersion >= 46) {
+    assert.ok(app.includes(gatedDelegation), `${route} route must preserve React M13 presentation behind the M38 backend-capability gate`);
+    assert.equal(app.includes(directDelegation), false, `${route} route must not bypass the M38 backend-capability gate at Architecture 46+`);
+  } else {
+    assert.ok(app.includes(directDelegation), `${route} route is not delegated to React M13 presentation`);
+  }
 }
-assert.ok(app.includes("featureRegistry.register('account', accountFeature"), 'Account runtime registration missing');
-assert.ok(app.includes("featureRegistry.register('user-management', userManagementFeature"), 'User Management runtime registration missing');
-assert.ok(app.includes('await accountFeature.handleAction(action)'), 'Account action delegation missing');
-assert.ok(app.includes('await accountFeature.handleSubmit(accountForm)'), 'Account form delegation missing');
-assert.ok(app.includes('await userManagementFeature.handleSubmit(userAccessForm)'), 'User mutation delegation missing');
-assert.ok(app.includes('userManagementFeature.handleInput(event.target)'), 'User search delegation missing');
+assert.ok(!app.includes('accountFeature.handleAction') && !app.includes('userManagementFeature.handleSubmit'), 'Retired imperative management delegates remain active');
 for (const removed of ['let accountBusy', 'let userDirectory =', 'function renderAccount()', 'function renderUsers()', 'async function loadUserDirectory']) {
   assert.equal(app.includes(removed), false, `shell still owns extracted state/logic: ${removed}`);
 }
 
-assert.ok(account.includes('function activate()') && account.includes('function deactivate()') && account.includes('epoch += 1'), 'Account lifecycle boundary incomplete');
-assert.ok(account.includes('auth.updateProfile') && account.includes('auth.updatePassword'), 'Account mutations missing');
-assert.ok(account.includes("scope: kind === 'signout-all' ? 'global' : 'local'"), 'Account session termination behavior missing');
-assert.ok(account.includes('auth.reloadAccessContext'), 'Account access refresh missing');
-assert.ok(users.includes('auth.listUsers()') && users.includes('auth.updateUserAccess'), 'User directory service integration missing');
-assert.ok(users.includes('ticket !== epoch') && users.includes('function deactivate()'), 'User directory stale-response protection missing');
-assert.ok(users.includes("input.id !== 'userDirectorySearch'") && users.includes('input instanceof HTMLInputElement'), 'User directory search controller missing');
+assert.ok(managementRuntime.includes('show(view:') && managementRuntime.includes('hide():') && managementRuntime.includes('epoch += 1'), 'M13 management runtime must preserve route lifecycle invalidation formerly owned by Account/User Management controllers');
+if (applicationManifest.architectureVersion >= 49) {
+  const accountService = read('assets/js/features/account/account-service.ts');
+  assert.ok(managementRuntime.includes('createAccountService(auth)') && accountService.includes('auth.updateProfile') && accountService.includes('auth.updatePassword'), 'M13/M41 Account mutations missing');
+  assert.ok(managementRuntime.includes("async signOut(scope: 'local' | 'global')") && accountService.includes('auth.signOut({ scope })'), 'M13/M41 Account session termination behavior missing');
+  assert.ok(accountService.includes('revalidateAccessContext({ force: true, maxAgeMs: 5_000 })'), 'M41 Account access refresh must use M39 session/access revalidation authority');
+} else {
+  assert.ok(managementRuntime.includes('auth.updateProfile') && managementRuntime.includes('auth.updatePassword'), 'M13 Account mutations missing');
+  assert.ok(managementRuntime.includes("async signOut(scope: 'local' | 'global')") && managementRuntime.includes('auth.signOut({ scope })'), 'M13 Account session termination behavior missing');
+  assert.ok(managementRuntime.includes('auth.reloadAccessContext'), 'M13 Account access refresh missing');
+}
+assert.ok(managementUi.includes('auth.listUsers()') && managementRuntime.includes('auth.updateUserAccess'), 'M13 User directory service integration missing');
+assert.ok(managementUi.includes('useQuery({'), 'M13 User directory loading/stale-response ownership must remain delegated to TanStack Query');
+if (applicationManifest.architectureVersion >= 50) {
+  assert.ok(
+    managementUi.includes('queryClient.setQueryData(USER_DIRECTORY_QUERY_KEY')
+      && managementUi.includes('const refreshed = await directory.refetch()')
+      && managementUi.includes('if (!auth.canManageUsers)'),
+    'M13/M42 User directory mutation cache ownership must update TanStack Query immediately, reconcile from the server, and avoid unauthorized refetch after self-demotion',
+  );
+} else {
+  assert.ok(managementUi.includes('queryClient.invalidateQueries'), 'M13 User directory stale-response/cache ownership must be delegated to TanStack Query');
+}
+assert.ok(managementUi.includes("const [filter, setFilter] = useState('')") && managementUi.includes('onChange={(event) => setFilter(event.currentTarget.value)}'), 'M13 User directory search controller missing');
 assert.ok(authFacade.includes("owns: Object.freeze(['login', 'register', 'verify'])"), 'Auth facade still claims Account/User Management routes');
 
 assert.ok(boardUi.includes("from './features/boards/views/board-list-view.ts'"), 'Board List view extraction not wired');

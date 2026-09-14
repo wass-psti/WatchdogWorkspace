@@ -2,6 +2,7 @@ import type { BoardCommandService } from '../../src/features/boards/contracts/co
 import type { BoardColumn, BoardColumnType, BoardEnvelope, BoardGroup, BoardItem, BoardLifecycleStatus, BoardRecord, BoardViewMode, TimelineValue } from '../../src/features/boards/contracts/domain.ts';
 import type { BoardDialogOptions } from '../../src/features/boards/contracts/presentation.ts';
 import type { BoardDomainService } from '../../src/features/boards/contracts/service.ts';
+import type { BoardRealtimeService, BoardRealtimeSnapshot } from '../../src/features/boards/contracts/realtime.ts';
 import type { BoardHistorySnapshot } from './features/boards/controllers/history-controller.ts';
 import type { UiAuthPort, WorkspaceRenderer, TopbarRenderer, ToastRenderer, Navigate, IconSet } from '../../src/platform/contracts/ui.ts';
 import { normalizeAppError } from './platform/errors/app-error.ts';
@@ -10,6 +11,7 @@ import { createBoardViewState, resetBoardInteractionState } from './features/boa
 import { renderBoardToolbar, renderBoardListState } from './features/boards/views/board-list-view.ts';
 import { renderItemWorkspace } from './features/boards/views/item-workspace-view.ts';
 import { renderBoardTableView } from './features/boards/views/table-view.ts';
+import type { BoardTableItemRenderContext } from './features/boards/views/table-view.ts';
 import { renderBoardKanbanView } from './features/boards/views/kanban-view.ts';
 import { renderBoardHeader, renderBoardControls, renderBoardItemRow, renderBoardColumnHeader } from './features/boards/views/board-workspace-view.ts';
 import { createBoardDialogController } from './features/boards/controllers/dialog-controller.ts';
@@ -30,6 +32,8 @@ import { createBoardDataController } from './features/boards/controllers/board-d
 import { createBoardPreferencePersistenceController } from './features/boards/controllers/board-preference-controller.ts';
 import { createItemPanelRenderer } from './features/boards/controllers/item-panel-renderer.ts';
 import { createBoardOverlayCoordinator } from './features/boards/controllers/overlay-coordinator.ts';
+import { createBoardTableVirtualizationController } from './features/boards/controllers/board-table-virtualization-controller.ts';
+import { createBoardRealtimeController } from './features/boards/controllers/board-realtime-controller.ts';
 import { statusConfig } from './features/boards/status-labels.ts';
 import { createBoardPreferencePatchService } from './features/boards/services/board-preferences-service.ts';
 import { createBoardSelectors } from './features/boards/selectors/board-selectors.ts';
@@ -43,6 +47,13 @@ const eventElement = (event: Event): Element | null => event.target instanceof E
 const errorMessage = (error: unknown, fallback = 'The operation could not be completed.'): string => normalizeAppError(error, { fallbackMessage: fallback }).message;
 const isTimelineValue = (value: unknown): value is TimelineValue => Boolean(value && typeof value === 'object' && !Array.isArray(value) && 'start' in value && 'end' in value);
 const assertNever = (value: never): never => { throw new TypeError(`Unsupported Board column type: ${String(value)}`); };
+const boardInitials = (value: unknown): string => {
+  const parts = String(value ?? '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : (parts[0]?.[1] ?? '');
+  return `${first}${last}`.toUpperCase().slice(0, 2);
+};
 
 interface BoardsFeatureOptions {
   readonly auth: UiAuthPort;
@@ -53,6 +64,7 @@ interface BoardsFeatureOptions {
   readonly icons: IconSet;
   readonly service?: BoardDomainService | null;
   readonly commands?: BoardCommandService | null;
+  readonly realtime?: BoardRealtimeService | null;
 }
 
 interface BoardViewGeometry {
@@ -60,7 +72,7 @@ interface BoardViewGeometry {
   readonly kanbanLeft: number;
 }
 
-export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navigate, icons, service = null, commands = null }: BoardsFeatureOptions) {
+export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navigate, icons, service = null, commands = null, realtime = null }: BoardsFeatureOptions) {
   // Transport injection is the v1.23 feature boundary. The compatibility fallback keeps direct consumers working.
   if (!service) throw new TypeError('Board domain service is required. Construct it through the feature/composition boundary.');
   const api = service;
@@ -75,11 +87,18 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   let listMenuController: ReturnType<typeof createBoardMenuController> | null = null;
   let boardMenuController: ReturnType<typeof createBoardMenuController> | null = null;
   let selection: ReturnType<typeof createBoardSelectionController>;
+  let dragDrop: ReturnType<typeof createBoardDragDropController> | null = null;
+  let realtimeController: ReturnType<typeof createBoardRealtimeController> | null = null;
+  let realtimeSnapshot: BoardRealtimeSnapshot = Object.freeze({ state:'idle', boardId:null, collaborators:[], lastEventAt:null, lastError:null, fallbackPolling:false });
+  const tableVirtualization = createBoardTableVirtualizationController();
+  let virtualizationFrame = 0;
+  let virtualizationMeasureFrame = 0;
   const boardMarkup = new WeakMap<HTMLElement, string>();
 
   const overlayCoordinator = createBoardOverlayCoordinator();
-  const dialogs = createBoardDialogController({ toast, escapeHtml: esc });
+  const dialogs = createBoardDialogController({ toast, escapeHtml: esc, overlayCoordinator });
   const dialog = (options: BoardDialogOptions) => { overlayCoordinator.closeAll({ restoreFocus:false }); return dialogs.open(options); };
+  const confirmBoardAction = (message: string): Promise<boolean> => dialogs.confirm(message);
   const preferencePersistence = createBoardPreferencePersistenceController({
     state,
     commands: commandService,
@@ -103,13 +122,19 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     service: api,
     onListChange: renderBoardListBody,
     onBoardChange: renderBoardData,
-    onBoardLoaded: () => selection.normalize(),
+    onBoardLoaded: () => {
+      selection.normalize();
+      const loadedBoardId = state.board?.board?.id;
+      if (loadedBoardId) void realtimeController?.connect(loadedBoardId);
+    },
     onWarning: (message) => toast(message, 'warning'),
   });
   const loadBoards = (status = state.status) => dataController.loadBoards(status);
-  const loadBoard = (boardId: string, options: Readonly<{ quiet?: boolean }> = {}) => dataController.loadBoard(boardId, options);
+  const loadBoard = (boardId: string, options: Readonly<{ quiet?: boolean; force?: boolean }> = {}) => dataController.loadBoard(boardId, options);
 
   function renderBoards() {
+    realtimeController?.disconnect();
+    realtimeSnapshot = Object.freeze({ state:'idle', boardId:null, collaborators:[], lastEventAt:null, lastError:null, fallbackPolling:false });
     boardMenuController?.dispose(); boardMenuController = null;
     state.board=null;itemWorkspace.reset();itemPanelRenderer.reset();
     const content=`${topbar('Boards','Plan, track, and collaborate on shared work.')}
@@ -122,7 +147,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     if (!root || root.dataset.bound === '1') return;
     root.dataset.bound = '1';
     listMenuController?.dispose();
-    listMenuController = createBoardMenuController({ root, escapeHtml: esc });
+    listMenuController = createBoardMenuController({ root, escapeHtml: esc, overlayCoordinator });
 
     root.addEventListener('input', (event: Event) => {
       const target = event.target;
@@ -188,7 +213,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
           : status === 'archived'
             ? 'Archive this board? You can restore it later from Archived.'
             : 'Restore this board to your active boards?';
-        if (!confirm(message)) return;
+        if (!await confirmBoardAction(message)) return;
         try {
           await commandService.setBoardLifecycle({ boardId, status });
           toast(status === 'active' ? 'Board restored to active boards.' : status === 'archived' ? 'Board archived.' : 'Board moved to trash.');
@@ -200,7 +225,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       }
       if (btn.matches('[data-board-delete]')) {
         const boardId = btn.dataset.boardDelete;
-        if (!boardId || !confirm('Delete this board permanently? All groups, items, values, updates, and attachments associated with it will be removed. This cannot be undone.')) return;
+        if (!boardId || !await confirmBoardAction('Delete this board permanently? All groups, items, values, updates, and attachments associated with it will be removed. This cannot be undone.')) return;
         try {
           await commandService.deleteBoard(boardId);
           toast('Board deleted permanently.');
@@ -280,36 +305,44 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
 
   function formatCell(item: BoardItem, column: BoardColumn): string {
     const value = getCellValue(item, column);
-    if (value === null || value === undefined || value === '') return '<span class="board-cell-empty">—</span>';
+    if (value === null || value === undefined || value === '') {
+      const emptyLabel = column.data_type === 'people' ? 'Unassigned'
+        : column.data_type === 'status' ? 'No status'
+        : column.data_type === 'date' ? 'No date'
+        : column.data_type === 'timeline' ? 'No timeline'
+        : '—';
+      return `<span class="board-cell-empty board-cell-empty--${column.data_type}">${esc(emptyLabel)}</span>`;
+    }
     switch (column.data_type) {
       case 'people': {
         const member = memberMap().get(String(value));
-        return `<span class="board-person-cell">${esc(member?.display_name || 'Unknown member')}</span>`;
+        const displayName = member?.display_name || member?.email || 'Unknown member';
+        return `<span class="board-person-cell" title="${esc(displayName)}"><span class="board-person-avatar" aria-hidden="true">${esc(boardInitials(displayName))}</span><span class="board-person-name">${esc(displayName)}</span></span>`;
       }
       case 'date':
-        return esc(day(value));
+        return `<span class="board-date-cell"><span class="board-cell-leading-icon board-date-icon" aria-hidden="true">□</span><span>${esc(day(value))}</span></span>`;
       case 'timeline':
         return isTimelineValue(value)
-          ? `<span class="timeline-cell">${esc(day(value.start))} → ${esc(day(value.end))}</span>`
-          : '<span class="board-cell-empty">—</span>';
+          ? `<span class="timeline-cell"><span class="timeline-date">${esc(day(value.start))}</span><span class="timeline-arrow" aria-hidden="true">→</span><span class="timeline-date">${esc(day(value.end))}</span></span>`
+          : '<span class="board-cell-empty board-cell-empty--timeline">No timeline</span>';
       case 'checkbox': {
         const checked = value === true;
-        return `<span class="check-cell ${checked ? 'checked' : ''}" aria-label="${checked ? 'Checked' : 'Unchecked'}">${checked ? '✓' : '○'}</span>`;
+        return `<span class="check-cell ${checked ? 'checked' : ''}" aria-label="${checked ? 'Checked' : 'Unchecked'}"><span aria-hidden="true">${checked ? '✓' : ''}</span></span>`;
       }
       case 'number':
-        return esc(new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(Number(value)));
+        return `<span class="board-number-cell">${esc(new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(Number(value)))}</span>`;
       case 'status': {
         const label = statusLabelForValue(column, value);
         const name = label?.name || String(value);
         const color = label?.color || '#7f8a9a';
-        return `<span class="status-pill configurable-status${label?.active === false ? ' is-inactive' : ''}" style="--status-color:${esc(color)}" data-status-id="${esc(value)}">${esc(name)}</span>`;
+        return `<span class="status-pill configurable-status${label?.active === false ? ' is-inactive' : ''}" style="--status-color:${esc(color)}" data-status-id="${esc(value)}" title="${esc(name)}"><span class="status-pill-dot" aria-hidden="true"></span><span class="status-pill-label">${esc(name)}</span></span>`;
       }
       case 'dropdown':
-        return `<span class="choice-pill">${esc(value)}</span>`;
+        return `<span class="choice-pill" title="${esc(value)}"><span class="choice-pill-label">${esc(value)}</span></span>`;
       case 'url':
-        return `<span class="link-cell">${esc(value)}</span>`;
+        return `<span class="link-cell"><span class="board-cell-leading-icon" aria-hidden="true">↗</span><span>${esc(value)}</span></span>`;
       case 'email':
-        return `<span class="email-cell">${esc(value)}</span>`;
+        return `<span class="email-cell"><span class="board-cell-leading-icon" aria-hidden="true">@</span><span>${esc(value)}</span></span>`;
       case 'text':
       case 'long_text': {
         const text = String(value);
@@ -349,26 +382,26 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   };
   const syncHistoryControls = (snapshot?: BoardHistorySnapshot): void => {
     const value = snapshot ?? history.snapshot();
-    const undo = document.querySelector<HTMLButtonElement>('[data-board-undo]');
-    const redo = document.querySelector<HTMLButtonElement>('[data-board-redo]');
-    if (undo) {
+    document.querySelectorAll<HTMLButtonElement>('[data-board-undo]').forEach((undo) => {
       undo.disabled = !value.canUndo;
       undo.title = value.undoLabel ? `Undo ${value.undoLabel}` : 'Nothing to undo';
-    }
-    if (redo) {
+      undo.setAttribute('aria-disabled', String(!value.canUndo));
+    });
+    document.querySelectorAll<HTMLButtonElement>('[data-board-redo]').forEach((redo) => {
       redo.disabled = !value.canRedo;
       redo.title = value.redoLabel ? `Redo ${value.redoLabel}` : 'Nothing to redo';
-    }
+      redo.setAttribute('aria-disabled', String(!value.canRedo));
+    });
   };
   const history = createBoardHistoryController({ toast, onChange: syncHistoryControls });
   const visibleItemsForSelection = (): readonly BoardItem[] => asArray(state.board?.items).filter(itemMatches).sort(compareItems);
-  selection = createBoardSelectionController({ state, commands: commandService, toast, getVisibleItems: visibleItemsForSelection, reloadBoard: reloadCurrentBoard, escapeHtml: esc, canEdit });
+  selection = createBoardSelectionController({ state, commands: commandService, toast, getVisibleItems: visibleItemsForSelection, reloadBoard: reloadCurrentBoard, escapeHtml: esc, canEdit, confirmAction: confirmBoardAction });
 
-  const groupWorkflows = createGroupWorkflows({ commands: commandService, state, dialog, toast, escapeHtml: esc, reloadBoard: reloadCurrentBoard });
-  const itemWorkflows = createItemWorkflows({ commands: commandService, state, dialog, toast, escapeHtml: esc, reloadBoard: reloadCurrentBoard, getStatusLabels:boardStatusLabels, getDefaultStatus:()=>statusConfig(systemStatusColumn()).defaultLabelId });
-  const memberWorkflows = createMemberWorkflows({ commands: commandService, state, dialog, toast, escapeHtml: esc, reloadBoard: reloadCurrentBoard });
+  const groupWorkflows = createGroupWorkflows({ commands: commandService, state, dialog, toast, escapeHtml: esc, reloadBoard: reloadCurrentBoard, confirmAction: confirmBoardAction });
+  const itemWorkflows = createItemWorkflows({ commands: commandService, state, dialog, toast, escapeHtml: esc, reloadBoard: reloadCurrentBoard, getStatusLabels:boardStatusLabels, getDefaultStatus:()=>statusConfig(systemStatusColumn()).defaultLabelId, confirmAction: confirmBoardAction });
+  const memberWorkflows = createMemberWorkflows({ commands: commandService, state, dialog, toast, escapeHtml: esc, reloadBoard: reloadCurrentBoard, confirmAction: confirmBoardAction });
   const activityWorkflows = createActivityWorkflows({ api, state, dialog, toast, escapeHtml: esc, formatDate: fmtDate });
-  const inlineEdit = createBoardInlineEditController({ state, api, commands: commandService, toast, canEdit, allColumns, getCellValue, optionList, renderBoardData, history, escapeHtml:esc, overlayCoordinator, reloadBoard:reloadCurrentBoard, preferencePatches, statusLabelsFor, statusLabelForValue });
+  const inlineEdit = createBoardInlineEditController({ state, api, commands: commandService, toast, canEdit, allColumns, getCellValue, optionList, renderBoardData, history, escapeHtml:esc, overlayCoordinator, reloadBoard:reloadCurrentBoard, preferencePatches, statusLabelsFor, statusLabelForValue, confirmAction:confirmBoardAction });
   const columnResize = createColumnResizeController({ state, preferencePatches, persistPreferences:persistBoardPrefs, history, renderBoardData });
   const structureDrag = createBoardStructureDragController({ state, commands: commandService, canEdit, toast, renderBoardData, history });
 
@@ -379,7 +412,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   function boardHeader(): string {
     const envelope = activeBoardEnvelope();
     return envelope?.board
-      ? renderBoardHeader({ board: envelope.board, canEdit: canEdit(), canManage: canManage(), icons, escapeHtml: esc })
+      ? renderBoardHeader({ board: envelope.board, canEdit: canEdit(), canManage: canManage(), icons, escapeHtml: esc, realtime: realtimeSnapshot })
       : '';
   }
 
@@ -387,17 +420,31 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     return renderBoardControls({ state, canEdit: canEdit(), icons, escapeHtml: esc, historyState: history.snapshot(), statusLabels: boardStatusLabels() });
   }
 
-  function itemRow(item: BoardItem, group: BoardGroup, columns: readonly BoardColumn[]): string {
-    return renderBoardItemRow({ state, item, group, columns, canEdit: canEdit(), isWrapped, formatCell, escapeHtml: esc, isSelected: selection.isSelected(item.id) });
+  const boardRowHeight = (): number => {
+    const density = document.body.dataset.boardDensity;
+    if (density === 'compact') return 40;
+    if (density === 'comfortable') return 48;
+    return 44;
+  };
+
+  const tableDynamicColumns = (): readonly BoardColumn[] => visibleColumns().filter((column) => column.system_key !== 'title');
+  const tableDynamicColumnWidths = (): readonly number[] => tableDynamicColumns().map((column) => columnWidth(column.id));
+  const hasVariableHeightRows = (): boolean => tableDynamicColumns().some((column) => isWrapped(column.id));
+  const forceFullRowRendering = (): boolean => hasVariableHeightRows() || Boolean(dragDrop?.activeItemId);
+
+  function itemRow(item: BoardItem, group: BoardGroup, columns: readonly BoardColumn[], context: BoardTableItemRenderContext): string {
+    return renderBoardItemRow({ state, item, group, columns, canEdit: canEdit(), isWrapped, formatCell, escapeHtml: esc, isSelected: selection.isSelected(item.id), ...context });
   }
 
-  function columnHeader(column: BoardColumn): string {
-    return renderBoardColumnHeader({ column, canEdit: canEdit(), sort: sortConfig(), filter: activeColumnFilter(column.id), wrapped: isWrapped(column.id), columnTypeLabel, escapeHtml: esc });
+  function columnHeader(column: BoardColumn, logicalColumnIndex: number): string {
+    return renderBoardColumnHeader({ column, canEdit: canEdit(), sort: sortConfig(), filter: activeColumnFilter(column.id), wrapped: isWrapped(column.id), columnTypeLabel, escapeHtml: esc, logicalColumnIndex });
   }
 
   function tableView(): string {
     const envelope = activeBoardEnvelope();
     if (!envelope) return '';
+    const widths = tableDynamicColumnWidths();
+    const forceFullRows = forceFullRowRendering();
     return renderBoardTableView({
       state,
       groups: [...envelope.groups].sort((left, right) => left.position - right.position),
@@ -413,6 +460,8 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       isSelected: selection.isSelected,
       itemNameWidth: itemNameWidth(),
       columnWidth,
+      rowWindowForGroup: (groupId, totalRows) => tableVirtualization.rowWindow(groupId, totalRows, boardRowHeight(), forceFullRows),
+      columnWindow: tableVirtualization.columnWindow(widths),
     });
   }
 
@@ -455,12 +504,23 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     document.body.classList.toggle('board-item-panel-open', Boolean(state.itemPanel.itemId));
   }
 
-  const itemWorkspace = createItemWorkspaceController({ api, state, toast, renderBoard: renderBoardData, renderPanel: renderItemPanel });
-  const dragDrop = createBoardDragDropController({ commands: commandService, state, canEdit, getItems: () => state.board?.items ?? [], toast, renderBoard: renderBoardData, history });
+  const itemWorkspace = createItemWorkspaceController({ api, commands: commandService, state, toast, renderBoard: renderBoardData, renderPanel: renderItemPanel, reloadBoard: async () => { const boardId = state.board?.board?.id; return boardId ? loadBoard(boardId, { quiet:true, force:true }) : false; }, confirmAction: confirmBoardAction });
+  if (realtime) {
+    realtimeController = createBoardRealtimeController({
+      service: realtime,
+      boardService: api,
+      reloadBoard: (boardId) => loadBoard(boardId, { quiet:true, force:true }),
+      reloadItemWorkspace: (itemId) => state.itemPanel.itemId === itemId ? itemWorkspace.load(itemId, { quiet:true }) : Promise.resolve(false),
+      shouldDeferSync: () => Boolean(inlineEdit.activeEditor || dragDrop?.activeItemId || structureDrag.activeDragType),
+      onSnapshot: (snapshot) => { realtimeSnapshot = snapshot; renderBoardData(); },
+      onWarning: (message) => toast(message, 'warning'),
+    });
+  }
+  dragDrop = createBoardDragDropController({ commands: commandService, state, canEdit, getItems: () => state.board?.items ?? [], toast, renderBoard: renderBoardData, history });
 
   function ensureBoardWorkspaceShell(main: HTMLElement): void {
     if (main.querySelector('[data-board-workspace-shell]')) return;
-    main.innerHTML = `<div class="board-state-host" data-board-state-host></div><div class="board-workspace-shell" data-board-workspace-shell hidden><div data-board-header-host></div><div data-board-controls-host></div><section class="board-view-region" data-board-view-host aria-live="polite"></section><div data-board-selection-host></div><div data-item-panel-host></div></div>`;
+    main.innerHTML = `<div class="board-state-host" data-board-state-host></div><div class="board-workspace-shell" data-board-workspace-shell hidden><div data-board-header-host></div><div data-board-controls-host></div><section id="boardViewRegion" class="board-view-region" data-board-view-host role="tabpanel" aria-live="polite"></section><div data-board-selection-host></div><div data-item-panel-host></div></div>`;
   }
 
   function captureBoardViewGeometry(host: HTMLElement | null): BoardViewGeometry {
@@ -485,6 +545,14 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     });
   }
 
+  function syncBoardViewAccessibility(main: HTMLElement): void {
+    const viewHost = main.querySelector<HTMLElement>('[data-board-view-host]');
+    const activeTab = main.querySelector<HTMLElement>('[data-board-view][aria-selected="true"]');
+    if (!viewHost) return;
+    if (activeTab?.id) viewHost.setAttribute('aria-labelledby', activeTab.id);
+    else viewHost.removeAttribute('aria-labelledby');
+  }
+
   function renderBoardViewOnly(): void {
     const main = document.querySelector<HTMLElement>('#boardMain');
     const host = main?.querySelector<HTMLElement>('[data-board-view-host]') ?? null;
@@ -494,7 +562,9 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     const nextMarkup = (envelope.board.view_mode ?? envelope.board.view) === 'kanban' ? kanbanView() : tableView();
     if (boardMarkup.get(host) !== nextMarkup) boardMenuController?.close();
     patchHost(host, nextMarkup);
+    syncBoardViewAccessibility(main);
     restoreBoardViewGeometry(host, geometry);
+    scheduleBoardVirtualizationSync();
     patchHost(main.querySelector<HTMLElement>('[data-board-selection-host]'), selection.renderToolbar());
     syncHistoryControls();
   }
@@ -535,7 +605,9 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     const nextView = (envelope.board.view_mode ?? envelope.board.view) === 'kanban' ? kanbanView() : tableView();
     if (viewHost && boardMarkup.get(viewHost) !== nextView) boardMenuController?.close();
     patchHost(viewHost, nextView);
+    syncBoardViewAccessibility(main);
     restoreBoardViewGeometry(viewHost, geometry);
+    scheduleBoardVirtualizationSync();
     patchHost(main.querySelector<HTMLElement>('[data-board-selection-host]'), selection.renderToolbar());
     patchHost(main.querySelector<HTMLElement>('[data-item-panel-host]'), itemPanelMarkup());
     document.body.classList.toggle('board-item-panel-open', Boolean(state.itemPanel.itemId));
@@ -543,14 +615,17 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   }
 
   function renderBoard(boardId: string): void {
+    realtimeController?.disconnect();
+    realtimeSnapshot = Object.freeze({ state:'idle', boardId:null, collaborators:[], lastEventAt:null, lastError:null, fallbackPolling:false });
     listMenuController?.dispose();
     listMenuController = null;
     itemWorkspace.reset();
     itemPanelRenderer.reset();
     resetBoardInteractionState(state);
+    tableVirtualization.reset();
     history.reset();
     const content = `${topbar('Board', 'Shared work items, ownership and workflow state.')}
-      <main id="main" class="page board-detail-page"><section id="boardMain" data-wm-motion-static="true" aria-live="polite"><div class="board-state-host" data-board-state-host><div class="boards-state"><span class="button-spinner"></span><h3>Loading board</h3><p>Fetching groups, items, columns, and your saved view…</p></div></div><div class="board-workspace-shell" data-board-workspace-shell hidden><div data-board-header-host></div><div data-board-controls-host></div><section class="board-view-region" data-board-view-host aria-live="polite"></section><div data-board-selection-host></div><div data-item-panel-host></div></div></section></main>`;
+      <main id="main" class="page board-detail-page"><section id="boardMain" data-wm-motion-static="true" aria-live="polite"><div class="board-state-host" data-board-state-host><div class="boards-state"><span class="button-spinner"></span><h3>Loading board</h3><p>Fetching groups, items, columns, and your saved view…</p></div></div><div class="board-workspace-shell" data-board-workspace-shell hidden><div data-board-header-host></div><div data-board-controls-host></div><section id="boardViewRegion" class="board-view-region" data-board-view-host role="tabpanel" aria-live="polite"></section><div data-board-selection-host></div><div data-item-panel-host></div></div></section></main>`;
     renderWorkspace(content, 'boards', 'page');
     attachBoardEvents();
     void loadBoard(boardId);
@@ -661,30 +736,130 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     return value === 'asc' || value === 'desc' || value === 'none';
   }
 
-  function focusAdjacentCell(target: HTMLElement, key: GridNavigationKey): boolean {
-    const row = target.closest<HTMLElement>('.board-item-row');
-    if (!row) return false;
-    const rows = [...document.querySelectorAll<HTMLElement>('.board-item-row')].filter((entry) => entry.offsetParent !== null);
-    const cells = [...row.querySelectorAll<HTMLElement>('.item-inline-title,.board-cell-button')];
-    const index = cells.indexOf(target);
-    if (index < 0) return false;
+  interface GridNavigationRow {
+    readonly item: BoardItem;
+    readonly group: BoardGroup;
+    readonly rowIndex: number;
+    readonly totalRows: number;
+  }
 
-    let next: HTMLElement | undefined;
-    if (key === 'ArrowLeft') next = cells[index - 1];
-    if (key === 'ArrowRight') next = cells[index + 1];
-    if (key === 'Home') next = cells[0];
-    if (key === 'End') next = cells.at(-1);
-    if (key === 'ArrowUp' || key === 'ArrowDown') {
-      const rowIndex = rows.indexOf(row);
-      const nextRow = rows[rowIndex + (key === 'ArrowDown' ? 1 : -1)];
-      next = nextRow?.querySelectorAll<HTMLElement>('.item-inline-title,.board-cell-button')[index];
+  function gridNavigationRows(): readonly GridNavigationRow[] {
+    const envelope = activeBoardEnvelope();
+    if (!envelope) return [];
+    const rows: GridNavigationRow[] = [];
+    const collapsedGroups = new Set((state.boardPrefs.collapsed_groups ?? []).map(String));
+    const groups = [...envelope.groups].sort((left, right) => left.position - right.position);
+    for (const group of groups) {
+      if (collapsedGroups.has(String(group.id))) continue;
+      const items = envelope.items
+        .filter((item) => String(item.group_id) === String(group.id) && itemMatches(item))
+        .sort(compareItems);
+      items.forEach((item, rowIndex) => rows.push({ item, group, rowIndex, totalRows: items.length }));
     }
-    if (!next) return false;
-    next.focus();
+    return rows;
+  }
+
+  function focusLogicalGridCell(itemId: string, logicalColumnIndex: number, scrollLeft: number | null = null): void {
+    requestAnimationFrame(() => {
+      if (scrollLeft !== null) {
+        document.querySelectorAll<HTMLElement>('.board-table-scroll').forEach((scroller) => {
+          scroller.scrollLeft = scrollLeft;
+        });
+      }
+      const row = document.querySelector<HTMLElement>(`.board-item-row[data-item-id="${CSS.escape(itemId)}"]`);
+      const next = logicalColumnIndex === 0
+        ? row?.querySelector<HTMLElement>('.item-inline-title[data-grid-column-index="0"]')
+        : row?.querySelector<HTMLElement>(`.board-cell-button[data-grid-column-index="${logicalColumnIndex}"]`);
+      next?.focus({ preventScroll: true });
+      next?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
+  }
+
+  function focusAdjacentCell(target: HTMLElement, key: GridNavigationKey): boolean {
+    const row = target.closest<HTMLElement>('.board-item-row[data-item-id][data-group-id]');
+    const currentItemId = row?.dataset.itemId;
+    if (!row || !currentItemId) return false;
+    const currentColumnIndex = Number(target.dataset.gridColumnIndex ?? Number.NaN);
+    if (!Number.isInteger(currentColumnIndex) || currentColumnIndex < 0) return false;
+    const logicalColumns = tableDynamicColumns();
+    const rows = gridNavigationRows();
+    const currentRowIndex = rows.findIndex((entry) => String(entry.item.id) === String(currentItemId));
+    if (currentRowIndex < 0) return false;
+
+    let targetRow = rows[currentRowIndex];
+    let targetColumnIndex = currentColumnIndex;
+    if (key === 'ArrowLeft') targetColumnIndex -= 1;
+    if (key === 'ArrowRight') targetColumnIndex += 1;
+    if (key === 'Home') targetColumnIndex = 0;
+    if (key === 'End') targetColumnIndex = logicalColumns.length;
+    if (key === 'ArrowUp') targetRow = rows[currentRowIndex - 1];
+    if (key === 'ArrowDown') targetRow = rows[currentRowIndex + 1];
+    if (!targetRow || targetColumnIndex < 0 || targetColumnIndex > logicalColumns.length) return false;
+
+    const forceFullRows = forceFullRowRendering();
+    const rowChanged = tableVirtualization.ensureRowVisible(String(targetRow.group.id), targetRow.rowIndex, targetRow.totalRows, boardRowHeight(), forceFullRows);
+    const columnResult = targetColumnIndex > 0
+      ? tableVirtualization.ensureColumnVisible(targetColumnIndex - 1, tableDynamicColumnWidths())
+      : Object.freeze({ changed: false, scrollLeft: 0 });
+    if (rowChanged || columnResult.changed) renderBoardViewOnly();
+    focusLogicalGridCell(String(targetRow.item.id), targetColumnIndex, columnResult.changed ? columnResult.scrollLeft : null);
     return true;
   }
 
+  function activeGridCoordinate(): { readonly itemId: string; readonly groupId: string; readonly rowIndex: number; readonly columnIndex: number } | null {
+    const active = document.activeElement;
+    if (!(active instanceof HTMLElement) || !active.matches('.item-inline-title,.board-cell-button')) return null;
+    const row = active.closest<HTMLElement>('.board-item-row[data-item-id][data-group-id][data-virtual-row-index]');
+    const itemId = row?.dataset.itemId;
+    const groupId = row?.dataset.groupId;
+    const rowIndex = Number(row?.dataset.virtualRowIndex ?? Number.NaN);
+    const columnIndex = Number(active.dataset.gridColumnIndex ?? Number.NaN);
+    return itemId && groupId && Number.isInteger(rowIndex) && Number.isInteger(columnIndex)
+      ? Object.freeze({ itemId, groupId, rowIndex, columnIndex })
+      : null;
+  }
+
+  function requestVirtualizedBoardRender(): void {
+    if (virtualizationFrame || dragDrop?.activeItemId) return;
+    virtualizationFrame = requestAnimationFrame(() => {
+      virtualizationFrame = 0;
+      const coordinate = activeGridCoordinate();
+      if (coordinate) {
+        const envelope = activeBoardEnvelope();
+        const totalRows = envelope?.items.filter((item) => String(item.group_id) === coordinate.groupId && itemMatches(item)).length ?? 0;
+        const rowWindow = tableVirtualization.rowWindow(coordinate.groupId, totalRows, boardRowHeight(), forceFullRowRendering());
+        const columnWindow = tableVirtualization.columnWindow(tableDynamicColumnWidths());
+        const rowVisible = coordinate.rowIndex >= rowWindow.start && coordinate.rowIndex < rowWindow.end;
+        const dynamicColumnIndex = coordinate.columnIndex - 1;
+        const columnVisible = coordinate.columnIndex === 0 || !columnWindow.enabled || (dynamicColumnIndex >= columnWindow.start && dynamicColumnIndex < columnWindow.end);
+        if (!rowVisible || !columnVisible) {
+          document.querySelector<HTMLElement>(`.board-table-scroll[data-group-table-scroll="${CSS.escape(coordinate.groupId)}"]`)?.focus({ preventScroll: true });
+        }
+      }
+      inlineEdit.dismissPopover({ restore: false });
+      closeColumnMenus(document);
+      renderBoardViewOnly();
+    });
+  }
+
   let syncingBoardTableScroll = false;
+
+  function syncBoardVirtualizationFromViewport(root: HTMLElement): void {
+    if (!root.isConnected || dragDrop?.activeItemId) return;
+    const rowChanged = tableVirtualization.updateRowsFromViewport(root, boardRowHeight(), forceFullRowRendering());
+    const scroller = root.querySelector<HTMLElement>('.board-table-scroll');
+    const columnChanged = Boolean(scroller && tableVirtualization.updateColumnsFromScroller(scroller, tableDynamicColumnWidths()));
+    if (rowChanged || columnChanged) requestVirtualizedBoardRender();
+  }
+
+  function scheduleBoardVirtualizationSync(): void {
+    cancelAnimationFrame(virtualizationMeasureFrame);
+    virtualizationMeasureFrame = requestAnimationFrame(() => {
+      virtualizationMeasureFrame = 0;
+      const root = document.querySelector<HTMLElement>('.board-detail-page');
+      if (root) syncBoardVirtualizationFromViewport(root);
+    });
+  }
 
   function attachBoardEvents(): void {
     const root = document.querySelector<HTMLElement>('.board-detail-page');
@@ -721,6 +896,23 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
         void createInlineItem(target, event.shiftKey);
         return;
       }
+      const viewTab = target.closest<HTMLButtonElement>('[data-board-view]');
+      if (viewTab && (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Home' || event.key === 'End')) {
+        const tabs = [...root.querySelectorAll<HTMLButtonElement>('[data-board-view]')];
+        const index = tabs.indexOf(viewTab);
+        if (index >= 0 && tabs.length) {
+          event.preventDefault();
+          let nextIndex = index;
+          if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabs.length) % tabs.length;
+          if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length;
+          if (event.key === 'Home') nextIndex = 0;
+          if (event.key === 'End') nextIndex = tabs.length - 1;
+          const next = tabs[nextIndex];
+          next?.focus();
+          if (next && next !== viewTab) next.click();
+        }
+        return;
+      }
       if (target.matches('.item-inline-title,.board-cell-button') && isGridNavigationKey(event.key)) {
         if (focusAdjacentCell(target, event.key)) event.preventDefault();
         return;
@@ -746,21 +938,26 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       root.querySelectorAll<HTMLElement>('.board-table-scroll').forEach((peer) => {
         if (peer !== scroller && Math.abs(peer.scrollLeft - left) > 1) peer.scrollLeft = left;
       });
+      const virtualColumnChanged = !dragDrop?.activeItemId && tableVirtualization.updateColumnsFromScroller(scroller, tableDynamicColumnWidths());
+      if (virtualColumnChanged) requestVirtualizedBoardRender();
       requestAnimationFrame(() => { syncingBoardTableScroll = false; });
     }, true);
 
     boardResizeCleanup?.();
-    const onBoardResize = (): void => {
+    const onBoardViewportChange = (): void => {
       if (!root.isConnected) {
         boardResizeCleanup?.();
         return;
       }
       boardMenuController?.position();
       inlineEdit.repositionPopover();
+      syncBoardVirtualizationFromViewport(root);
     };
-    window.addEventListener('resize', onBoardResize, { passive: true });
+    window.addEventListener('resize', onBoardViewportChange, { passive: true });
+    window.addEventListener('scroll', onBoardViewportChange, { passive: true });
     boardResizeCleanup = () => {
-      window.removeEventListener('resize', onBoardResize);
+      window.removeEventListener('resize', onBoardViewportChange);
+      window.removeEventListener('scroll', onBoardViewportChange);
       boardResizeCleanup = null;
     };
 
@@ -776,8 +973,11 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       });
     });
 
-    root.addEventListener('submit', (event: SubmitEvent) => { void itemWorkspace.submitUpdate(event); });
+    root.addEventListener('submit', (event: SubmitEvent) => { void (async () => { if (await itemWorkspace.submitUpdate(event)) return; await itemWorkspace.submitProperty(event); })(); });
     root.addEventListener('change', (event: Event) => { void itemWorkspace.uploadFiles(event); });
+    for (const type of ['dragenter', 'dragover', 'dragleave', 'drop'] as const) {
+      root.addEventListener(type, (event: DragEvent) => { itemWorkspace.handleFileDrag(event); });
+    }
     root.addEventListener('change', (event: Event) => {
       const target = event.target;
       if (!(target instanceof HTMLSelectElement) || !target.matches('[data-item-status]')) return;
@@ -821,6 +1021,20 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       if (btn.matches('[data-board-detail-retry]')) { if (boardId) void loadBoard(boardId); return; }
       if (btn.matches('[data-board-undo]')) { await history.undo(); return; }
       if (btn.matches('[data-board-redo]')) { await history.redo(); return; }
+      if (btn.matches('[data-clear-item-search]')) {
+        state.itemSearch = '';
+        renderBoardData();
+        requestAnimationFrame(() => root.querySelector<HTMLInputElement>('[data-item-search]')?.focus());
+        return;
+      }
+      if (btn.matches('[data-toolbar-status-value]')) {
+        const value = btn.dataset.toolbarStatusValue;
+        if (!value) return;
+        state.itemStatus = value;
+        selection.clear();
+        renderBoardData();
+        return;
+      }
       if (btn.matches('[data-selection-clear]')) { selection.clear(); renderBoardData(); return; }
       if (btn.matches('[data-selection-duplicate]')) { await selection.duplicateSelected(); return; }
       if (btn.matches('[data-selection-archive]')) { await selection.archiveSelected(); return; }
@@ -872,6 +1086,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       if (btn.matches('[data-board-edit]')) { openEditBoard(); return; }
       if (btn.matches('[data-board-members]')) { memberWorkflows.open(); return; }
       if (btn.matches('[data-board-columns]')) { columnWorkflows.openManager(); return; }
+      if (btn.matches('[data-add-column-menu]')) { columnWorkflows.openPicker(); return; }
       if (btn.matches('[data-add-column]')) { columnWorkflows.openPicker({ anchor: btn, quick: true }); return; }
       if (btn.matches('[data-edit-column]')) { columnWorkflows.openEditor(allColumns().find((column) => column.id === btn.dataset.editColumn)); return; }
 
@@ -977,7 +1192,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
         const message = status === 'archived'
           ? 'Archive this board? You can restore it later from Archived.'
           : 'Move this board to trash? You can restore it until it is permanently deleted.';
-        if (!confirm(message)) return;
+        if (!await confirmBoardAction(message)) return;
         try {
           await commandService.setBoardLifecycle({ boardId, status });
           toast(status === 'archived' ? 'Board archived.' : 'Board moved to trash.');
@@ -1045,7 +1260,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       if (btn.matches('[data-delete-item]')) {
         const item = envelope?.items.find((candidate) => String(candidate.id) === String(btn.dataset.deleteItem));
         if (!item) return;
-        if (!confirm(`Delete “${item.title}” permanently? Its values, updates, and attachments will be removed. This cannot be undone.`)) return;
+        if (!await confirmBoardAction(`Delete “${item.title}” permanently? Its values, updates, and attachments will be removed. This cannot be undone.`)) return;
         try {
           await commandService.deleteItem(item.id);
           selection.clear();
@@ -1072,7 +1287,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       }
     });
 
-    dragDrop.bind(root);
+    dragDrop?.bind(root);
     structureDrag.bind(root);
     columnResize.bind(root);
   }
@@ -1103,11 +1318,18 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   function deactivate() {
     // Invalidate in-flight loads and cancel deferred preference writes when leaving the feature.
     dataController.cancelPending();
+    realtimeController?.disconnect();
+    realtimeSnapshot = Object.freeze({ state:'idle', boardId:null, collaborators:[], lastEventAt:null, lastError:null, fallbackPolling:false });
     boardResizeCleanup?.();
     preferencePersistence.cancel();
     cancelAnimationFrame(itemSearchFrame);
     itemSearchFrame = 0;
-    dragDrop.dispose();
+    dragDrop?.dispose();
+    tableVirtualization.reset();
+    cancelAnimationFrame(virtualizationFrame);
+    virtualizationFrame = 0;
+    cancelAnimationFrame(virtualizationMeasureFrame);
+    virtualizationMeasureFrame = 0;
     structureDrag.dispose();
     columnResize.dispose();
     inlineEdit.reset();

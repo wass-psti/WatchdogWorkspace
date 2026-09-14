@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import path from 'node:path';
+const root = path.resolve(import.meta.dirname, '..');
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const state = read('config/stage-d-m18-virtualization-target.ts').match(/activationState:\s*'([^']+)'/)?.[1] ?? 'unknown';
+const prerequisite = read('config/stage-d-m17-tanstack-table-evaluation-target.ts').match(/activationState:\s*'([^']+)'/)?.[1] ?? 'unknown';
+console.log('Stage D Milestone 18 Virtualization status');
+console.log('------------------------------------------');
+console.log(`M17 prerequisite state: ${prerequisite}`);
+console.log(`M18 activation state: ${state}`);
+console.log('Virtualization planner: src/features/boards/virtualization/board-table-virtualization.ts');
+console.log('Runtime controller: assets/js/features/boards/controllers/board-table-virtualization-controller.ts');
+console.log('Production renderer: assets/js/features/boards/views/table-view.ts');
+console.log('Compatibility Board engine: assets/js/boards-ui.ts');
+console.log('Architecture version: 27');
+console.log('TanStack Table production adoption: deferred');
+console.log(state === 'active-certified' ? '\nM18 Board virtualization architecture is release-certified.' : '\nM18 implementation is complete and awaiting release certification.');

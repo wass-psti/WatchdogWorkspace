@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const domainCode = fs.readFileSync('apps/time-tracker/domain-config.js', 'utf8');
+const stabilityCode = fs.readFileSync('apps/time-tracker/stability-runtime.js', 'utf8');
 const code = fs.readFileSync('apps/time-tracker/app.js', 'utf8');
 const userId = 'cloud:runtime-test-user';
 const now = Date.now();
@@ -141,6 +142,7 @@ const context = {
   crypto: globalThis.crypto,
   Blob: globalThis.Blob,
   URL: globalThis.URL,
+  AbortController: globalThis.AbortController,
   Intl,
   Date,
   Math,
@@ -172,8 +174,14 @@ context.globalThis = context;
 Object.assign(windowObject, { window: windowObject, Event: context.Event, HTMLSelectElement: context.HTMLSelectElement });
 
 vm.runInNewContext(domainCode, context, { filename: 'apps/time-tracker/domain-config.js', timeout: 5000 });
+vm.runInNewContext(stabilityCode, context, { filename: 'apps/time-tracker/stability-runtime.js', timeout: 5000 });
 vm.runInNewContext(code, context, { filename: 'apps/time-tracker/app.js', timeout: 5000 });
-for (let i=0;i<6;i+=1) { await Promise.resolve(); await new Promise((resolve)=>setImmediate(resolve)); }
+for (let i = 0; i < 6; i += 1) {
+  await Promise.resolve();
+  await new Promise((resolve) => {
+    setImmediate(resolve);
+  });
+}
 
 if (!appMount.childElementCount) throw new Error('TimeTracker did not mount during overdue-session runtime test.');
 const state = JSON.parse(store.get('timetracker.attendance.v1'));

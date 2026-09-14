@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import path from 'node:path';
+const root = path.resolve(import.meta.dirname, '..');
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const state = read('config/stage-d-m15-react-board-presentation-facade-target.ts').match(/activationState:\s*'([^']+)'/)?.[1] ?? 'unknown';
+const prerequisite = read('config/stage-c-m14-command-shared-ui-target.ts').match(/activationState:\s*'([^']+)'/)?.[1] ?? 'unknown';
+const architecture = read('config/application-manifest.ts').match(/architectureVersion:\s*(\d+)/)?.[1] ?? 'unknown';
+console.log('Stage D Milestone 15 React Board presentation facade status');
+console.log('-----------------------------------------------------------');
+console.log(`M14 prerequisite state: ${prerequisite}`);
+console.log(`M15 activation state: ${state}`);
+console.log('React Board facade: src/app/boards/BoardPresentationFacade.tsx');
+console.log('Board facade runtime: src/app/boards/board-presentation-facade-runtime.ts');
+console.log('Compatibility Board engine: assets/js/boards-ui.ts');
+console.log('Board service/command/persistence authorities: existing typed Board layers');
+console.log(`Architecture version: ${architecture}`);
+console.log(state === 'active-certified' ? '\nM15 React Board presentation facade architecture is release-certified.' : '\nM15 implementation is complete and awaiting release certification.');

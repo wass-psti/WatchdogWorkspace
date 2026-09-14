@@ -1,0 +1,131 @@
+/* Work Management Shell — Shell M7 Responsive & Accessibility Finalization
+ * Final host-shell resilience layer. It intentionally does not alter routing,
+ * authorization, Board behavior, or embedded-application internals. */
+
+body[data-wm-surface="shell"] .shell-skip-link {
+  position: fixed;
+  z-index: calc(var(--wm-shell-overlay-z) + 40);
+  inset-block-start: max(var(--wm-shell-skip-link-offset), env(safe-area-inset-top));
+  inset-inline-start: max(var(--wm-shell-skip-link-offset), env(safe-area-inset-left));
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+  border-radius: var(--wm-shell-navigation-radius);
+  background: var(--wm-color-surface-elevated);
+  color: var(--wm-color-text-primary);
+  box-shadow: var(--wm-shadow-md);
+  font-size: var(--wm-text-sm);
+  font-weight: var(--wm-font-weight-semibold);
+}
+
+body[data-wm-surface="shell"] .shell-skip-link:focus {
+  width: auto;
+  height: auto;
+  min-height: var(--wm-shell-skip-link-min-height);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--wm-shell-skip-link-inline-padding);
+  clip-path: none;
+  outline: var(--wm-shell-a11y-outline-width) solid var(--wm-shell-navigation-focus);
+  outline-offset: var(--wm-shell-a11y-outline-offset);
+}
+
+body[data-wm-surface="shell"] .shell-skip-link:focus-visible {
+  outline-color: var(--wm-shell-navigation-focus);
+}
+
+body[data-wm-surface="shell"] #main {
+  min-width: 0;
+  scroll-margin-block-start: var(--wm-shell-route-focus-scroll-margin);
+}
+
+body[data-wm-surface="shell"] #main:focus-visible {
+  outline: var(--wm-shell-a11y-outline-width) solid var(--wm-shell-navigation-focus);
+  outline-offset: calc(var(--wm-shell-a11y-outline-width) * -1);
+}
+
+body[data-wm-surface="shell"] :is(.topbar,.module-topbar,.top-actions,.module-actions,.module-identity) {
+  min-width: 0;
+}
+
+body[data-wm-surface="shell"] :is(.topbar h1,.topbar p,.module-identity strong,.module-identity small) {
+  overflow-wrap: anywhere;
+}
+
+body[data-wm-surface="shell"] .module-identity > div:last-child {
+  min-width: 0;
+}
+
+body[data-wm-surface="shell"] .module-identity :is(strong,small) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+  body[data-wm-surface="shell"] .topbar {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    align-items: start;
+    column-gap: var(--wm-shell-mobile-content-gap);
+  }
+
+  body[data-wm-surface="shell"] .topbar > div:first-child { min-width: 0; }
+  body[data-wm-surface="shell"] .top-actions { flex-wrap: nowrap; gap: var(--wm-space-075); }
+  body[data-wm-surface="shell"] .connection-pill { display: none; }
+
+  body[data-wm-surface="shell"] .module-topbar {
+    grid-template-columns: auto minmax(0,1fr) auto;
+    gap: var(--wm-space-075);
+  }
+
+  body[data-wm-surface="shell"] .module-actions { display: flex; justify-content: flex-end; }
+  body[data-wm-surface="shell"] .module-action { min-width: var(--wm-shell-navigation-control-touch-size); min-height: var(--wm-shell-navigation-control-touch-size); justify-content: center; }
+
+  body[data-wm-surface="shell"] .sidebar {
+    max-width: calc(100vw - var(--wm-space-200));
+  }
+
+  body[data-wm-surface="shell"] .shell-resource-copy small {
+    line-height: 1.35;
+  }
+}
+
+@media (max-width: 360px) {
+  body[data-wm-surface="shell"] .topbar h1 { font-size: var(--wm-text-xl); }
+  body[data-wm-surface="shell"] .top-actions { gap: var(--wm-space-050); }
+  body[data-wm-surface="shell"] .sidebar { width: calc(100vw - var(--wm-space-150)); max-width: calc(100vw - var(--wm-space-150)); }
+}
+
+@media (pointer: coarse) {
+  body[data-wm-surface="shell"] .account-pill[data-account-menu-trigger] {
+    min-width: var(--wm-shell-navigation-control-touch-size);
+    min-height: var(--wm-shell-navigation-control-touch-size);
+  }
+}
+
+@media (prefers-contrast: more) {
+  body[data-wm-surface="shell"] :is(.sidebar,.topbar,.module-topbar,.wm-shell-floating-surface,.shell-account-menu) {
+    border-color: var(--wm-color-border-strong);
+  }
+  body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item,.shell-resource-item)[aria-current="page"] {
+    outline: var(--wm-shell-a11y-outline-width) solid var(--wm-shell-navigation-focus);
+    outline-offset: -2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-wm-surface="shell"] .shell-skip-link { scroll-behavior: auto; }
+}
+
+@media (forced-colors: active) {
+  body[data-wm-surface="shell"] .shell-skip-link:focus-visible,
+  body[data-wm-surface="shell"] #main:focus-visible {
+    outline-color: Highlight;
+  }
+}

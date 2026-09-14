@@ -7,7 +7,7 @@ import type {
 } from './domain.ts';
 import type { BoardId, BoardItemId, StatusLabelId } from '../../../types/identifiers.ts';
 
-export type ItemWorkspaceTab = 'updates' | 'files' | 'activity';
+export type ItemWorkspaceTab = 'overview' | 'updates' | 'files' | 'activity';
 
 export interface BoardInlineDraft {
   readonly kind?: string;
@@ -23,6 +23,7 @@ export interface MutableItemWorkspaceState {
   error: string;
   data: ItemWorkspaceEnvelope;
   uploading: boolean;
+  updateDraft: string;
 }
 
 export interface MutableBoardViewState {

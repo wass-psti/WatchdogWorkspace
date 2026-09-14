@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "milestone": 37,
+  "stage": "G",
+  "architectureVersion": 45,
+  "name": "Functional Regression Baseline",
+  "failClosed": true,
+  "modules": [
+    "boards",
+    "users",
+    "settings",
+    "account"
+  ],
+  "requiredEvidence": [
+    "console-errors",
+    "page-errors",
+    "failed-network-requests",
+    "backend-responses",
+    "route-state",
+    "authentication-state",
+    "runtime-context",
+    "dom-ownership"
+  ],
+  "sensitiveData": {
+    "captureAccessTokens": false,
+    "captureRefreshTokens": false,
+    "captureAuthorizationHeaders": false,
+    "responseBodyLimitBytes": 2048,
+    "redactKeys": [
+      "access_token",
+      "refresh_token",
+      "authorization",
+      "apikey",
+      "password"
+    ]
+  },
+  "scenarios": {
+    "unconfiguredBackend": {
+      "required": true,
+      "purpose": "Characterize protected-route behavior from the checked-in source baseline when public Supabase configuration is absent."
+    },
+    "authenticatedFixture": {
+      "required": true,
+      "purpose": "Separate frontend routing/DOM ownership from backend/RPC failures using a deterministic intercepted Supabase fixture."
+    },
+    "liveBackend": {
+      "required": false,
+      "purpose": "Optional M37 operator evidence against the real Supabase project; becomes mandatory in later recovery/certification milestones."
+    }
+  },
+  "artifactDirectory": "m37-evidence",
+  "inventory": "regression-baseline/m37-functional-regression-inventory.json",
+  "browserCharacterization": {
+    "expectedEvidenceFiles": [
+      "unconfigured-account.json",
+      "unconfigured-boards.json",
+      "unconfigured-settings.json",
+      "unconfigured-users.json",
+      "fixture-account.json",
+      "fixture-boards.json",
+      "fixture-settings.json",
+      "fixture-users.json"
+    ],
+    "authenticatedFixtureBootstrapRequired": true,
+    "scenarioIsolatedFailureInjection": true,
+    "m30GenericSmokeIsolationRequired": true
+  }
+}

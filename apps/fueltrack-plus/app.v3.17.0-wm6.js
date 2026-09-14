@@ -83,6 +83,15 @@
   let activityFilterPersistTimer = null;
   let activityRefreshPromise = null;
 
+  const STABILITY = globalThis.WMFuelTrackStability || (() => { throw new Error("FuelTrack+ stabilization runtime failed to load."); })();
+  const confirmedStateWriter = STABILITY.createConfirmedStateWriter(globalThis.WMModuleStore);
+  const requestMutationGate = STABILITY.createMutationGate();
+  const preferenceWriteQueue = STABILITY.createSerialTaskQueue();
+  const activityWorkspaceWriteQueue = STABILITY.createSerialTaskQueue();
+  let storeChangeBridge = null;
+  let analyticsModulePromise = null;
+  let analyticsChartDispose = null;
+
 
   function normalizeUserKey(value){return String(value||"").trim().toLocaleLowerCase();}
   function cloudRoleDirectory(){
@@ -197,19 +206,40 @@
     }
   }
 
-  function saveJson(key, value) {
+  async function recoverAuthoritativePreferences() {
     try {
-      globalThis.WMModuleStore.setItem(key, JSON.stringify(value));
-      autoRefresh.lastSignature = storageRevisionSignature();
-      autoRefresh.lastSuccessAt = Date.now();
-      autoRefresh.lastAttemptAt = Date.now();
-      updateAutoRefreshStatus("current");
+      await globalThis.WMModuleStore.refresh();
+      const prefs = readJsonResult(KEYS.prefs, state.prefs);
+      state.prefs = normalizeAccessProfile(prefs.value);
+      state.prefs.userName = AUTHENTICATED_NAME;
+      state.prefs.role = AUTHENTICATED_ROLE;
+      state.activityFilters = normalizeActivityFilters(state.prefs.activityFilters || state.activityFilters);
+      document.documentElement.classList.toggle("light", state.prefs.theme === "light");
+      syncThemeUi();
       return true;
     } catch (error) {
-      console.error(error);
-      toast("Cloud persistence error", "FuelTrack+ could not persist workspace data to the active backend.", "error");
+      console.warn("FuelTrack+ preference recovery failed.", error);
       return false;
     }
+  }
+
+  async function saveJson(key, value) {
+    const serialized = JSON.stringify(value);
+    return preferenceWriteQueue.run(`preference:${key}`, async () => {
+      try {
+        await confirmedStateWriter.writeRaw(key, serialized);
+        autoRefresh.lastSignature = storageRevisionSignature();
+        autoRefresh.lastSuccessAt = Date.now();
+        autoRefresh.lastAttemptAt = Date.now();
+        updateAutoRefreshStatus("current");
+        return true;
+      } catch (error) {
+        console.error(error);
+        await recoverAuthoritativePreferences();
+        toast("Cloud persistence error", "FuelTrack+ could not confirm workspace data in the active backend.", "error");
+        return false;
+      }
+    });
   }
 
   function uid(prefix = "req") {
@@ -325,7 +355,6 @@
       autoRefresh.pending = true;
       return false;
     }
-
     if (!force && now - autoRefresh.lastAttemptAt < AUTO_REFRESH_MIN_GAP_MS) return false;
 
     const interactionReason = force ? "" : autoRefreshInteractionReason();
@@ -341,7 +370,6 @@
     autoRefresh.deferredReason = "";
     autoRefresh.lastAttemptAt = now;
     const generation = ++autoRefresh.generation;
-
     updateAutoRefreshStatus("refreshing");
 
     if (showLoading) {
@@ -349,14 +377,23 @@
       renderRoute();
     }
 
-    queueMicrotask(() => {
+    void (async () => {
       try {
+        await globalThis.WMModuleStore.refresh();
+        if (state.route === "activity" || state.route === "dashboard") {
+          try { await globalThis.WMModuleActivity?.refresh?.(); } catch (error) { console.warn("FuelTrack+ activity refresh deferred.", error); }
+        }
         if (generation !== autoRefresh.generation) return;
-        hydrateState({
-          source,
-          forceRender: true,
-          skipIfUnchanged: !force
-        });
+        hydrateState({ source, forceRender: true, skipIfUnchanged: !force });
+      } catch (error) {
+        console.error(error);
+        if (generation === autoRefresh.generation) {
+          state.dataStatus = "error";
+          state.storageErrors = [error?.message || "FuelTrack+ could not refresh authoritative cloud state."];
+          updateAutoRefreshStatus("error");
+          renderRoute();
+          if (source === "manual") toast("Refresh failed", state.storageErrors[0], "error");
+        }
       } finally {
         if (generation === autoRefresh.generation) {
           autoRefresh.inFlight = false;
@@ -365,7 +402,7 @@
           if (rerun) setTimeout(() => requestAppRefresh({ source: "deferred" }), 120);
         }
       }
-    });
+    })();
 
     return true;
   }
@@ -400,7 +437,8 @@
   }
 
   function handleStorageSynchronization(event) {
-    if (!event.key || ![KEYS.requests, KEYS.prefs, KEYS.inventory, KEYS.activityWorkspace].includes(event.key)) return;
+    const changedKey = event?.key ?? event?.detail?.key ?? null;
+    if (!changedKey || ![KEYS.requests, KEYS.prefs, KEYS.inventory, KEYS.activityWorkspace].includes(changedKey)) return;
 
     if (document.hidden) {
       autoRefresh.pending = true;
@@ -477,10 +515,11 @@
     els.approvalDecisionNote?.addEventListener("input", () => {
       if (els.approvalDecisionCounter) els.approvalDecisionCounter.textContent = `${els.approvalDecisionNote.value.length}/500`;
       if (els.approvalDecisionError) els.approvalDecisionError.textContent = "";
+      if (els.approvalDecisionSubmit) { els.approvalDecisionSubmit.disabled = false; els.approvalDecisionSubmit.removeAttribute("aria-busy"); }
     });
     els.approvalDecisionForm?.addEventListener("submit", event => {
       event.preventDefault();
-      commitApprovalDecision();
+      void commitApprovalDecision();
     });
     els.approvalDecisionDialog?.addEventListener("close", () => {
       pendingApprovalDecision = null;
@@ -490,7 +529,7 @@
     });
     els.refuelingCompletionForm?.addEventListener("submit", event => {
       event.preventDefault();
-      submitRefuelingCompletion();
+      void submitRefuelingCompletion();
     });
     els.refuelingCompletionDialog?.addEventListener("close", resetRefuelingCompletionDialog);
     els.refuelingReceiptPhoto?.addEventListener("change", handleRefuelingReceiptPhoto);
@@ -498,7 +537,11 @@
       control?.addEventListener("input",()=>clearRefuelingCompletionErrors());
     });
     document.addEventListener("visibilitychange", handleVisibilityRefresh);
-    window.addEventListener("storage", handleStorageSynchronization);
+    storeChangeBridge?.dispose?.();
+    storeChangeBridge = STABILITY.createStoreChangeBridge({
+      keys: [KEYS.requests, KEYS.prefs, KEYS.inventory, KEYS.activityWorkspace],
+      onChange: ({ event }) => handleStorageSynchronization(event),
+    });
     window.addEventListener("focus", () => {
       if (!document.hidden && autoRefresh.pending) setTimeout(() => requestAppRefresh({ source: "focus" }), 100);
     });
@@ -507,7 +550,7 @@
         setTimeout(() => requestAppRefresh({ source: "interaction-complete" }), 180);
       }
     });
-    window.addEventListener("beforeunload", stopAutoRefresh, { once: true });
+    window.addEventListener("beforeunload", () => { stopAutoRefresh(); storeChangeBridge?.dispose?.(); disposeAnalyticsChart(); }, { once: true });
   }
 
   function routeTo(route, focus = true) {
@@ -574,6 +617,7 @@
   function renderRoute() {
     const routeChanged = Boolean(els.content.dataset.route && els.content.dataset.route !== state.route);
     const performRender = () => {
+      if (state.route !== "analytics") disposeAnalyticsChart();
       els.content.classList.remove("route-enter");
       if (state.dataStatus === "loading") {
         renderLoadingState();
@@ -728,6 +772,37 @@
     els.content.querySelectorAll("[data-dashboard-request]").forEach(btn=>btn.addEventListener("click",()=>showRequestDetail(btn.dataset.dashboardRequest)));
   }
 
+  function disposeAnalyticsChart() {
+    try { analyticsChartDispose?.(); } catch (error) { console.warn("FuelTrack+ analytics disposal failed.", error); }
+    analyticsChartDispose = null;
+  }
+
+  function loadAnalyticsModule() {
+    if (!analyticsModulePromise) {
+      analyticsModulePromise = import("../../assets/js/runtime/fueltrack-analytics.js").catch((error) => {
+        analyticsModulePromise = null;
+        throw error;
+      });
+    }
+    return analyticsModulePromise;
+  }
+
+  function enhanceAnalyticsTrend(series) {
+    const host = $("fueltrackAnalyticsTrend");
+    const fallback = $("fueltrackAnalyticsTrendFallback");
+    if (!host) return;
+    void loadAnalyticsModule().then((module) => {
+      if (state.route !== "analytics" || !host.isConnected) return;
+      disposeAnalyticsChart();
+      analyticsChartDispose = module.renderFuelTrackAnalyticsTrend(host, series, { light: document.documentElement.classList.contains("light") });
+      if (fallback?.isConnected) fallback.hidden = true;
+      host.dataset.engine = `${module.FUELTRACK_ANALYTICS_ENGINE.library} ${module.FUELTRACK_ANALYTICS_ENGINE.version}`;
+    }).catch((error) => {
+      console.warn("FuelTrack+ Analytics retained its accessible fallback because ECharts could not load.", error);
+      if (host?.isConnected) host.dataset.engine = "fallback";
+    });
+  }
+
   function renderAnalytics() {
     if (state.dataStatus === "loading") {
       els.content.innerHTML = `${storageBanner()}${analyticsLoadingState()}`;
@@ -796,7 +871,7 @@
       <div class="analytics-summary-grid">
         <article class="chart-card analytics-trend-card">
           <div class="panel-head"><div><h3>Request activity trend</h3><p>${escapeHtml(analyticsPeriodLabel())} · grouped by request creation month</p></div></div>
-          ${requestCount?barChart(series):emptyState("No matching analytics data","Adjust the period or filters, or record requests to populate this trend.")}
+          ${requestCount?`<div class="analytics-echarts-shell"><div id="fueltrackAnalyticsTrend" class="analytics-echarts-canvas" role="img" aria-label="Monthly request activity trend"></div><div id="fueltrackAnalyticsTrendFallback">${barChart(series)}</div></div>`:emptyState("No matching analytics data","Adjust the period or filters, or record requests to populate this trend.")}
         </article>
         <article class="panel analytics-insights-card">
           <div class="panel-head"><div><h3>Workflow conversion</h3><p>Lifecycle outcomes for the active analytics view</p></div></div>
@@ -830,6 +905,7 @@
     els.content.querySelector('[data-action="analytics-refresh"]')?.addEventListener("click",()=>requestAppRefresh({source:"manual",force:true,showLoading:true}));
     els.content.querySelector('[data-action="analytics-export"]')?.addEventListener("click",()=>exportAnalyticsPdf(filtered));
     bindAnalyticsBreakdownFilters();
+    if (requestCount) enhanceAnalyticsTrend(series);
   }
 
   function analyticsCountContext() {
@@ -1423,10 +1499,35 @@
   function activityIsArchived(id){return activityArchivedSet().has(String(id||""));}
   function activitySelectionSet(){return new Set((Array.isArray(state.activitySelectedIds)?state.activitySelectedIds:[]).map(String));}
   function sanitizeActivitySelection(){const valid=new Set(filteredActivityItems().map((item)=>String(item.id||"")));state.activitySelectedIds=[...(Array.isArray(state.activitySelectedIds)?state.activitySelectedIds:[])].map(String).filter((id)=>valid.has(id));}
+  async function recoverAuthoritativeActivityWorkspace() {
+    try {
+      await globalThis.WMModuleStore.refresh();
+      const restored = readJsonResult(KEYS.activityWorkspace, { view: "timeline", archivedIds: [], updatedAt: "" });
+      state.activityWorkspace = normalizeActivityWorkspace(restored.value);
+      state.activitySelectedIds = [];
+      if (state.route === "activity") updateActivityResults();
+      return true;
+    } catch (error) {
+      console.warn("FuelTrack+ Activity workspace recovery failed.", error);
+      return false;
+    }
+  }
+
   async function persistActivityWorkspace({announce=false}={}){
     state.activityWorkspace=normalizeActivityWorkspace({...state.activityWorkspace,updatedAt:new Date().toISOString()});
-    try{await globalThis.WMModuleStore.setItemAsync(KEYS.activityWorkspace,JSON.stringify(state.activityWorkspace));if(announce)toast("Activity workspace saved",state.activityWorkspace.view==="archived"?"Archived activity preferences were saved to your account.":"Activity triage preferences were saved to your account.","success");return true;}
-    catch(error){toast("Activity workspace not saved",error?.message||"Your Activity triage changes could not be persisted.","error");return false;}
+    const snapshot=normalizeActivityWorkspace(state.activityWorkspace);
+    const serialized=JSON.stringify(snapshot);
+    return activityWorkspaceWriteQueue.run("activity-workspace", async () => {
+      try {
+        await confirmedStateWriter.writeRaw(KEYS.activityWorkspace,serialized);
+        if(announce)toast("Activity workspace saved",snapshot.view==="archived"?"Archived activity preferences were saved to your account.":"Activity triage preferences were saved to your account.","success");
+        return true;
+      } catch(error) {
+        await recoverAuthoritativeActivityWorkspace();
+        toast("Activity workspace not saved",error?.message||"Your Activity triage changes could not be confirmed.","error");
+        return false;
+      }
+    });
   }
   async function setActivityArchived(ids,archived,{announce=true}={}){
     const previous=normalizeActivityWorkspace(state.activityWorkspace);
@@ -1438,7 +1539,7 @@
     state.activitySelectedIds=(state.activitySelectedIds||[]).filter((id)=>!changed.includes(String(id)));
     updateActivityResults();
     const saved=await persistActivityWorkspace();
-    if(!saved){state.activityWorkspace=previous;updateActivityResults();return false;}
+    if(!saved){updateActivityResults();return false;}
     if(announce)toast(archived?"Activity archived":"Activity restored",archived?`${changed.length} event${changed.length===1?"":"s"} hidden from your Timeline. The shared audit record was not deleted.`:`${changed.length} event${changed.length===1?"":"s"} restored to your Timeline.`,"success");
     return true;
   }
@@ -1450,7 +1551,7 @@
     state.activitySelectedIds=[];state.activityVisibleCount=30;
     updateActivityResults();
     const saved=await persistActivityWorkspace();
-    if(!saved){state.activityWorkspace=previous;updateActivityResults();}
+    if(!saved) updateActivityResults();
   }
   function activityArchiveCounts(){const archived=activityArchivedSet();const loaded=authorizedActivity();return{archivedLoaded:loaded.filter((item)=>archived.has(String(item.id||""))).length,archivedSaved:archived.size,timelineLoaded:loaded.filter((item)=>!archived.has(String(item.id||""))).length};}
   function activityViewTabs(){const counts=activityArchiveCounts();const view=state.activityWorkspace.view;return `<div id="activityViewTabs" class="activity-view-tabs wm-tabs" role="tablist" aria-label="Activity views"><button class="activity-view-tab wm-tab ${view==="timeline"?"active is-active":""}" type="button" role="tab" aria-selected="${view==="timeline"}" data-activity-view="timeline">Timeline</button><button class="activity-view-tab wm-tab ${view==="archived"?"active is-active":""}" type="button" role="tab" aria-selected="${view==="archived"}" data-activity-view="archived">Archived${counts.archivedSaved?` <span>${counts.archivedSaved}</span>`:""}</button></div>`;}
@@ -1551,7 +1652,7 @@
     $("requestSort")?.addEventListener("change",e=>{state.filters.sort=e.target.value;state.filters.page=1;renderRequests();});
     $("requestPageSize")?.addEventListener("change",e=>{
       state.prefs.pageSize=Number(e.target.value)||10;
-      saveJson(KEYS.prefs,state.prefs);
+      void saveJson(KEYS.prefs,state.prefs);
       state.filters.page=1;
       renderRequests();
     });
@@ -1717,6 +1818,12 @@
   }
 
   async function saveRequestFromReferenceForm(status, receiptData) {
+    const outcome = await requestMutationGate.run("request:create", () => saveRequestFromReferenceFormUnlocked(status, receiptData));
+    if (!outcome.accepted) toast("Request already saving", "Wait for the current request write to finish before submitting again.", "info");
+    return outcome.accepted ? outcome.value : false;
+  }
+
+  async function saveRequestFromReferenceFormUnlocked(status, receiptData) {
     if(!requirePermission("request.create","Your role cannot create fuel requests.")) return;
     const data = readRequestForm();
     const errors = validateRequest(data, status === "Draft");
@@ -1742,9 +1849,9 @@
     try {
       await commitRequestsWithActivity(newActivityEvent(status === "Draft" ? "system" : "submit",status === "Draft" ? "Draft saved" : "Request submitted",activityMessage,id,{status}));
     } catch(error) {
-      state.requests=state.requests.filter(item=>item!==request);
-      toast("Request not saved",error?.message||"Cloud persistence rejected the request. Refresh and try again.","error");
-      return;
+      await recoverAuthoritativeFuelTrackState({ source: "request-create-recovery", render: true });
+      toast("Request not saved",error?.message||"Cloud persistence rejected the request. The authoritative request registry was reloaded.","error");
+      return false;
     }
     updateBadges();
     toast(status === "Draft" ? "Draft saved" : "Request submitted", `${id} was ${status === "Draft" ? "saved to the cloud" : "sent to the approval queue"}.`, "success");
@@ -1989,35 +2096,61 @@
     }
     if (["Cancelled","Rejected"].includes(next)) {
       return confirmAction(`${next} ${id}?`,`This will move the request from ${r.status} to ${next}. The action is recorded in Activity.`,()=>{
-        applyTransition(r,next);
+        void applyTransition(r,next);
       });
     }
-    applyTransition(r,next);
+    void applyTransition(r,next);
+  }
+
+  async function recoverAuthoritativeFuelTrackState({ source = "mutation-recovery", render = true } = {}) {
+    try {
+      await globalThis.WMModuleStore.refresh();
+      try { await globalThis.WMModuleActivity?.refresh?.(); } catch (error) { console.warn("FuelTrack+ activity recovery deferred.", error); }
+      hydrateState({ source, forceRender: render, skipIfUnchanged: false });
+      return true;
+    } catch (error) {
+      console.error("FuelTrack+ authoritative recovery failed.", error);
+      return false;
+    }
   }
 
   async function applyTransition(r,next,extra={}) {
-    const snapshot={...r};
-    const previous=r.status;
-    Object.assign(r,extra,{status:next,updatedAt:new Date().toISOString()});
-    if(next==="Under Review") {
-      r.reviewedAt="";
-      if(!r.reviewStartedAt) r.reviewStartedAt=new Date().toISOString();
+    const requestId=String(r?.id||"");
+    const outcome=await requestMutationGate.run(`request:${requestId}`, async()=>{
+      const current=state.requests.find(item=>item.id===requestId);
+      if(!current || current.status!==r.status) {
+        await recoverAuthoritativeFuelTrackState({ source: "transition-preflight", render: true });
+        toast("Request changed", "The request was updated elsewhere. FuelTrack+ reloaded the authoritative state.", "info");
+        return false;
+      }
+      const previous=current.status;
+      Object.assign(current,extra,{status:next,updatedAt:new Date().toISOString()});
+      if(next==="Under Review") {
+        current.reviewedAt="";
+        if(!current.reviewStartedAt) current.reviewStartedAt=new Date().toISOString();
+      }
+      if(next==="Approved") {
+        current.approver=current.approver||currentActor();
+        current.reviewedAt=current.reviewedAt||new Date().toISOString();
+      }
+      try {
+        await commitRequestsWithActivity(newActivityEvent(next==="Approved"||next==="Rejected"?"review":next==="Issued"?"issue":"system",
+          `Request ${next.toLowerCase()}`,`${current.id} moved from ${previous} to ${next}${current.reviewComment?` · ${current.reviewComment}`:""}.`,current.id,{from:previous,to:next}));
+      } catch(error) {
+        await recoverAuthoritativeFuelTrackState({ source: "transition-recovery", render: true });
+        toast("Request not updated",error?.message||"The state change could not be confirmed. Authoritative data was reloaded.","error");
+        return false;
+      }
+      updateBadges();
+      toast("Request updated",`${current.id} is now ${next}.`,"success");
+      renderRoute();
+      return true;
+    });
+    if(!outcome.accepted) {
+      toast("Request update in progress", `${requestId || "This request"} already has a cloud mutation in flight.`, "info");
+      return false;
     }
-    if(next==="Approved") {
-      r.approver=r.approver||currentActor();
-      r.reviewedAt=r.reviewedAt||new Date().toISOString();
-    }
-    try {
-      await commitRequestsWithActivity(newActivityEvent(next==="Approved"||next==="Rejected"?"review":next==="Issued"?"issue":"system",
-        `Request ${next.toLowerCase()}`,`${r.id} moved from ${previous} to ${next}${r.reviewComment?` · ${r.reviewComment}`:""}.`,r.id,{from:previous,to:next}));
-    } catch(error) {
-      Object.keys(r).forEach(key=>delete r[key]);
-      Object.assign(r,snapshot);
-      return toast("Request not updated",error?.message||"The state change could not be committed. Refresh and retry.","error");
-    }
-    updateBadges();
-    toast("Request updated",`${r.id} is now ${next}.`,"success");
-    renderRoute();
+    return Boolean(outcome.value);
   }
 
   function approveRequest(id) {
@@ -2142,6 +2275,13 @@
   }
 
   async function submitRefuelingCompletion() {
+    const id=String(pendingRefuelingCompletion||"");
+    const outcome=await requestMutationGate.run(`request:${id}`,()=>submitRefuelingCompletionUnlocked());
+    if(!outcome.accepted) toast("Completion already saving", "Wait for the current refueling completion write to finish.", "info");
+    return outcome.accepted ? outcome.value : false;
+  }
+
+  async function submitRefuelingCompletionUnlocked() {
     if(!pendingRefuelingCompletion) return;
     const r=state.requests.find(x=>x.id===pendingRefuelingCompletion);
     if(!r || r.status!=="Approved") {
@@ -2154,7 +2294,6 @@
       return toast("Check refueling details","Complete all required refueling fields before continuing.","error");
     }
 
-    const snapshot={...r};
     const now=new Date().toISOString();
     const receiptPhoto=refuelingReceiptData
       ? {dataUrl:refuelingReceiptData.dataUrl,mimeType:refuelingReceiptData.mimeType,size:refuelingReceiptData.size}
@@ -2182,9 +2321,9 @@
         r.id,{invoiceNumber:data.invoiceNumber,fuelQuantityLiters:data.fuelQuantityLiters,amount:data.amount}
       ));
     } catch(error) {
-      Object.keys(r).forEach(key=>delete r[key]);
-      Object.assign(r,snapshot);
-      return toast("Completion not saved",error?.message||"Refueling details could not be committed. Refresh and retry.","error");
+      await recoverAuthoritativeFuelTrackState({ source: "refueling-recovery", render: true });
+      toast("Completion not saved",error?.message||"Refueling details could not be confirmed. Authoritative data was reloaded.","error");
+      return false;
     }
     updateBadges();
     els.refuelingCompletionDialog.close();
@@ -2357,18 +2496,24 @@
   }
 
   async function deleteRequestRecord(id) {
+    const outcome=await requestMutationGate.run(`request:${id}`,()=>deleteRequestRecordUnlocked(id));
+    if(!outcome.accepted) toast("Delete already in progress", `${id} already has a cloud mutation in flight.`, "info");
+    return outcome.accepted ? outcome.value : false;
+  }
+
+  async function deleteRequestRecordUnlocked(id) {
     const index=state.requests.findIndex(r=>r.id===id);
     if(index<0) return toast("Delete unavailable","The selected request no longer exists.","error");
 
     const removed=state.requests[index];
-    const previousRequests=[...state.requests];
     state.requests.splice(index,1);
 
     try {
       await commitRequestsWithActivity(newActivityEvent("system","Request deleted",`${removed.id} was permanently removed from the request registry.`,removed.id,{operation:"delete"}));
     } catch(error) {
-      state.requests=previousRequests;
-      return toast("Request not deleted",error?.message||"The request could not be removed. Refresh and retry.","error");
+      await recoverAuthoritativeFuelTrackState({ source: "request-delete-recovery", render: true });
+      toast("Request not deleted",error?.message||"The request could not be removed. Authoritative data was reloaded.","error");
+      return false;
     }
 
     const pageSize=Math.max(5,Number(state.prefs.pageSize)||10);
@@ -2645,7 +2790,7 @@
     if(!requirePermission("approval.start","Only Admin can start approval reviews.")) return;
     const r=state.requests.find(x=>x.id===id);
     if(!r || r.status!=="Submitted") return toast("Review unavailable","Only submitted requests can enter review.","error");
-    applyTransition(r,"Under Review",{reviewStartedAt:new Date().toISOString()});
+    void applyTransition(r,"Under Review",{reviewStartedAt:new Date().toISOString()});
   }
 
   function openApprovalDecision(id, decision) {
@@ -2669,6 +2814,8 @@
     els.approvalDecisionRequirement.textContent=rejecting?"Required · provide at least 5 characters.":"Optional · add context for future audit review.";
     els.approvalDecisionNote.placeholder=rejecting?"Explain why this request is being rejected.":"Add any conditions, context, or reviewer notes.";
     els.approvalDecisionSubmit.textContent=rejecting?"Confirm rejection":"Confirm approval";
+    els.approvalDecisionSubmit.disabled=false;
+    els.approvalDecisionSubmit.removeAttribute("aria-busy");
     els.approvalDecisionSubmit.className=`button ${rejecting?"danger":"primary"}`;
     els.approvalDecisionNote.value="";
     els.approvalDecisionCounter.textContent="0/500";
@@ -2677,7 +2824,7 @@
     setTimeout(()=>els.approvalDecisionNote.focus(),0);
   }
 
-  function commitApprovalDecision() {
+  async function commitApprovalDecision() {
     if(!pendingApprovalDecision) return;
     const {id,decision}=pendingApprovalDecision;
     const r=state.requests.find(x=>x.id===id);
@@ -2699,9 +2846,16 @@
       decisionType:decision==="reject"?"Rejected":"Approved",
       reviewComment:note
     };
-    els.approvalDecisionDialog.close();
-    if(decision==="reject") applyTransition(r,"Rejected",extra);
-    else applyTransition(r,"Approved",extra);
+    els.approvalDecisionSubmit.disabled=true;
+    els.approvalDecisionSubmit.setAttribute("aria-busy","true");
+    const saved=decision==="reject" ? await applyTransition(r,"Rejected",extra) : await applyTransition(r,"Approved",extra);
+    if(saved) {
+      els.approvalDecisionDialog.close();
+    } else {
+      els.approvalDecisionError.textContent="The decision was not confirmed. FuelTrack+ reloaded the latest request state; review it before retrying.";
+      els.approvalDecisionSubmit.disabled=false;
+      els.approvalDecisionSubmit.removeAttribute("aria-busy");
+    }
   }
 
   function approvalsLoadingState() {
@@ -3085,14 +3239,13 @@
 
   function persistActivityFilters(){
     state.prefs.activityFilters=normalizeActivityFilters(state.activityFilters);
-    saveJson(KEYS.prefs,state.prefs);
+    void saveJson(KEYS.prefs,state.prefs);
   }
   function queueActivityFilterPersistence(){
     clearTimeout(activityFilterPersistTimer);
     activityFilterPersistTimer=setTimeout(()=>{
       state.prefs.activityFilters=normalizeActivityFilters(state.activityFilters);
-      const payload=JSON.stringify(state.prefs);
-      globalThis.WMModuleStore?.setItemAsync?.(KEYS.prefs,payload).catch(error=>console.warn("Activity filter preferences were not persisted.",error));
+      void saveJson(KEYS.prefs,state.prefs);
     },300);
   }
 
@@ -3101,7 +3254,14 @@
   }
 
   async function commitRequestsWithActivity(event){
-    const result=await globalThis.WMModuleStore.commitWithActivity(KEYS.requests,JSON.stringify(state.requests),event);
+    const serialized=JSON.stringify(state.requests);
+    const result=await globalThis.WMModuleStore.commitWithActivity(KEYS.requests,serialized,event);
+    const committed=globalThis.WMModuleStore.getItem(KEYS.requests);
+    if(committed!==serialized) {
+      const error=new Error("FuelTrack+ request commit diverged from the intended mutation after conflict recovery.");
+      error.code=STABILITY.divergenceCode;
+      throw error;
+    }
     state.activity=[...(globalThis.WMModuleActivity?.items||state.activity)];
     autoRefresh.lastSignature=storageRevisionSignature();autoRefresh.lastSuccessAt=Date.now();autoRefresh.lastAttemptAt=Date.now();updateAutoRefreshStatus("current");
     return result;
@@ -3140,7 +3300,7 @@
     const isLight=document.documentElement.classList.toggle("light");
     state.prefs.theme=isLight?"light":"dark";
     syncThemeUi();
-    saveJson(KEYS.prefs,state.prefs);
+    void saveJson(KEYS.prefs,state.prefs);
   }
 
   function openSidebar(){els.sidebar.classList.add("open");els.sidebarBackdrop.classList.add("show");}

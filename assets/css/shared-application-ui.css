@@ -1,0 +1,9 @@
+/* Stage C M14 — React-owned command palette and shared application UI. */
+[data-wm-shared-command-palette]{animation:wm-backdrop-in var(--motion-fast) ease both}
+[data-wm-shared-command-palette] .command-dialog{animation:wm-dialog-in var(--motion-fast) var(--motion-ease-out) both}
+[data-wm-shared-command-palette] .command-result:focus-visible{outline:2px solid var(--focus-ring,#6c8cff);outline-offset:1px}
+[data-wm-shared-command-palette] .command-empty{padding:26px 18px;text-align:center;color:var(--muted);font-size:11px}
+.toast.error>span{background:#fdecec;color:#b73b3b}.toast.info>span{background:#eaf2ff;color:#3367b1}
+.update-banner button:disabled{opacity:.58;cursor:wait}
+@media(max-width:620px){.command-backdrop{padding-top:72px}.command-dialog{width:calc(100vw - 20px)}.update-banner{width:calc(100vw - 24px);justify-content:center;flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){[data-wm-shared-command-palette],[data-wm-shared-command-palette] .command-dialog{animation:none!important}.toast{transition:none!important}}

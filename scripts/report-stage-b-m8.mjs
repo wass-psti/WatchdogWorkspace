@@ -1,0 +1,31 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
+const root = path.resolve(import.meta.dirname, '..');
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const pkg = JSON.parse(read('package.json'));
+const lock = JSON.parse(read('package-lock.json'));
+const target = read('config/stage-b-m8-tanstack-query-target.ts');
+const m7Target = read('config/stage-b-m7-supabase-client-target.ts');
+const manifest = read('config/application-manifest.ts');
+const state = target.match(/activationState:\s*'([^']+)'/)?.[1] ?? 'unknown';
+const m7 = m7Target.match(/activationState:\s*'([^']+)'/)?.[1] ?? 'unknown';
+const architecture = manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 'unknown';
+const packageVersion = pkg.dependencies?.['@tanstack/react-query'] ?? 'missing';
+const lockVersion = lock.packages?.['node_modules/@tanstack/react-query']?.version ?? 'missing';
+
+console.log('Stage B Milestone 8 TanStack Query Migration status');
+console.log('--------------------------------------------------');
+console.log(`M7 prerequisite state: ${m7}`);
+console.log(`M8 activation state: ${state}`);
+console.log(`Target @tanstack/react-query: 5.102.8`);
+console.log(`package.json TanStack Query: ${packageVersion}`);
+console.log(`package-lock TanStack Query: ${lockVersion}`);
+console.log('Native query authority: assets/js/platform/data/tanstack-query-client.ts');
+console.log('Compatibility facade: assets/js/platform/data/query-client.ts');
+console.log('React provider: src/app/composition/WorkManagementQueryProvider.tsx');
+console.log(`Architecture version: ${architecture}`);
+if (state === 'active-certified') console.log('\nM8 TanStack Query server-state architecture is release-certified.');
+else if (state === 'active-pending-release-certification') console.log('\nM8 TanStack Query authority is active; full release certification remains pending.');
+else if (state === 'implementation-complete-pending-certification') console.log('\nM8 implementation is complete and ready for release certification.');
+else console.log('\nM8 is blocked until M7 is release-certified.');

@@ -1,0 +1,31 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
+const root = path.resolve(import.meta.dirname, '..');
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const json = (file) => JSON.parse(read(file));
+const target = read('config/stage-b-m6-runtime-schema-target.ts');
+const m5Target = read('config/stage-b-m5-interaction-target.ts');
+const manifest = read('config/application-manifest.ts');
+const pkg = json('package.json');
+const lock = json('package-lock.json');
+const state = target.match(/activationState:\s*'([^']+)'/)?.[1] ?? 'unknown';
+const m5 = m5Target.match(/activationState:\s*'([^']+)'/)?.[1] ?? 'unknown';
+const zod = target.match(/zod:\s*'([^']+)'/)?.[1] ?? 'unknown';
+const rootLock = lock.packages?.[''] ?? {};
+const architectureVersion = manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 'unknown';
+
+console.log('Stage B Milestone 6 Runtime Schemas status');
+console.log('------------------------------------------------');
+console.log(`M5 prerequisite state: ${m5}`);
+console.log(`M6 activation state: ${state}`);
+console.log(`Target Zod: ${zod}`);
+console.log(`package.json Zod: ${pkg.dependencies?.zod ?? 'not installed'}`);
+console.log(`package-lock root Zod: ${rootLock.dependencies?.zod ?? 'not installed'}`);
+console.log(`resolved Zod: ${lock.packages?.['node_modules/zod']?.version ?? 'not installed'}`);
+console.log('Schema authority: src/runtime-schemas/index.ts');
+console.log(`Architecture version: ${architectureVersion} (M6 floor: 16)`);
+if (state === 'active-certified') console.log('\nM6 runtime schema architecture is release-certified.');
+else if (state === 'active-pending-release-certification') console.log('\nM6 schema authority is active; full release certification remains pending.');
+else if (state === 'dependencies-installed-pending-certification') console.log('\nZod is governed and locked; runtime schema certification remains pending.');
+else console.log('\nM6 is blocked until M5 is release-certified.');

@@ -11,8 +11,8 @@ if (!runtime.includes('requiredWorkingMs: requiredWorkMs')) {
 if (/\brequiredWorkingMs,\s*\n\s*baseRequiredWorkingMs/.test(runtime)) {
   fail('Regression: undeclared requiredWorkingMs shorthand remains in auto-clockout metadata.');
 }
-if (!runtime.includes("try {\n    enforced = await enforceAutoClockOut")) {
-  fail('Launch-time attendance enforcement is not awaited/isolated from UI startup.');
+if (!/async function initializeLaunchAttendanceEnforcement\(\) \{[\s\S]*?try \{[\s\S]*?await refreshAuthoritativeAttendance\(\{ renderUi: false \}\);[\s\S]*?enforced = await enforceAutoClockOut\(launchAt, \{ announce: false \}\);[\s\S]*?\} catch \(error\)/.test(runtime)) {
+  fail('Launch-time attendance enforcement must refresh authoritative state, await auto clock-out, and isolate failures from UI startup.');
 }
 if (!runtime.includes('globalThis.__TIMETRACKER_BOOTED__ = true')) {
   fail('TimeTracker boot-completion marker is missing.');

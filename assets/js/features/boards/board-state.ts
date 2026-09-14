@@ -12,6 +12,7 @@ function emptyItemPanel(): MutableItemWorkspaceState {
     error: '',
     data: emptyWorkspaceData(),
     uploading: false,
+    updateDraft: '',
   };
 }
 

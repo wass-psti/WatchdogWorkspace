@@ -1,0 +1,11 @@
+export type M38ActivationState='implementation-complete-pending-certification'|'active-certified';
+export const stageGM38RuntimeBackendPreflightTarget=Object.freeze({
+  milestone:38,stage:'G',name:'Runtime Configuration & Backend Capability Preflight',
+  activationState:'active-certified' as M38ActivationState,
+  prerequisite:Object.freeze({milestone:37,requiredState:'active-certified' as const}),architectureVersion:46,
+  authority:Object.freeze({manifest:'config/backend-capability-manifest.ts',runtime:'assets/js/platform/data/backend-capability-preflight.ts',contract:'src/platform/contracts/backend-capability-preflight.ts',database:'public.wm_runtime_capabilities',migration:'supabase/migrations/v1.43.2-stage-g-m38-runtime-capability-preflight.sql',browser:'tests/modern/e2e/backend-capability-preflight.spec.mjs'}),
+  environmentContract:Object.freeze({local:'.env.local',development:'Vite mode environment or .env.development.local',ci:'workflow/repository variables',production:'deployment environment/repository variables',required:Object.freeze(['VITE_SUPABASE_URL','VITE_SUPABASE_PUBLISHABLE_KEY']),privilegedBrowserSecretsForbidden:true,checkedInProjectBindingForbidden:true}),
+  gatedModules:Object.freeze(['boards','users','settings','account','time-tracker','fueltrack-plus','tradelink'] as const),
+  completionCriteria:Object.freeze(['Environment-specific Supabase project binding is removed from checked-in runtime fallback.','Authenticated capability introspection verifies required tables, RPCs, storage, and Realtime prerequisites without invoking destructive RPCs.','Dependent modules remain hidden behind explicit preflight diagnostics until their capability set is ready.','Missing or invalid configuration produces explicit WM_BACKEND_* diagnostics.','Browser tests prove both ready and blocked capability paths.','M37 remains active-certified and historical verifier compatible under Architecture 46.']),
+  knownBoundaries:Object.freeze(['M28 protected RPC authority remains until Edge Function cutover.','M26 embedded module iframe compatibility remains.','M34 provider backup/PITR remains external operational control.','Boards retain React-host/imperative-engine presentation boundary pending later recovery milestones.'])
+});

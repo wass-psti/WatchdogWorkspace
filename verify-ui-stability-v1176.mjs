@@ -8,7 +8,7 @@ assert.ok(router.includes('if (location.hash === target) return false'),'same-ro
 assert.ok(!router.includes('dispatchEvent(new HashChangeEvent'),'router must not synthesize same-route hashchange');
 assert.ok(app.includes("function renderWorkspace(content: string, active: string = 'home'"),'persistent workspace renderer missing');
 assert.ok(app.includes('data-workspace-root'),'persistent workspace mount missing');
-assert.ok(app.includes("const routeKey = location.hash || '#/'") && app.includes('const routeChanged = workspaceRouteKey !== routeKey'),'route-scoped motion guard missing');
+assert.ok(app.includes('const frameToken = captureShellFrameOwnership()') && app.includes('const routeKey = frameToken.routeKey') && app.includes('const routeChanged = workspaceRouteKey !== routeKey'),'route-scoped motion/generation guard missing');
 assert.ok(app.includes('if (routeChanged && motionMode) queueEntranceMotion(motionMode)'),'state-only updates must not replay route entrance motion');
 assert.ok(css.includes('.content-motion-enter{animation:none!important}'),'route container animation must be disabled');
 assert.ok(fuel.includes('function updateActivityResults({ refreshActors = false } = {})'),'incremental Activity rendering missing');

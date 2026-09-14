@@ -1,0 +1,27 @@
+name: Final Legacy Deletion
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  legacy-deletion:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run verify:historical-all
+      - run: node --experimental-strip-types --disable-warning=ExperimentalWarning verify-settings.mjs
+      - run: npm run fueltrack-stabilization:check
+      - run: npm run verify:ui
+      - run: npm run legacy-deletion:check
+      - run: npm run legacy-deletion:test
+      - run: npm run backup-dr:check
+      - run: npm run service-worker-update:check
+      - run: npm run observability:check
+      - run: npm run performance:check
+      - run: npm run lint:eslint
+      - run: npm run typecheck

@@ -13,7 +13,7 @@ assert.equal(tsconfig.compilerOptions.strict, true);
 assert.equal(tsconfig.compilerOptions.noUncheckedIndexedAccess, true);
 assert.equal(tsconfig.compilerOptions.exactOptionalPropertyTypes, true);
 assert.ok(tsconfig.include.includes('assets/js/**/*.ts'));
-assert.ok(manifest.includes('architectureVersion: 15'));
+assert.ok(Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0) >= 24);
 assert.ok(manifest.includes("typeSystem: 'typescript-incremental'"));
 
 const required = [

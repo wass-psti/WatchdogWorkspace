@@ -6,8 +6,8 @@ interface ItemPanelRendererDependencies {
   readonly reducedMotion?: () => boolean;
 }
 
-const TAB_ORDER: Readonly<Record<ItemWorkspaceTab, number>> = Object.freeze({ updates: 0, files: 1, activity: 2 });
-const asTab = (value: string | undefined, fallback: ItemWorkspaceTab): ItemWorkspaceTab => value === 'files' || value === 'activity' || value === 'updates' ? value : fallback;
+const TAB_ORDER: Readonly<Record<ItemWorkspaceTab, number>> = Object.freeze({ overview: 0, updates: 1, files: 2, activity: 3 });
+const asTab = (value: string | undefined, fallback: ItemWorkspaceTab): ItemWorkspaceTab => value === 'overview' || value === 'files' || value === 'activity' || value === 'updates' ? value : fallback;
 
 /** Stable Item Workspace renderer that preserves the drawer shell across tab changes. */
 export function createItemPanelRenderer({
@@ -74,11 +74,17 @@ export function createItemPanelRenderer({
         button.className = fresh.className;
         button.setAttribute('aria-selected', fresh.getAttribute('aria-selected') || 'false');
         button.setAttribute('aria-controls', fresh.getAttribute('aria-controls') || '');
+        button.setAttribute('tabindex', fresh.getAttribute('tabindex') || '-1');
+        if (fresh.id) button.id = fresh.id;
         if (button.innerHTML !== fresh.innerHTML) button.innerHTML = fresh.innerHTML;
       });
     }
 
     currentPanel.dataset.activeTab = nextTab;
+    if (currentBody && nextBody) {
+      const labelledBy = nextBody.getAttribute('aria-labelledby');
+      if (labelledBy) currentBody.setAttribute('aria-labelledby', labelledBy);
+    }
     if (!currentBody || !nextBody) return true;
 
     cancel();

@@ -17,12 +17,14 @@ export interface AuthorizationContextPort {
 }
 
 export interface AuthorizationServerStatePort { clear(): void; }
+export interface AuthorizationClientStatePort { resetTransientShellState(): unknown; }
 export interface AuthorizationModuleHostPort { detach(): void; publishIdentity(): boolean; }
 
 export interface AuthorizationReconcileOptions {
   readonly auth: AuthorizationContextPort;
   readonly previousFingerprint: string;
   readonly serverState: AuthorizationServerStatePort;
+  readonly clientState?: AuthorizationClientStatePort | null;
   readonly moduleHost: AuthorizationModuleHostPort;
   readonly activeModuleId: ModuleId | null;
   readonly deactivateModule: () => void;
@@ -58,7 +60,8 @@ export function reconcileAuthorizationContext(options: AuthorizationReconcileOpt
   const changed = nextFingerprint !== options.previousFingerprint;
   if (changed) {
     options.serverState.clear();
-    options.diagnostics?.info?.('AUTHORIZATION_CONTEXT_CHANGED', 'Authorization context changed; server-state cache was cleared.', {
+    options.clientState?.resetTransientShellState();
+    options.diagnostics?.info?.('AUTHORIZATION_CONTEXT_CHANGED', 'Authorization context changed; server-state cache and transient shared client state were cleared.', {
       userId: options.auth.user?.id ?? null,
       status: options.auth.state?.status ?? null,
       platformRole: options.auth.platformRole,

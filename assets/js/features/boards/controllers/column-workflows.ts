@@ -9,6 +9,7 @@ import type { BoardColumnId, BoardId } from '../../../../../src/types/identifier
 import { COLUMN_TYPES, defaultColumnName } from '../board-schema.ts';
 import { getBoardColumnType, normalizeBoardCellValue } from '../grid/column-type-registry.ts';
 import { normalizeStatusLabels } from '../status-labels.ts';
+import { resolveGlobalOverlayRoot } from '../../../platform/ui/global-overlay-runtime.ts';
 
 interface ColumnWorkflowsDependencies {
   readonly state: MutableBoardViewState;
@@ -149,7 +150,7 @@ export function createColumnWorkflows({
       pop.setAttribute('role', 'dialog');
       pop.setAttribute('aria-label', 'Add column');
       pop.innerHTML = `<label class="column-type-search">${icons.search}<input type="search" placeholder="Search column types" aria-label="Search column types" data-column-type-search></label><div class="column-quick-section"><small>Column types</small><div class="column-quick-grid">${Object.entries(COLUMN_TYPES).map(([type, meta]) => `<button type="button" data-column-type="${type}" data-search="${esc(`${meta.label} ${meta.hint}`.toLowerCase())}"><span class="column-type-icon">${esc(meta.icon)}</span><span>${esc(meta.label)}</span></button>`).join('')}</div></div><footer><button type="button" data-open-full-column-picker>Open advanced setup</button></footer>`;
-      document.body.appendChild(pop);
+      resolveGlobalOverlayRoot().appendChild(pop);
       const rect = anchor.getBoundingClientRect();
       const place = (): void => {
         const box = pop.getBoundingClientRect();
@@ -215,7 +216,7 @@ export function createColumnWorkflows({
     }
 
     overlayCoordinator?.closeAll({ restoreFocus: false });
-    const overlay = document.querySelector<HTMLElement>('#overlayRoot') || document.body;
+    const overlay = resolveGlobalOverlayRoot();
     const previous = document.activeElement;
     const wrap = document.createElement('div');
     wrap.className = 'column-picker-backdrop';

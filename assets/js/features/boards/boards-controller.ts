@@ -4,6 +4,7 @@ import type { QueryClient } from '../../../../src/platform/contracts/query.ts';
 import type { AuthTransportPort } from '../../../../src/platform/contracts/transport.ts';
 import type { BoardCommandService } from '../../../../src/features/boards/contracts/commands.ts';
 import type { BoardDomainService } from '../../../../src/features/boards/contracts/service.ts';
+import type { BoardRealtimeService } from '../../../../src/features/boards/contracts/realtime.ts';
 
 export type BoardFeatureAuthPort = AuthTransportPort & UiAuthPort;
 
@@ -18,6 +19,7 @@ export interface BoardFeatureViewOptions {
   readonly queryClient?: QueryClient | null;
   readonly service?: BoardDomainService | null;
   readonly commands?: BoardCommandService | null;
+  readonly realtime?: BoardRealtimeService | null;
 }
 
 export interface BoardFeatureView {
@@ -34,7 +36,7 @@ export interface BoardController extends BoardFeatureView {
 
 export interface BoardControllerDependencies {
   readonly auth: BoardFeatureAuthPort;
-  readonly createView: (options: BoardFeatureViewOptions & Readonly<{ service: BoardDomainService; commands: BoardCommandService }>) => BoardFeatureView;
+  readonly createView: (options: BoardFeatureViewOptions & Readonly<{ service: BoardDomainService; commands: BoardCommandService; realtime?: BoardRealtimeService | null }>) => BoardFeatureView;
   readonly viewOptions: BoardFeatureViewOptions;
   readonly createService: (auth: BoardFeatureAuthPort) => BoardDomainService;
   readonly createCommands: (service: BoardDomainService) => BoardCommandService;

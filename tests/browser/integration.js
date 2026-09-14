@@ -154,11 +154,53 @@ await test('item workspace exposes modal/tab semantics', async () => {
   const html=renderItemWorkspace({state,canEdit:()=>true,escapeHtml:(x)=>String(x),formatDate:String,formatDay:String});
   const wrap=document.createElement('div');wrap.innerHTML=html;
   assert(wrap.querySelector('[data-item-panel][role="dialog"][aria-modal="true"]'),'Item Workspace is exposed as an accessible modal dialog');
-  assert(wrap.querySelector('[role="tablist"]') && wrap.querySelectorAll('[role="tab"]').length===3,'Item Workspace tabs use tablist/tab semantics');
+  assert(wrap.querySelector('[role="tablist"]') && wrap.querySelectorAll('[role="tab"]').length===4 && wrap.querySelector('[data-item-panel-tab="overview"]'),'Item Workspace exposes Overview plus the certified Updates/Files/Activity tabs with tab semantics');
   assert(wrap.querySelector('[role="tabpanel"]'),'Item Workspace content uses tabpanel semantics');
 });
 
 
+
+await test('M21 Rich Item Workspace exposes typed overview, resilient drafts and file drop', async () => {
+  const host=document.createElement('div');host.dataset.itemPanelHost='1';document.body.appendChild(host);
+  const state={
+    board:{
+      board:{id:'board-rich',name:'Rich board',description:'',status:'active'},
+      groups:[{id:'g-rich',board_id:'board-rich',title:'Delivery',position:0}],
+      items:[{id:'i-rich',board_id:'board-rich',group_id:'g-rich',title:'Launch checklist',position:0,status:'in_progress',assignee_id:'u1',due_date:'2026-09-30',notes:'Keep this visible.'}],
+      columns:[{id:'c-rich',board_id:'board-rich',name:'Reference',data_type:'text',config:{},position:0,visible:true}],
+      values:[{item_id:'i-rich',column_id:'c-rich',value:'WM-21'}],
+      members:[{user_id:'u1',role:'editor',display_name:'Alex Morgan',email:'alex@example.test'}],
+    },
+    itemPanel:{itemId:'i-rich',tab:'overview',loading:false,error:'',data:{updates:[],files:[],activity:[]},uploading:false,updateDraft:'Decision: preserve this draft'},
+  };
+  const esc=(value)=>String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
+  const render=()=>{host.innerHTML=renderItemWorkspace({state,canEdit:()=>true,escapeHtml:esc,formatDate:String,formatDay:String});};
+  render();
+  assert(host.querySelector('[data-rich-item-workspace="v1"]'),'M21 Item Workspace advertises the rich workspace authority');
+  assert(host.querySelector('[data-item-panel-tab="overview"][aria-selected="true"]'),'M21 Overview is a semantic Item Workspace tab');
+  assert(host.querySelector('[data-item-property-form][data-item-property-field="title"]'),'M21 Overview exposes explicit-save core item properties');
+  assert(host.querySelector('[data-item-property-form][data-item-property-kind="cell"][data-column-id="c-rich"]'),'M21 Overview exposes typed custom Board properties');
+
+  const updatesState=state.itemPanel;updatesState.tab='updates';render();
+  assert(host.querySelector('[data-item-update-input]')?.value==='Decision: preserve this draft','M21 update drafts survive tab/render transitions');
+  updatesState.tab='files';render();
+  assert(host.querySelector('[data-item-file-drop]'),'M21 Files surface exposes a drag-and-drop attachment target');
+
+  updatesState.tab='overview';render();
+  const calls=[];
+  const api={getItemWorkspace:async()=>state.itemPanel.data,addItemUpdate:async()=>{},uploadItemFile:async()=>{},deleteItemUpdate:async()=>{},openItemFile:async()=>{},deleteItemFile:async()=>{}};
+  const commands={updateItem:async(command)=>{calls.push({kind:'core',command});},setCell:async(command)=>{calls.push({kind:'cell',command});}};
+  const controller=createItemWorkspaceController({api,commands,state,toast:()=>{},renderBoard:render,renderPanel:render,reloadBoard:async()=>true,confirmAction:()=>true});
+  const titleForm=host.querySelector('[data-item-property-form][data-item-property-field="title"]');
+  titleForm.querySelector('[name="value"]').value='Launch checklist v2';
+  let pending=null;
+  titleForm.addEventListener('submit',(event)=>{pending=controller.submitProperty(event);},{once:true});
+  titleForm.requestSubmit();
+  while(!pending) await wait();
+  await pending;
+  assert(calls[0]?.kind==='core' && calls[0].command.title==='Launch checklist v2','M21 core property save delegates to the typed Board command service');
+  controller.reset();host.remove();
+});
 
 await test('motion orchestrator scopes transitions and maintains moving navigation indicators', async () => {
   assert(globalThis.WorkManagementMotion?.version === '1.30.0','motion orchestrator exposes the v1.30 runtime contract');

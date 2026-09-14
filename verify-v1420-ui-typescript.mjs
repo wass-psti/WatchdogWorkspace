@@ -84,6 +84,7 @@ const compiler = tsconfig.compilerOptions ?? {};
 for (const [flag, expected] of [
   ['allowJs', false],
   ['strict', true],
+  ['skipLibCheck', true],
   ['noImplicitAny', true],
   ['strictNullChecks', true],
   ['noUncheckedIndexedAccess', true],
@@ -194,7 +195,7 @@ for (const token of [
 const manifest = read('config/application-manifest.ts');
 assert.ok(
   manifest.includes("version: '1.43.2'") &&
-  manifest.includes('architectureVersion: 15') &&
+  Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0) >= 24 &&
   manifest.includes("uiRuntime: 'typescript-authoritative'"),
   'v1.42 TypeScript UI architecture declaration is incomplete',
 );

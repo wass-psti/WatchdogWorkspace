@@ -151,7 +151,7 @@ security definer
 set search_path=public
 as $$
 declare
-  clean_name text := regexp_replace(trim(coalesce(p_display_name,'')), '\\s+', ' ', 'g');
+  clean_name text := regexp_replace(trim(coalesce(p_display_name,'')), '[[:space:]]+', ' ', 'g');
 begin
   if auth.uid() is null then raise exception 'Authentication required'; end if;
   if char_length(clean_name) < 2 or char_length(clean_name) > 80 then
@@ -163,20 +163,30 @@ end;
 $$;
 
 -- Administrative directory is exposed through an RPC rather than unrestricted client queries.
-create or replace function public.list_user_directory()
+drop function if exists public.list_user_directory();
+create function public.list_user_directory()
 returns table(
   id uuid, email text, display_name text, platform_role text, status text,
-  created_at timestamptz, updated_at timestamptz
+  created_at timestamptz, updated_at timestamptz,
+  is_bootstrap_admin boolean, is_self boolean, is_last_active_admin boolean
 )
 language plpgsql security definer set search_path=public as $$
+declare
+  caller uuid := auth.uid();
+  active_admins integer;
 begin
-  if not public.is_platform_admin() then raise exception 'Administrator access required'; end if;
-  return query select p.id,p.email,p.display_name,p.platform_role,p.status,p.created_at,p.updated_at
+  if not public.is_platform_admin(caller) then raise exception 'Administrator access required'; end if;
+  select count(*) into active_admins from public.profiles p
+    where p.platform_role='admin_general_manager' and p.status='active';
+  return query select p.id,p.email,p.display_name,p.platform_role,p.status,p.created_at,p.updated_at,
+    lower(coalesce(p.email,''))='lmsenagan@watchdogautomation.com.ph' as is_bootstrap_admin,
+    p.id=caller as is_self,
+    (p.platform_role='admin_general_manager' and p.status='active' and active_admins<=1) as is_last_active_admin
     from public.profiles p order by lower(coalesce(p.display_name,p.email)), lower(p.email);
 end;
 $$;
 
--- Server-enforced role/status administration with bootstrap and last-admin safeguards.
+-- Server-enforced role/status administration with serialized bootstrap, self, and last-admin safeguards.
 create or replace function public.admin_set_user_access(p_user_id uuid, p_platform_role text, p_status text)
 returns setof public.profiles
 language plpgsql security definer set search_path=public as $$
@@ -184,14 +194,20 @@ declare
   target public.profiles%rowtype;
   active_admins integer;
 begin
-  if not public.is_platform_admin() then raise exception 'Administrator access required'; end if;
+  -- Serialize all administrative role/status mutations so concurrent demotions cannot
+  -- both pass the last-admin count before either transaction commits.
+  perform pg_advisory_xact_lock(42420042);
+
+  -- Recheck caller authority after acquiring the mutation lock. A caller that was
+  -- demoted or disabled by an earlier serialized transaction cannot continue mutating.
+  if not public.is_platform_admin(auth.uid()) then raise exception 'Administrator access required'; end if;
   if p_platform_role not in ('admin_general_manager','hr','supervisor','employee') then raise exception 'Unsupported role'; end if;
   if p_status not in ('active','disabled') then raise exception 'Unsupported account status'; end if;
 
   select * into target from public.profiles where id=p_user_id for update;
   if not found then raise exception 'User account not found'; end if;
 
-  if lower(target.email)='lmsenagan@watchdogautomation.com.ph'
+  if lower(coalesce(target.email,''))='lmsenagan@watchdogautomation.com.ph'
      and (p_platform_role <> 'admin_general_manager' or p_status <> 'active') then
     raise exception 'The bootstrap administrator cannot be demoted or disabled';
   end if;
@@ -202,8 +218,8 @@ begin
 
   if target.platform_role='admin_general_manager' and target.status='active'
      and (p_platform_role <> 'admin_general_manager' or p_status <> 'active') then
-    select count(*) into active_admins from public.profiles
-      where platform_role='admin_general_manager' and status='active';
+    select count(*) into active_admins from public.profiles p
+      where p.platform_role='admin_general_manager' and p.status='active';
     if active_admins <= 1 then raise exception 'At least one active Admin/General Manager is required'; end if;
   end if;
 
@@ -1627,9 +1643,10 @@ begin
   if ws is null or ws<>board_ws then return false; end if;
   if public.is_platform_admin(caller) then return true; end if;
   select role into member_role from public.work_board_members where board_id=p_board_id and user_id=caller;
-  if p_required='manage' then return member_role='owner'; end if;
-  if p_required='edit' then return member_role in ('owner','editor'); end if;
-  return member_role in ('owner','editor','viewer');
+  if p_required='manage' then return coalesce(member_role='owner',false); end if;
+  if p_required='edit' then return coalesce(member_role in ('owner','editor'),false); end if;
+  if p_required='view' then return coalesce(member_role in ('owner','editor','viewer'),false); end if;
+  return false;
 end $$;
 revoke all on function public.work_board_access(uuid,text) from public;
 
@@ -3388,3 +3405,357 @@ grant execute on function public.wm_restore_workspace_backup_v4(jsonb,jsonb,json
 
 notify pgrst, 'reload schema';
 commit;
+
+-- Work Management v1.43.2 — Stage D M20 Board collaborative Realtime
+-- Private Supabase Broadcast + Presence. Canonical Board state remains RPC/RLS-owned.
+begin;
+
+create or replace function public.work_board_realtime_topic_access(p_topic text) returns boolean
+language plpgsql stable security definer set search_path=public as $$
+declare
+  board_text text;
+  board_id uuid;
+begin
+  if auth.uid() is null then return false; end if;
+  if coalesce(p_topic,'') !~* '^board:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' then return false; end if;
+  board_text := split_part(p_topic, ':', 2);
+  begin
+    board_id := board_text::uuid;
+  exception when invalid_text_representation then
+    return false;
+  end;
+  return public.work_board_access(board_id, 'view');
+end $$;
+revoke all on function public.work_board_realtime_topic_access(text) from public;
+grant execute on function public.work_board_realtime_topic_access(text) to authenticated;
+
+-- Realtime Authorization is evaluated when a private channel is joined and when
+-- a refreshed JWT is supplied. Board access remains derived from the existing
+-- SECURITY DEFINER Board authorization authority.
+drop policy if exists "wm_board_realtime_receive" on realtime.messages;
+create policy "wm_board_realtime_receive"
+on realtime.messages
+for select
+to authenticated
+using (
+  extension in ('broadcast','presence')
+  and public.work_board_realtime_topic_access(realtime.topic())
+);
+
+drop policy if exists "wm_board_realtime_presence_track" on realtime.messages;
+create policy "wm_board_realtime_presence_track"
+on realtime.messages
+for insert
+to authenticated
+with check (
+  extension = 'presence'
+  and public.work_board_realtime_topic_access(realtime.topic())
+);
+
+-- Browser clients intentionally do not receive an INSERT policy for the
+-- broadcast extension. Authoritative board-change events originate only from
+-- database triggers below.
+create or replace function public.work_board_realtime_broadcast_change() returns trigger
+language plpgsql security definer set search_path=public as $$
+declare
+  row_data jsonb;
+  old_data jsonb;
+  board_id uuid;
+  item_id uuid;
+  entity text;
+  entity_id text;
+  actor_id uuid := auth.uid();
+begin
+  row_data := case when tg_op='DELETE' then to_jsonb(old) else to_jsonb(new) end;
+  old_data := case when tg_op='INSERT' then '{}'::jsonb else to_jsonb(old) end;
+
+  -- Member view_mode is a personal presentation preference. Do not fan it out
+  -- to all collaborators unless the member role itself changed.
+  if tg_table_name='work_board_members' and tg_op='UPDATE'
+     and coalesce(row_data->>'role','') = coalesce(old_data->>'role','') then
+    return new;
+  end if;
+
+  entity := case tg_table_name
+    when 'work_boards' then 'board'
+    when 'work_board_members' then 'member'
+    when 'work_board_groups' then 'group'
+    when 'work_board_items' then 'item'
+    when 'work_board_columns' then 'column'
+    when 'work_board_item_values' then 'cell'
+    when 'work_board_item_updates' then 'update'
+    when 'work_board_item_files' then 'file'
+    else null
+  end;
+  if entity is null then
+    if tg_op='DELETE' then return old; end if;
+    return new;
+  end if;
+
+  if tg_table_name='work_boards' then
+    board_id := nullif(row_data->>'id','')::uuid;
+  else
+    board_id := nullif(row_data->>'board_id','')::uuid;
+  end if;
+
+  item_id := nullif(row_data->>'item_id','')::uuid;
+  if tg_table_name='work_board_items' then item_id := nullif(row_data->>'id','')::uuid; end if;
+  if board_id is null and item_id is not null then
+    select i.board_id into board_id from public.work_board_items i where i.id=item_id;
+  end if;
+  if board_id is null then
+    if tg_op='DELETE' then return old; end if;
+    return new;
+  end if;
+
+  entity_id := case tg_table_name
+    when 'work_boards' then row_data->>'id'
+    when 'work_board_members' then row_data->>'user_id'
+    when 'work_board_groups' then row_data->>'id'
+    when 'work_board_items' then row_data->>'id'
+    when 'work_board_columns' then row_data->>'id'
+    when 'work_board_item_values' then concat_ws(':', row_data->>'item_id', row_data->>'column_id')
+    when 'work_board_item_updates' then row_data->>'id'
+    when 'work_board_item_files' then row_data->>'id'
+    else null
+  end;
+
+  perform realtime.send(
+    jsonb_build_object(
+      'board_id', board_id,
+      'entity', entity,
+      'entity_id', nullif(entity_id,''),
+      'item_id', item_id,
+      'action', tg_op,
+      'actor_id', actor_id,
+      'occurred_at', clock_timestamp()
+    ),
+    'board-change',
+    'board:' || board_id::text,
+    true
+  );
+
+  if tg_op='DELETE' then return old; end if;
+  return new;
+end $$;
+revoke all on function public.work_board_realtime_broadcast_change() from public;
+
+-- One trigger per canonical collaborative Board relation. Activity records are
+-- not separately broadcast because the underlying mutation already emits a
+-- change and Board refetch returns the authoritative state.
+drop trigger if exists work_boards_realtime_change on public.work_boards;
+create trigger work_boards_realtime_change after insert or update or delete on public.work_boards
+for each row execute function public.work_board_realtime_broadcast_change();
+
+drop trigger if exists work_board_members_realtime_change on public.work_board_members;
+create trigger work_board_members_realtime_change after insert or update or delete on public.work_board_members
+for each row execute function public.work_board_realtime_broadcast_change();
+
+drop trigger if exists work_board_groups_realtime_change on public.work_board_groups;
+create trigger work_board_groups_realtime_change after insert or update or delete on public.work_board_groups
+for each row execute function public.work_board_realtime_broadcast_change();
+
+drop trigger if exists work_board_items_realtime_change on public.work_board_items;
+create trigger work_board_items_realtime_change after insert or update or delete on public.work_board_items
+for each row execute function public.work_board_realtime_broadcast_change();
+
+drop trigger if exists work_board_columns_realtime_change on public.work_board_columns;
+create trigger work_board_columns_realtime_change after insert or update or delete on public.work_board_columns
+for each row execute function public.work_board_realtime_broadcast_change();
+
+drop trigger if exists work_board_item_values_realtime_change on public.work_board_item_values;
+create trigger work_board_item_values_realtime_change after insert or update or delete on public.work_board_item_values
+for each row execute function public.work_board_realtime_broadcast_change();
+
+drop trigger if exists work_board_item_updates_realtime_change on public.work_board_item_updates;
+create trigger work_board_item_updates_realtime_change after insert or update or delete on public.work_board_item_updates
+for each row execute function public.work_board_realtime_broadcast_change();
+
+drop trigger if exists work_board_item_files_realtime_change on public.work_board_item_files;
+create trigger work_board_item_files_realtime_change after insert or update or delete on public.work_board_item_files
+for each row execute function public.work_board_realtime_broadcast_change();
+
+notify pgrst, 'reload schema';
+commit;
+
+-- Work Management v1.43.2 — Stage F M29 Database/RLS test-suite hardening.
+begin;
+revoke update on table public.profiles from authenticated;
+drop policy if exists "profiles_admin_update" on public.profiles;
+revoke insert, update, delete on table public.module_role_assignments from authenticated;
+drop policy if exists "assignments_admin_insert" on public.module_role_assignments;
+drop policy if exists "assignments_admin_update" on public.module_role_assignments;
+drop policy if exists "assignments_admin_delete" on public.module_role_assignments;
+revoke execute on all functions in schema public from anon;
+revoke execute on all functions in schema public from public;
+alter default privileges for role postgres in schema public revoke execute on functions from anon;
+alter default privileges for role postgres in schema public revoke execute on functions from public;
+grant execute on function public.is_platform_admin(uuid) to authenticated;
+notify pgrst, 'reload schema';
+commit;
+
+-- Stage G M38 runtime capability preflight
+-- Work Management v1.43.2 — Stage G M38 Runtime Configuration & Backend Capability Preflight
+begin;
+
+create or replace function public.wm_runtime_capabilities() returns jsonb
+language plpgsql stable security definer set search_path=public as $$
+declare
+  required_tables text[] := array[
+    'profiles','module_role_assignments','module_state_entries','module_activity_events','module_operation_locks','workspaces','workspace_members',
+    'work_boards','work_board_members','work_board_groups','work_board_columns','work_board_items','work_board_item_values','work_board_item_updates','work_board_item_files','work_board_events'
+  ]::text[];
+  required_rpcs text[] := array[
+    'update_own_profile','list_user_directory','admin_set_user_access','claim_bootstrap_admin',
+    'list_module_directory','list_module_state','put_module_state','delete_module_state','list_module_activity','append_module_activity','acquire_module_operation_lock','release_module_operation_lock',
+    'commit_timetracker_attendance_action','commit_fueltrack_requests_with_activity','wm_restore_workspace_backup_v4',
+    'wm_board_backend_capabilities','wm_list_boards','wm_get_board','wm_create_board','wm_create_board_configured','wm_add_board_column','wm_add_board_column_at','wm_duplicate_board','wm_update_board','wm_delete_board_permanently',
+    'wm_get_board_preferences','wm_set_board_preferences','wm_add_board_group','wm_update_board_group','wm_move_board_group','wm_delete_board_group','wm_set_board_group_accent',
+    'wm_update_board_column','wm_change_board_column_type','wm_move_board_column','wm_duplicate_board_column','wm_delete_board_column',
+    'wm_add_board_item','wm_update_board_item','wm_move_board_item','wm_duplicate_board_item','wm_delete_board_item','wm_set_board_item_archived','wm_set_board_cell','wm_set_board_status','wm_set_board_status_labels','wm_set_board_view',
+    'wm_add_board_member','wm_remove_board_member','wm_get_board_item_workspace','wm_add_board_item_update','wm_delete_board_item_update','wm_register_board_item_file','wm_delete_board_item_file','wm_list_board_events'
+  ]::text[];
+  required_triggers text[] := array[
+    'work_boards_realtime_change','work_board_members_realtime_change','work_board_groups_realtime_change','work_board_items_realtime_change',
+    'work_board_columns_realtime_change','work_board_item_values_realtime_change','work_board_item_updates_realtime_change','work_board_item_files_realtime_change'
+  ]::text[];
+  existing_tables text[];
+  existing_rpcs text[];
+  existing_storage text[] := '{}'::text[];
+  existing_realtime text[] := '{}'::text[];
+  trigger_count integer := 0;
+begin
+  if auth.uid() is null then raise exception 'Authentication required'; end if;
+
+  select coalesce(array_agg(name order by name),'{}'::text[])
+    into existing_tables
+    from unnest(required_tables) as name
+   where to_regclass(format('public.%I',name)) is not null;
+
+  select coalesce(array_agg(name order by name),'{}'::text[])
+    into existing_rpcs
+    from unnest(required_rpcs) as name
+   where exists (
+     select 1 from pg_proc p
+     join pg_namespace n on n.oid=p.pronamespace
+     where n.nspname='public' and p.proname=name and p.prokind='f'
+       and has_function_privilege('authenticated',p.oid,'EXECUTE')
+   );
+
+  if exists(select 1 from storage.buckets where id='work-board-files' and public=false) then
+    existing_storage := array['work-board-files']::text[];
+  end if;
+
+  if to_regclass('realtime.messages') is not null then
+    existing_realtime := array_append(existing_realtime,'private-channels');
+  end if;
+  if exists(select 1 from pg_policies where schemaname='realtime' and tablename='messages' and policyname='wm_board_realtime_receive') then
+    existing_realtime := array_append(existing_realtime,'broadcast-receive-policy');
+  end if;
+  if exists(select 1 from pg_policies where schemaname='realtime' and tablename='messages' and policyname='wm_board_realtime_presence_track') then
+    existing_realtime := array_append(existing_realtime,'presence-track-policy');
+  end if;
+  if exists(
+    select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+    where n.nspname='public' and p.proname='work_board_realtime_topic_access' and has_function_privilege('authenticated',p.oid,'EXECUTE')
+  ) then
+    existing_realtime := array_append(existing_realtime,'board-topic-authorization');
+  end if;
+  select count(*) into trigger_count
+    from pg_trigger t
+    join pg_class c on c.oid=t.tgrelid
+    join pg_namespace n on n.oid=c.relnamespace
+   where n.nspname='public' and t.tgname=any(required_triggers) and not t.tgisinternal;
+  if trigger_count=array_length(required_triggers,1)
+     and exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='realtime' and p.proname='send') then
+    existing_realtime := array_append(existing_realtime,'board-change-broadcast-triggers');
+  end if;
+
+  return jsonb_build_object(
+    'schema_version','1.43.2-m38-v2',
+    'tables',to_jsonb(existing_tables),
+    'rpcs',to_jsonb(existing_rpcs),
+    'storage',to_jsonb(existing_storage),
+    'realtime',to_jsonb(existing_realtime),
+    'missing_tables',to_jsonb(array(select unnest(required_tables) except select unnest(existing_tables))),
+    'missing_rpcs',to_jsonb(array(select unnest(required_rpcs) except select unnest(existing_rpcs))),
+    'missing_storage',to_jsonb(array(select unnest(array['work-board-files']::text[]) except select unnest(existing_storage))),
+    'missing_realtime',to_jsonb(array(select unnest(array['private-channels','broadcast-receive-policy','presence-track-policy','board-topic-authorization','board-change-broadcast-triggers']::text[]) except select unnest(existing_realtime)))
+  );
+end $$;
+
+revoke all on function public.wm_runtime_capabilities() from public, anon;
+grant execute on function public.wm_runtime_capabilities() to authenticated;
+notify pgrst, 'reload schema';
+commit;
+
+
+
+-- Stage G M39 canonical schema synchronization
+-- Stage G M39 — Authentication, Session & Access Context Stabilization
+-- One authenticated, read-only transaction snapshot for the current user's profile
+-- and module assignments. No user id is accepted from the browser.
+
+create or replace function public.wm_auth_access_context()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_profile jsonb;
+  v_assignments jsonb;
+  v_revision timestamptz;
+begin
+  if v_user_id is null then
+    raise exception 'Authentication is required' using errcode = '42501';
+  end if;
+
+  select jsonb_build_object(
+    'id', p.id,
+    'email', p.email,
+    'display_name', p.display_name,
+    'platform_role', p.platform_role,
+    'status', p.status,
+    'created_at', p.created_at,
+    'updated_at', p.updated_at
+  ), p.updated_at
+  into v_profile, v_revision
+  from public.profiles p
+  where p.id = v_user_id;
+
+  if v_profile is null then
+    raise exception 'Authenticated profile is missing' using errcode = 'P0002';
+  end if;
+
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'user_id', m.user_id,
+        'module_id', m.module_id,
+        'role', m.role,
+        'enabled', m.enabled,
+        'updated_at', m.updated_at
+      ) order by m.module_id
+    ),
+    '[]'::jsonb
+  ), greatest(v_revision, max(m.updated_at))
+  into v_assignments, v_revision
+  from public.module_role_assignments m
+  where m.user_id = v_user_id;
+
+  return jsonb_build_object(
+    'schema_version', '1.43.2-m39-v1',
+    'user_id', v_user_id,
+    'profile', v_profile,
+    'assignments', v_assignments,
+    'revision', coalesce(v_revision, now())
+  );
+end;
+$$;
+
+revoke all on function public.wm_auth_access_context() from public;
+revoke all on function public.wm_auth_access_context() from anon;
+grant execute on function public.wm_auth_access_context() to authenticated;

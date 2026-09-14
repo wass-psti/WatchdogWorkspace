@@ -9,7 +9,13 @@ globalThis.localStorage = {
   get length(){ return memory.size; }
 };
 globalThis.document = { documentElement: { dataset: {} } };
-globalThis.window = { caches: undefined };
+const capturedWindowEvents = [];
+globalThis.window = {
+  caches: undefined,
+  dispatchEvent(event){ capturedWindowEvents.push(event); return true; },
+  addEventListener(){},
+  removeEventListener(){}
+};
 globalThis.location = { origin:'http://test.local' };
 Object.defineProperty(globalThis, 'navigator', { configurable:true, value: {
   onLine: true,
@@ -55,19 +61,43 @@ assert.equal(diagnostics.checks.some((c)=>c.id === 'preferences'), true);
 
 console.log('settings-core-verification: PASS');
 
-// Settings UI integration contracts: direct-bound controls and persistent restore input.
+// Settings UI integration contracts: React route ownership with existing platform/backup authorities.
 const fs = await import('node:fs');
 const appSource = fs.readFileSync(new URL('./assets/js/app.ts', import.meta.url), 'utf8');
-const settingsSource = fs.readFileSync(new URL('./assets/js/features/settings/index.ts', import.meta.url), 'utf8');
-assert.match(appSource, /createSettingsFeature/);
-assert.match(appSource, /settingsFeature\.handleAction/);
-assert.doesNotMatch(appSource, /function bindSettingsInteractions\(\)/);
-assert.match(settingsSource, /function ensureBackupInput\(\)/);
-assert.match(settingsSource, /document\.body\.appendChild\(backupInput\)/);
-assert.match(settingsSource, /backupInput\.addEventListener\('change', handleBackupSelection\)/);
-assert.doesNotMatch(settingsSource, /event\.target\.id !== 'backupFile'/);
-assert.match(settingsSource, /const result = await requestPersistentStorage\(\)/);
-assert.match(settingsSource, /const count = await downloadWorkspaceBackup\(modules\)/);
+const settingsUi = fs.readFileSync(new URL('./src/app/management/AuthenticatedManagementUI.tsx', import.meta.url), 'utf8');
+const settingsRuntime = fs.readFileSync(new URL('./src/app/management/authenticated-management-ui-runtime.ts', import.meta.url), 'utf8');
+const manifestSource = fs.readFileSync(new URL('./config/application-manifest.ts', import.meta.url), 'utf8');
+const architectureVersion = Number(manifestSource.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0);
+const directSettingsDelegation = "settings: () => showAuthenticatedManagement('settings')";
+const gatedSettingsDelegation = "settings: () => gateBackendCapability('settings', 'settings', () => showAuthenticatedManagement('settings'))";
+if (architectureVersion >= 48) {
+  assert.equal(appSource.includes(directSettingsDelegation), true, 'Settings route must delegate directly after the M40 precommit capability resolver selects Settings ownership.');
+  assert.equal(appSource.includes('resolveBackendCapabilityPresentation') && appSource.includes('backendCapabilityRequirement(route)'), true, 'Architecture 48+ Settings must remain M38 capability-gated by the M40 precommit resolver.');
+  assert.equal(appSource.includes(gatedSettingsDelegation), false, 'Architecture 48+ Settings must not re-check capability inside the renderer after ownership is chosen.');
+} else if (architectureVersion >= 46) {
+  assert.equal(appSource.includes(gatedSettingsDelegation), true, 'Settings route must preserve React M13 presentation behind the M38 backend-capability gate.');
+  assert.equal(appSource.includes(directSettingsDelegation), false, 'Architecture 46+ Settings route must not bypass the M38 backend-capability gate.');
+} else {
+  assert.equal(appSource.includes(directSettingsDelegation), true, 'Settings route must delegate directly to React M13 presentation before Architecture 46.');
+}
+assert.doesNotMatch(appSource, /createSettingsFeature/);
+assert.match(settingsUi, /id="wmBackupFileInput"/);
+assert.match(settingsUi, /backupInput\.current\?\.click\(\)/);
+assert.match(settingsUi, /authenticatedManagementUiRuntime\.restoreBackup\(file\)/);
+assert.match(settingsRuntime, /const result = await requestPersistentStorage\(\)/);
+assert.match(settingsRuntime, /const count = await downloadWorkspaceBackup\(modules\)/);
+if (architectureVersion >= 42) {
+  assert.match(settingsRuntime, /const inspection = await inspectBackupFile\(file, modules\)/);
+  assert.match(settingsRuntime, /const \{ payload, preflight \} = inspection/);
+  assert.match(settingsRuntime, /preflight\.integrity === 'verified'/);
+  assert.match(settingsRuntime, /pre-restore recovery checkpoint/);
+  assert.match(settingsRuntime, /const result = await restoreWorkspaceBackupGuarded\(payload, modules\)/);
+  assert.doesNotMatch(settingsRuntime, /const payload = await parseBackupFile\(file, modules\)/);
+  assert.doesNotMatch(settingsRuntime, /await restoreWorkspaceBackup\(payload\)/);
+} else {
+  assert.match(settingsRuntime, /const payload = await parseBackupFile\(file, modules\)/);
+  assert.match(settingsRuntime, /await restoreWorkspaceBackup\(payload\)/);
+}
 console.log('settings-ui-wiring-verification: PASS');
 
 const backup = await import('./assets/js/core/backup.ts');
@@ -89,6 +119,7 @@ assert.equal(parsed.data['wm.platform.preferences.v1'], legacyPayload.data['wm.p
 assert.equal(parsed.moduleData['time-tracker'][0].state_key, 'timetracker.attendance.v1');
 assert.equal(parsed.moduleData['fueltrack-plus'][0].state_key, 'fueltrackplus.requests.v3');
 assert.equal(parsed.entryCount, 3);
+assert.equal(capturedWindowEvents.some((event) => event?.type === 'wm:backup-dr' && event?.detail?.type === 'import-preflight'), true);
 const legacyActivityPayload = {
   ...legacyPayload,
   data: {

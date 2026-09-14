@@ -4,6 +4,7 @@ const read=(p)=>fs.readFileSync(p,'utf8');
 const auth=read('assets/js/core/auth.ts');
 const app=read('assets/js/app.ts');
 const authFeature=read('assets/js/features/auth/index.ts');
+const authUi=read('src/app/auth/AuthenticationUI.tsx');
 const router=read('assets/js/core/router.ts');
 const sql=read('supabase/migrations/v1.17.4-auth-verification-lifecycle.sql');
 const schema=read('supabase/schema.sql');
@@ -16,7 +17,8 @@ assert.ok(auth.includes("verify_mode") && auth.includes("awaiting-confirmation")
 assert.ok(auth.includes("email_confirmed_at") || auth.includes("confirmed_at"),'authoritative Supabase confirmation check missing');
 assert.ok(auth.includes("loadCurrentUserWithRetry"),'post-verification profile hydration retry missing');
 assert.ok(auth.includes("callback_missing_token"),'missing-token recovery missing');
-assert.ok(authFeature.includes("renderVerify") && authFeature.includes("data-confirm-verification"),'verification UI missing from auth feature');
+assert.ok(authUi.includes("data-confirm-verification") && authUi.includes("auth.confirmPendingCallback()") && authUi.includes("verification-state"),'verification UI missing from React authentication boundary');
+assert.ok(authFeature.includes("presentation: 'react-authentication-ui-v1'") && !authFeature.includes('renderVerify'),'legacy authentication facade must not retain verification rendering');
 assert.ok(router.includes("first === 'verify'"),'verification route missing');
 assert.ok(sql.includes('email_verified_at') && sql.includes('auth.users'),'verification projection migration missing');
 assert.ok(schema.includes('sync_profile_email_verification'),'full schema verification projection missing');

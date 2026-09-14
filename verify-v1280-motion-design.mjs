@@ -18,7 +18,7 @@ const browserRunner=read('tests/browser/run-cdp.mjs');
 const doc=read('docs/architecture/MOTION-DESIGN-v1.28.md');
 
 assert.ok(platform.includes("PLATFORM_VERSION = '1.43.2'"),'platform version is not v1.29.1');
-assert.ok(manifest.includes("version: '1.43.2'") && manifest.includes('architectureVersion: 15'),'manifest release/architecture mismatch');
+assert.ok(manifest.includes("version: '1.43.2'") && Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0) >= 24,'manifest release/architecture mismatch');
 assert.ok(sw.includes('work-management-v1.43.2'),'service-worker cache mismatch');
 
 assert.ok(shell.includes('data-wm-surface="shell"'),'shell motion surface marker missing');

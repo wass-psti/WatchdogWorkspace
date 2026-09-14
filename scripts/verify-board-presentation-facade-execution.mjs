@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import { boardPresentationFacadeRuntime } from '../src/app/boards/board-presentation-facade-runtime.ts';
+
+boardPresentationFacadeRuntime.resetForTest();
+assert.deepEqual(boardPresentationFacadeRuntime.getSnapshot(), { view: 'hidden', boardId: null, revision: 0 });
+let notifications = 0;
+const unsubscribe = boardPresentationFacadeRuntime.subscribe(() => { notifications += 1; });
+const boards = boardPresentationFacadeRuntime.showBoards();
+assert.equal(boards.view, 'boards');
+assert.equal(boards.boardId, null);
+assert.equal(notifications, 1);
+const board = boardPresentationFacadeRuntime.showBoard('board-123');
+assert.equal(board.view, 'board');
+assert.equal(board.boardId, 'board-123');
+assert.equal(notifications, 2);
+assert.throws(() => boardPresentationFacadeRuntime.showBoard('   '), /board identifier/i);
+const hidden = boardPresentationFacadeRuntime.hide();
+assert.equal(hidden.view, 'hidden');
+assert.equal(hidden.boardId, null);
+assert.equal(notifications, 3);
+unsubscribe();
+boardPresentationFacadeRuntime.showBoards();
+assert.equal(notifications, 3);
+boardPresentationFacadeRuntime.resetForTest();
+console.log('Stage D M15 React Board presentation facade execution vectors: PASS');

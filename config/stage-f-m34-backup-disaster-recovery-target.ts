@@ -1,0 +1,48 @@
+export type M34ActivationState = 'implementation-complete-pending-certification' | 'active-pending-release-certification' | 'active-certified';
+
+export const stageFM34BackupDisasterRecoveryTarget = Object.freeze({
+  milestone: 34,
+  stage: 'F',
+  name: 'Backup and disaster recovery',
+  activationState: 'active-certified' as M34ActivationState,
+  prerequisite: Object.freeze({ milestone: 33, requiredState: 'active-certified' as const }),
+  architectureVersion: 42,
+  authority: Object.freeze({
+    policy: 'config/backup-disaster-recovery-policy.json',
+    contract: 'src/platform/contracts/backup-disaster-recovery.ts',
+    runtime: 'assets/js/platform/recovery/backup-disaster-recovery.ts',
+    workspaceBackup: 'assets/js/core/backup.ts',
+    databaseRestoreRpc: 'wm_restore_workspace_backup_v4',
+    databaseRestoreMigration: 'supabase/migrations/v1.41.0-transactional-backup-restore.sql',
+    executionVerifier: 'scripts/verify-backup-disaster-recovery-execution.mjs',
+    offlinePackageVerifier: 'scripts/verify-recovery-package-file.mjs',
+    verifier: 'verify-stage-f-m34-backup-disaster-recovery.mjs',
+    runbook: 'docs/WORK-MANAGEMENT-DISASTER-RECOVERY-RUNBOOK.md',
+  }),
+  recoveryObjectives: Object.freeze({
+    rpoTargetHours: 24,
+    rtoTargetMinutes: 60,
+    measurement: 'operator-verified-recovery-drill-v1',
+  }),
+  strategy: Object.freeze({
+    packageFormat: 'wm-recovery-package-v1',
+    payloadFormat: 'work-management-backup-v4',
+    integrity: 'sha256-json-stable-v1',
+    restorePreflight: 'required-v1',
+    preRestoreCheckpoint: 'required-fail-closed-v1',
+    cloudRestore: 'transactional-rpc-v4',
+    localRollback: 'best-effort-on-cloud-failure-v1',
+    postRestoreVerification: 'transaction-counts-plus-cache-invalidation-v1',
+    applicationRecovery: 'rebuild-from-certified-source-baseline-v1',
+    secretsRecovery: 'approved-secret-manager-external-v1',
+  }),
+  retentionTarget: Object.freeze({ daily: 7, weekly: 4, monthly: 12 }),
+  compatibilityBoundaries: Object.freeze([
+    Object.freeze({ id: 'legacy-v1-v4-backups', status: 'restore-compatible-unverified' as const, reason: 'Legacy raw Work Management backups remain importable through existing v1-v4 migrations but do not have an M34 cryptographic integrity envelope.' }),
+    Object.freeze({ id: 'backup-authenticity', status: 'external-storage-control-required' as const, reason: 'SHA-256 detects accidental corruption/tampering after export but does not authenticate who created a package; organizational storage access controls remain authoritative.' }),
+    Object.freeze({ id: 'backup-encryption-at-rest', status: 'external-encrypted-storage-required' as const, reason: 'Recovery packages contain business data and must be retained in approved encrypted storage; client-side key custody is intentionally not embedded in the application.' }),
+    Object.freeze({ id: 'database-provider-backup', status: 'external-operational-prerequisite' as const, reason: 'Provider-level database/PITR retention is infrastructure-owned and cannot be certified from the static client repository.' }),
+    Object.freeze({ id: 'browser-checkpoint-persistence', status: 'operator-verified-download-boundary' as const, reason: 'The browser can generate and initiate download of the pre-restore checkpoint but cannot cryptographically prove the operating system retained that file; operators must keep the checkpoint until recovery acceptance.' }),
+  ]),
+  databaseChanges: Object.freeze({ migrationRequired: false, schemaChangeRequired: false, productionDataRewriteRequired: false }),
+});

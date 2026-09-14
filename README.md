@@ -1,10 +1,38 @@
+> Stage D M18: conditional Board Table row/column virtualization implemented at Architecture Version 27; M17 TanStack Table adoption remains deferred and release certification is pending.
+> Stage D M16: Board component decomposition implemented at Architecture Version 26; release certification pending.
+> Stage D M15: React Board presentation facade implemented at Architecture Version 25; release certification pending.
+
+# Work Management App v1.43.2 — Stage C M13 Account / Settings / User Management RC
+
+This package continues from the release-certified M12 Authentication UI baseline and advances the platform to **Architecture Version 23** with **Stage C Milestone 13 — Account / Settings / User Management**. React now owns the authenticated Account, Settings, and User Management route presentation through `src/app/management/AuthenticatedManagementUI.tsx`, while the typed `authenticated-management-ui-runtime.ts` coordinates only presentation state and delegates domain operations to the existing authorities.
+
+Supabase Auth remains the session/profile/password authority; protected Supabase RPC/RLS remains authoritative for user-directory role and account-status mutations; TanStack Query 5.102.8 owns the User Management server-state cache; and the existing platform-preference and backup services remain authoritative for Settings. Password and confirmation values stay local to React form submission and never enter shared management runtime state, Zustand, TanStack Query, or browser storage.
+
+The M10 legacy route-content host remains page-lifetime mounted but hidden and inert on M13-owned routes. M11 global overlays and the M12 authentication boundary remain active-certified. M13 adds no npm dependency and requires no Supabase migration.
+
+M13 ships as **implementation-complete-pending-certification** and is promoted with the governed `scripts/certify-stage-c-m13.sh` workflow. See `docs/WORK-MANAGEMENT-ACCOUNT-SETTINGS-USER-MANAGEMENT.md`, `M13-ACTIVATION-RUNBOOK.md`, and `RELEASE-STATUS-v1.43.2-STAGE-C-M13-ACCOUNT-SETTINGS-USER-MANAGEMENT.md`.
+
+# Stage B M6 — Runtime Schemas continuation
+
+This package advances the certified M5 platform to **Architecture Version 16** and introduces the Work Management-owned runtime schema authority under `src/runtime-schemas/`. It exact-pins `zod@4.5.4`, validates application/module manifests, host↔module messages, identity/session context, lifecycle/navigation inputs, authorization roles, runtime context, and persistence envelopes, while preserving Board domain invariants and Supabase RLS as their existing authorities. M4 and M5 remain `active-certified`; M6 ships in `dependencies-installed-pending-certification` and can be release-certified with `npm run stage-b:certify`. See `docs/WORK-MANAGEMENT-RUNTIME-SCHEMAS.md` and `M6-ACTIVATION-RUNBOOK.md`.
+
+**M6 governed toolchain dispatch hotfix:** public M6 and `stage-b:certify` commands now automatically switch from an accidental Node 24/npm 11 shell to the governed `.nvmrc` Node 22.16.0 / npm 10.9.2 toolchain through NVM before certification. See `M6-GOVERNED-TOOLCHAIN-DISPATCH-HOTFIX.md`. 
+
+# Stage B M5 — Primitive Interaction Architecture corrective continuation
+
+This package rebases Milestone 5 onto the complete M4 governance, extraction-recovery, deployment/lint, and vendor-declaration corrective baseline. M5 source APIs are staged until M4 reaches `active-certified`; the M5 activation workflow then exact-installs Ark UI, Floating UI, and Lucide, removes compiler staging, validates Work Management source against their public APIs under the M4 `skipLibCheck` vendor boundary, and only then publishes the primitive API. See `docs/WORK-MANAGEMENT-PRIMITIVE-INTERACTIONS.md`.
+
 # Work Management App v1.43.2
+
+## Stage B M4 — Vendor declaration corrective RC
+
+This package contains the Milestone 4 React Design System corrective baseline, including governance-artifact recovery, deployment/lint corrections, and the vendor declaration compatibility policy required by the real Chakra/Ark/Zag dependency graph. Work Management TypeScript remains strict; `skipLibCheck: true` is used only to avoid re-validating third-party `.d.ts` internals. Use `npm run vendor-types:check` to verify that boundary before M4 activation. See `RELEASE-STATUS-v1.43.2-STAGE-B-M4-VENDOR-TYPE-CORRECTIVE.md` and `CORRECTIVE-M4-RUNBOOK.md`.
 
 ## v1.43.2 — Board compatibility hotfix
 
 v1.43.2 is a narrowly scoped compatibility hotfix on top of the verified v1.43.0 production-hardening baseline. It corrects a Board envelope validation regression that rejected valid flexible Boards with no built-in `system_key='status'` column when historical `work_board_items.status` values remained populated. The legacy core status is now interpreted against stable Status-label IDs only when an authoritative system Status column exists; custom Status columns remain independently validated through their own typed configuration and cell contracts.
 
-**Architecture:** Architecture Version 15 remains unchanged. Authentication, RBAC, persistence, Board permissions, custom Status lifecycle, Item Workspace, module runtimes, and the v1.43.0 backend hardening remain unchanged. No new Supabase migration is required; existing deployments keep `supabase/migrations/v1.43.0-production-hardening.sql`.
+**Architecture:** The current Stage C M13 package advances the application manifest to Architecture Version 23 with React ownership of the persistent host shell, page-lifetime global overlay roots, standalone authentication presentation, and authenticated Account / Settings / User Management routes. Scoped Zustand v5 remains shared client-state authority, TanStack Query v5 remains server-state authority, and the M7 Supabase client adapter plus `assets/js/core/auth.ts` remain provider/session authorities. RBAC, persistence, Board permissions, custom Status lifecycle, Item Workspace, embedded module runtimes, and the v1.43.0 backend hardening remain unchanged. No new Supabase migration is required; existing deployments keep `supabase/migrations/v1.43.0-production-hardening.sql`.
 
 ## v1.42.0 — Controlled UI/rendering TypeScript runtime
 
@@ -1310,3 +1338,48 @@ Security boundaries:
 - application operational data remains local-first in this release; this foundation deliberately avoids a risky one-step migration of TimeTracker, FuelTrack+, or TradeLink business state.
 
 See `supabase/README.md` and `supabase/schema.sql` for deployment steps.
+
+### Stage B M4 production CSP dist hotfix
+
+The production artifact verifier now validates the decoded CSP meta policy semantically rather than depending on raw HTML quote serialization. Run `npm run csp-dist:check` to verify the regression contract. See `M4-PRODUCTION-CSP-DIST-HOTFIX.md`.
+
+## Latest stabilization hotfix
+
+See `M4-M5-STALE-WORKFLOW-SYNCHRONIZATION-HOTFIX.md` for the contract-aware governance synchronization fix that repairs stale existing CI/deployment workflows instead of preserving them.
+
+## Stage B self-healing certification entry point
+
+For the corrected M4/M5/M6 baseline, use `npm run stage-b:certify` from a fresh extraction. `nvm use` is optional because the public Stage B dispatcher self-selects the governed Node/npm pair. See `STAGE-B-SELF-HEALING-CERTIFICATION.md`. The certification runner synchronizes stale governance workflows, installs the exact lockfile dependencies if required, then certifies M4, M5, and M6 in order.
+
+### Stage B M6 final Chromium motion certification correction
+
+The final M6 RC includes `M6-FINAL-CHROMIUM-MOTION-CERTIFICATION-HOTFIX.md`. The real Chromium CDP gate now explicitly proves execution of the shared motion-design runtime and v1.30 orchestrator while preserving the historical v1.28/v1.30 verifier contracts.
+## Stage B M6 final browser theme-authority correction
+
+The final Chromium integration fixture now exercises the production `assets/js/core/platform.ts` preference authority directly. See `M6-FINAL-THEME-AUTHORITY-HOTFIX.md`.
+
+
+## Stage C M13 — Account / Settings / User Management
+
+Account, Settings, and User Management route presentation is React-owned at Architecture Version 23. Supabase Auth/RPC, platform preferences, backup services, and TanStack Query remain the corresponding data/security authorities. M13 requires no Supabase migration.
+
+
+### Stage F M30 Modern testing stack
+
+Architecture 38 adds a governed Vitest 5 + Testing Library + jsdom unit/component layer, V8 coverage thresholds, and Playwright 1.63 real-browser smoke testing. Use `npm run modern-tests:check`, `npm run modern-tests:test`, `npm run modern-tests:coverage`, and `npm run modern-tests:e2e`. M29 pgTAP remains the authoritative specialized database/RLS layer, while bounded-CDP browser regression remains a required parity backstop during Playwright adoption.
+
+
+## Stage F M33 — Service worker / update strategy
+
+M33 introduces deterministic build-scoped caches, explicit waiting-worker activation, `updateViaCache: none`, navigation preload, current-build-only cache lookup, throttled foreground/online update checks, multi-tab controller convergence, and a one-cycle legacy `SKIP_WAITING` compatibility alias. See `docs/WORK-MANAGEMENT-SERVICE-WORKER-UPDATE-STRATEGY.md`.
+
+## Stage F M36 — Production cutover certification
+
+Architecture 44 adds the final production-cutover authority for v1.43.2: `npm run cutover:check`, `npm run cutover:test`, `npm run cutover:artifact`, `npm run cutover:evidence`, and the release-mode M36 activation/certification flow. The production artifact verifier rejects executable development/source-entry references while permitting non-executable source-identity metadata and localhost/loopback policy-comparison values that do not create a network/resource dependency. The GitHub Pages deployment remains `dist/`-only and requires post-deploy HTTPS entrypoint/service-worker smoke checks. See `M36-ACTIVATION-RUNBOOK.md` and `docs/WORK-MANAGEMENT-PRODUCTION-CUTOVER.md`.
+
+## Stage G functional stabilization
+
+Architecture M1–M36 remains certified, but functional stabilization is reopened because Boards, Users, Settings, and Account are reported nonfunctional. M37 establishes the governed regression inventory and redacted browser evidence baseline; M38+ owns remediation.
+
+### Stage G M38 — Runtime Configuration & Backend Capability Preflight
+M38 (Architecture 46) makes `VITE_RUNTIME_ENV`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_PUBLISHABLE_KEY` the explicit environment authority and removes the deployment-specific checked-in Supabase fallback. An authenticated `wm_runtime_capabilities` RPC verifies the exact RPC/table/private-Storage/Realtime prerequisites before backend-dependent modules are exposed. Missing or incompatible capabilities render explicit M38 diagnostics and retry controls. M38 is infrastructure stabilization; M39+ still owns the M37-characterized functional recovery.

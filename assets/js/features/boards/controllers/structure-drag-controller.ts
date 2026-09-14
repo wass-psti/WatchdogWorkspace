@@ -52,6 +52,96 @@ export function createBoardStructureDragController({ state, commands, canEdit, t
   let active: ActiveStructureDrag | null = null;
   let cleanup: (() => void) | null = null;
 
+  function announce(root: HTMLElement, message: string): void {
+    let live = root.querySelector<HTMLElement>('[data-board-structure-live]');
+    if (!live) {
+      live = document.createElement('div');
+      live.className = 'wm-visually-hidden';
+      live.dataset.boardStructureLive = '1';
+      live.setAttribute('role', 'status');
+      live.setAttribute('aria-live', 'polite');
+      root.appendChild(live);
+    }
+    live.textContent = '';
+    requestAnimationFrame(() => { if (live) live.textContent = message; });
+  }
+
+  function restoreHandleFocus(root: HTMLElement, type: StructureType, id: string): void {
+    requestAnimationFrame(() => {
+      const attr = type === 'column' ? 'data-column-drag' : 'data-group-drag';
+      root.querySelector<HTMLElement>(`[${attr}="${CSS.escape(id)}"]`)?.focus();
+    });
+  }
+
+  async function keyboardMove(root: HTMLElement, type: StructureType, id: string, targetIndex: number): Promise<void> {
+    const board = state.board;
+    if (!board || !canEdit()) return;
+    if (type === 'column') {
+      const list: readonly BoardColumn[] = board.columns;
+      const result = reorderLocal(list, id, targetIndex);
+      if (!result || result.before.every((entry, index) => entry.id === result.after[index]?.id)) return;
+      renderBoardData();
+      restoreHandleFocus(root, type, id);
+      const persist = (position: number): Promise<void> => commands.moveColumn({ columnId: id, position });
+      try {
+        await persist(result.index);
+        announce(root, `Column moved to position ${result.index + 1}.`);
+        history?.push({
+          label: 'column order',
+          undo: async () => {
+            const sourceBefore = result.before.find((entry) => String(entry.id) === id);
+            restorePositions(list, result.before);
+            renderBoardData();
+            await persist(sourceBefore?.position ?? 0);
+          },
+          redo: async () => {
+            restorePositions(list, result.after);
+            renderBoardData();
+            await persist(result.index);
+          },
+        });
+      } catch (error) {
+        restorePositions(list, result.before);
+        renderBoardData();
+        restoreHandleFocus(root, type, id);
+        toast(`Column order couldn’t be saved. ${errorMessage(error)}`, 'warning');
+        announce(root, 'Column order could not be saved.');
+      }
+      return;
+    }
+
+    const list: readonly BoardGroup[] = board.groups;
+    const result = reorderLocal(list, id, targetIndex);
+    if (!result || result.before.every((entry, index) => entry.id === result.after[index]?.id)) return;
+    renderBoardData();
+    restoreHandleFocus(root, type, id);
+    const persist = (position: number): Promise<void> => commands.moveGroup({ groupId: id, position });
+    try {
+      await persist(result.index);
+      announce(root, `Group moved to position ${result.index + 1}.`);
+      history?.push({
+        label: 'group order',
+        undo: async () => {
+          const sourceBefore = result.before.find((entry) => String(entry.id) === id);
+          restorePositions(list, result.before);
+          renderBoardData();
+          await persist(sourceBefore?.position ?? 0);
+        },
+        redo: async () => {
+          restorePositions(list, result.after);
+          renderBoardData();
+          await persist(result.index);
+        },
+      });
+    } catch (error) {
+      restorePositions(list, result.before);
+      renderBoardData();
+      restoreHandleFocus(root, type, id);
+      toast(`Group order couldn’t be saved. ${errorMessage(error)}`, 'warning');
+      announce(root, 'Group order could not be saved.');
+    }
+  }
+
   function bind(root: HTMLElement): void {
     cleanup?.();
     const abort = new AbortController();
@@ -68,6 +158,32 @@ export function createBoardStructureDragController({ state, commands, canEdit, t
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', `${type}:${id}`);
       handle.closest<HTMLElement>('[data-column-id],[data-group-id]')?.classList.add('structure-dragging');
+    }, options);
+
+    root.addEventListener('keydown', (event: KeyboardEvent) => {
+      const target = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-column-drag],[data-group-drag]') : null;
+      if (!target || !canEdit()) return;
+      const type: StructureType = target.hasAttribute('data-column-drag') ? 'column' : 'group';
+      const id = type === 'column' ? target.dataset.columnDrag : target.dataset.groupDrag;
+      if (!id) return;
+      const allowed = type === 'column' ? ['ArrowLeft', 'ArrowRight', 'Home', 'End'] : ['ArrowUp', 'ArrowDown', 'Home', 'End'];
+      if (!allowed.includes(event.key)) return;
+      const list = type === 'column' ? state.board?.columns : state.board?.groups;
+      if (!list?.length) return;
+      const ordered = [...list].sort((a, b) => a.position - b.position);
+      const current = ordered.findIndex((entry) => String(entry.id) === String(id));
+      if (current < 0) return;
+      let targetIndex = current;
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') targetIndex = Math.max(0, current - 1);
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') targetIndex = Math.min(ordered.length - 1, current + 1);
+      if (event.key === 'Home') targetIndex = 0;
+      if (event.key === 'End') targetIndex = ordered.length - 1;
+      event.preventDefault();
+      if (targetIndex === current) {
+        announce(root, `${type === 'column' ? 'Column' : 'Group'} is already at that boundary.`);
+        return;
+      }
+      void keyboardMove(root, type, id, targetIndex);
     }, options);
 
     root.addEventListener('dragend', () => {
@@ -188,5 +304,5 @@ export function createBoardStructureDragController({ state, commands, canEdit, t
   }
 
   function dispose(): void { cleanup?.(); }
-  return Object.freeze({ bind, dispose });
+  return Object.freeze({ bind, dispose, get activeDragType() { return active?.type ?? null; } });
 }

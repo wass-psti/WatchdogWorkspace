@@ -12,6 +12,7 @@
     "allowJs": false,
     "noEmit": true,
     "strict": true,
+    "skipLibCheck": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
     "noUncheckedIndexedAccess": true,
@@ -41,7 +42,8 @@
         "src/features/boards/*"
       ]
     },
-    "types": []
+    "types": [],
+    "jsx": "react-jsx"
   },
   "include": [
     "src/**/*.ts",

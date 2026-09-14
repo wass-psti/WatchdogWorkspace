@@ -23,7 +23,7 @@ assert.ok(runtime.includes("features/auth/index.ts") && runtime.includes("featur
 assert.ok(clientSource.includes("const listen: WorkManagementClient['listen']") && clientSource.includes("get(operation") && clientSource.includes("set(operation") && clientSource.includes("execute(operation"), 'SDK-style runtime contract is incomplete');
 assert.ok(!clientSource.includes('reportTime(') && !clientSource.includes('track(') && !clientSource.includes('setInterval('), 'Runtime client must not introduce telemetry/background tracking');
 assert.ok(host.includes("event.origin !== origin") && host.includes("event.source !== frame.contentWindow"), 'Module-host message boundary must verify origin and source');
-assert.ok(bootstrap.includes('installModuleIdentityBridge') && bootstrap.includes('cloud.store.ready()') && bootstrap.includes('import(resolveUrl(config.entry))'), 'Shared module bootstrap must enforce identity/cloud readiness before loading entry modules');
+assert.ok(bootstrap.includes('installModuleIdentityBridge') && bootstrap.includes('cloud.store.ready()') && bootstrap.includes('import(resolveLocalScriptUrl(config.entry))'), 'Shared module bootstrap must enforce identity/cloud readiness before loading entry modules');
 for (const file of ['apps/time-tracker/index.html','apps/fueltrack-plus/runtime.html','apps/tradelink/runtime.html']) {
   const html = read(file);
   assert.ok(html.includes('assets/js/runtime/module-bootstrap.ts') && html.includes('startEmbeddedModule'), `${file} is not on the shared module bootstrap`);
@@ -34,7 +34,7 @@ assert.ok(tokens.includes('--wm-motion-normal:') && tokens.includes('--wm-space-
 assert.ok(themes.includes('--wm-color-canvas:') && themes.includes(':root[data-theme="dark"]'), 'Semantic theme layer missing');
 assert.ok(primitives.includes('.wm-stack') && primitives.includes('.wm-surface'), 'Foundation primitives missing');
 assert.ok(css.includes('v1.22.0 — semantic design-token bridge') && css.includes('--bg: var(--wm-color-canvas)'), 'Legacy style compatibility bridge missing');
-assert.ok(manifestSource.includes("version: '1.43.2'") && manifestSource.includes('architectureVersion: 15') && manifestSource.includes("id: 'boards'"), 'Application manifest incomplete');
+assert.ok(manifestSource.includes("version: '1.43.2'") && Number(manifestSource.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0) >= 24 && manifestSource.includes("id: 'boards'"), 'Application manifest incomplete');
 assert.ok(sw.startsWith("importScripts('./config/runtime-assets.js');") && sw.includes("work-management-v1.43.2"), 'Service worker must consume the centralized cache manifest');
 for (const asset of ['assets/js/runtime/index.ts','assets/js/runtime/module-bootstrap.ts','assets/css/foundation/tokens.css','config/application-manifest.ts']) assert.ok(cacheManifest.includes(asset), `Central cache manifest missing ${asset}`);
 for (const doc of ['docs/architecture/ARCHITECTURE.md','docs/architecture/FEATURE-INVENTORY.md','docs/architecture/DATA-CONTRACTS.md','docs/architecture/RESTRUCTURE-CHECKLIST.md','THIRD_PARTY_NOTICES.md']) assert.ok(fs.existsSync(doc), `Missing architecture documentation: ${doc}`);

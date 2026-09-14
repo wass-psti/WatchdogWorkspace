@@ -1,0 +1,41 @@
+export type M35ActivationState = 'implementation-complete-pending-certification' | 'active-pending-release-certification' | 'active-certified';
+export const stageFM35FinalLegacyDeletionTarget = Object.freeze({
+  milestone: 35,
+  stage: 'F',
+  name: 'Final legacy deletion',
+  activationState: 'active-certified' as M35ActivationState,
+  prerequisite: Object.freeze({ milestone: 34, requiredState: 'active-certified' as const }),
+  architectureVersion: 43,
+  authority: Object.freeze({
+    runtimeBoundary: 'src/app/composition/RuntimeApplicationBoundary.tsx',
+    runtimeAdapter: 'src/app/composition/runtime-adapter.ts',
+    runtimeHost: 'src/app/composition/runtime-host.ts',
+    verifier: 'verify-stage-f-m35-final-legacy-deletion.mjs',
+    executionVerifier: 'scripts/verify-final-legacy-deletion-execution.mjs',
+    runbook: 'docs/WORK-MANAGEMENT-FINAL-LEGACY-DELETION.md',
+  }),
+  deleted: Object.freeze([
+    'src/app/composition/LegacyApplicationBoundary.tsx',
+    'src/app/composition/legacy-runtime-adapter.ts',
+    'src/app/composition/legacy-host.ts',
+    'data-wm-legacy-runtime-host',
+    '__WM_REACT_COMPOSITION_HOST__',
+    'imperative-shell-serializer',
+    'm33-skip-waiting-compatibility-alias',
+  ] as const),
+  retainedBoundaries: Object.freeze([
+    Object.freeze({ id: 'typed-route-content-runtime', status: 'authoritative-not-legacy' as const, reason: 'assets/js/app.ts remains the active typed route-content engine and cannot be deleted without a replacement.' }),
+    Object.freeze({ id: 'm26-module-iframes', status: 'certified-live-compatibility' as const, reason: 'TimeTracker, FuelTrack+, and TradeLink still fail the M26 native-retirement gates and remain same-origin iframe compatibility islands.' }),
+    Object.freeze({ id: 'm34-v1-v4-backup-readers', status: 'recovery-compatibility' as const, reason: 'Historical backup readers are recovery data compatibility, not runtime presentation debt; deleting them would strand valid recovery artifacts.' }),
+    Object.freeze({ id: 'historical-migrations-and-runbooks', status: 'audit-evidence' as const, reason: 'Certified migrations, release reports, and corrective runbooks are immutable audit evidence rather than executable legacy runtime.' }),
+  ]),
+  policy: Object.freeze({
+    noDeadRuntimeCompatibilityCode: true,
+    noExpiredServiceWorkerAliases: true,
+    noLegacyCompositionIdentity: true,
+    preserveCertifiedLiveBoundaries: true,
+    preserveRecoveryReadCompatibility: true,
+    preserveAuditHistory: true,
+  }),
+  databaseChanges: Object.freeze({ migrationRequired: false, schemaChangeRequired: false, productionDataRewriteRequired: false }),
+});

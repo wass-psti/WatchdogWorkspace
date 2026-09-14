@@ -4,7 +4,7 @@ import type { BoardId, BoardItemId } from '../../../../../src/types/identifiers.
 import { resetItemPanel } from '../board-state.ts';
 import { WorkManagementError, normalizeAppError } from '../../../platform/errors/app-error.ts';
 
-const VALID_TABS = new Set(['updates', 'files', 'activity'] as const);
+const VALID_TABS = new Set(['overview', 'updates', 'files', 'activity'] as const);
 
 export function createItemWorkspaceRuntime({
   state,
@@ -60,6 +60,7 @@ export function createItemWorkspaceRuntime({
       error: '',
       data: { updates: [], files: [], activity: [] },
       uploading: false,
+      updateDraft: '',
     };
     notify();
   };
@@ -82,13 +83,18 @@ export function createItemWorkspaceRuntime({
     uploadEpoch += 1;
   };
 
-  const setTab = (tab: unknown): tab is 'updates' | 'files' | 'activity' => {
-    if (typeof tab !== 'string' || !VALID_TABS.has(tab as 'updates' | 'files' | 'activity')) return false;
+  const setTab = (tab: unknown): tab is ItemWorkspaceTab => {
+    if (typeof tab !== 'string' || !VALID_TABS.has(tab as ItemWorkspaceTab)) return false;
     const nextTab = tab as ItemWorkspaceTab;
     if (state.itemPanel.tab === nextTab) return true;
     state.itemPanel.tab = nextTab;
     notify();
     return true;
+  };
+
+
+  const setUpdateDraft = (value: unknown): void => {
+    state.itemPanel.updateDraft = String(value ?? '').slice(0, 5000);
   };
 
   const postUpdate = async (body: unknown): Promise<boolean> => {
@@ -187,6 +193,7 @@ export function createItemWorkspaceRuntime({
     reset,
     cancelPending,
     setTab,
+    setUpdateDraft,
     load,
     postUpdate,
     uploadFiles,

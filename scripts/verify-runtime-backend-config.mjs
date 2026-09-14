@@ -1,0 +1,14 @@
+const args=new Set(process.argv.slice(2));
+const requireConfig=args.has('--require-config');
+const allowed=new Set(['local','development','ci','production']);
+const environment=String(process.env.VITE_RUNTIME_ENV||'development').trim();
+const url=String(process.env.VITE_SUPABASE_URL||'').trim();
+const key=String(process.env.VITE_SUPABASE_PUBLISHABLE_KEY||'').trim();
+const fail=(message)=>{console.error(`Runtime backend configuration: FAIL — ${message}`);process.exit(1);};
+if(!allowed.has(environment))fail(`VITE_RUNTIME_ENV must be one of ${[...allowed].join(', ')}.`);
+if(Boolean(url)!==Boolean(key))fail('VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY must be supplied together.');
+if(requireConfig&&!url)fail(`Explicit Supabase public configuration is required for ${environment}.`);
+if(url&&!/^https:\/\/[A-Za-z0-9.-]+\.supabase\.co$/i.test(url))fail('VITE_SUPABASE_URL must be an HTTPS *.supabase.co project URL.');
+if(/^sb_secret_/i.test(key))fail('Privileged sb_secret_* keys are forbidden in browser configuration.');
+if(key&&!( /^sb_publishable_/i.test(key) || /^eyJ[A-Za-z0-9_-]+\./.test(key) ))fail('VITE_SUPABASE_PUBLISHABLE_KEY must be a Supabase publishable/anon browser key.');
+console.log(`Runtime backend configuration: PASS (environment=${environment}; configured=${Boolean(url)}; source=${url?'vite-env':'unconfigured'})`);
