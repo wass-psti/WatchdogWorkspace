@@ -382,3 +382,15 @@ Final local evidence for this continuation:
 - Certified baseline/PASS record: **not created**.
 
 The GitHub connector available in this chat currently exposes no repository installations, so the final hosted workflow cannot be dispatched from this conversation. M42 project-side implementation and certification infrastructure are complete to the hosted execution boundary. The remaining milestone action is a successful manual run of `Stage G M42 Certified Baseline` against the exact pushed commit SHA, supplied as `expected_commit_sha`.
+
+## 2026-09-15 hosted corrective action 1 — deterministic dependency materialization
+
+Diagnostic GitHub revision `49d29c460015cb86db8ec168079e84a1cc21bc8c` confirmed the M42 push/provenance was correct and exposed a real dependency-materialization defect. After clean `npm ci`, the root-level no-save modern-test bootstrap re-resolved six lockfile-governed transitive packages, causing the M42 dependency verifier to fail correctly.
+
+Corrective action 1 isolates the test-tool install under `node_modules/.wm-modern-test-toolchain`, publishes managed package/binary bridges, refuses bootstrap when the application lockfile tree is already drifted, and re-verifies the application tree plus bridge ownership after install. `scripts/verify-stage-g-m42-governed-toolchain-preservation.mjs` now contains a deterministic root-cause fixture whose fake npm deliberately corrupts an application package if invoked from the application root; the corrected isolated bootstrap never triggers that path.
+
+Locally executable verification passes. The next required step is GitHub-hosted revalidation of this new candidate. Corrective action 2 (M39 hosted browser lifecycle/identity publication) remains separate and still required after this dependency correction is pushed.
+
+## 2026-09-15 hosted corrective action 2 — M39 browser runtime boundary
+
+GitHub-hosted diagnostic revision `49d29c460015cb86db8ec168079e84a1cc21bc8c` proved that the remaining M39 failures share one browser-harness boundary: readiness was observed in one evaluation and the identity/preflight/runtime command was consumed in a later evaluation after the hosted main document could be replaced. `waitForM39Identity`, backend-preflight reads, and `identity.revalidate` now use one retryable page-evaluation authority boundary. `scripts/verify-m39-browser-runtime-boundary.mjs` deterministically reproduces execution-context replacement and verifies retry/atomic consumption. No production authorization policy is weakened. The next milestone action is to push the combined corrective candidate and require the hosted M39 suite to pass 6/6 before running the final M42 certified-baseline workflow.

@@ -153,3 +153,15 @@ M42 now has a manual GitHub-hosted certification workflow (`.github/workflows/m4
 ## Hosted exact-revision certification provenance corrective — 2026-09-14
 
 Hosted M42 certification now requires the operator-provided `expected_commit_sha` to match `GITHUB_SHA` before certification begins. Successful PASS records are bound to the certified ZIP SHA-256, the M42 certified source-tree SHA-256, and the exact Git source commit. This closes wrong-revision/manual-dispatch ambiguity while preserving the existing fail-closed finalizer authority. Local verification after this corrective is 145/145 M42 static checks, 31/31 Users/RBAC deterministic vectors, security PASS, UI PASS, and historical 136/152 with the same 16 dependency-resolution-only failures. Formal M42 state remains `implementation-complete-pending-certification` until the hosted finalizer succeeds.
+
+## Deterministic dependency materialization corrective — 2026-09-15
+
+GitHub-hosted diagnostic revision `49d29c460015cb86db8ec168079e84a1cc21bc8c` exposed a certification-infrastructure defect: the exact modern-test toolchain was installed with an unlocked second npm operation against the application root, allowing npm to replace lockfile-governed transitive packages. The lockfile verifier correctly failed and has not been weakened.
+
+The modern-test toolchain now materializes in `node_modules/.wm-modern-test-toolchain`. Managed package/binary bridges preserve existing Vitest / Testing Library / Playwright consumers while the tool closure remains physically isolated from the application dependency graph. Bootstrap now requires an exact application lockfile baseline before installation, preserves `package.json` and `package-lock.json` byte-for-byte, re-verifies all lockfile packages afterward, and verifies bridge isolation. The offline M42 certification probe uses the same materialization authority.
+
+Local static, deterministic, security, and UI gates pass. Hosted GitHub revalidation is still required, so M42 remains `implementation-complete-pending-certification` and no certified ZIP/PASS record is authorized yet.
+
+## 2026-09-15 hosted M39 browser-boundary corrective
+
+Corrective Action 2 replaces the split M39 Playwright readiness/value boundary with retryable atomic runtime authority reads and idempotent revalidation execution. The deterministic boundary regression is now mandatory under `auth-stabilization:test`. This is a certification-harness correction only; M42 remains `implementation-complete-pending-certification` until the GitHub-hosted M39 browser suite and subsequent M42 fail-closed certification complete successfully.

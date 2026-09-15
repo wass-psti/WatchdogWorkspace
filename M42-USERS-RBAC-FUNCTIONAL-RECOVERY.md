@@ -40,3 +40,11 @@ A certification success-path audit found that the installed-dependency digest wa
 ## Hosted certification provenance boundary
 
 The final hosted certification workflow requires an explicit expected Git commit SHA and rejects any run whose actual `GITHUB_SHA` differs. The certification PASS record binds the certified ZIP, certified source-tree digest, and source commit. This requirement is verified by the M42 static contract and deterministic hosted-workflow verifier.
+
+## 2026-09-15 deterministic dependency materialization corrective
+
+Hosted execution of diagnostic revision `49d29c460015cb86db8ec168079e84a1cc21bc8c` proved the root-level no-save modern-test bootstrap could re-resolve application transitive dependencies after a clean `npm ci`. The M42 dependency verifier correctly rejected that drift. The verifier remains strict; the bootstrap now installs only inside `node_modules/.wm-modern-test-toolchain`, publishes managed bridges for the governed top-level test packages/binaries, and re-verifies the complete application lockfile graph plus bridge isolation before PASS. A deterministic fake-npm regression proves application dependencies would be corrupted by a root invocation and remain unchanged under the corrected isolated invocation. See `M42-DETERMINISTIC-DEPENDENCY-MATERIALIZATION-CORRECTIVE.md`.
+
+## M39 hosted browser runtime-boundary corrective — 2026-09-15
+
+GitHub-hosted revision `49d29c460015cb86db8ec168079e84a1cc21bc8c` exposed a TOCTOU defect in the M39 Playwright helper: runtime/identity readiness was observed in one page evaluation and consumed in a later evaluation, so a hosted main-document replacement could invalidate `WorkManagementRuntime` between those operations. M39 identity reads, backend-preflight reads, and idempotent `identity.revalidate` execution now use one retryable atomic runtime boundary. A deterministic regression is part of `auth-stabilization:test`. Production auth/RBAC behavior is unchanged. Hosted 6/6 M39 browser revalidation remains required before M42 certification.

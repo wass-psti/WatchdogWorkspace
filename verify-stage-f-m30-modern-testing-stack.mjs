@@ -70,7 +70,8 @@ const exact={
 };
 for(const [name,version] of Object.entries(exact)) assert(toolchainAuthority.includes(`'${name}': '${version}'`)||toolchainAuthority.includes(`${name}: '${version}'`),`M30 governed toolchain authority must exact-pin ${name}@${version}.`);
 assert(toolchainAuthority.includes("EXPECTED_JSDOM_NODE_ENGINE = '^20.19.0 || ^22.12.0 || >=24.0.0'")&&bootstrap.includes('EXPECTED_JSDOM_NODE_ENGINE'),'M30 bootstrap must consume the shared exact jsdom Node engine contract.');
-for(const marker of ['--no-save','--package-lock=false','--ignore-scripts']) assert(bootstrap.includes(marker),`M30 isolated bootstrap missing ${marker}.`);
+for(const marker of ['--no-save','--package-lock=false','--ignore-scripts']) assert(toolchainAuthority.includes(marker),`M30 isolated bootstrap authority missing ${marker}.`);
+assert(toolchainAuthority.includes("MODERN_TEST_TOOLCHAIN_WORKSPACE = '.wm-modern-test-toolchain'")&&toolchainAuthority.includes('materializeModernTestToolchain')&&bootstrap.includes('application lockfile tree preserved'),'M30 isolated bootstrap must materialize outside the application dependency root and verify that the lockfile-governed tree remains intact.');
 assert(runner.includes("hash('package.json')")&&runner.includes("hash('package-lock.json')")&&runner.includes('modified package-lock.json'),'M30 runner must enforce package manifest/lockfile immutability.');
 
 for(const marker of [

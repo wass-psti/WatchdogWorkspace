@@ -364,7 +364,7 @@
     "backend-preflight:config:production": "node scripts/verify-runtime-backend-config.mjs --require-config",
     "backend-preflight:activate:release": "node scripts/activate-stage-g-m38.mjs --release",
     "auth-stabilization:check": "node verify-stage-g-m39-auth-session-access-context.mjs",
-    "auth-stabilization:test": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-auth-session-access-context-execution.mjs",
+    "auth-stabilization:test": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-auth-session-access-context-execution.mjs && node scripts/verify-m39-browser-runtime-boundary.mjs",
     "auth-stabilization:browser": "node scripts/run-auth-session-access-context-browser.mjs",
     "auth-stabilization:status": "node scripts/report-stage-g-m39.mjs",
     "auth-stabilization:activate": "node scripts/activate-stage-g-m39.mjs",

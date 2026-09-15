@@ -70,3 +70,7 @@ The M30 historical verifier was synchronized to the shared modern-test-toolchain
 - Real M42 preflight: FAIL CLOSED with exactly two external blockers — npm registry DNS `EAI_AGAIN` with an incomplete offline certification dependency cache, and no Docker-compatible runtime for the disposable Supabase pgTAP gate.
 
 No certified baseline or PASS record is authorized until those external prerequisites are available and the complete fail-closed certification/finalization transaction succeeds.
+
+## 2026-09-15 hosted deterministic-materialization supersession
+
+The 2026-09-14 preservation model correctly bound the combined installed tree after test-tool bootstrap, but GitHub-hosted execution proved the root-level unlocked bootstrap could first replace lockfile-governed transitive packages. The preservation model remains valid after capture; the materialization step has now been corrected to use the isolated `node_modules/.wm-modern-test-toolchain` workspace with managed package/binary bridges. See `M42-DETERMINISTIC-DEPENDENCY-MATERIALIZATION-CORRECTIVE.md`.

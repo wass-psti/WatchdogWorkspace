@@ -194,20 +194,92 @@ export async function installM39Fixture(page, { principal = 'admin', expiredRefr
   });
 }
 
+const m39BoundaryDelay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const isM39DocumentReplacementError = (error) => /execution context was destroyed|most likely because of a navigation|cannot find context with specified id|frame was detached/i.test(String(error instanceof Error ? error.message : error));
+
+/**
+ * Retry a browser-runtime boundary probe without separating readiness from value
+ * consumption. GitHub-hosted Vite/Playwright can replace the main document while
+ * the application is still completing its boot owner transition. A readiness check
+ * in one evaluation followed by a second evaluation is therefore a TOCTOU race.
+ *
+ * Every successful probe below obtains and validates the authoritative value inside
+ * one page evaluation, while an execution-context replacement is treated as a
+ * transient boundary miss and retried against the new main document.
+ */
+export async function retryM39RuntimeBoundary(attempt, { timeout = 12_000, pollMs = 25, label = 'M39 runtime boundary' } = {}) {
+  const deadline = Date.now() + Math.max(1, Number(timeout) || 12_000);
+  let last = null;
+  let lastError = null;
+  while (Date.now() < deadline) {
+    try {
+      last = await attempt();
+      if (last?.ready === true) return last;
+    } catch (error) {
+      if (!isM39DocumentReplacementError(error)) throw error;
+      lastError = error;
+    }
+    await m39BoundaryDelay(Math.max(0, Number(pollMs) || 0));
+  }
+  const detail = lastError instanceof Error ? lastError.message : last?.reason || 'runtime did not become ready';
+  throw new Error(`${label} did not become ready within ${timeout}ms: ${detail}`);
+}
+
 export async function waitForM39Identity(page, { role, status = 'active', timeout = 12_000 } = {}) {
-  await page.waitForFunction(async ({ role, status }) => {
+  const result = await retryM39RuntimeBoundary(() => page.evaluate(async ({ role, status }) => {
+    const runtime = globalThis.WorkManagementRuntime;
+    if (!runtime || typeof runtime.get !== 'function' || typeof runtime.execute !== 'function') {
+      return { ready:false, reason:'runtime-api-unavailable' };
+    }
     try {
       const raw = localStorage.getItem('wm.platform.identity.v1');
       const identity = raw ? JSON.parse(raw) : null;
-      const snapshot = await globalThis.WorkManagementRuntime?.get?.('identity.current');
-      return snapshot?.isAuthenticated === true
+      const snapshot = await runtime.get('identity.current');
+      if (globalThis.WorkManagementRuntime !== runtime) return { ready:false, reason:'runtime-replaced-during-identity-read' };
+      const ready = snapshot?.isAuthenticated === true
         && (!role || identity?.platformRole === role)
         && identity?.accountStatus === status
         && (!role || snapshot?.profile?.platform_role === role)
         && snapshot?.profile?.status === status;
-    } catch { return false; }
-  }, { role, status }, { timeout });
-  return page.evaluate(async () => globalThis.WorkManagementRuntime?.get('identity.current'));
+      return { ready, reason:ready ? '' : 'identity-not-hydrated', snapshot };
+    } catch (error) {
+      return { ready:false, reason:error instanceof Error ? error.message : String(error) };
+    }
+  }, { role, status }), { timeout, label:'M39 identity/runtime boundary' });
+  return result.snapshot;
+}
+
+export async function waitForM39BackendPreflight(page, moduleName, { timeout = 12_000 } = {}) {
+  const result = await retryM39RuntimeBoundary(() => page.evaluate(async (moduleName) => {
+    const runtime = globalThis.WorkManagementRuntime;
+    if (!runtime || typeof runtime.get !== 'function') return { ready:false, reason:'runtime-get-unavailable' };
+    try {
+      const snapshot = await runtime.get('backend-preflight.current');
+      if (globalThis.WorkManagementRuntime !== runtime) return { ready:false, reason:'runtime-replaced-during-preflight-read' };
+      const ready = snapshot?.state === 'ready' && snapshot?.modules?.[moduleName]?.ready === true;
+      return { ready, reason:ready ? '' : 'backend-preflight-not-ready', snapshot };
+    } catch (error) {
+      return { ready:false, reason:error instanceof Error ? error.message : String(error) };
+    }
+  }, moduleName), { timeout, label:`M39 backend preflight/runtime boundary (${moduleName})` });
+  return result.snapshot;
+}
+
+export async function executeM39Runtime(page, operation, params = undefined, { timeout = 12_000 } = {}) {
+  if (operation !== 'identity.revalidate') throw new Error(`M39 retryable runtime execution is restricted to idempotent identity.revalidate, received ${operation}.`);
+  const result = await retryM39RuntimeBoundary(() => page.evaluate(async ({ operation, params }) => {
+    const runtime = globalThis.WorkManagementRuntime;
+    if (!runtime || typeof runtime.execute !== 'function') return { ready:false, reason:'runtime-execute-unavailable' };
+    // identity.revalidate is an idempotent authoritative read/reconciliation command.
+    // Execute it in the same evaluation that proves the runtime authority exists so
+    // a boot-time document replacement cannot invalidate a prior readiness result.
+    // Operation errors are intentionally not converted into readiness misses: only
+    // document-replacement errors are retryable at the outer boundary.
+    const value = await runtime.execute(operation, params);
+    if (globalThis.WorkManagementRuntime !== runtime) return { ready:false, reason:'runtime-replaced-during-operation' };
+    return { ready:true, value };
+  }, { operation, params }), { timeout, label:`M39 runtime operation boundary (${operation})` });
+  return result.value;
 }
 
 const M40_DIAGNOSTICS_KEY = 'wm.m40.composition-diagnostics.v1';

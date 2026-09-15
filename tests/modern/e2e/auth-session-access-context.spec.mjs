@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { installM39Fixture, seedM39Session, waitForM39Identity } from './helpers/m39-auth-fixture.mjs';
+import { executeM39Runtime, installM39Fixture, seedM39Session, waitForM39BackendPreflight, waitForM39Identity } from './helpers/m39-auth-fixture.mjs';
 
 const navigate = async (page, route) => {
   await page.evaluate((target) => { location.hash = `#/${target}`; }, route);
@@ -7,11 +7,7 @@ const navigate = async (page, route) => {
 
 const expectAuthorizedRoute = async (page, routeName, capabilityModule = routeName) => {
   await page.waitForFunction((expectedRoute) => globalThis.WorkManagementRuntime?.getContext?.()?.route === expectedRoute, routeName);
-  await page.waitForFunction(async (moduleName) => {
-    const snapshot = await globalThis.WorkManagementRuntime?.get?.('backend-preflight.current');
-    return snapshot?.state === 'ready' && snapshot?.modules?.[moduleName]?.ready === true;
-  }, capabilityModule);
-  const preflight = await page.evaluate(() => globalThis.WorkManagementRuntime.get('backend-preflight.current'));
+  const preflight = await waitForM39BackendPreflight(page, capabilityModule);
   expect(preflight.state).toBe('ready');
   expect(preflight.modules[capabilityModule].ready).toBe(true);
   await expect(page.getByRole('heading', { name: 'Access validation is temporarily unavailable' })).toHaveCount(0);
@@ -97,7 +93,7 @@ test('@m39-rbac-reconcile live assignment revocation clears active module author
     { module_id: 'fueltrack-plus', role: 'User', enabled: false },
     { module_id: 'tradelink', role: 'User', enabled: false },
   ] });
-  await page.evaluate(() => globalThis.WorkManagementRuntime.execute('identity.revalidate'));
+  await executeM39Runtime(page, 'identity.revalidate');
   await expect(page.getByRole('heading', { name: 'TimeTracker is restricted' })).toBeVisible();
   const identity = await page.evaluate(() => JSON.parse(localStorage.getItem('wm.platform.identity.v1')));
   expect(identity.modules['time-tracker'].enabled).toBe(false);
@@ -109,7 +105,7 @@ test('@m39-account-status disabled account loses route authority during access r
   await page.goto('/#/account');
   await waitForM39Identity(page, { role: 'admin_general_manager' });
   fixture.updateAccess({ status: 'disabled' });
-  const revalidated = await page.evaluate(() => globalThis.WorkManagementRuntime.execute('identity.revalidate'));
+  const revalidated = await executeM39Runtime(page, 'identity.revalidate');
   expect(revalidated.status).toBe('disabled');
   expect(revalidated.isAccountActive).toBe(false);
   await page.waitForFunction(() => globalThis.WorkManagementRuntime?.getContext?.()?.authenticated === false);
