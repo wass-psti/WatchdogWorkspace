@@ -194,7 +194,9 @@ export async function installM39Fixture(page, { principal = 'admin', expiredRefr
   });
 }
 
-const m39BoundaryDelay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const m39BoundaryDelay = (ms) => new Promise((resolve) => {
+  setTimeout(resolve, ms);
+});
 const isM39DocumentReplacementError = (error) => /execution context was destroyed|most likely because of a navigation|cannot find context with specified id|frame was detached/i.test(String(error instanceof Error ? error.message : error));
 
 /**

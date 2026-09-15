@@ -17,10 +17,17 @@ jobs:
       - name: Capture M42 evidence digests
         shell: bash
         run: |
-          echo "M42_SOURCE_DIGEST=$(node scripts/lib/stage-g-m42-certification-tree.mjs \"$PWD\")" >> "$GITHUB_ENV"
-          echo "M42_DEPENDENCY_DIGEST=$(node scripts/lib/stage-g-m42-dependency-tree.mjs \"$PWD\")" >> "$GITHUB_ENV"
-          echo "WM_M42_PRESERVE_GOVERNED_TEST_TOOLCHAIN=1" >> "$GITHUB_ENV"
-          echo "WM_M42_CERTIFICATION_DEPENDENCY_DIGEST=$(node scripts/lib/stage-g-m42-dependency-tree.mjs \"$PWD\")" >> "$GITHUB_ENV"
+          set -euo pipefail
+          SOURCE_DIGEST="$(node scripts/lib/stage-g-m42-certification-tree.mjs "$PWD")"
+          DEPENDENCY_DIGEST="$(node scripts/lib/stage-g-m42-dependency-tree.mjs "$PWD")"
+          [[ "$SOURCE_DIGEST" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Invalid M42 source digest: $SOURCE_DIGEST"; exit 1; }
+          [[ "$DEPENDENCY_DIGEST" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Invalid M42 dependency digest: $DEPENDENCY_DIGEST"; exit 1; }
+          {
+            echo "M42_SOURCE_DIGEST=$SOURCE_DIGEST"
+            echo "M42_DEPENDENCY_DIGEST=$DEPENDENCY_DIGEST"
+            echo "WM_M42_PRESERVE_GOVERNED_TEST_TOOLCHAIN=1"
+            echo "WM_M42_CERTIFICATION_DEPENDENCY_DIGEST=$DEPENDENCY_DIGEST"
+          } >> "$GITHUB_ENV"
       - run: npm run users-rbac-recovery:preflight
       - run: npm run users-rbac-recovery:check
       - run: npm run users-rbac-recovery:test
@@ -33,5 +40,12 @@ jobs:
       - name: Verify M42 evidence digests remained stable
         shell: bash
         run: |
-          test "$(node scripts/lib/stage-g-m42-certification-tree.mjs \"$PWD\")" = "$M42_SOURCE_DIGEST"
-          test "$(node scripts/lib/stage-g-m42-dependency-tree.mjs \"$PWD\")" = "$M42_DEPENDENCY_DIGEST"
+          set -euo pipefail
+          [[ "${M42_SOURCE_DIGEST:-}" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Missing or invalid captured M42 source digest"; exit 1; }
+          [[ "${M42_DEPENDENCY_DIGEST:-}" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Missing or invalid captured M42 dependency digest"; exit 1; }
+          CURRENT_SOURCE_DIGEST="$(node scripts/lib/stage-g-m42-certification-tree.mjs "$PWD")"
+          CURRENT_DEPENDENCY_DIGEST="$(node scripts/lib/stage-g-m42-dependency-tree.mjs "$PWD")"
+          [[ "$CURRENT_SOURCE_DIGEST" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Invalid current M42 source digest: $CURRENT_SOURCE_DIGEST"; exit 1; }
+          [[ "$CURRENT_DEPENDENCY_DIGEST" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Invalid current M42 dependency digest: $CURRENT_DEPENDENCY_DIGEST"; exit 1; }
+          test "$CURRENT_SOURCE_DIGEST" = "$M42_SOURCE_DIGEST"
+          test "$CURRENT_DEPENDENCY_DIGEST" = "$M42_DEPENDENCY_DIGEST"

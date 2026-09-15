@@ -4,7 +4,7 @@ a3657d760ba374ae06768a19d3c2a2236e1b60be0ef767ea9989bd8aaf14c71f  ./.github/work
 107b7fbd8885311c6abe7e4cca5ff874f0dbd78383686aee4a44ff7a6fd61b06  ./.github/workflows/auth-session-access-context.yml
 e2abbda34fc293892507f242e71ee8d8ce673eb5f48ebd18ebbba6bf3427bac1  ./.github/workflows/backend-capability-preflight.yml
 eee4989a246447c8079d3f3eba0a7f03b7c1de1a667f8bc546873d356ed3640b  ./.github/workflows/backup-disaster-recovery.yml
-37af8743ab2e3c3abc446fbd3fb8eb2da8d53bf8e8fe619be669dcf113da6967  ./.github/workflows/ci.yml
+9f0bc5b1f463c9ba3e4b04ff1288f031e2df4b6a119162234880643d802197f8  ./.github/workflows/ci.yml
 11d08b0ba79b3df879ff79cbe0b158c30f8b47ce0b9f6515036c3bffb2c5d92b  ./.github/workflows/codeql.yml
 d3a2451c44f8edf99411701e0725b2ed6d552dd4f9e40a77e931c1cc5b8b4a8f  ./.github/workflows/database-tests.yml
 c7f1be7ad073d5e65e620b87918ab1ec4b89e5e1d4e6962baa65b0f0267b2c11  ./.github/workflows/dependency-review.yml
@@ -18,7 +18,7 @@ de0fb5675951c3075bc25c9a72da2d78de29cf23075f70293a36d9c3a6a66989  ./.github/work
 24844fabb67dad12058f7dab37773ad90ae70eccb0d1ff694a34e8e801863f17  ./.github/workflows/production-cutover.yml
 12b3a574052ee54fe1ceaadca17e0735439b52ec15671691c8273b923f6c520c  ./.github/workflows/route-lifecycle-recovery.yml
 190f1967fe22b3f8fce532706fe5c244a5004481f12cae5349abcc41459c985d  ./.github/workflows/service-worker-updates.yml
-01b4811a6c0d36cfac4fbe8cf3bec47b54a3fa8b175f2aae20d93ef717e83080  ./.github/workflows/users-rbac-functional-recovery.yml
+bcd28feb974838c40802468d1235bdc0a2c81a9f2bd643be7882f55ed110893d  ./.github/workflows/users-rbac-functional-recovery.yml
 1cc633cc9b57e24cc1226033cd4011dec443b7a9bd8c35cbe0da7ffbf4bb36c4  ./.gitignore
 65cff518b53f9208169c91fa525ebe401f4d166903c6e02734c77a71d785cb90  ./.npmrc
 177d20030d4dcc37eae9ef92865ec54dadce60e8f19e9a34a5d4f37502195a36  ./.nvmrc
@@ -134,6 +134,7 @@ e644d4adbe499cf77fa77ed3d0a78a947e707aa5eec1eeba5d303b7874c4b071  ./M42-FINALIZA
 ce2834604a0d96d5b24adfbb755c303c228a0691c0503f642003f6bfb50cfaf8  ./M42-GOVERNED-MODERN-TEST-TOOLCHAIN-PRESERVATION-CORRECTIVE.md
 68b9a423381477efec97b6eacb07ad97859d7692d8f2c9cf314e9c6ec3cd6de5  ./M42-HOSTED-CERTIFICATION-REVISION-BINDING-CORRECTIVE.md
 6e70699b7f31edab35d9d6df1c69fba49b97950c327797346c2ac937c02c76f0  ./M42-HOSTED-FAIL-CLOSED-CERTIFICATION-WORKFLOW-CORRECTIVE.md
+4c153be0409fb401223918d44ea3497f892fda0ee1a3f2e7a0900fd16d406565  ./M42-HOSTED-INTEGRATION-GATE-CORRECTIVE-2026-09-15.md
 1848998b068c74ec49e062b69022ae678fd16e86080562ccf0cf3f54dcada649  ./M42-IDENTITY-PUBLICATION-BROWSER-CORRECTIVE.md
 873e829ca01c1bac2368a79a4ae52c12b8b3ed542fc1641a3f504f6df9f1b8a5  ./M42-INSTALLED-DEPENDENCY-CONTENT-BINDING-CORRECTIVE.md
 becb55d009dae3d49d92ba230a9371f74da7509db5a2344a2eb7ccc0c1d98578  ./M42-LOCKFILE-DEPENDENCY-INTEGRITY-CORRECTIVE.md
@@ -759,7 +760,7 @@ ff35501ae49aa9c2f6e682ede0d81cb3c57d35a5c1ae519ca5742c9982d355f9  ./scripts/veri
 2ce2c6ccee375fee11318a881e10163f03edd5236df7942414a48fcf0a49507e  ./scripts/verify-shared-application-ui-execution.mjs
 6dff5bfaa778dfc14101cc65dcbbd3611b9b26796d2874415050894ebb7ef7f5  ./scripts/verify-stage-g-m42-activation-gate-ownership.mjs
 101ef719aaac1bfb96c4c92360e9cf4fe6fc947cc588201dba9372568d048c56  ./scripts/verify-stage-g-m42-certifier-rollback.mjs
-ea5f48c590d5bd107843a30a1fd566e3bff420e9bc4e8dbbb9b36c996cf6b891  ./scripts/verify-stage-g-m42-clean-dependency-materialization.mjs
+039cca92d8c8668b30c51c020a34db2f9ba8270b8682b829d38d5af42ec54c37  ./scripts/verify-stage-g-m42-clean-dependency-materialization.mjs
 52750f178e7c309d810387d93f206bd611aaa4f4f6d9c29ee5059a0fab8d57d8  ./scripts/verify-stage-g-m42-finalizer-rollback.mjs
 69539748d546a7a59a2f418af1da4e79991c360660a59ae4dc8fc886088888cd  ./scripts/verify-stage-g-m42-governed-toolchain-preservation.mjs
 edb9a5198a2570214b151a388dad6f1adae0b6d5eece995ed0bd67623a890539  ./scripts/verify-stage-g-m42-hosted-certification-workflow.mjs
@@ -951,7 +952,7 @@ c85ce84cbbd8f28f987df2d722ed1eabeac04777fed8ae4e4661e92d03239472  ./tests/modern
 6a6a0ffb75d20e05ec786a597c9782293c6fdff674b1794a59ed77648a5e117d  ./tests/modern/e2e/functional-regression-baseline.spec.mjs
 dde1347e8fedbe37ba79e4c2388aa5d024a1c0688dfba1ffe7f3f1ad3ee8acae  ./tests/modern/e2e/helpers/m37-regression-probe.mjs
 39c2bf384ec9b9f10c97bfcea715fd58c89e5e6f366a7e7052d606c620a78fb5  ./tests/modern/e2e/helpers/m37-supabase-fixture.mjs
-359008c23f768e168995d783d0bc162faa064ab0d9d86e922298bd3b0589958c  ./tests/modern/e2e/helpers/m39-auth-fixture.mjs
+945c829b6bda5adf2ef33bce822b242b79bf3f0904e1c0eb759e3d75030a7337  ./tests/modern/e2e/helpers/m39-auth-fixture.mjs
 0d0394b7c2d70bfd8284d0e4f28dbfdfcc314f57b7e2e563ca9ae2aed14a8594  ./tests/modern/e2e/route-lifecycle-recovery.spec.mjs
 4dcc876b85ee3e8fe505e9267eced230d33cfc783710d82c584c51a940f10509  ./tests/modern/e2e/runtime-backend-preflight.spec.mjs
 277a2ce18d8417788947bf0d7924a9b01a4ee428bf58cfe22c778085828cde18  ./tests/modern/e2e/users-rbac-functional-recovery.spec.mjs

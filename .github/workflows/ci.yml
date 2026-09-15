@@ -18,10 +18,9 @@ jobs:
   quality-and-release:
     name: Govern, lint, verify, and build
     runs-on: ubuntu-latest
-    env:
-      VITE_RUNTIME_ENV: ci
     timeout-minutes: 35
     env:
+      VITE_RUNTIME_ENV: ci
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
       VITE_BASE_PATH: ./

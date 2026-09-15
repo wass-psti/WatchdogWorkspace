@@ -54,6 +54,16 @@ try {
   writeFileSync(npm, `#!/bin/sh\nif [ "${'$'}1" = "--version" ]; then printf '%s\\n' '10.9.2'; exit 0; fi\nprintf '%s\\n' "${'$'}*" >> "${log}"\nexit 0\n`);
   chmodSync(npm, 0o755);
   const env = { ...process.env, PATH: `${bin}:${process.env.PATH || ''}` };
+  const certificationOnlyEnvironment = [
+    'M42_SOURCE_DIGEST',
+    'M42_DEPENDENCY_DIGEST',
+    'WM_M42_PRESERVE_GOVERNED_TEST_TOOLCHAIN',
+    'WM_M42_CERTIFICATION_DEPENDENCY_DIGEST',
+  ];
+  for (const key of certificationOnlyEnvironment) delete env[key];
+  for (const key of certificationOnlyEnvironment) {
+    assert.equal(env[key], undefined, `${key} must not leak from the owning certification transaction into the synthetic dependency fixture`);
+  }
 
   const ordinary = spawnSync(process.execPath, ['scripts/ensure-project-dependencies.mjs'], { cwd: project, encoding: 'utf8', env });
   assert.equal(ordinary.status, 0, ordinary.stderr || 'ordinary dependency ensure should accept the exact installed metadata tree');
