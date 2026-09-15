@@ -123,3 +123,11 @@ M42 remains `implementation-complete-pending-certification`.
 This corrective is not itself a certified baseline. It must be pushed as an exact repository revision and pass the automatic `Users RBAC Functional Recovery` workflow. Only after that integration workflow is fully green may `Stage G M42 Certified Baseline` be run with that exact commit SHA as `expected_commit_sha`.
 
 No M42 certified ZIP or PASS record may be created before those hosted gates succeed.
+
+## Hosted follow-up result — exact Supabase CLI temporary path identified
+
+The corrective diagnostics were exercised by GitHub-hosted `Users RBAC Functional Recovery` run `34941635390`, job `104291433377`, on commit `aba7d0462eaf90734034036a6f40f95147cf25a8`.
+
+That run passed preflight, M42 static verification, deterministic verification, all 6 browser scenarios, and the complete 96-test Database/RLS suite. The evidence check immediately after Database/RLS then failed with a single source-manifest addition: `supabase/.temp/cli-latest`. The source digest changed from `7bfd34896446cc11af8de09d414cb9e05b9fbff782c49be1492b76aeb4e32b85` to `de8457c3106e3e58977769e1063b96e00a3302ab33d3530f681fdfd49c25565a` and no other path was reported.
+
+This proves the remaining drift was Supabase CLI-generated runtime metadata rather than a Users/RBAC or Database/RLS functional defect. The follow-up corrective is documented in `M42-SUPABASE-CLI-TEMP-EVIDENCE-BOUNDARY-CORRECTIVE-2026-09-15.md` and narrowly excludes only `supabase/.temp` from the M42 source evidence domain while keeping real Supabase and application source changes certification-visible.

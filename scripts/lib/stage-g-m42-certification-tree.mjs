@@ -15,6 +15,10 @@ const excludedDirectoryNames = new Set([
   'm37-evidence',
 ]);
 
+const excludedRelativeDirectories = new Set([
+  'supabase/.temp',
+]);
+
 const excludedRelativeFiles = new Set([
   'CHECKSUMS.sha256',
   'config/stage-g-m42-users-rbac-functional-recovery-target.ts',
@@ -26,11 +30,11 @@ const isLocalGeneratedFile = (name) => name === '.DS_Store' || /^npm-debug\.log(
 
 function collect(root, current = root, entries = []) {
   for (const dirent of fs.readdirSync(current, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (dirent.isDirectory() && excludedDirectoryNames.has(dirent.name)) continue;
-    if (isConcreteEnvironmentFile(dirent.name) || isLocalGeneratedFile(dirent.name)) continue;
-
     const absolute = path.join(current, dirent.name);
     const relative = path.relative(root, absolute).split(path.sep).join('/');
+
+    if (dirent.isDirectory() && (excludedDirectoryNames.has(dirent.name) || excludedRelativeDirectories.has(relative))) continue;
+    if (isConcreteEnvironmentFile(dirent.name) || isLocalGeneratedFile(dirent.name)) continue;
     if (excludedRelativeFiles.has(relative)) continue;
 
     const stat = fs.lstatSync(absolute);

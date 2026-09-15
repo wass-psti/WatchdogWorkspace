@@ -179,3 +179,37 @@ M42 remains `implementation-complete-pending-certification`. The next required o
 ### Hosted evidence-stability continuation package
 
 The next hosted candidate is packaged as `Work-Management-App-v1.43.2-Stage-G-M42-Hosted-Evidence-Stability-Corrective-Continuation-Candidate-2026-09-15`. This is a continuation candidate, not a certified M42 baseline. Certification remains fail closed until the automatic Users/RBAC integration workflow and subsequent exact-revision certified-baseline workflow both pass.
+
+## 2026-09-15 Supabase CLI temporary evidence-boundary corrective
+
+Hosted `Users RBAC Functional Recovery` run `34941635390` / job `104291433377` on commit `aba7d0462eaf90734034036a6f40f95147cf25a8` conclusively localized the remaining evidence drift. The run passed preflight, static verification, deterministic verification, all 6 browser scenarios, and all 96 Database/RLS tests. The immediately following source-evidence comparison reported one added path only: `supabase/.temp/cli-latest`.
+
+Corrective scope is restricted to certification evidence/hygiene:
+
+- `scripts/lib/stage-g-m42-certification-tree.mjs` excludes only `supabase/.temp` by exact project-relative directory path.
+- `.gitignore` ignores `supabase/.temp/`.
+- `scripts/verify-stage-g-m42-evidence-stability.mjs` proves the generated CLI path is normalized while real Supabase and application source mutations remain digest-visible.
+- `verify-stage-g-m42-users-rbac-functional-recovery.mjs` protects the narrow exclusion and corrective record.
+- `M42-SUPABASE-CLI-TEMP-EVIDENCE-BOUNDARY-CORRECTIVE-2026-09-15.md` records the hosted evidence and fail-closed rationale.
+
+No Users/RBAC production logic was changed.
+
+Latest local evidence after this corrective:
+
+- M42 static: **155/155 PASS**.
+- Users/RBAC deterministic aggregate: **PASS**, including 31/31 execution vectors and all M42 certification regressions.
+- Supabase temporary evidence fixture and actual-project digest stability check: **PASS**.
+- Stage A security baseline: **PASS**.
+- Full UI verifier chain: **PASS**.
+- Historical collect-all: **136/152 locally**; the 16 failures are dependency-resolution failures in the dependency-less sandbox, not established logic regressions.
+- Aggregate M42 preflight: **FAIL CLOSED on exactly 2 sandbox capabilities** — npm registry DNS/offline cache materialization and Docker runtime.
+- M42 activation state: `implementation-complete-pending-certification`.
+- Certified M42 ZIP/PASS: **not authorized and not created**.
+
+Required continuation: push this exact corrective candidate, wait for the automatic hosted `Users RBAC Functional Recovery` workflow to pass all remaining gates, then run `Stage G M42 Certified Baseline` against the same exact commit SHA. Any further project-side correction is permitted only if that hosted run exposes a new concrete failing gate.
+
+### Fail-closed local finalizer proof for this corrective
+
+An actual `scripts/finalize-stage-g-m42.sh` attempt was executed after the corrective. It stopped at the aggregate preflight because this sandbox still lacks registry resolution/offline cache completeness and Docker. The M42 target hash remained `4f9069656711396db2d91737888da61b12be06594518a22247451fd68cb96dfc` before and after the attempt; the release-status hash used for that attempt also remained byte-for-byte unchanged. The finalizer reported rollback/preservation and produced no M42 certified baseline ZIP or PASS record.
+
+Latest continuation package root: `Work-Management-App-v1.43.2-Stage-G-M42-Supabase-CLI-Temp-Evidence-Boundary-Corrective-Continuation-Candidate-2026-09-15`.
