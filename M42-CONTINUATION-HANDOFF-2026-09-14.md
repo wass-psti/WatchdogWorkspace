@@ -448,3 +448,27 @@ M42 remains `implementation-complete-pending-certification`. The only next step 
 Package root: `Work-Management-App-v1.43.2-Stage-G-M42-Supabase-CLI-Temp-Evidence-Boundary-Corrective-Continuation-Candidate-2026-09-15`.
 
 A real local finalizer attempt failed at the expected environment preflight boundary and rolled back cleanly. The M42 activation target remained byte-identical before/after (`4f9069656711396db2d91737888da61b12be06594518a22247451fd68cb96dfc`), the release-status authority was restored byte-for-byte, and no certified ZIP/PASS record was created. This package is a continuation candidate only, not a certified baseline.
+
+## 2026-09-15 hosted modern test-toolchain staging corrective
+
+The Supabase CLI temporary-evidence candidate was pushed as commit `424e68a02bbda0168d7bc12c19811c8d73c7e7d1`. The automatic hosted M42 workflow did not reach the Supabase/Database-RLS revalidation because the shared modern test-toolchain bootstrap failed first. Root `npm ci` succeeded; `modern-tests:toolchain:ensure` then crashed inside npm 10.9.2 with `Cannot read properties of null (reading 'edgesOut')`. The same bootstrap crash reproduced independently in M39 browser, M40 browser, and the modern test workflow, establishing a shared materialization defect rather than multiple feature regressions.
+
+Project-side correction is now implemented in `scripts/lib/modern-test-toolchain.mjs`: npm installs the exact governed test tools in an OS-temporary staging workspace outside the application tree, verifies that staged workspace, and publishes it under `node_modules/.wm-modern-test-toolchain` only after verification. Failed staging leaves the previously verified workspace/bridges untouched. The regression suite enforces external staging, application lockfile/package-byte preservation, exact versions, bridge isolation, and rollback on staged npm failure.
+
+Corrective record: `M42-HOSTED-MODERN-TEST-TOOLCHAIN-STAGING-CORRECTIVE-2026-09-15.md`.
+
+M42 remains `implementation-complete-pending-certification`. Required next operation after packaging is hosted revalidation of the exact new corrective commit. Do not run `Stage G M42 Certified Baseline` unless the automatic `Users RBAC Functional Recovery` workflow is fully green on that same commit SHA. If hosted execution exposes another concrete gate failure, correct only that reproduced defect; otherwise do not churn the certification harness.
+
+### Local verification after hosted modern test-toolchain staging corrective
+
+- M42 static verifier: **159/159 PASS**.
+- Users/RBAC deterministic aggregate: **PASS**, including 31/31 RBAC execution vectors plus finalizer rollback, activation gate ownership, clean dependency materialization, external staged modern-toolchain preservation/rollback, dedicated certifier rollback, certified-package secret hygiene, evidence stability, and hosted-certification workflow verification.
+- Stage A security baseline: **PASS**.
+- Full UI verification chain: **PASS**.
+- Historical verifier collect-all: **152 total / 136 PASS / 16 dependency-execution blocked**. The failures are the same package-resolution class (`zod`, `@tanstack/react-query`, `zustand` dependent paths) in this dependency-less sandbox; no new assertion-only failure was introduced by the staging corrective.
+- Aggregate M42 environment preflight: **FAIL CLOSED with exactly 2 environment blockers** — npm registry DNS/cache materialization (`EAI_AGAIN` / uncached `zustand@5.0.15`) and no Docker-compatible runtime. Chromium and packaging tools are available.
+- No certified M42 ZIP or PASS record was created.
+
+Project-side corrective work for the currently reproduced `edgesOut` defect is complete. Remaining M42 work is hosted execution only: push this new candidate, require the automatic Users/RBAC workflow to pass completely, then run the exact-revision M42 certified-baseline workflow on the same SHA. A new code change is warranted only if that hosted run exposes another concrete reproducible failure.
+
+Latest continuation package root: `Work-Management-App-v1.43.2-Stage-G-M42-Hosted-Modern-Test-Toolchain-Staging-Corrective-Continuation-Candidate-2026-09-15`.

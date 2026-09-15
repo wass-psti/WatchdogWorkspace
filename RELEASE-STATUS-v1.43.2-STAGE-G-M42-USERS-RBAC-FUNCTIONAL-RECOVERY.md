@@ -213,3 +213,26 @@ Required continuation: push this exact corrective candidate, wait for the automa
 An actual `scripts/finalize-stage-g-m42.sh` attempt was executed after the corrective. It stopped at the aggregate preflight because this sandbox still lacks registry resolution/offline cache completeness and Docker. The M42 target hash remained `4f9069656711396db2d91737888da61b12be06594518a22247451fd68cb96dfc` before and after the attempt; the release-status hash used for that attempt also remained byte-for-byte unchanged. The finalizer reported rollback/preservation and produced no M42 certified baseline ZIP or PASS record.
 
 Latest continuation package root: `Work-Management-App-v1.43.2-Stage-G-M42-Supabase-CLI-Temp-Evidence-Boundary-Corrective-Continuation-Candidate-2026-09-15`.
+
+## Hosted modern test-toolchain staging corrective — 2026-09-15
+
+Hosted commit `424e68a02bbda0168d7bc12c19811c8d73c7e7d1` proved a new shared infrastructure blocker: application `npm ci` succeeded, but npm 10.9.2 crashed with `Cannot read properties of null (reading 'edgesOut')` while resolving the exact governed modern test-toolchain from the nested `node_modules/.wm-modern-test-toolchain` working directory. The same crash occurred independently in M39, M40, modern-test, and M42 hosted workflows.
+
+The governed toolchain authority now performs npm resolution in a disposable OS-temporary staging workspace outside the application tree, verifies the staged exact package set, and transactionally publishes the verified snapshot into the existing isolated `node_modules/.wm-modern-test-toolchain` authority. Failed staged installs preserve the last verified published workspace and bridges. The application lockfile graph, exact top-level test-tool versions, bridge isolation, package/lock immutability, dependency-content certification binding, and all fail-closed release gates remain enforced.
+
+Current project-side verification for this corrective: M42 static verification **159/159 PASS**; Users/RBAC deterministic execution and certification regressions **PASS**, including the strengthened governed-toolchain regression that enforces external staging and failed-stage preservation. Hosted closure remains pending because this exact corrective has not yet run on GitHub Actions. No M42 certified ZIP or PASS record is authorized or created.
+
+State remains **implementation-complete-pending-certification**.
+
+### Verification status after staging corrective
+
+- Static M42 contract: **159/159 PASS**.
+- Deterministic M42 aggregate: **PASS**; 31/31 Users/RBAC vectors and all certification regressions pass.
+- Security baseline: **PASS**.
+- UI verification: **PASS**.
+- Historical collect-all: **136/152 locally**, with the same 16 dependency-resolution blocked executions caused by the sandbox's unavailable exact dependency tree.
+- Certification preflight: **FAIL CLOSED on 2 external capabilities** — npm registry/cache materialization and Docker runtime.
+- Hosted verification of this exact staging corrective: **pending**.
+- Certified baseline/PASS record: **not created**.
+
+Accordingly, milestone state remains **implementation-complete-pending-certification**.

@@ -7,6 +7,8 @@ import {
   MODERN_TEST_TOOLCHAIN,
   EXPECTED_JSDOM_NODE_ENGINE,
   MODERN_TEST_TOOLCHAIN_WORKSPACE,
+  MODERN_TEST_TOOLCHAIN_STAGING_PREFIX,
+  materializeModernTestToolchain,
   verifyModernTestToolchain,
   verifyModernTestToolchainIsolation,
 } from './lib/modern-test-toolchain.mjs';
@@ -60,7 +62,8 @@ function writeFakeNpm(binDir, logFile, project) {
   const source = `#!/usr/bin/env node\n` +
 `const fs=require('node:fs'); const path=require('node:path');\n` +
 `const cwd=process.cwd(); const args=process.argv.slice(2); fs.appendFileSync(${JSON.stringify(logFile)}, 'CWD='+cwd+'\\nARGS='+args.join(' ')+'\\n');\n` +
-`if(!cwd.endsWith(${JSON.stringify(path.sep + MODERN_TEST_TOOLCHAIN_WORKSPACE)})){ const f=${JSON.stringify(path.join(project, 'node_modules', 'vite', 'package.json'))}; const j=JSON.parse(fs.readFileSync(f,'utf8')); j.version='9.9.9'; fs.writeFileSync(f,JSON.stringify(j)); process.exit(0); }\n` +
+`if(cwd===${JSON.stringify(project)}||cwd.startsWith(${JSON.stringify(project + path.sep)})){ const f=${JSON.stringify(path.join(project, 'node_modules', 'vite', 'package.json'))}; const j=JSON.parse(fs.readFileSync(f,'utf8')); j.version='9.9.9'; fs.writeFileSync(f,JSON.stringify(j)); process.exit(91); }\n` +
+`if(!path.basename(cwd).startsWith(${JSON.stringify('wm-modern-test-toolchain-stage-')}))process.exit(92);\n` +
 `const specs=args.filter((value)=>!value.startsWith('-')&&value!=='install');\n` +
 `for(const spec of specs){ const cut=spec.lastIndexOf('@'); const name=spec.slice(0,cut); const version=spec.slice(cut+1); const dir=path.join(cwd,'node_modules',...name.split('/')); fs.mkdirSync(dir,{recursive:true}); const meta={name,version}; if(name==='jsdom')meta.engines={node:${JSON.stringify(EXPECTED_JSDOM_NODE_ENGINE)}}; if(name==='vitest')meta.bin={vitest:'./vitest.mjs'}; if(name==='@playwright/test')meta.bin={playwright:'./cli.js'}; fs.writeFileSync(path.join(dir,'package.json'),JSON.stringify(meta,null,2)+'\\n'); if(name==='vitest')fs.writeFileSync(path.join(dir,'vitest.mjs'),'#!/usr/bin/env node\\n'); if(name==='@playwright/test')fs.writeFileSync(path.join(dir,'cli.js'),'#!/usr/bin/env node\\n'); }\n` +
 `const bindir=path.join(cwd,'node_modules','.bin'); fs.mkdirSync(bindir,{recursive:true}); for(const [name,target] of [['vitest','../vitest/vitest.mjs'],['playwright','../@playwright/test/cli.js']]){ const dest=path.join(bindir,name); try{fs.unlinkSync(dest)}catch{} fs.symlinkSync(target,dest); }\n`;
@@ -92,7 +95,9 @@ try {
   });
   assert(!run.error && run.status === 0, `isolated modern test-toolchain bootstrap should succeed: ${run.stderr || run.stdout || run.error?.message}`);
   const log = fs.readFileSync(logFile, 'utf8');
-  assert(log.includes(`${path.sep}node_modules${path.sep}${MODERN_TEST_TOOLCHAIN_WORKSPACE}`), 'modern test-toolchain npm install must execute from the isolated node_modules workspace');
+  const npmCwd = log.split(/\n/).find((line) => line.startsWith('CWD='))?.slice(4) || '';
+  assert(npmCwd && !npmCwd.startsWith(`${project}${path.sep}`) && npmCwd !== project, 'modern test-toolchain npm install must execute outside the application tree');
+  assert(path.basename(npmCwd).startsWith(MODERN_TEST_TOOLCHAIN_STAGING_PREFIX), 'modern test-toolchain npm install must execute from a disposable governed staging workspace');
   for (const flag of ['--no-save', '--package-lock=false', '--ignore-scripts']) assert(log.includes(flag), `isolated modern test-toolchain bootstrap must preserve ${flag}`);
   assert(Buffer.compare(packageBefore, fs.readFileSync(path.join(project, 'package.json'))) === 0, 'isolated bootstrap must preserve package.json byte-for-byte');
   assert(Buffer.compare(lockBefore, fs.readFileSync(path.join(project, 'package-lock.json'))) === 0, 'isolated bootstrap must preserve package-lock.json byte-for-byte');
@@ -104,6 +109,20 @@ try {
   assert(tools.ok && tools.checked === tools.expected, `isolated governed toolchain fixture must verify: ${tools.issues.join('; ')}`);
   assert(isolation.ok, `governed toolchain bridges must remain isolated: ${isolation.issues.join('; ')}`);
   assert(run.stdout.includes('application lockfile tree preserved'), 'bootstrap success output must explicitly report application dependency preservation');
+  const workspaceBeforeFailure = fs.readFileSync(path.join(project, 'node_modules', MODERN_TEST_TOOLCHAIN_WORKSPACE, 'node_modules', 'vitest', 'package.json'));
+  fs.writeFileSync(path.join(fakeBin, 'npm'), '#!/bin/sh\nexit 73\n', { mode: 0o755 });
+  const originalPath = process.env.PATH;
+  process.env.PATH = `${fakeBin}:${originalPath || ''}`;
+  try {
+    const failed = materializeModernTestToolchain(project, { stdio: 'pipe' });
+    assert(!failed.ok && failed.status === 73, 'failed external staging install must propagate its npm exit status');
+  } finally {
+    process.env.PATH = originalPath;
+  }
+  assert(Buffer.compare(workspaceBeforeFailure, fs.readFileSync(path.join(project, 'node_modules', MODERN_TEST_TOOLCHAIN_WORKSPACE, 'node_modules', 'vitest', 'package.json'))) === 0, 'failed external staging install must preserve the last verified toolchain workspace');
+  const afterFailedStage = verifyModernTestToolchain(project);
+  const isolationAfterFailedStage = verifyModernTestToolchainIsolation(project);
+  assert(afterFailedStage.ok && isolationAfterFailedStage.ok, 'failed external staging install must preserve the last verified published bridges');
 } finally {
   fs.rmSync(isolationTemp, { recursive: true, force: true });
 }
@@ -162,7 +181,7 @@ try {
   assert(workflow.includes('WM_M42_PRESERVE_GOVERNED_TEST_TOOLCHAIN=1'), 'M42 CI must preserve the governed toolchain across dependency checks');
   assert(workflow.includes('WM_M42_CERTIFICATION_DEPENDENCY_DIGEST='), 'M42 CI must bind nested dependency checks to its captured dependency digest');
 
-  console.log('Stage G M42 governed modern test-toolchain preservation regression: PASS (isolated bootstrap preserves application lockfile tree and digest-bound certification extension)');
+  console.log('Stage G M42 governed modern test-toolchain preservation regression: PASS (external staged bootstrap avoids application-tree npm resolution, preserves the last verified toolchain on staging failure, preserves application lockfile tree, and keeps the digest-bound certification extension)');
 } finally {
   fs.rmSync(preserveTemp, { recursive: true, force: true });
 }

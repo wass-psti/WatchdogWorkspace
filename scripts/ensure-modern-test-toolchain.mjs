@@ -29,9 +29,13 @@ if (!applicationTree.ok) {
   throw new Error(`Modern test-toolchain bootstrap requires an exact application npm-ci baseline and refuses to repair application dependency drift:\n- ${applicationTree.issues.join('\n- ')}`);
 }
 
-// The isolated bootstrap intentionally retains the M30 no-save/package-lock policy:
-// npm install --no-save --package-lock=false --ignore-scripts runs only inside
-// node_modules/.wm-modern-test-toolchain, never against the application root.
+// The isolated bootstrap intentionally retains the M30 no-save/package-lock policy.
+// npm install --no-save --package-lock=false --ignore-scripts runs in a disposable
+// OS-temporary staging workspace outside the application tree, then the verified
+// workspace is transactionally published under node_modules/.wm-modern-test-toolchain.
+// This avoids npm Arborist treating the application node_modules tree as an ancestor
+// install graph while still keeping the governed toolchain isolated from package.json
+// and package-lock.json.
 const result = materializeModernTestToolchain(root);
 if (!result.ok) {
   throw new Error(`Modern test toolchain bootstrap failed${result.status == null ? '' : ` with exit code ${result.status}`}:${result.output ? `\n${result.output}` : ''}`);
