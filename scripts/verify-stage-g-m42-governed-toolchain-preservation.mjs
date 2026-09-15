@@ -154,7 +154,7 @@ try {
 
   const activation = fs.readFileSync(path.join(root, 'scripts/activate-stage-g-m42.mjs'), 'utf8');
   assert(activation.indexOf("run('modern-tests:toolchain:ensure')") < activation.indexOf('const certifiedDependencies = dependencyTree()'), 'M42 activation must materialize governed test tooling before capturing dependency evidence');
-  assert(activation.indexOf('WM_M42_PRESERVE_GOVERNED_TEST_TOOLCHAIN') < activation.indexOf('runReleasePreActivationEvidenceGates()'), 'M42 activation must preserve the governed test-toolchain extension before evidence gates begin');
+  assert(activation.indexOf('WM_M42_PRESERVE_GOVERNED_TEST_TOOLCHAIN') < activation.indexOf('runReleasePreActivationEvidenceGates(certifiedSource, certifiedDependencies)'), 'M42 activation must preserve the governed test-toolchain extension before evidence gates begin');
   assert(activation.includes('WM_M42_CERTIFICATION_DEPENDENCY_DIGEST = certifiedDependencies.digest'), 'M42 activation must bind nested dependency checks to the captured certification dependency digest');
 
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/users-rbac-functional-recovery.yml'), 'utf8');

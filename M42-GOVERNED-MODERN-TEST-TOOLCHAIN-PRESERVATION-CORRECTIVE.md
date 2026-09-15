@@ -74,3 +74,9 @@ No certified baseline or PASS record is authorized until those external prerequi
 ## 2026-09-15 hosted deterministic-materialization supersession
 
 The 2026-09-14 preservation model correctly bound the combined installed tree after test-tool bootstrap, but GitHub-hosted execution proved the root-level unlocked bootstrap could first replace lockfile-governed transitive packages. The preservation model remains valid after capture; the materialization step has now been corrected to use the isolated `node_modules/.wm-modern-test-toolchain` workspace with managed package/binary bridges. See `M42-DETERMINISTIC-DEPENDENCY-MATERIALIZATION-CORRECTIVE.md`.
+
+## 2026-09-15 hosted evidence-stability refinement
+
+The isolated governed test-toolchain topology remains unchanged and continues to be part of installed dependency evidence. The hosted integration run on `c4b42ddd594bc05b6e1d3e93c01a1b31f83fcd24` proved toolchain materialization, dependency checks, browser execution, Database/RLS, and historical verification all pass before the old final digest comparison.
+
+The remaining evidence-boundary corrective does not weaken the governed toolchain digest. It excludes only Vite's generated `node_modules/.vite-temp` config-output directory, adds path-level evidence diagnostics, and checks the captured evidence after each hosted/release gate. Real packages inside `.wm-modern-test-toolchain`, their transitive files, and managed bridges remain certification-visible. See `M42-HOSTED-EVIDENCE-STABILITY-CORRECTIVE-2026-09-15.md`.

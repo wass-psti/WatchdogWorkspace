@@ -33,3 +33,11 @@ This corrective does not waive any external gate. In the current sandbox, clean 
 ## CI evidence parity
 
 The M42 GitHub workflow now installs dependencies with the same `--ignore-scripts` policy, captures the M42 source-tree and installed-dependency content digests immediately after installation, runs the non-mutating certification evidence gates, and verifies both digests remain unchanged afterward. CI therefore enforces the same stale-evidence boundary as local release certification without mutating milestone activation state.
+
+## 2026-09-15 generated-tool-output boundary refinement
+
+Hosted integration revision `c4b42ddd594bc05b6e1d3e93c01a1b31f83fcd24` passed every functional gate but failed the old final evidence-digest comparison. The old workflow did not emit the recomputed values or paths, so the exact historical mismatch cannot be recovered from that log.
+
+A reproducible evidence-domain defect was found in the installed dependency authority: Vite 8.2.2's default bundled config loader writes generated modules under `node_modules/.vite-temp`, while the M42 digest excluded `.vite` but not `.vite-temp`. Under the old helper, adding only a synthetic Vite `.vite-temp` config changed the dependency digest; under the corrected helper it does not. Actual package-file mutation continues to change the digest.
+
+The generated-cache exclusion set is now `.cache`, `.vite`, `.vite-temp`, and `.vitest`. Path-level evidence manifests and per-gate assertions were added so future source/dependency drift fails at the exact producing gate with exact changed paths. See `M42-HOSTED-EVIDENCE-STABILITY-CORRECTIVE-2026-09-15.md`.

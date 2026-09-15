@@ -157,7 +157,7 @@ try {
   assert.equal(readFileSync(preActivationTamper.target, 'utf8'), preActivationTamper.originalTarget, 'pre-activation source mutation must preserve the original target');
   assert.equal(readFileSync(preActivationTamper.releaseStatus, 'utf8'), preActivationTamper.originalReleaseStatus, 'pre-activation source mutation must preserve the original release-status record');
   assert.deepEqual(readCalls(preActivationTamper.log), strictReleaseCalls.slice(0, 9), 'pre-activation source mutation must be detected before activation');
-  assert.match(`${result.stdout}${result.stderr}`, /source tree changed during pre-activation gates/i, 'pre-activation mutation failure must identify the evidence-integrity boundary');
+  assert.match(`${result.stdout}${result.stderr}`, /source tree changed during pre-activation Database\/RLS verification/i, 'pre-activation mutation failure must identify the evidence-integrity boundary');
 } finally {
   rmSync(preActivationTamper.sandbox, { recursive: true, force: true });
 }
@@ -168,8 +168,8 @@ try {
   assert.notEqual(result.status, 0, 'source mutation during post-activation verification must fail certification');
   assert.equal(readFileSync(postActivationTamper.target, 'utf8'), postActivationTamper.originalTarget, 'post-activation source mutation must roll back the exact original target');
   assert.equal(readFileSync(postActivationTamper.releaseStatus, 'utf8'), postActivationTamper.originalReleaseStatus, 'post-activation source mutation must roll back the exact original release-status record');
-  assert.deepEqual(readCalls(postActivationTamper.log), strictReleaseCalls, 'post-activation source mutation must be detected after the complete release verification sequence');
-  assert.match(`${result.stdout}${result.stderr}`, /source tree changed during post-activation verification/i, 'post-activation mutation failure must identify the evidence-integrity boundary');
+  assert.deepEqual(readCalls(postActivationTamper.log), strictReleaseCalls.slice(0, 12), 'post-activation source mutation must be detected immediately after the historical gate and before complete release verification');
+  assert.match(`${result.stdout}${result.stderr}`, /source tree changed during post-activation historical verification/i, 'post-activation mutation failure must identify the evidence-integrity boundary');
 } finally {
   rmSync(postActivationTamper.sandbox, { recursive: true, force: true });
 }
@@ -182,7 +182,7 @@ try {
   assert.equal(readFileSync(preActivationDependencyTamper.target, 'utf8'), preActivationDependencyTamper.originalTarget, 'pre-activation dependency mutation must preserve the original target');
   assert.equal(readFileSync(preActivationDependencyTamper.releaseStatus, 'utf8'), preActivationDependencyTamper.originalReleaseStatus, 'pre-activation dependency mutation must preserve the original release-status record');
   assert.deepEqual(readCalls(preActivationDependencyTamper.log), strictReleaseCalls.slice(0, 9), 'pre-activation dependency mutation must be detected before activation');
-  assert.match(`${result.stdout}${result.stderr}`, /installed dependency tree changed during pre-activation gates/i, 'pre-activation dependency mutation failure must identify the dependency evidence boundary');
+  assert.match(`${result.stdout}${result.stderr}`, /installed dependency tree changed during pre-activation Database\/RLS verification/i, 'pre-activation dependency mutation failure must identify the dependency evidence boundary');
 } finally {
   rmSync(preActivationDependencyTamper.sandbox, { recursive: true, force: true });
 }
@@ -193,8 +193,8 @@ try {
   assert.notEqual(result.status, 0, 'dependency mutation during post-activation verification must fail certification');
   assert.equal(readFileSync(postActivationDependencyTamper.target, 'utf8'), postActivationDependencyTamper.originalTarget, 'post-activation dependency mutation must roll back the exact original target');
   assert.equal(readFileSync(postActivationDependencyTamper.releaseStatus, 'utf8'), postActivationDependencyTamper.originalReleaseStatus, 'post-activation dependency mutation must roll back the exact original release-status record');
-  assert.deepEqual(readCalls(postActivationDependencyTamper.log), strictReleaseCalls, 'post-activation dependency mutation must be detected after complete release verification');
-  assert.match(`${result.stdout}${result.stderr}`, /installed dependency tree changed during post-activation verification/i, 'post-activation dependency mutation failure must identify the dependency evidence boundary');
+  assert.deepEqual(readCalls(postActivationDependencyTamper.log), strictReleaseCalls.slice(0, 12), 'post-activation dependency mutation must be detected immediately after historical verification and before complete release verification');
+  assert.match(`${result.stdout}${result.stderr}`, /installed dependency tree changed during post-activation historical verification/i, 'post-activation dependency mutation failure must identify the dependency evidence boundary');
 } finally {
   rmSync(postActivationDependencyTamper.sandbox, { recursive: true, force: true });
 }

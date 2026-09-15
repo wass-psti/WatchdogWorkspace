@@ -51,7 +51,14 @@ function collect(root, current = root, entries = []) {
   return entries;
 }
 
-export function computeM42CertificationTreeDigest(projectRoot) {
+const fingerprint = (entry) => ({
+  relative: entry.relative,
+  type: entry.type,
+  mode: entry.mode.toString(8),
+  sha256: crypto.createHash('sha256').update(entry.payload).digest('hex'),
+});
+
+export function computeM42CertificationTreeDigest(projectRoot, { includeManifest = false } = {}) {
   const root = path.resolve(projectRoot);
   const hash = crypto.createHash('sha256');
   const entries = collect(root);
@@ -65,13 +72,16 @@ export function computeM42CertificationTreeDigest(projectRoot) {
     hash.update(entry.payload);
     hash.update('\0');
   }
-  return { digest: hash.digest('hex'), files: entries.length };
+  const result = { digest: hash.digest('hex'), files: entries.length };
+  if (includeManifest) result.manifest = entries.map(fingerprint);
+  return result;
 }
 
 const invokedAsScript = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 if (invokedAsScript) {
   const root = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(import.meta.dirname, '../..');
-  const result = computeM42CertificationTreeDigest(root);
-  if (process.argv.includes('--json')) console.log(JSON.stringify(result));
+  const includeManifest = process.argv.includes('--manifest-json');
+  const result = computeM42CertificationTreeDigest(root, { includeManifest });
+  if (process.argv.includes('--json') || includeManifest) console.log(JSON.stringify(result));
   else console.log(result.digest);
 }

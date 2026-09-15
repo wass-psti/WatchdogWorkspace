@@ -22,30 +22,39 @@ jobs:
           DEPENDENCY_DIGEST="$(node scripts/lib/stage-g-m42-dependency-tree.mjs "$PWD")"
           [[ "$SOURCE_DIGEST" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Invalid M42 source digest: $SOURCE_DIGEST"; exit 1; }
           [[ "$DEPENDENCY_DIGEST" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Invalid M42 dependency digest: $DEPENDENCY_DIGEST"; exit 1; }
+          EVIDENCE_SNAPSHOT="$RUNNER_TEMP/m42-evidence-baseline.json"
+          node scripts/assert-stage-g-m42-evidence-stability.mjs capture "$EVIDENCE_SNAPSHOT"
           {
             echo "M42_SOURCE_DIGEST=$SOURCE_DIGEST"
             echo "M42_DEPENDENCY_DIGEST=$DEPENDENCY_DIGEST"
+            echo "M42_EVIDENCE_SNAPSHOT=$EVIDENCE_SNAPSHOT"
             echo "WM_M42_PRESERVE_GOVERNED_TEST_TOOLCHAIN=1"
             echo "WM_M42_CERTIFICATION_DEPENDENCY_DIGEST=$DEPENDENCY_DIGEST"
           } >> "$GITHUB_ENV"
       - run: npm run users-rbac-recovery:preflight
+      - name: Verify M42 evidence after preflight
+        run: node scripts/assert-stage-g-m42-evidence-stability.mjs verify "$M42_EVIDENCE_SNAPSHOT" "hosted preflight"
       - run: npm run users-rbac-recovery:check
+      - name: Verify M42 evidence after static verification
+        run: node scripts/assert-stage-g-m42-evidence-stability.mjs verify "$M42_EVIDENCE_SNAPSHOT" "hosted static verification"
       - run: npm run users-rbac-recovery:test
+      - name: Verify M42 evidence after deterministic verification
+        run: node scripts/assert-stage-g-m42-evidence-stability.mjs verify "$M42_EVIDENCE_SNAPSHOT" "hosted deterministic verification"
       - run: npm run users-rbac-recovery:browser
+      - name: Verify M42 evidence after browser verification
+        run: node scripts/assert-stage-g-m42-evidence-stability.mjs verify "$M42_EVIDENCE_SNAPSHOT" "hosted browser verification"
       - run: npm run database-rls:test:local
+      - name: Verify M42 evidence after Database/RLS verification
+        run: node scripts/assert-stage-g-m42-evidence-stability.mjs verify "$M42_EVIDENCE_SNAPSHOT" "hosted Database/RLS verification"
       - run: npm run verify:historical-all
+      - name: Verify M42 evidence after historical verification
+        run: node scripts/assert-stage-g-m42-evidence-stability.mjs verify "$M42_EVIDENCE_SNAPSHOT" "hosted historical verification"
       - run: npm run typecheck
+      - name: Verify M42 evidence after TypeScript verification
+        run: node scripts/assert-stage-g-m42-evidence-stability.mjs verify "$M42_EVIDENCE_SNAPSHOT" "hosted TypeScript verification"
       - run: npm run security:check
+      - name: Verify M42 evidence after security verification
+        run: node scripts/assert-stage-g-m42-evidence-stability.mjs verify "$M42_EVIDENCE_SNAPSHOT" "hosted security verification"
       - run: npm run verify:ui
-      - name: Verify M42 evidence digests remained stable
-        shell: bash
-        run: |
-          set -euo pipefail
-          [[ "${M42_SOURCE_DIGEST:-}" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Missing or invalid captured M42 source digest"; exit 1; }
-          [[ "${M42_DEPENDENCY_DIGEST:-}" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Missing or invalid captured M42 dependency digest"; exit 1; }
-          CURRENT_SOURCE_DIGEST="$(node scripts/lib/stage-g-m42-certification-tree.mjs "$PWD")"
-          CURRENT_DEPENDENCY_DIGEST="$(node scripts/lib/stage-g-m42-dependency-tree.mjs "$PWD")"
-          [[ "$CURRENT_SOURCE_DIGEST" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Invalid current M42 source digest: $CURRENT_SOURCE_DIGEST"; exit 1; }
-          [[ "$CURRENT_DEPENDENCY_DIGEST" =~ ^[a-f0-9]{64}$ ]] || { echo "::error::Invalid current M42 dependency digest: $CURRENT_DEPENDENCY_DIGEST"; exit 1; }
-          test "$CURRENT_SOURCE_DIGEST" = "$M42_SOURCE_DIGEST"
-          test "$CURRENT_DEPENDENCY_DIGEST" = "$M42_DEPENDENCY_DIGEST"
+      - name: Verify final M42 evidence stability
+        run: node scripts/assert-stage-g-m42-evidence-stability.mjs verify "$M42_EVIDENCE_SNAPSHOT" "final hosted integration gate"

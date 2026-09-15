@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 
-const generatedCacheNames = new Set(['.cache', '.vite', '.vitest']);
+const generatedCacheNames = new Set(['.cache', '.vite', '.vite-temp', '.vitest']);
 
 function collect(root, current, entries = []) {
   for (const dirent of fs.readdirSync(current, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
@@ -26,7 +26,14 @@ function collect(root, current, entries = []) {
   return entries;
 }
 
-export function computeM42DependencyTreeDigest(projectRoot) {
+const fingerprint = (entry) => ({
+  relative: entry.relative,
+  type: entry.type,
+  mode: entry.mode.toString(8),
+  sha256: crypto.createHash('sha256').update(entry.payload).digest('hex'),
+});
+
+export function computeM42DependencyTreeDigest(projectRoot, { includeManifest = false } = {}) {
   const root = path.resolve(projectRoot);
   const nodeModules = path.join(root, 'node_modules');
   if (!fs.existsSync(nodeModules) || !fs.statSync(nodeModules).isDirectory()) {
@@ -45,13 +52,16 @@ export function computeM42DependencyTreeDigest(projectRoot) {
     hash.update(entry.payload);
     hash.update('\0');
   }
-  return { digest: hash.digest('hex'), entries: entries.length };
+  const result = { digest: hash.digest('hex'), entries: entries.length };
+  if (includeManifest) result.manifest = entries.map(fingerprint);
+  return result;
 }
 
 const invokedAsScript = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 if (invokedAsScript) {
   const root = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(import.meta.dirname, '../..');
-  const result = computeM42DependencyTreeDigest(root);
-  if (process.argv.includes('--json')) console.log(JSON.stringify(result));
+  const includeManifest = process.argv.includes('--manifest-json');
+  const result = computeM42DependencyTreeDigest(root, { includeManifest });
+  if (process.argv.includes('--json') || includeManifest) console.log(JSON.stringify(result));
   else console.log(result.digest);
 }

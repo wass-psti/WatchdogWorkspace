@@ -49,12 +49,22 @@ const materializeCertifiedDependencies = () => {
   run('users-rbac-recovery:dependencies:check');
 };
 
-const runReleasePreActivationEvidenceGates = () => {
-  run('account-recovery:status');
-  run('users-rbac-recovery:check');
-  run('users-rbac-recovery:test');
-  run('users-rbac-recovery:browser');
-  run('database-rls:test:local');
+const assertEvidence = (source, dependencies, phase) => {
+  assertCertificationTree(source, phase);
+  assertDependencyTree(dependencies, phase);
+};
+
+const runEvidenceGate = (script, source, dependencies, phase) => {
+  run(script);
+  assertEvidence(source, dependencies, phase);
+};
+
+const runReleasePreActivationEvidenceGates = (source, dependencies) => {
+  runEvidenceGate('account-recovery:status', source, dependencies, 'pre-activation account prerequisite status');
+  runEvidenceGate('users-rbac-recovery:check', source, dependencies, 'pre-activation M42 static verification');
+  runEvidenceGate('users-rbac-recovery:test', source, dependencies, 'pre-activation M42 deterministic verification');
+  runEvidenceGate('users-rbac-recovery:browser', source, dependencies, 'pre-activation M42 browser verification');
+  runEvidenceGate('database-rls:test:local', source, dependencies, 'pre-activation Database/RLS verification');
 };
 
 const writeState = async (state) => {
@@ -100,12 +110,11 @@ try {
   // Any failure restores the exact pre-activation target.
   const certifiedSource = certificationTree();
   materializeCertifiedDependencies();
+  assertCertificationTree(certifiedSource, 'certification dependency materialization');
   const certifiedDependencies = dependencyTree();
   process.env.WM_M42_PRESERVE_GOVERNED_TEST_TOOLCHAIN = '1';
   process.env.WM_M42_CERTIFICATION_DEPENDENCY_DIGEST = certifiedDependencies.digest;
-  runReleasePreActivationEvidenceGates();
-  assertCertificationTree(certifiedSource, 'pre-activation gates');
-  assertDependencyTree(certifiedDependencies, 'pre-activation gates');
+  runReleasePreActivationEvidenceGates(certifiedSource, certifiedDependencies);
   if (originalState !== 'active-certified') {
     await writeState('active-pending-browser-certification');
     assertCertificationTree(certifiedSource, 'pending activation transition');
@@ -114,12 +123,10 @@ try {
     assertCertificationTree(certifiedSource, 'certified activation transition');
     assertDependencyTree(certifiedDependencies, 'certified activation transition');
   }
-  run('users-rbac-recovery:check');
-  run('users-rbac-recovery:status');
-  run('verify:historical-all');
-  run('release:check');
-  assertCertificationTree(certifiedSource, 'post-activation verification');
-  assertDependencyTree(certifiedDependencies, 'post-activation verification');
+  runEvidenceGate('users-rbac-recovery:check', certifiedSource, certifiedDependencies, 'post-activation M42 static verification');
+  runEvidenceGate('users-rbac-recovery:status', certifiedSource, certifiedDependencies, 'post-activation M42 state verification');
+  runEvidenceGate('verify:historical-all', certifiedSource, certifiedDependencies, 'post-activation historical verification');
+  runEvidenceGate('release:check', certifiedSource, certifiedDependencies, 'post-activation complete release verification');
   console.log('Stage G M42 activation: PASS (active-certified; full source-certification transaction verified)');
 } catch (error) {
   await writeFile(file, original);

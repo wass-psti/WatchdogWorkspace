@@ -165,3 +165,17 @@ Local static, deterministic, security, and UI gates pass. Hosted GitHub revalida
 ## 2026-09-15 hosted M39 browser-boundary corrective
 
 Corrective Action 2 replaces the split M39 Playwright readiness/value boundary with retryable atomic runtime authority reads and idempotent revalidation execution. The deterministic boundary regression is now mandatory under `auth-stabilization:test`. This is a certification-harness correction only; M42 remains `implementation-complete-pending-certification` until the GitHub-hosted M39 browser suite and subsequent M42 fail-closed certification complete successfully.
+
+## 2026-09-15 hosted evidence-stability corrective
+
+GitHub-hosted integration revision `c4b42ddd594bc05b6e1d3e93c01a1b31f83fcd24` substantially advanced M42 verification: preflight, static verification (148 checks on that revision), deterministic verification (31 vectors plus certification regressions), browser 6/6, Database/RLS 96 tests, historical 152/152, TypeScript, security, and UI all passed. Only the old final `Verify M42 evidence digests remained stable` step failed.
+
+The old shell comparison emitted no recomputed digest or changed-path information, so the exact historical changed tree cannot be proven after the run. A concrete false-positive evidence-domain defect has been reproduced and corrected: Vite 8.2.2 generated bundled-config output under `node_modules/.vite-temp` was previously hashed as installed dependency content. The corrected dependency authority normalizes `.vite-temp` while preserving all actual installed package bytes/modes/symlink targets; the focused M42 browser gate uses native Vite config loading; and new source/dependency manifests are verified after every major hosted and release-certification gate with exact path diagnostics.
+
+Current locally executable corrective verification is PASS: M42 static 153/153, Users/RBAC 31/31, activation/finalizer/clean-dependency/governed-toolchain/certifier/package-hygiene/evidence-stability/hosted-workflow regressions, security, and full UI. Local historical remains 136/152 solely because this sandbox cannot materialize the exact dependency tree; the immediately preceding hosted revision already proved historical 152/152. Current aggregate preflight fails closed on exactly two sandbox capabilities (npm registry DNS/cache materialization and Docker), and an actual finalizer attempt preserves both M42 authority records byte-for-byte and creates no certified output.
+
+M42 remains `implementation-complete-pending-certification`. The next required operation is hosted revalidation of the exact new corrective commit. Only when `Users RBAC Functional Recovery` is fully green may `Stage G M42 Certified Baseline` be dispatched against the same SHA.
+
+### Hosted evidence-stability continuation package
+
+The next hosted candidate is packaged as `Work-Management-App-v1.43.2-Stage-G-M42-Hosted-Evidence-Stability-Corrective-Continuation-Candidate-2026-09-15`. This is a continuation candidate, not a certified M42 baseline. Certification remains fail closed until the automatic Users/RBAC integration workflow and subsequent exact-revision certified-baseline workflow both pass.

@@ -394,3 +394,31 @@ Locally executable verification passes. The next required step is GitHub-hosted 
 ## 2026-09-15 hosted corrective action 2 — M39 browser runtime boundary
 
 GitHub-hosted diagnostic revision `49d29c460015cb86db8ec168079e84a1cc21bc8c` proved that the remaining M39 failures share one browser-harness boundary: readiness was observed in one evaluation and the identity/preflight/runtime command was consumed in a later evaluation after the hosted main document could be replaced. `waitForM39Identity`, backend-preflight reads, and `identity.revalidate` now use one retryable page-evaluation authority boundary. `scripts/verify-m39-browser-runtime-boundary.mjs` deterministically reproduces execution-context replacement and verifies retry/atomic consumption. No production authorization policy is weakened. The next milestone action is to push the combined corrective candidate and require the hosted M39 suite to pass 6/6 before running the final M42 certified-baseline workflow.
+
+## 2026-09-15 handoff supersession — hosted evidence stability
+
+The previous handoff state is superseded by the hosted run on commit `c4b42ddd594bc05b6e1d3e93c01a1b31f83fcd24` and the subsequent evidence-stability corrective.
+
+Hosted `Users RBAC Functional Recovery` on that commit passed every functional/integration gate through UI verification, including browser 6/6, Database/RLS 96 tests, and historical 152/152. The only failure was the legacy final digest equality step. Because that step did not print the recomputed digests or changed paths, the finished run cannot be retrospectively attributed to a specific path without guessing.
+
+A reproducible certification-harness defect was then isolated: Vite 8.2.2 generated `node_modules/.vite-temp` output was inside the old installed-dependency hash domain. The new candidate normalizes that generated directory, runs the focused M42 Vite server with `--configLoader native`, and introduces path-level source/dependency snapshots checked after every major hosted/release-certification phase. If any other drift remains, the next hosted run will fail exactly at the producing phase and print the exact path(s), eliminating another speculative correction cycle.
+
+M42 business logic remains unchanged. Certification state remains `implementation-complete-pending-certification`; no certified baseline or PASS record is authorized yet. The next action is to push the new `Hosted Evidence Stability Corrective` continuation candidate, allow automatic workflows to finish, verify `Users RBAC Functional Recovery` is fully green, and only then run the exact-revision `Stage G M42 Certified Baseline` workflow.
+
+
+### Final local evidence for the hosted evidence-stability candidate
+
+- M42 static: **153/153 PASS**.
+- M42 deterministic aggregate: **PASS**, including 31 Users/RBAC vectors and the evidence-stability regression.
+- Security baseline: **PASS**.
+- Full UI verification: **PASS**.
+- Local source-tree digest remained unchanged across security, UI, and the historical attempt.
+- Historical collect-all: **136/152 locally**, with the same 16 missing-dependency executions; hosted `c4b42ddd...` already proved **152/152**.
+- Aggregate preflight: **FAIL CLOSED with exactly 2 sandbox blockers** — npm registry DNS/cache materialization and absent Docker.
+- Actual finalizer: **FAIL CLOSED** on the same preflight boundary; target and release-status records were restored byte-for-byte and no certified baseline/PASS artifact was created.
+
+## Continuation package after hosted evidence-stability corrective
+
+Latest continuation package root: `Work-Management-App-v1.43.2-Stage-G-M42-Hosted-Evidence-Stability-Corrective-Continuation-Candidate-2026-09-15`.
+
+This package is **not** a certified baseline. Push this exact candidate to the intended GitHub repository, record the resulting exact commit SHA, and allow the automatic `Users RBAC Functional Recovery` workflow to complete. Do not run `Stage G M42 Certified Baseline` until that automatic workflow is fully green. If it is green, run the certified-baseline workflow against the same exact SHA using `expected_commit_sha`.

@@ -48,3 +48,11 @@ Hosted execution of diagnostic revision `49d29c460015cb86db8ec168079e84a1cc21bc8
 ## M39 hosted browser runtime-boundary corrective — 2026-09-15
 
 GitHub-hosted revision `49d29c460015cb86db8ec168079e84a1cc21bc8c` exposed a TOCTOU defect in the M39 Playwright helper: runtime/identity readiness was observed in one page evaluation and consumed in a later evaluation, so a hosted main-document replacement could invalidate `WorkManagementRuntime` between those operations. M39 identity reads, backend-preflight reads, and idempotent `identity.revalidate` execution now use one retryable atomic runtime boundary. A deterministic regression is part of `auth-stabilization:test`. Production auth/RBAC behavior is unchanged. Hosted 6/6 M39 browser revalidation remains required before M42 certification.
+
+## Hosted evidence stability corrective — 2026-09-15
+
+GitHub-hosted commit `c4b42ddd594bc05b6e1d3e93c01a1b31f83fcd24` passed M42 static/deterministic/browser, Database/RLS, historical 152/152, TypeScript, security, and UI gates, then failed only at the old final source/dependency digest comparison. That old comparison printed neither recomputed digest nor changed paths, so the finished run cannot support retrospective attribution to a specific tree/path.
+
+A concrete certification-domain defect was nevertheless reproduced: the prior installed-dependency digest treated Vite 8.2.2 generated `node_modules/.vite-temp` config output as installed dependency content. The dependency authority now normalizes `.vite-temp` with the other generated Vite/Vitest caches while continuing to hash all actual installed package bytes, modes, and symlink targets. The focused M42 browser runner also uses Vite `--configLoader native` so it does not generate bundled config tempfiles.
+
+M42 now captures path-level source/dependency evidence outside the source tree and verifies it after every major hosted and release-certification gate. Any future drift identifies the exact gate, aggregate digest change, and added/removed/changed paths before failing closed. A deterministic regression proves generated Vite temporary output is ignored while real package mutation remains visible. See `M42-HOSTED-EVIDENCE-STABILITY-CORRECTIVE-2026-09-15.md`.
