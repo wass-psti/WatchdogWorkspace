@@ -76,12 +76,26 @@ jobs:
             echo '**State:** active-certified'
             echo "**Certified ZIP SHA-256:** \`$SHA\`"
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Stage verified M42 artifacts for upload
+        shell: bash
+        run: |
+          set -euo pipefail
+          STAGE_DIR="m42-certified-artifacts-upload"
+          ZIP="Work-Management-App-v1.43.2-Stage-G-M42-Certified-Baseline.zip"
+          PASS="Work-Management-App-v1.43.2-Stage-G-M42-Certified-Baseline-PASS.txt"
+          rm -rf "$STAGE_DIR"
+          mkdir -p "$STAGE_DIR"
+          cp "../$ZIP" "$STAGE_DIR/$ZIP"
+          cp "../$PASS" "$STAGE_DIR/$PASS"
+          cmp -s "../$ZIP" "$STAGE_DIR/$ZIP"
+          cmp -s "../$PASS" "$STAGE_DIR/$PASS"
+          test "$(sha256sum "../$ZIP" | awk '{print $1}')" = "$(sha256sum "$STAGE_DIR/$ZIP" | awk '{print $1}')"
       - name: Upload certified M42 baseline
         uses: actions/upload-artifact@v4
         with:
           name: work-management-v1.43.2-stage-g-m42-certified-${{ github.sha }}
           path: |
-            ../Work-Management-App-v1.43.2-Stage-G-M42-Certified-Baseline.zip
-            ../Work-Management-App-v1.43.2-Stage-G-M42-Certified-Baseline-PASS.txt
+            m42-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M42-Certified-Baseline.zip
+            m42-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M42-Certified-Baseline-PASS.txt
           if-no-files-found: error
           retention-days: 90

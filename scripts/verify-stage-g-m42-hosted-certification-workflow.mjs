@@ -30,6 +30,16 @@ requireText('stage-g-m42-certification-tree.mjs .', 'hosted source-tree digest r
 requireText("grep -Fq -- '- **State:** active-certified'", 'certified state verification');
 requireText('sha256sum -c CHECKSUMS.sha256', 'published baseline checksum verification');
 requireText('actions/upload-artifact@v4', 'certified artifact upload');
+requireText('Stage verified M42 artifacts for upload', 'verified artifact staging step');
+requireText('STAGE_DIR="m42-certified-artifacts-upload"', 'repository-local upload staging directory');
+requireText('cp "../$ZIP" "$STAGE_DIR/$ZIP"', 'certified ZIP staging copy');
+requireText('cp "../$PASS" "$STAGE_DIR/$PASS"', 'PASS-record staging copy');
+requireText('cmp -s "../$ZIP" "$STAGE_DIR/$ZIP"', 'certified ZIP byte-identity check');
+requireText('cmp -s "../$PASS" "$STAGE_DIR/$PASS"', 'PASS-record byte-identity check');
+requireText('m42-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M42-Certified-Baseline.zip', 'repository-local certified ZIP upload path');
+requireText('m42-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M42-Certified-Baseline-PASS.txt', 'repository-local PASS-record upload path');
+const uploadBlock = source.slice(source.indexOf('- name: Upload certified M42 baseline'));
+if (uploadBlock.includes('../')) throw new Error('M42 hosted certification upload step must not traverse outside the workspace with ..');
 requireText('if-no-files-found: error', 'fail-closed artifact publication');
 rejectText('continue-on-error:', 'continue-on-error bypass');
 rejectText('users-rbac-recovery:activate:release', 'direct activation bypass outside finalizer');

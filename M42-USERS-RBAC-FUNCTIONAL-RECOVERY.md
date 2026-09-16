@@ -109,3 +109,9 @@ The regression sandbox now normalizes both state authorities to `implementation-
 
 M42 remains **implementation-complete-pending-certification** until the corrected exact revision passes the complete automatic hosted workflow and a subsequent exact-revision certified-baseline transaction.
 
+## Hosted certified-artifact upload-path corrective — 2026-09-16
+
+Exact-revision certified-baseline run `35060842339` on `053bc2975813b18e93c5c8f45048a3a6e0ddd7f4` completed the authoritative finalizer and independent certified-artifact verification successfully, including `active-certified` state, complete release gates, ZIP integrity, PASS-record source/ZIP bindings, and package checksum verification. It failed only when `actions/upload-artifact@v4` rejected the workflow's `../` path inputs. The upload now stages the already-verified ZIP and PASS record byte-identically into repository-local `m42-certified-artifacts-upload/` before publication, and deterministic workflow verification rejects any parent traversal in the upload action. See `M42-HOSTED-CERTIFIED-ARTIFACT-UPLOAD-PATH-CORRECTIVE-2026-09-16.md`.
+
+M42 remains **implementation-complete-pending-certification** until this corrective revision passes the automatic hosted M42 workflow and a subsequent exact-revision certified-baseline run publishes and verifies the artifact successfully.
+
