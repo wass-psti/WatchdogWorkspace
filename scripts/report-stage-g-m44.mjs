@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+const read=(file)=>fs.readFileSync(file,'utf8');
+const target=read('config/stage-g-m44-management-authority-consolidation-target.ts');
+const state=target.match(/activationState:\s*'([^']+)'/)?.[1]??'unknown';
+const arch=read('config/application-manifest.ts').match(/architectureVersion:\s*(\d+)/)?.[1]??'unknown';
+console.log(`Stage G M44 Management Authority Consolidation status: ${state}`);
+console.log(`Architecture: ${arch}`);
+console.log('Management authority: one management feature owner, one React management UI, one authenticated management runtime.');
+console.log('Obsolete imperative Account/Settings/User Management controllers: retired from shipped source/runtime assets.');
+console.log('Production readiness: NOT YET — M45+ stabilization work and M54 production-readiness certification remain required.');

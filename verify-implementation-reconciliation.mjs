@@ -4,7 +4,7 @@ const platform = fs.readFileSync('assets/js/core/platform.ts','utf8');
 const sw = fs.readFileSync('service-worker.js','utf8');
 const auth = fs.readFileSync('assets/js/core/auth.ts','utf8');
 const app = fs.readFileSync('assets/js/app.ts','utf8');
-const accountFeature = fs.readFileSync('assets/js/features/account/index.ts','utf8');
+const managementUi = fs.readFileSync('src/app/management/AuthenticatedManagementUI.tsx','utf8');
 const schema = fs.readFileSync('supabase/schema.sql','utf8');
 const migration = fs.readFileSync('supabase/migrations/v1.14.2-rbac-reconciliation.sql','utf8');
 const readme = fs.readFileSync('README.md','utf8');
@@ -21,7 +21,7 @@ const checks = [
   [auth.includes('BOOTSTRAP_ADMIN_EMAIL'), 'Client has canonical bootstrap identity constant'],
   [auth.includes('hasBootstrapRoleMismatch'), 'Client detects server-state mismatch'],
   [auth.includes("/rest/v1/rpc/claim_bootstrap_admin"), 'Client requests server-enforced reconciliation'],
-  [accountFeature.includes('Bootstrap administrator role is not applied'), 'Account UI exposes actionable migration mismatch'],
+  [managementUi.includes('Bootstrap administrator role is not applied'), 'Account UI exposes actionable migration mismatch through the React management authority'],
   [readme.includes('v1.14.2-rbac-reconciliation.sql'), 'README names the migration that actually exists'],
   [!readme.includes('v1.14.1-rbac-user-management.sql'), 'README no longer references nonexistent migration'],
 ];

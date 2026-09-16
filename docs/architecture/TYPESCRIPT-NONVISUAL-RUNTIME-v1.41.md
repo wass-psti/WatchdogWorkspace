@@ -1,4 +1,6 @@
 # TypeScript remaining non-visual runtime — v1.41.0
+> **Historical ownership record:** This document describes the authority layout at this milestone. Stage G M44 (Architecture 52) supersedes the Account/Settings/User Management controller ownership described here: the three historical imperative management controllers are retired, and current route/UI ownership is consolidated under the single React `management` feature/runtime.
+
 
 ## Scope
 

@@ -1,0 +1,40 @@
+name: Management Authority Consolidation
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  m44:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run modern-tests:toolchain:ensure
+      - name: Verify M44 pull-request candidate without publishing certification
+        if: ${{ github.event_name == 'pull_request' }}
+        run: npm run management-authority:verify:release
+      - name: Run fail-closed M44 certification and artifact transaction
+        if: ${{ github.event_name == 'push' }}
+        env:
+          M44_SOURCE_COMMIT: ${{ github.sha }}
+        run: npm run management-authority:certify
+      - name: Independently verify certified M44 artifact
+        if: ${{ github.event_name == 'push' }}
+        env:
+          M44_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+        run: node scripts/verify-stage-g-m44-certified-artifact.mjs
+      - name: Upload certified M44 baseline
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: work-management-v1.43.2-stage-g-m44-certified-${{ github.sha }}
+          path: |
+            m44-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M44-Certified-Baseline.zip
+            m44-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M44-Certified-Baseline-PASS.txt
+          if-no-files-found: error
+          retention-days: 90

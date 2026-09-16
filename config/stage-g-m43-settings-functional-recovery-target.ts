@@ -4,7 +4,7 @@ export const stageGM43SettingsFunctionalRecoveryTarget = Object.freeze({
   milestone: 43,
   stage: 'G',
   name: 'Settings Functional Recovery',
-  activationState: 'implementation-complete-pending-certification' as M43ActivationState,
+  activationState: 'active-certified' as M43ActivationState,
   prerequisite: Object.freeze({ milestone: 42, requiredState: 'active-certified' as const }),
   architectureVersion: 51,
   authority: Object.freeze({

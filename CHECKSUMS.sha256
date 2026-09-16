@@ -12,6 +12,7 @@ c7f1be7ad073d5e65e620b87918ab1ec4b89e5e1d4e6962baa65b0f0267b2c11  ./.github/work
 8dd5f0e02c4f4465fe08516d6e5be70c19cb2c1ef501a2456a4450fdbb92882a  ./.github/workflows/final-legacy-deletion.yml
 cbfbd31d5cc83435082836481b4cfb5ab36f8463d53c1ac2ec67e93817d1fc69  ./.github/workflows/functional-regression-baseline.yml
 de07936b46199c04d1a419dd1f23b31ff52fde5cc6e2f479fd7c4c184c6c21ab  ./.github/workflows/m42-certified-baseline.yml
+c4968fdff5e0378f88d97c201153fda2f16746123f2c43b09f6a6f2e04a45398  ./.github/workflows/management-authority-consolidation.yml
 2851e7e5f9913552da54e51caea1f97361cb7dcbab82577b805f5baaeb4192c3  ./.github/workflows/modern-tests.yml
 b69380fa77aa9fa26bcc668296d08a5e69b47e0b9626f799f6639cc4d44d5e01  ./.github/workflows/observability.yml
 de0fb5675951c3075bc25c9a72da2d78de29cf23075f70293a36d9c3a6a66989  ./.github/workflows/performance.yml
@@ -155,6 +156,7 @@ fbb9f0a5f5551ec4b0b6a8bce7957d8190e3d238a90afb01742f0ff306c2c984  ./M42-STAGE-B-
 6cf72d6b72e5ded93a064f9c636665bae65a65ab9fddfdd8f427bafaf2f6093b  ./M42-USERS-RBAC-FUNCTIONAL-RECOVERY.md
 d226d79cc28486444765f6396a20e7f821d1721d1c097eef63cf5cb3a4a80a63  ./M42-V1240-HISTORICAL-VERIFIER-SYNCHRONIZATION.md
 93a052284584c90fafd7a4cdf62880a30c4f471eca61dc427f0737a0375e36b1  ./M43-SETTINGS-FUNCTIONAL-RECOVERY.md
+c77fbcb318eb7b0fd9afef949efc4693743711e1e8e52658156721d376e38990  ./M44-MANAGEMENT-AUTHORITY-CONSOLIDATION.md
 91df619e971a38ab4767a8b21df24033e3ef190e272f5e62ef9c0bf4fe7feb68  ./M5-ACTIVATION-RUNBOOK.md
 7f145954a3ab537a808a2f6006d257517f2810a596001eee2f2b3e4ba9c472eb  ./M6-ACTIVATION-RUNBOOK.md
 721e0649e315a407ebd38e455c3c2be95abd55d4fa16139aba0077698e1a49c1  ./M6-BROWSER-ESM-HARNESS-HOTFIX.md
@@ -173,7 +175,7 @@ ce0ada142046ecab23402ec8216f91e3ce5cb65579fd9e6071f1ad42c1a52e7f  ./M7-ARCHITECT
 142268798d3397a565dbcbfbabf6e496af608acbde2648da3325a9ffeabca664  ./M8-STRICT-OPTIONAL-TYPE-HOTFIX.md
 a95c0954544902d2306a78a48ce328b2b3d8f821e8f4b55b23d95b4b7c2e5f32  ./M9-ACTIVATION-RUNBOOK.md
 fe1f76df41d40c838f42eba8ddc35ba2020d8b1ec8da2dc75b57b7d0db6f07e7  ./M9-SHELL-HISTORICAL-VERIFIER-SYNCHRONIZATION-HOTFIX.md
-410455484f1a5e85efe72c1b9c69cb4e593123fa8c328c45c7fec43138563c86  ./README.md
+ebedce06a207546a1794f71bcf5989974cee608565bfc320cb9ae21704f71830  ./README.md
 1f03778c591105ecb77863ba19e9b243264adda4000fbe3fc170c739c1b0d255  ./README.txt
 62db632858b9a722c34047718625dfb5d26c327d48e0a38f7341e1bc561bf205  ./RELEASE-STATUS-TIMETRACKER-V2-PASS1.md
 8d469bde34a4ba5d37afeb94656fdb844667afc6a1cc75c75273a42dee2b84b9  ./RELEASE-STATUS-TIMETRACKER-V2-PASS2.md
@@ -242,7 +244,8 @@ bd48a33eca2279fe7fb39bad7cdb03d14956ded87549441349f02fc3b55b95e6  ./RELEASE-STAT
 29f7c63c2c8f5701bee0c521b0154590d89b356971ba185d528672859ffc8ee9  ./RELEASE-STATUS-v1.43.2-STAGE-G-M40-ROUTE-OWNERSHIP-LIFECYCLE-RECOVERY.md
 bbdb4f2876394b9c8650ca9449f6d66a2561344e5eddef0f4a11ea8d102b84f6  ./RELEASE-STATUS-v1.43.2-STAGE-G-M41-ACCOUNT-FUNCTIONAL-RECOVERY.md
 542c5af49564da80248fef4889f3d1b62fb28e286ae55252044ce1fc4a3ffe6a  ./RELEASE-STATUS-v1.43.2-STAGE-G-M42-USERS-RBAC-FUNCTIONAL-RECOVERY.md
-40eee4971b303ad46189edb57377dca4a7e4649e3284d9a6e0340a25725a9a48  ./RELEASE-STATUS-v1.43.2-STAGE-G-M43-SETTINGS-FUNCTIONAL-RECOVERY.md
+f0214d67d1703c2074d5932eebe22ab89ccfa52e142fa2c2874484a7fb76f944  ./RELEASE-STATUS-v1.43.2-STAGE-G-M43-SETTINGS-FUNCTIONAL-RECOVERY.md
+a7f2fefe2a550f5043e668e921c934f0f8610c394febfc4c5d83884569a05aa0  ./RELEASE-STATUS-v1.43.2-STAGE-G-M44-MANAGEMENT-AUTHORITY-CONSOLIDATION.md
 f5456ced7546bf790b612a3900905bd4a25b45ab21bd9fd0c1d8a616395069a7  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-FINAL.md
 2d3c24a6567659c068f896542d02442d2991c2a2ffc15030e90d5f2018c825ad  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE2.md
 73619f1c62c3b893ec438e0cc77f36c7590c5c2a57677e6e8cf1c42e538f3c05  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE3.md
@@ -308,7 +311,7 @@ e78da29f4dd4fe0e77905011c1bfca6299dd5f13e1c747bcb42c00908d3972c4  ./assets/css/s
 1285b7b01423a9f129dbba33a57827e6cc20128f13aaf273804e84832fee7404  ./assets/css/shell-navigation.css
 11339e8d164d19baeacb50ecca8d8c4b7a0a9e9889dcf85776d0b02c47749131  ./assets/css/shell-overlays.css
 5c7a53c40f31529c80f9e1a588eff079a84e62ee2123a32685a7ab72aa420a4c  ./assets/icon.svg
-23e29f7854c1ae6830267c26cedaa24bddae3089c106f69713adb3a7d408b944  ./assets/js/app.ts
+08b3f39a3e4f43bc01a837e2936b412c8b69167cd8b05b5689d9701ac72c8d5e  ./assets/js/app.ts
 af151c85bfa42460505a502c4b23d61b9e311b449bc42598c91aa940f021b459  ./assets/js/boards-ui.ts
 faf553d8926e31c7f835031e1837f4e927af9e31b3ff7e2bd77bbe5416364048  ./assets/js/core/auth-state.ts
 2a6e16fc6af7e08a1736ad7529c4d11d4965dccb2ee7aa367ade98d52790692f  ./assets/js/core/auth.ts
@@ -321,7 +324,6 @@ a1e73978f58423f9de7ae15a8a43cd4757bca9cc84cd3640f657daf0e591a77d  ./assets/js/co
 4794dbd95e8d766e22152379d06277b3ed9c553b1a4be537fd86e11cdc83085e  ./assets/js/core/router.ts
 a51bd4b1380a50edc09bb8ff98b442fc7b9cb6c65ee7154ab601095d31c21313  ./assets/js/core/storage.ts
 f9f2c8f78dd30e285fc7dce7ef8d023cb88dbc0e7f2e9465ccab8095742c2e97  ./assets/js/features/account/account-service.ts
-54807b00d51031a908502b5a9b4954b98835f24aa770d979efcc4fd208f69b5a  ./assets/js/features/account/index.ts
 dc992c650add7851fd4038b083e5f89407b4672fb6d2cabc6ee5516d3597208b  ./assets/js/features/account/profile-menu.ts
 57991ed0816546837c138a7f6bcf908ceec28027c3c72b536134e899e5a6e1b5  ./assets/js/features/auth/index.ts
 08cf63fcd3b73662d23910862bdd22a7d56db13f8560b08115717f85263f8ec5  ./assets/js/features/boards/board-schema.ts
@@ -371,9 +373,7 @@ adbb5e53e9e7ce0aac93ae112e09916264061d2e9bd54ab931d8efc063c6479f  ./assets/js/fe
 b57a2c401c1a19ce406decc8aa924f56b02e142aa608dc83807b3fc55c196ab9  ./assets/js/features/home/index.ts
 29b5925ee45815944c6b2e40f65267066b4bdd0c75921101d50144b4a5696732  ./assets/js/features/modules/index.ts
 d0deaae8e5294f1af9ceae7e77b2fd176d06cde106833c90b1420ebac6fa4479  ./assets/js/features/modules/native-module-registry.ts
-75afd851865a93eb37fe4eed2e6d1aba12c6d880d8cdc7f3303cd4133cbc06ef  ./assets/js/features/settings/index.ts
 40cb7aa60dc4fbbbb517874f4fdf9f33e6ccc07a1b6e26a34e088d153a8080f2  ./assets/js/features/settings/settings-recovery.ts
-d369a78f18c4a99d92e13076b749c5a6e1e8dbe23866b7b89a770493a11b062b  ./assets/js/features/user-management/index.ts
 be312b120b86c037bee462b53364cdc552386c0bc7e87b06b064feebd32b319b  ./assets/js/platform/auth/permissions.ts
 9366d33ec89ece05c1797d3d23828b0d2fcfcc8669717012e0955aa34aaf372b  ./assets/js/platform/data/backend-capability-preflight.ts
 6946d8c111b9080259afff4b2b9ba98ba67daea2203a36661eeaa140fe59cc41  ./assets/js/platform/data/backend-client.ts
@@ -403,7 +403,7 @@ ee5cfe1319a29722aa0f27522a13e31a152db184462e6cc2aad4b435648b34a9  ./assets/js/ru
 dc327a9a1608bc85eea3a52ca00475f6ce721bdd2e76aeb4b598a84348c4e785  ./assets/js/runtime/error-boundary.ts
 4026c358cb25442d41f497c17c8076bbc81f8bee1eb2bac02dbbeb6b08f80ea6  ./assets/js/runtime/feature-registry.ts
 d2c6b178146d43cd50eedffc6e2e49ba342ceb9ea0fae2b557113a52e8ad11a3  ./assets/js/runtime/fueltrack-analytics.ts
-c45687c0c9f9ea3430453fd4ae667f41b813f7eeea460c2c7008c931fe8d13b6  ./assets/js/runtime/index.ts
+8d2664b62a0d5296161fe5a90a2bbe25ed667fe9989212498174243529552ac8  ./assets/js/runtime/index.ts
 fe9d4b66d6e36a9bee15cfbfa93f0302a7d990d09aa4e1562e4b131e1d0aea46  ./assets/js/runtime/module-bootstrap.ts
 56bb2ca6336288fbbfd6749453fdf13ff43a24602346dd7b75beacccb904eceb  ./assets/js/runtime/module-host.ts
 e4b4a4d7d3023f682a4839b0d49307b8f24c05517d0d30d7f058b6127caab1e8  ./assets/js/runtime/module-lifecycle.ts
@@ -418,7 +418,7 @@ cf0270b8d2d262b5df5bc3706335e12188738152280f82ec687680b838568688  ./assets/js/ru
 23e23596b9703892f9702f07f0c3238962bbb13870d2bc8af589e9b184c2622a  ./assets/js/runtime/work-management-client.ts
 28091d39d503e7233da1215193d062959041101c10c1962fc2ea6eb41526d845  ./assets/js/ui/format.ts
 4c4da3fe5b0a5a5babdf38681a5f504a1d6ec232a04bbfe5d1ca04c58f18f624  ./assets/js/ui/icons.ts
-95cde0fbd5f51d39fc21a7cc4c4327cf1e16a7df89adb3763093f91a11ba4cea  ./config/application-manifest.ts
+e70c54609fcfb3ec25b92e3e6125974fec04b4456ce08bc2694fe6660169ce47  ./config/application-manifest.ts
 83aeb42db93fd5d0ce2a37007fc7febfea17e114279e84ced10c600f6bd2314b  ./config/backend-capability-manifest.ts
 83af02ef50c4121f297ee80886a0dd2244924ce0bac20f26654593ec2e5eed9a  ./config/backend-config.example.js
 67925bfe819dcebd00c2b8638c7592af5593c471ebd6e611b144b7ad9ae1d7ed  ./config/backend-config.js
@@ -427,7 +427,7 @@ a0d49a1ecec327aeaa89d3ad4beaf29786b3af028a0b0be541efed345fb525ac  ./config/backu
 6341d2c2e81d043ad0972988cd1286f2fc218faf44c3eebcaca3fc955843c284  ./config/modules.ts
 623dc7a2db5e05435ca4073ebe151a7b618d55145dba24d5c0fb9151ebcd2ef4  ./config/performance-budgets.json
 129a25da68f6e18bd14eb0446d3d27e18c5a371936b8f611fa4fd2e3e3f740b4  ./config/production-cutover-policy.json
-c970f22ec2013287f325b1bb3cd622518fd262f5998deb4b850b337b22213154  ./config/runtime-assets.js
+e07c825a7c482c0bc76de80074f57ed14a3e493834c06836bcbb63046bf46169  ./config/runtime-assets.js
 e3e2f34786337b24da40fc022a91e218e9a01f5bd55e5dea8192e1e33fe2b146  ./config/runtime-backend-preflight-policy.json
 dbeaee69d5eb7e11100dcc5a06038e8fc2fcb065b936caa2a23287173647931f  ./config/stage-b-m4-design-system-target.ts
 7dc6e5e59921a39594cf7ab29f20c2671c7ad5fdcddef3546c115bd0a208cbac  ./config/stage-b-m5-interaction-target.ts
@@ -469,12 +469,13 @@ df90f40a6ecfca401b14ab6dc4737fac40452269e6e77b8cae04e712f50ce25e  ./config/stage
 965b8b067769939188e44a567da392e668958631f2cc804c9aedc5bbc1f6671b  ./config/stage-g-m40-route-lifecycle-recovery-target.ts
 f8e1a10e8c4ad79dc2c67d0da9d7ca17e6bfb3a703a0c3696861dbfb4b18fa2f  ./config/stage-g-m41-account-functional-recovery-target.ts
 c5e4706b861574f311823ae96443b42ee04e74f25e645e49033092e886ae42a3  ./config/stage-g-m42-users-rbac-functional-recovery-target.ts
-4c217f1536ad7fbd4958f3445f10a2e7b0929b95d82240719d15205253bc379e  ./config/stage-g-m43-settings-functional-recovery-target.ts
+7455f517612ad8de65079e39c111f2d5c83d5b305be0a75c82c4dc73f99796b7  ./config/stage-g-m43-settings-functional-recovery-target.ts
+71188832eae3ad931afab7c8afa2b5ed2b638eaf0d2b72c07233e838670df553  ./config/stage-g-m44-management-authority-consolidation-target.ts
 6638d1f323815875661464f06cc10bcba859885a1a8bf3f4207758645899f2d5  ./config/vite-runtime-config.ts
 171d7a3b5e48064c6e8c93adf95c72ac35eed9a33553bba65f92785d19269dfd  ./docs/CI-PACKAGE-GOVERNANCE.md
 50abf73a01d7ebead7a08db1be614f6b0732f4bc26eaae31e26c58490ee51114  ./docs/REACT-19-COMPOSITION-BOUNDARY.md
 20ebf6444f5711da2d52a705487440295b4d2d09fa8dc07d71a3a88b4ea83d46  ./docs/SECURITY-BASELINE.md
-b74d12b942cbf18a8377868f955a68236c31c3551eeeca27bb646d99fb286fd1  ./docs/WORK-MANAGEMENT-ACCOUNT-SETTINGS-USER-MANAGEMENT.md
+7a7a4626f92c66e7162b9a8a6358ba5da1f1e2fddfc419f978a682026c8bc57d  ./docs/WORK-MANAGEMENT-ACCOUNT-SETTINGS-USER-MANAGEMENT.md
 79c7b67c7cc815fa24a426020039b601ac05214c769eaf7abb2ebd5df959ae2c  ./docs/WORK-MANAGEMENT-AUTH-SESSION-ACCESS-CONTEXT.md
 4250032a429320a3372ec59843743d7214606e63000ae7bd8893bced36cb2188  ./docs/WORK-MANAGEMENT-AUTHENTICATION-UI.md
 3ab1bfab0c49313eb7afe437eb22d83ff145967b127dbc9cb50d757ea3bc0ad4  ./docs/WORK-MANAGEMENT-BOARD-COLLABORATIVE-REALTIME.md
@@ -527,8 +528,8 @@ c10b5df917f6bf988141503b08813435fb2648a66520b2c5f03d14b53d350bdc  ./docs/archite
 dbe947a817f4c3ccfce3d3d16390ede53d05ae72ed0bd60940f12ed9e3e41604  ./docs/architecture/MOTION-ARCHITECTURE-v1.30.md
 96b667a1830764edd8819395220010796c1d243bc6156cb215c5d56965fd8a58  ./docs/architecture/MOTION-DESIGN-v1.28.md
 563ed3ed2fd36be224b9c84d664da20e6f467452a04ab111fd900a59b045eb03  ./docs/architecture/PHASE-2.md
-8642a1f869bdec58b3eb3b00d7d045d5db4e8461c6d850212a14a42230b794db  ./docs/architecture/PHASE-3.md
-840efb6272dd4afd32d1051268686010b72c542c1f2955738beb51d539ac3b24  ./docs/architecture/PHASE-4.md
+e733c56c798b9738f77a01b7a9665a7140f892b980d51ec094040ebc0250cead  ./docs/architecture/PHASE-3.md
+4d1fc9aa04cb846c8bb711eb43c784a224d9e885044cd0af7f86ea06a2e13b1b  ./docs/architecture/PHASE-4.md
 70a5515dbe5d4591ba144c499a0fec24957abb56db5cee8aabd8ad16440f3167  ./docs/architecture/PHASE-5.md
 393d80f2159a601f495afe8243f210ab321ae776570fa01282cb1c149cd5ffe6  ./docs/architecture/PHASE-6.md
 b772090e878bd0c0156531db98fcef860f23f686af8ac95ab55f4aab1d8567f1  ./docs/architecture/PLATFORM-MODERNIZATION-v1.35.md
@@ -541,7 +542,7 @@ ab8722c8dbe737dded5964a18d74a9dbe4e06b030fc90c6b563cf1e24f5d01fc  ./docs/archite
 9f7dccc49748c4495329456e4e996c930585230c2902a5cb21e4c0b5d1eed0ef  ./docs/architecture/TYPESCRIPT-FEATURE-RUNTIME-v1.40.md
 d99c8768b218039361bf9572453137cf64e8fee5ea391c5604e6dcf75150c877  ./docs/architecture/TYPESCRIPT-MIGRATION-v1.37.md
 653a17ca3900b66a5713a0da2ef73adaa5dbf4707aba40953309d1c1ce1d377d  ./docs/architecture/TYPESCRIPT-NONVISUAL-RUNTIME-VERIFICATION-v1.41.md
-60cd20ec5ab9ca6ec561b75bc18fddbf5f5a12df9df1c1e843b47a726dcc160f  ./docs/architecture/TYPESCRIPT-NONVISUAL-RUNTIME-v1.41.md
+6ddd75fc61120354e891f1c2b9102dfd6f25a5bbf77fc07f128a3b12daaefd6c  ./docs/architecture/TYPESCRIPT-NONVISUAL-RUNTIME-v1.41.md
 18a2d9e988ddc01239e5f4564cc263e78c654470c6204f8635f1bd13cbbb0b91  ./docs/architecture/TYPESCRIPT-ORCHESTRATION-VERIFICATION-v1.39.md
 fb839d06cff3be4db18e24504056b436fa8fcad0c26da86af38b3c601859beac  ./docs/architecture/TYPESCRIPT-ORCHESTRATION-v1.39.md
 9adc23f91df50aa086447f6ec108ff0c4384bb8a30bac42ac5897b7c52d66896  ./docs/architecture/TYPESCRIPT-RUNTIME-VERIFICATION-v1.38.md
@@ -575,11 +576,11 @@ de0fb5675951c3075bc25c9a72da2d78de29cf23075f70293a36d9c3a6a66989  ./governance-a
 a4bb072413e0927f65df01d7366cc12a3724196ffaf82e95406b0f905cb1e795  ./index.html
 c73879bfdb6e13422a5bb82f0176c7e44bf1d68ddcc79fc0b3fd5f1c7e49138b  ./manifest.webmanifest
 22677ed5a0abd2997e57691e200fa80bd9e11ab1a824a6b64b18048adb2f8b84  ./package-lock.json
-e6be7312eb06585a14482229bb8fcdc80cee52aef32136064628628584421a08  ./package.json
+685332a2cf59abf32f644cba1e153f5a8f33d8c1e043c293445b488d4955a262  ./package.json
 f600d177fdc95af705d5609c03b9eb02a1552b9c9921b9a93e074daa16d401fb  ./playwright.config.mjs
 5c7a53c40f31529c80f9e1a588eff079a84e62ee2123a32685a7ab72aa420a4c  ./public/assets/icon.svg
 c73879bfdb6e13422a5bb82f0176c7e44bf1d68ddcc79fc0b3fd5f1c7e49138b  ./public/manifest.webmanifest
-3267cac8e485fdf04d4889601652fb6d0199e6bcbf0e354c5e085696a5f5abce  ./regression-baseline/m37-functional-regression-inventory.json
+f59f83425eeecf026c2c9be21fb892e2cc8e140ae0144f1b55cd961ca2f2b64d  ./regression-baseline/m37-functional-regression-inventory.json
 d7133730496d5a4d8dca2b706878f0af084005a984df74dc2a7312e46aee2a59  ./scripts/activate-stage-b-m4.mjs
 afcc9cfe128c0aff1edca584fc4d4ded18a56367bdf8015e06f748293791dfe5  ./scripts/activate-stage-b-m5.mjs
 07835005a402d0950c7a3615b717da78159f64de77e9063e0e5965d2b84bf774  ./scripts/activate-stage-b-m6.mjs
@@ -663,6 +664,7 @@ cb2d4f878a01b1544ef633f53357e8e0f56e7dd2d7631848154ec4a4bd26d1b2  ./scripts/ensu
 9b50f279d36a1bd9c0d0ecb167b5d3c1fe402195a7873c3c6eaa9ce068e0d442  ./scripts/finalize-stage-g-m41.sh
 80a50d6be02ad4300b70cbff56d500c16cbfcfbe76c97b8061233b03a9f8f3fe  ./scripts/finalize-stage-g-m42.sh
 bc12acd7886f3ca32e0ca41229bdf7a804b7035391f847e92b44c1a4aa6064dc  ./scripts/finalize-stage-g-m43.sh
+09e2e0571b339df55ba566eafa4a6a867698530891500233dbef022a3fafc6db  ./scripts/finalize-stage-g-m44.sh
 4191b1ce8c4ffa30a595ba03f650475ed5dea210d1216ccadf22ea8a8ebf58d1  ./scripts/generate-functional-regression-evidence.mjs
 ef49e97b37d4f51535895bf71045b7076f1df18bc41995ff07cadf45fbb7db39  ./scripts/generate-production-cutover-evidence.mjs
 270ac34e8a020b57bf44061930be29e6ab75c815879e30f8603c011a1942ded9  ./scripts/lib/browser-cdp-smoke.mjs
@@ -675,7 +677,9 @@ bf1bdaa7d67221a0fe396f297a987bc8c1ed49f6d811c554377b562cc960c15b  ./scripts/lib/
 38f8e984a4a6bda1da3fb146345dfe9314d69e77098cc41cdd0a8b38d56083ed  ./scripts/lib/stage-g-m42-certification-tree.mjs
 92e9253809792f48583b9b2287ea3bad76990da133987096f5b5ae336c5c9a75  ./scripts/lib/stage-g-m42-dependency-tree.mjs
 38e2c959ad6ecafa587aa20dbc9cb92a682831e6936f6cdcc8690b421f28a3f9  ./scripts/lib/stage-g-m43-certification-tree.mjs
+ffb6755eecc9eadb0a1380dd8a1fc8fa47d6db80f514586b3381fa73a34493c7  ./scripts/lib/stage-g-m44-certification-tree.mjs
 891d39f24173d299ff2aa299f0113e97c7df5a301b2b71b9287d258a930dc570  ./scripts/package-stage-g-m43-certified.sh
+291e07be9579f9fbedd66d8ffe0bfbda0fec67510548e696a2808813d361bf7a  ./scripts/package-stage-g-m44-certified.sh
 358f6b43e1429f85879d57de221df78f71fe0d6c182f10095ddf4785da3f2f7a  ./scripts/preflight-stage-g-m42-certification.mjs
 7195c96fddfb75642693bdcd81529ec83e54309b0fe718c4be2596f4e26d7cef  ./scripts/report-stage-b-m4.mjs
 35db5a702fbaf66e704f59ad475a53d244cd3c875324b4a7ba2f10ea173ac046  ./scripts/report-stage-b-m5.mjs
@@ -717,6 +721,7 @@ b4d04631a534f53207581a63acd8fcb4df9b75610e6e0130397bd735d8abdb12  ./scripts/repo
 c287359b466811898e08e26918777935bbcb77ff68740cbf0fcc152f18fc6126  ./scripts/report-stage-g-m41.mjs
 5b9aea5d9e5d14396b92c049b81b33d67e541634190e61a3d0f3f3d19a454a2d  ./scripts/report-stage-g-m42.mjs
 aa1bdcd751c06e40ff8123d24d2ef7538e4a68ee6d8fd2cdbd4c860ba4f3926b  ./scripts/report-stage-g-m43.mjs
+1466f5c2caa92471e2e75a7a99cc8e9c1c2c6d2f2f0e6af2f2eb8aa01a511d12  ./scripts/report-stage-g-m44.mjs
 99b1b7a60db9d1d764bfce4168355d74dee1962bebb3df31cb6d1a47c1dd9955  ./scripts/restore-required-repository-artifacts.mjs
 e08b86b575e8ce92a2cafca1b5bb533ec25596bd0784f271db3e9a0b49eeb6ff  ./scripts/run-account-functional-recovery-browser.mjs
 6dc25dd2ea0059dc4e10c52f4828395363ca7fae60f57c2da55975cbc7bcfe2c  ./scripts/run-auth-session-access-context-browser.mjs
@@ -724,6 +729,7 @@ e08b86b575e8ce92a2cafca1b5bb533ec25596bd0784f271db3e9a0b49eeb6ff  ./scripts/run-
 5ed1cdb2c8bcac4af0aeb86defa0405e3ead5357ee04e659aafa593bdde6257b  ./scripts/run-database-rls-tests.mjs
 e5066a4c9bf85da54ece3cf1bcd4f85979c97439ac703667e83908869d51f8a9  ./scripts/run-functional-regression-browser.mjs
 f53a612dae804c3367763e218811cb2689f8d394fe28c5fbedca71ae2b07993b  ./scripts/run-governed-toolchain.sh
+fd4e2924fe64b051acbb5c440c54fcfbaa74dd7ed42cf9e73fbcb37b958c7105  ./scripts/run-management-authority-consolidation-browser.mjs
 7d1dcf96f6dd4ea9fdcfc6fa442c1f6b2587817b82d4040356957ebdf67ee2e1  ./scripts/run-modern-browser-tests.mjs
 8d797fb273b4c66f75bcfdde83d805a93316c5c6c67629dec1d6399f22c47ddf  ./scripts/run-modern-tests.mjs
 65165cae0ae6f27e94eb1919832b0a7f1041b6e7cc214fd8f48d3c849bb1a801  ./scripts/run-performance-benchmarks.mjs
@@ -750,11 +756,12 @@ f9bd8ac0c927cba8e1ad26d2823cc004d91e2ca80a2cceff29cd5e936c3892d5  ./scripts/veri
 f9d860e126c83cdd003533290ceb52818774ab164900684d8baf6b76c3dc39eb  ./scripts/verify-edge-functions-execution.mjs
 02973072f8a30fda18d2e46732d35d1e5d334837a2ef3bd7570275855f6710b3  ./scripts/verify-final-legacy-deletion-execution.mjs
 09f5280994c198383ce4f61e4bc60710295d3d3434bd7b0384c6c8573787be93  ./scripts/verify-fueltrack-stabilization-execution.mjs
-814d1af020354ce15eb55156ab42f78a7e80b21f8e51197d07d5d7c47a5845d0  ./scripts/verify-functional-regression-baseline-execution.mjs
+ad3ff62cfcd642da723297c7ab40efc39a73d13251c069a534e76d4131bdace3  ./scripts/verify-functional-regression-baseline-execution.mjs
 42ca6c9a1e03259846cdb643522404ee8bf7ebdf4c077d0abdf2275a759d1636  ./scripts/verify-global-overlays-execution.mjs
 43336605b2e9f3ab1876f9e46c224bbe1f74dbf176882af120f14bb705df5170  ./scripts/verify-installed-lockfile-tree.mjs
 b7a8913741e00c365b511bbdc59dfa1d93b71bdd40c68100d1f1b422cf64c761  ./scripts/verify-m39-browser-runtime-boundary.mjs
 e861ba70e5e55ebd010fc0c40c852fa6b09fdd1d4421c8c69aa32dadc17f8132  ./scripts/verify-m42-certification-dependency-tree.mjs
+6f94ac37784c30d2cdc2e1fbf747b4e2c1302990b4764414f1e89975149aa20b  ./scripts/verify-management-authority-consolidation-execution.mjs
 7f2b87b459d5084c9134cfd6ff26176ceb1bfab63a1d068bd747709d42f5a407  ./scripts/verify-module-presentation-execution.mjs
 6da6d45752f1e48f1d03ce3d7c803c206d6497e61c4a63cd24186aaeb19624bc  ./scripts/verify-normalized-module-data-execution.mjs
 024f7783c75107a5651b33b94327c5e98899768c808c3b12a1823ed1be9069e6  ./scripts/verify-observability-execution.mjs
@@ -769,7 +776,7 @@ f56972662f53182531a580c88da5e1e8f56dbc07b4564faa59decb8a988f1636  ./scripts/veri
 2bd68a5a4bf3a2ed809ea3b9336013e8f3d6c9df2fe3dd74793cb0dbdc2eebbf  ./scripts/verify-recovery-package-file.mjs
 fabc8ea8a4e56426abe3deb5873e638a2d27ddd45c92d699c56ab6fa3601d9fc  ./scripts/verify-required-repository-artifacts.mjs
 0e2f81d9d79100666775a64166352803eb66cdea85f0e281b3527ba635986e46  ./scripts/verify-rich-item-workspace-execution.mjs
-8a2c4926256782acf1c2c1de1fccfccaeeb6ec609b49eac2ccd12e10822d4583  ./scripts/verify-route-lifecycle-recovery-execution.mjs
+4533397169817a0d7bfb681c77549939b8ceb08604c5b2f193b906e805113238  ./scripts/verify-route-lifecycle-recovery-execution.mjs
 ff35501ae49aa9c2f6e682ede0d81cb3c57d35a5c1ae519ca5742c9982d355f9  ./scripts/verify-runtime-backend-config.mjs
 7faf7b98ee4dc8d4b50a1b63a4f17977c68d38446bb740937fcb21a30656d056  ./scripts/verify-runtime-backend-preflight-execution.mjs
 357cca6e207f304dc2d9b99c51e207bdcf70c49ac8b350445fcc0f57384be2a0  ./scripts/verify-runtime-schema-execution.mjs
@@ -786,6 +793,8 @@ fe2edabb933274c12397dea267d3370faaa43acc7e25866fc2319c7c6ab559bb  ./scripts/veri
 63445c34bb34bcea392af9f21e6d9d5f66f6158c1b1fe1ce9bab5492aba69b2b  ./scripts/verify-stage-g-m42-package-hygiene.mjs
 83945f6405e1a17708f323c47586fe83ca9a7f64040dc5a8cb92dded4df28004  ./scripts/verify-stage-g-m43-certified-artifact.mjs
 728ccb818e7ffc5c8779913e37be07631aff490826bff84e91fc99410a0796fa  ./scripts/verify-stage-g-m43-release.sh
+f298d3ca7fce22d4e37c09301d88c2b6d0c9de439377f78fb7bed27f17ce1169  ./scripts/verify-stage-g-m44-certified-artifact.mjs
+bc1d24602dbd2b83b400e1483902574f81f77200bc12ca1f0ae1f4ddfdeecf30  ./scripts/verify-stage-g-m44-release.sh
 c7735800203768ff14daf9518ff92f43775286161a558370f6338bbf36c21977  ./scripts/verify-supabase-client-adapter-execution.mjs
 3ab7a6d8edec82fc72a933385c5d2952b3e9e743e7c140d718c239ee09255f9a  ./scripts/verify-tanstack-query-execution.mjs
 fdd1f6f72b678af9295b20e7115eef9e6f9baa9bdff0db6187a2bb5efff9648c  ./scripts/verify-tanstack-table-evaluation-execution.mjs
@@ -794,7 +803,7 @@ fdd1f6f72b678af9295b20e7115eef9e6f9baa9bdff0db6187a2bb5efff9648c  ./scripts/veri
 7da2532e52d415e973f9231fc49bb65c0a8971e22010b78b4880e74bf3eb95e6  ./scripts/verify-typescript-foundation.mjs
 c7b49cecd1778326c55d1627c812a5ccc7dfa4e07ac08825898731f8a9856561  ./scripts/verify-users-rbac-functional-recovery-execution.mjs
 ed35a6137eb10e7d6f0fa7feda90bf6f7df34b441afa1720e0262ef43921d2ee  ./scripts/verify-vite-browser-cdp-execution.mjs
-774ed165f79c11c8e9939fcf0e48f1f2b9e69f4db50ec52b36cee65e822ff034  ./scripts/verify-vite-server.mjs
+3b2d9c57767111e160edbc93237eb033fd61354b3b8eb28e68d39c5487a97573  ./scripts/verify-vite-server.mjs
 524235276a5a73a17fa3f7276c655fbfdf2ac40635de7d9f695e6d75d1d69cb9  ./service-worker.js
 182ed7c9504ad5cb74666419e6428e051204f6aae4962eaa2a022c14f909c599  ./src/app/auth/AuthenticationUI.tsx
 71575603aba152e52a5f6505a98a3eb6dc110c750ba75c7972e1981a4424e686  ./src/app/auth/authentication-ui-runtime.ts
@@ -820,7 +829,7 @@ fd8879f8e7a71a3fec5c8212af98131b38b76810ba8ad4123709a5704c96ed53  ./src/app/comp
 0dceb9ac42c5d37b170945a6335c6d00be11cd2eb4cb29aecdd67b7e633c6ca3  ./src/app/composition/runtime-adapter.ts
 cf4f96e9d391eaf2ecbe2e5e72b4a836ba4d35d8bf6bc2534ba971dbfc6f8983  ./src/app/composition/runtime-host.ts
 1266488ad67ce781e6a755878c50db347248b0ece5aff5f99eb5c8ea3e5d60db  ./src/app/composition/useWorkManagementClientState.ts
-6029c94a4e498acb7ea723ebc5c89be98652fef99e03985de0135e4fdafa927f  ./src/app/management/AuthenticatedManagementUI.tsx
+a3d87a0572ca1f029ef00c3d1d967cb95319cc8cc8c1668fd9cf72f25cee2bd1  ./src/app/management/AuthenticatedManagementUI.tsx
 bae20e94446a6e1ffbfc40f05ba3a1946309df12d37630cdc1f5c76b0c0c5b84  ./src/app/management/authenticated-management-ui-runtime.ts
 4047bce0a513ea3837afeec4e6aecbc2bdce727bd052c261b3f7ab9aa6dac97a  ./src/app/management/useAuthenticatedManagementUiRuntime.ts
 dbcbdac6d7124d0d8362867005b5a409e7d41a03b02c468125196c538190c461  ./src/app/overlays/GlobalOverlayHost.tsx
@@ -902,7 +911,7 @@ bcc4022f277c7f4ec960f598d81cacf17a898c640081c8c682c34dfa113c7765  ./src/platform
 b8eaa31ce16ab4c970f571d9b21ab3dad97b82aa15b75f485d456da4ae2e231c  ./src/platform/contracts/ui.ts
 8aff4b7a6f008e07adf426d5ea86aff3c45c179d7623ac19ba73d4f144acd749  ./src/runtime-schemas/auth.ts
 5d1b5be92f87c0c0d8161fff1b19c65b5c3d5f2ce1348d15a51149ab2a0992c2  ./src/runtime-schemas/index.ts
-94d780141ef20adf57fa8fd03121f3c778bcd8c7225c9e82d5390927e185a650  ./src/runtime-schemas/manifest.ts
+709b127ea3b43bde3a9e581501662fc21976cbea84dc9ce1a9555c606c213dd9  ./src/runtime-schemas/manifest.ts
 12d035905fb65cfcbf5b988aa1db582d75ba27ccacc2ff4b195698bee76327a0  ./src/runtime-schemas/module-messages.ts
 9ed3433b251d09232111e177afc990519f4f8a343cf6742a0fcfffd1555f2fd3  ./src/runtime-schemas/modules.ts
 1f37b3adfa820cbd38611a0a4c4ff5f474c299ee30e74b20cb592bc07d1d0662  ./src/runtime-schemas/normalized-module-data.ts
@@ -914,7 +923,7 @@ f601437af372d53890cdd781cc2fc4ccc70c01ce01a9c3b30863b7e2989fd75a  ./src/runtime-
 8167055b3ce7bb1681c45c837e59e546c79774dd1b018e237c2dafc168b479d0  ./src/types/errors.ts
 f7aabb62eb5b5d2ad7c06c1886678b51aed5a41324da27c7b4f2a574a7dc4e04  ./src/types/identifiers.ts
 939be702194fd2b9d033d934876cf049a97265acb993b60a003e7229ca0b334c  ./src/types/index.ts
-5ff035852830d25789b94f323f9e11dd202dfae4e26304f4ec3234a326236d1f  ./src/types/manifest.ts
+7ef63920397321c92757ce111f0bf6d0447913df3256ac49306fda6d85e1dea9  ./src/types/manifest.ts
 a0dc74d2b370458e8508304178ec3ec2fc07ad7a963f1e748b0d53bdd6eda00f  ./src/types/modules.ts
 e75127261634e7c340fd2d0f183650dc27c0adc965db68933973bfac8c128497  ./src/types/persistence.ts
 03351222ab3c777c44999ba4b899a39cc3b1827fb3f0ad43738b583820dc1999  ./supabase/README.md
@@ -974,7 +983,8 @@ c85ce84cbbd8f28f987df2d722ed1eabeac04777fed8ae4e4661e92d03239472  ./tests/modern
 dde1347e8fedbe37ba79e4c2388aa5d024a1c0688dfba1ffe7f3f1ad3ee8acae  ./tests/modern/e2e/helpers/m37-regression-probe.mjs
 39c2bf384ec9b9f10c97bfcea715fd58c89e5e6f366a7e7052d606c620a78fb5  ./tests/modern/e2e/helpers/m37-supabase-fixture.mjs
 5a03a7b38e5362aa9206e29c3e443f50dfe46997f4ee7418ddfcd46bda09e7eb  ./tests/modern/e2e/helpers/m39-auth-fixture.mjs
-0d0394b7c2d70bfd8284d0e4f28dbfdfcc314f57b7e2e563ca9ae2aed14a8594  ./tests/modern/e2e/route-lifecycle-recovery.spec.mjs
+f47162ddab0c6b05a70adf9e410eb7f27b21ae3ba5c909bb8a2c4311ee3e90e5  ./tests/modern/e2e/management-authority-consolidation.spec.mjs
+3057549b468747754d93fc42241937734d95725da199683d826b9b3570134db0  ./tests/modern/e2e/route-lifecycle-recovery.spec.mjs
 4dcc876b85ee3e8fe505e9267eced230d33cfc783710d82c584c51a940f10509  ./tests/modern/e2e/runtime-backend-preflight.spec.mjs
 09cd06f40400aed2da2aa727d522760d562ba8777d75aaa590a24b008ca03aae  ./tests/modern/e2e/settings-functional-recovery.spec.mjs
 277a2ce18d8417788947bf0d7924a9b01a4ee428bf58cfe22c778085828cde18  ./tests/modern/e2e/users-rbac-functional-recovery.spec.mjs
@@ -993,17 +1003,17 @@ dddefa6790a1d8e8de080f3a9c2c968bf22f8d985ea200c041d9aad8f3c0cd3e  ./tests/modern
 0f18d01d9b90c4e6bab618dcf2ff177752a1c783652d627b2101b30135a63335  ./verify-fueltrack-integration.mjs
 87b9dfd445d8e8a3260fb465f761ac70d22e9060b6d41de3b601e910495ad49b  ./verify-fueltrack-latest-package.mjs
 33055db1613e838b44be9d62c86b51be2a6d8428bf76f19fc7995b8880a3628e  ./verify-fueltrack-role-management.mjs
-0b612c1f1ed7b998c757f3801d89ceb625ab60803de5219cb0fc8bff4b359e39  ./verify-implementation-reconciliation.mjs
+8b90ec6b69f4b72b52407bd3c63843d3d8a85099fb15c7cf25671e6f41ddc693  ./verify-implementation-reconciliation.mjs
 35ccb991e71cf5637c38497fb3ec00a0a68fc4385dfe13d5be727bf46a7159bb  ./verify-interactions.mjs
 c9d46acdde86861024faaefce5c605bfb0c069720101202ed546cf2b2d6581ec  ./verify-layout-stability.mjs
 0e3aceb590b95d99b5fb365e176c97895619f85ead3800b947a57a7ebb0134b3  ./verify-motion.mjs
-bf6b99d2f4a80ebe52670e3811c9dba7fa7e77d945f2af20246dbc64d94ccd34  ./verify-project.sh
+ed3e02785da87883059710d1c8c805523eea31882b10b53da5085c9be7eb7b19  ./verify-project.sh
 9363b5fb4671d8c20ebeab0972750c578e9c92762c7cf61be6928c42069775ff  ./verify-rbac-migration-order.mjs
 185507d7dd71a84708c678069e3460a4864815a59db3f7e2ef5bda043f3e8337  ./verify-rbac-user-management.mjs
 ab58c4ab4ab7334dd455d8812ca933f34d5c86eefa282eaf358c0a90f37c9e7f  ./verify-settings.mjs
 71463d8162f67e8dc91cc73459665352c3782b5f4f1379d4041c99eb01274069  ./verify-shared-data-architecture.mjs
 b4eb25c9517fb93aa1d43b17f22ee6fbce5b5d133d16b76bb059d6fb153d021a  ./verify-stage-a-m1-ci-package-governance.mjs
-b293a66438b0bb0ef489c810ad6f10d83e8d5cd9dc83a7c92c17efa6fd28d04e  ./verify-stage-a-m2-security-baseline.mjs
+e7c9eadf09fc3fb21b542e43d25a2808f5a734e7abf1e33fce9a383bbda6a8bb  ./verify-stage-a-m2-security-baseline.mjs
 e56474509ba48d6d820e336ec02638ebbb4902afd7599f2948d4934fae96837c  ./verify-stage-b-bootstrap-resilience.mjs
 f570da06e693ec6d9ba73fe50b790fc58f2415c983b98cacc0fbfc2f32a9de8b  ./verify-stage-b-governed-toolchain-dispatch.mjs
 d1280a72aa368df45dd5061822289a9d953bde3b0f923257e7dba0106de6ddcb  ./verify-stage-b-m3-react-composition-boundary.mjs
@@ -1020,7 +1030,7 @@ e4f20509cf7041f7f35c706000ca09bcddef5719042f27a3de98cd790c060125  ./verify-stage
 7ed81f5c318e432a580459d557540f8cf99503a7cf0c4778c81f8a5a8acc920f  ./verify-stage-c-m10-react-shell.mjs
 cd806dbd18593ff8f62bc735c93927cf5cfcacd638647ced6e6f0d166b1c65d0  ./verify-stage-c-m11-global-overlays.mjs
 5bd14929cc667d6c86e5c7d99be4a1120ff4fb915bf37e36c83d4ed7dd0064bf  ./verify-stage-c-m12-authentication-ui.mjs
-929f3d33391021d9ba1450e8df3c14dac26a92d8eb25cf251a439854d2f30049  ./verify-stage-c-m13-account-settings-user-management.mjs
+cd94b4b4868c9090a65bfdaf0dca4d2792415cfaaed186d47111093c7facea23  ./verify-stage-c-m13-account-settings-user-management.mjs
 319952376da38c3fb8c48e0456ddb96927d28f4c21c658023a8c04bed9069e08  ./verify-stage-c-m14-command-shared-ui.mjs
 9575e0ebc5f779926619f0c060117c4b9191cebdb02e2c8bb5842c253fc7e51b  ./verify-stage-d-m15-react-board-presentation-facade.mjs
 35b8ae954e4f7ba0c1f7b079bb53b7dd06effdd4a63d3af29775f91415e1328c  ./verify-stage-d-m16-board-component-decomposition.mjs
@@ -1048,10 +1058,11 @@ dc278138dd55477b6c2826adbe56493ef6f770a659c61e3d9fbd556429b15ad1  ./verify-stage
 5e2318dfd0a640821df07ed823797e9b6b473878800781c9d61820bb60c91263  ./verify-stage-g-m38-runtime-backend-preflight.mjs
 a8e469d7ac8430f8c996408a89052746acad3865d10103946ef52cc3fb4fc33d  ./verify-stage-g-m38-runtime-configuration-backend-preflight.mjs
 0690d98c20d9a80933d9e8f1649707ba9de059dc3410711e7f0de66c28157f93  ./verify-stage-g-m39-auth-session-access-context.mjs
-4b8d47f56f505402c26ac503912df5d2b6f4d426c97be9e010886e94d0f15081  ./verify-stage-g-m40-route-lifecycle-recovery.mjs
+144ad7a0f927755027d9e28d5797dae9558944e162eaa3cb60eee5416badb196  ./verify-stage-g-m40-route-lifecycle-recovery.mjs
 c81dc318330def0a898a3464aa821e4fcc44790f6a1772551981680081fbc449  ./verify-stage-g-m41-account-functional-recovery.mjs
 5769f58a7ad47b28cd1bf30bb03ffaa1deeed100b43d5dbd361fc1538d05ef39  ./verify-stage-g-m42-users-rbac-functional-recovery.mjs
-5b9c030b7eb10f716cece4e3220bedc66e305ca08a55bfc858a70aa12976c693  ./verify-stage-g-m43-settings-functional-recovery.mjs
+d98569891b9c61580da9c45d68ab09b1e1bab7ae0481e081a32ca4062f50b280  ./verify-stage-g-m43-settings-functional-recovery.mjs
+dd206f7a5c54ad9367badec1cfd5ae03977bf59f0b1c8b4a5cda1463382875d6  ./verify-stage-g-m44-management-authority-consolidation.mjs
 9c3ca048644f0a54f06bd56a46ce957a2e8f0e9f6d99eefd92b93d135da276f7  ./verify-timetracker-runtime.mjs
 e461f73a558d08bda915d6ecee41df158e47cf99b104a75bc91f1517d8d4ff39  ./verify-timetracker-startup.mjs
 4fc939b5b39fd072246c3a359c6b7bf35c400e222ef98401cd1d3eb3f4a4bc1b  ./verify-timetracker-v2-pass1.mjs
@@ -1079,8 +1090,8 @@ ace07578b1562f5253f2d4530231d555d72cf6c50da58946433e5ba25bed9cc8  ./verify-v1215
 96832cc79a2b8efc9f807d8d86d255eb47bee874a8223eab9772ad4353ff871e  ./verify-v1216-item-workspace.mjs
 4e49e7f7ecb1fb68746cf168975e7a98221e4da0e55bc1b35323cc615cb6db4e  ./verify-v1220-architecture-restructure.mjs
 cbdd35ade04bbdd6e222172f13dfb5030f406524dbfd8b1439f32440433d449b  ./verify-v1230-architecture-phase2.mjs
-f5c22c2b8f11f2a06f4365ebb7916e6ab1afcb66b7f2407f6ae4dd5bd321002b  ./verify-v1240-architecture-phase3.mjs
-90d5a4bc890c79eaaa78096d652f1e325b39a2787f30f2c9d44b2eec66db790b  ./verify-v1250-architecture-phase4.mjs
+759957c91c3dfa24caaa9adb5e41d7e1ca7341d731ddafd5a10a2afe95c6fc3c  ./verify-v1240-architecture-phase3.mjs
+7f3f4a75ef7678e20d69ff36dfca1dac6ae38716b6afbdbe586832479f32d65c  ./verify-v1250-architecture-phase4.mjs
 8564e5d9b7c0b0f9293b7a6ec726fe78de60d761b4651639868f1c90e261888c  ./verify-v1260-architecture-phase5.mjs
 0f94380f7944bfc6a8c33c864f1c48681c773ea87512ab2ebe9378762a83025a  ./verify-v1270-domain-browser-quality.mjs
 a23a51e9fa81fb645143537612980f88c690ff33d085bc38621a639ae63fff26  ./verify-v1280-motion-design.mjs
@@ -1111,7 +1122,7 @@ f907d4207fb48d19d7b941d9f5ceccf6d2c9a9d74df8c33acec735218c27b193  ./verify-v1380
 af143cee8154f2084c0a2a62d997e7e61fac34c1ad033c977ecfbc0a873c0b69  ./verify-v1400-cloud-module-boundary.mjs
 b81cb357ba12406c1d890202c9e5aa80e20d134bba19268c046d66c97d5be0ad  ./verify-v1400-feature-runtime.mjs
 fe4e5ea3375ba525dbae76ccebd2e17da9e2f4b4eb90123be6a32d19a1c6ec37  ./verify-v1410-nonvisual-runtime.mjs
-455668f3b9759d078f68f67166e5aa2cf8eb8e991a7f85f752c43774ecb225f9  ./verify-v1420-ui-typescript.mjs
+6a46a91831e246e5120526909c0a797263752d90319d75e06e896d17b13537ee  ./verify-v1420-ui-typescript.mjs
 2ce05126289d4bfdc3ec264c4bb0de7875da9b0fdec258b611227f28659a8688  ./verify-v1430-production-hardening.mjs
 6de390b14e13c2ae4f7282828d3f013ff56c980f3ce808aea9a70418db92f017  ./verify-v1431-board-compatibility.mjs
 845e77eb4fdb1ff62ee740998278eba8d516f1a83c4a6d6dcf70002c37150017  ./verify-v1432-board-cell-column-m5.mjs

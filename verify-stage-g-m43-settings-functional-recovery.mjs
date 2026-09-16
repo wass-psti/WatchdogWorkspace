@@ -24,7 +24,7 @@ const arch=Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1]||0);
 const m42State=m42.match(/activationState:\s*'([^']+)'/)?.[1]||'unknown';
 const state=target.match(/activationState:\s*'([^']+)'/)?.[1]||'unknown';
 
-check(arch===51,'Architecture 51 is active');
+check(arch>=51,'Architecture 51+ preserves M43 Settings recovery authority');
 check(m42State==='active-certified','M42 active-certified prerequisite');
 check(target.includes('milestone: 43')&&target.includes("stage: 'G'")&&target.includes('architectureVersion: 51'),'M43 target identity');
 check(['implementation-complete-pending-certification','active-certified'].includes(state),'M43 activation state is recognized');

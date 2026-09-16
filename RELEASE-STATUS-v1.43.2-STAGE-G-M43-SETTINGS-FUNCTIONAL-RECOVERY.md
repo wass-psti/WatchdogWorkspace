@@ -1,6 +1,6 @@
 # Work Management v1.43.2 — Stage G M43 Settings Functional Recovery
 
-- **State:** implementation-complete-pending-certification
+- **State:** active-certified
 - **Architecture Version:** 51
 - **Prerequisite:** M42 Users / RBAC Functional Recovery = active-certified
 - **Scope:** theme, density, application compatibility, storage health, persistent storage, diagnostics, backup export/restore, preference reset, authentication/backend status, and reload persistence
@@ -24,3 +24,7 @@ M43 remains fail closed until the exact source revision passes static verificati
 The M43 finalizer now runs historical regression verification and the production Vite build against the staged **active-certified** candidate before package hygiene and PASS-record publication. Repository source remains `implementation-complete-pending-certification` until a hosted artifact transaction succeeds; the staged candidate must remain source-digest-identical and `active-certified` after those post-state gates.
 
 The finalizer also explicitly revalidates the pending authoritative target/status records after pre-certification gates and after active-candidate post-state gates, closing the intentional certification-digest exclusion boundary for those two mutable state records.
+
+## Final certified baseline — 2026-09-16T12:34:32Z
+
+The fail-closed M43 certification and artifact-publication transaction passed for source commit `0ea49548f496a4c3fd7fc7209e9dd6fd99ccbfe5`. The packaged Settings recovery authority is **active-certified**. The source-tree digest excludes only the two certification state records so pending source authority and certified packaged authority can be compared without self-referential state mutation.

@@ -23,14 +23,23 @@ assert.ok(platform.includes("PLATFORM_VERSION = '1.43.2'"), 'platform version mi
 assert.ok(sw.includes('work-management-v1.43.2'), 'service-worker cache mismatch');
 assert.ok(applicationManifest.architectureVersion >= 4, 'architecture version must preserve the phase-three boundary');
 assert.equal(validateApplicationManifest(applicationManifest).valid, true, 'application manifest must validate');
-assert.equal(applicationManifest.routes.find((route) => route.id === 'account')?.owner, 'account', 'Account route must have its own feature owner');
-assert.equal(applicationManifest.routes.find((route) => route.id === 'users')?.owner, 'user-management', 'Users route ownership mismatch');
-assert.ok(applicationManifest.features.some((feature) => feature.id === 'account' && feature.boundary === 'src/app/management/AuthenticatedManagementUI.tsx'), 'Account React feature declaration missing');
-assert.ok(applicationManifest.features.some((feature) => feature.id === 'user-management' && feature.boundary === 'src/app/management/AuthenticatedManagementUI.tsx'), 'User Management React feature declaration missing');
+if (applicationManifest.architectureVersion >= 52) {
+  for (const routeId of ['account', 'settings', 'users']) assert.equal(applicationManifest.routes.find((route) => route.id === routeId)?.owner, 'management', `${routeId} route must use the consolidated M44 management owner`);
+  assert.ok(applicationManifest.features.some((feature) => feature.id === 'management' && feature.boundary === 'src/app/management/AuthenticatedManagementUI.tsx'), 'M44 consolidated management React feature declaration missing');
+} else {
+  assert.equal(applicationManifest.routes.find((route) => route.id === 'account')?.owner, 'account', 'Account route must have its own feature owner');
+  assert.equal(applicationManifest.routes.find((route) => route.id === 'users')?.owner, 'user-management', 'Users route ownership mismatch');
+  assert.ok(applicationManifest.features.some((feature) => feature.id === 'account' && feature.boundary === 'src/app/management/AuthenticatedManagementUI.tsx'), 'Account React feature declaration missing');
+  assert.ok(applicationManifest.features.some((feature) => feature.id === 'user-management' && feature.boundary === 'src/app/management/AuthenticatedManagementUI.tsx'), 'User Management React feature declaration missing');
+}
 
 assert.ok(runtime.includes('authenticatedManagementUiRuntime'), 'runtime gateway missing M13 authenticated management authority');
-assert.ok(app.includes("featureRegistry.register('account', authenticatedManagementUiRuntime"), 'Account M13 runtime registration missing');
-assert.ok(app.includes("featureRegistry.register('user-management', authenticatedManagementUiRuntime"), 'User Management M13 runtime registration missing');
+if (applicationManifest.architectureVersion >= 52) {
+  assert.ok(app.includes("featureRegistry.register('management', authenticatedManagementUiRuntime"), 'M44 consolidated management runtime registration missing');
+} else {
+  assert.ok(app.includes("featureRegistry.register('account', authenticatedManagementUiRuntime"), 'Account M13 runtime registration missing');
+  assert.ok(app.includes("featureRegistry.register('user-management', authenticatedManagementUiRuntime"), 'User Management M13 runtime registration missing');
+}
 for (const route of ['account', 'users']) {
   const directDelegation = `${route}: () => showAuthenticatedManagement('${route}')`;
   const gatedDelegation = `${route}: () => gateBackendCapability('${route}', '${route}', () => showAuthenticatedManagement('${route}'))`;
@@ -84,11 +93,12 @@ assert.ok(boardList.includes('renderBoardCard') && boardList.includes('renderBoa
 assert.ok(itemWorkspace.includes("tabButton('updates'") && itemWorkspace.includes("tabButton('files'") && itemWorkspace.includes("tabButton('activity'") && itemWorkspace.includes('data-item-file-input'), 'Item Workspace view surface incomplete');
 
 for (const asset of [
-  'assets/js/features/account/index.ts',
-  'assets/js/features/user-management/index.ts',
   'assets/js/features/boards/views/board-list-view.ts',
   'assets/js/features/boards/views/item-workspace-view.ts',
 ]) assert.ok(cache.includes(asset), `cache manifest missing ${asset}`);
+if (applicationManifest.architectureVersion >= 52) {
+  for (const retired of ['assets/js/features/account/index.ts','assets/js/features/settings/index.ts','assets/js/features/user-management/index.ts']) assert.equal(cache.includes(retired), false, `M44 retired management controller must not remain in runtime cache: ${retired}`);
+}
 
 // Pure Board List rendering remains independently testable without a DOM.
 const listMarkup = renderBoardListState({
@@ -120,8 +130,8 @@ assert.equal(validateApplicationManifest(invalid).valid, false, 'manifest valida
 const registry = createFeatureRegistry(applicationManifest);
 for (const feature of applicationManifest.features) registry.register(feature.id, {});
 assert.equal(registry.validate().valid, true, 'runtime feature inventory must remain complete');
-assert.equal(registry.ownerForRoute('account'), 'account');
-assert.equal(registry.ownerForRoute('users'), 'user-management');
+assert.equal(registry.ownerForRoute('account'), applicationManifest.architectureVersion >= 52 ? 'management' : 'account');
+assert.equal(registry.ownerForRoute('users'), applicationManifest.architectureVersion >= 52 ? 'management' : 'user-management');
 
 assert.ok(checklist.includes('[x] Extract account/user-management controllers from the shell.'), 'restructure checklist not updated');
 assert.ok(fs.existsSync('docs/architecture/PHASE-3.md'), 'phase-three architecture documentation missing');

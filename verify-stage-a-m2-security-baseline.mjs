@@ -62,10 +62,10 @@ assert.match(authSource, /addEventListener\('focus',[\s\S]*revalidateAccessConte
 assert.match(authSource, /BroadcastChannel/);
 pass('session lifecycle preserves retry on failed global revocation and retains synchronized auth state');
 
-const accountSource = read('assets/js/features/account/index.ts');
-assert.match(accountSource, /Session revocation could not be completed/);
-assert.match(accountSource, /setAuthFeedback\(message, 'warning'\)/);
-pass('account UI reports unconfirmed global session revocation instead of false success');
+const managementRuntimeSource = read('src/app/management/authenticated-management-ui-runtime.ts');
+assert.match(managementRuntimeSource, /Session revocation could not be completed/);
+assert.match(managementRuntimeSource, /setAuthenticationFeedback\(message, 'warning'\)/);
+pass('account UI reports unconfirmed global session revocation instead of false success through the consolidated management authority');
 
 const serviceWorker = read('service-worker.js');
 assert.match(serviceWorker, /hasSensitiveRequestHeaders/);

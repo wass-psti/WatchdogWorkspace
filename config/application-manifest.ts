@@ -15,12 +15,12 @@ const routes = freezeList<RouteDefinition>([
   { id: 'home', pattern: '#/', owner: 'home' },
   { id: 'boards', pattern: '#/boards', owner: 'boards' },
   { id: 'board', pattern: '#/boards/:boardId', owner: 'boards' },
-  { id: 'settings', pattern: '#/settings', owner: 'settings' },
+  { id: 'settings', pattern: '#/settings', owner: 'management' },
   { id: 'login', pattern: '#/login', owner: 'auth' },
   { id: 'register', pattern: '#/register', owner: 'auth' },
   { id: 'verify', pattern: '#/verify', owner: 'auth' },
-  { id: 'account', pattern: '#/account', owner: 'account' },
-  { id: 'users', pattern: '#/users', owner: 'user-management' },
+  { id: 'account', pattern: '#/account', owner: 'management' },
+  { id: 'users', pattern: '#/users', owner: 'management' },
   { id: 'app', pattern: '#/app/:moduleId', owner: 'module-host' },
 ]);
 
@@ -29,11 +29,9 @@ const features = freezeList<FeatureDefinition>([
   { id: 'home', state: 'active', boundary: 'assets/js/features/home/index.ts', dependencies: ['platform', 'modules', 'auth'] },
   { id: 'commands', state: 'active', boundary: 'src/app/shared-ui/SharedApplicationUI.tsx', dependencies: ['react-19.2', 'shared-application-ui-runtime', 'command-registry', 'command-feature-adapter', 'global-overlay-runtime', 'overlay-manager', 'modules', 'auth', 'backup'] },
   { id: 'auth', state: 'active', boundary: 'src/app/auth/AuthenticationUI.tsx', dependencies: ['react-19.2', 'core/auth', 'authentication-ui-runtime', 'supabase-client-adapter', 'route-controller'] },
-  { id: 'account', state: 'active', boundary: 'src/app/management/AuthenticatedManagementUI.tsx', dependencies: ['react-19.2', 'authenticated-management-ui-runtime', 'core/auth', 'modules'] },
+  { id: 'management', state: 'active', boundary: 'src/app/management/AuthenticatedManagementUI.tsx', dependencies: ['react-19.2', 'authenticated-management-ui-runtime', 'core/auth', 'platform', 'backup', 'modules', 'tanstack-query-v5', 'supabase-client-adapter', 'edge-function-client'] },
   { id: 'boards', state: 'active', boundary: 'src/app/boards/BoardPresentationFacade.tsx', dependencies: ['react-19.2', 'board-presentation-facade-runtime', 'board-presentation-host', 'boards-feature-adapter', 'assets/js/boards-ui.ts', 'boards-controller', 'board-domain-service', 'board-schema', 'board-state', 'board-repository', 'board-contracts', 'column-type-registry', 'board-list-view', 'table-view', 'kanban-view', 'board-workspace-view', 'dialog-controller', 'column-workflows', 'group-workflows', 'item-workflows', 'member-workflows', 'activity-workflows', 'item-workspace-controller', 'item-panel-renderer', 'drag-drop-controller', 'history-controller', 'selection-controller', 'inline-edit-controller', 'column-resize-controller', 'structure-drag-controller', 'board-menu-controller', 'board-table-virtualization-controller', 'board-table-virtualization', 'supabase-realtime-client', 'board-realtime-service', 'board-realtime-controller', 'realtime-platform', 'global-overlay-runtime', 'overlay-manager', 'permissions', 'item-workspace-view', 'core/boards', 'boards-ui'] },
   { id: 'modules', state: 'active', boundary: 'assets/js/features/modules/index.ts', dependencies: ['module-bootstrap', 'identity-bridge', 'module-cloud-store', 'normalized-module-data-service', 'realtime-platform'] },
-  { id: 'settings', state: 'active', boundary: 'src/app/management/AuthenticatedManagementUI.tsx', dependencies: ['react-19.2', 'authenticated-management-ui-runtime', 'platform', 'backup', 'auth', 'modules'] },
-  { id: 'user-management', state: 'active', boundary: 'src/app/management/AuthenticatedManagementUI.tsx', dependencies: ['react-19.2', 'authenticated-management-ui-runtime', 'tanstack-query-v5', 'auth', 'supabase-client-adapter', 'edge-function-client'] },
   { id: 'module-host', state: 'active', boundary: 'assets/js/runtime/module-host.ts', dependencies: ['auth', 'modules'] },
 ]);
 
@@ -41,7 +39,7 @@ export const applicationManifest = Object.freeze({
   id: 'work-management',
   name: 'Work Management',
   version: '1.43.2',
-  architectureVersion: 51,
+  architectureVersion: 52,
   runtime: 'vite-esm',
   architecture: Object.freeze({
     style: 'modular-platform',
@@ -60,7 +58,7 @@ export const applicationManifest = Object.freeze({
     authenticationUiOwnership: 'react-authentication-ui-v1',
     authenticatedManagementUi: 'src/app/management/AuthenticatedManagementUI.tsx',
     authenticatedManagementUiRuntime: 'src/app/management/authenticated-management-ui-runtime.ts',
-    authenticatedManagementUiOwnership: 'react-account-settings-user-management-v1',
+    authenticatedManagementUiOwnership: 'react-management-v1',
     sharedApplicationUi: 'src/app/shared-ui/SharedApplicationUI.tsx',
     sharedApplicationUiRuntime: 'src/app/shared-ui/shared-application-ui-runtime.ts',
     sharedApplicationUiOwnership: 'react-command-palette-shared-ui-v1',
@@ -189,6 +187,11 @@ export const applicationManifest = Object.freeze({
     settingsFunctionalRecoveryRuntime: 'src/app/management/authenticated-management-ui-runtime.ts',
     settingsEvidencePersistence: 'browser-local-verification-evidence-v1',
     settingsBackupAuthority: 'assets/js/core/backup.ts',
+    managementAuthorityConsolidation: 'single-react-management-runtime-v1',
+    managementAuthorityFeature: 'management',
+    managementAuthorityUi: 'src/app/management/AuthenticatedManagementUI.tsx',
+    managementAuthorityRuntime: 'src/app/management/authenticated-management-ui-runtime.ts',
+    managementLegacyControllers: 'retired-not-shipped-v1',
     serverState: 'assets/js/platform/data/query-client.ts',
     serverStateLibrary: 'tanstack-query-v5',
     clientState: 'assets/js/platform/state/client-state-store.ts',
@@ -274,8 +277,11 @@ export function validateApplicationManifest(manifest: ApplicationManifest = appl
   if (manifest.architectureVersion >= 22 && (manifest.architecture.authenticationUiOwnership !== 'react-authentication-ui-v1' || !manifest.architecture.authenticationUi || !manifest.architecture.authenticationUiRuntime)) {
     errors.push('Architecture v22+ requires React ownership of the Work Management authentication UI with a dedicated route/UI runtime bridge.');
   }
-  if (manifest.architectureVersion >= 23 && (manifest.architecture.authenticatedManagementUiOwnership !== 'react-account-settings-user-management-v1' || !manifest.architecture.authenticatedManagementUi || !manifest.architecture.authenticatedManagementUiRuntime)) {
-    errors.push('Architecture v23+ requires React ownership of Account, Settings, and User Management presentation with a dedicated authenticated management UI runtime.');
+  if (manifest.architectureVersion >= 23 && manifest.architectureVersion < 52 && (manifest.architecture.authenticatedManagementUiOwnership !== 'react-account-settings-user-management-v1' || !manifest.architecture.authenticatedManagementUi || !manifest.architecture.authenticatedManagementUiRuntime)) {
+    errors.push('Architecture v23-v51 requires the historical React Account/Settings/User Management ownership contract.');
+  }
+  if (manifest.architectureVersion >= 52 && (manifest.architecture.authenticatedManagementUiOwnership !== 'react-management-v1' || !manifest.architecture.authenticatedManagementUi || !manifest.architecture.authenticatedManagementUiRuntime)) {
+    errors.push('Architecture v52+ requires the consolidated React management ownership contract.');
   }
   if (manifest.architectureVersion >= 24 && (manifest.architecture.sharedApplicationUiOwnership !== 'react-command-palette-shared-ui-v1' || !manifest.architecture.sharedApplicationUi || !manifest.architecture.sharedApplicationUiRuntime || !manifest.architecture.commandRegistry)) {
     errors.push('Architecture v24+ requires React ownership of the command palette and shared application UI while preserving the typed command registry authority.');
@@ -356,6 +362,9 @@ export function validateApplicationManifest(manifest: ApplicationManifest = appl
   }
   if (manifest.architectureVersion >= 51 && (manifest.architecture.settingsFunctionalRecovery !== 'reload-resilient-settings-control-plane-v1' || !manifest.architecture.settingsFunctionalRecoveryRuntime || manifest.architecture.settingsEvidencePersistence !== 'browser-local-verification-evidence-v1' || !manifest.architecture.settingsBackupAuthority)) {
     errors.push('Architecture v51+ requires reload-resilient Settings functional recovery with persisted verification evidence and governed backup authority.');
+  }
+  if (manifest.architectureVersion >= 52 && (manifest.architecture.managementAuthorityConsolidation !== 'single-react-management-runtime-v1' || manifest.architecture.managementAuthorityFeature !== 'management' || manifest.architecture.managementAuthorityUi !== 'src/app/management/AuthenticatedManagementUI.tsx' || manifest.architecture.managementAuthorityRuntime !== 'src/app/management/authenticated-management-ui-runtime.ts' || manifest.architecture.managementLegacyControllers !== 'retired-not-shipped-v1')) {
+    errors.push('Architecture v52+ requires one consolidated React management feature/runtime authority with obsolete imperative management controllers retired from the shipped source tree.');
   }
 
 

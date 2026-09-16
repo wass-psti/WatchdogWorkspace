@@ -20,6 +20,7 @@ const oldManagementExecution = read('scripts/verify-authenticated-management-ui-
 const runtimeIndex = read('assets/js/runtime/index.ts');
 const runtimeAssets = read('config/runtime-assets.js');
 const manifest = read('config/application-manifest.ts');
+const architectureVersion = Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0);
 const m30BrowserRunner = read('scripts/run-modern-browser-tests.mjs');
 const evidenceGenerator = read('scripts/generate-functional-regression-evidence.mjs');
 const activator = read('scripts/activate-stage-g-m37.mjs');
@@ -63,11 +64,17 @@ assert(management.includes('User directory unavailable') && managementRuntime.in
 assert(oldSmoke.includes("page.goto('/#/login')") && !oldSmoke.includes("/#/account") && !oldSmoke.includes("/#/users") && !oldSmoke.includes("/#/settings") && !oldSmoke.includes("/#/boards"), 'Original Playwright smoke no longer has the M37 login-only coverage gap signature.');
 assert(oldManagementExecution.includes("show('account')") && oldManagementExecution.includes("show('settings')") && oldManagementExecution.includes("show('users')"), 'M13 management execution state-machine coverage signature changed.');
 
-// Duplicate management authority is documented technical debt, not removed by M37.
-for (const token of ['createAccountFeature', 'createSettingsFeature', 'createUserManagementFeature']) {
-  assert(runtimeIndex.includes(token) || runtimeAssets.includes(token), `Legacy management authority signature ${token} is no longer present; update inventory if intentionally retired.`);
+// M37 recorded duplicate management authority as technical debt; M44 resolves it.
+const managementDebt = inventory.entries.find((entry) => entry.id === 'M37-TECHDEBT-001');
+if (architectureVersion >= 52) {
+  assert(managementDebt?.status === 'resolved-m44', 'M37 management authority debt must be marked resolved by M44.');
+  for (const token of ['createAccountFeature', 'createSettingsFeature', 'createUserManagementFeature']) assert(!runtimeIndex.includes(token) && !runtimeAssets.includes(token), `M44 retired management authority must be absent: ${token}`);
+  assert(manifest.includes("managementAuthorityConsolidation: 'single-react-management-runtime-v1'"), 'M44 consolidated management ownership declaration missing.');
+  assert(manifest.includes("authenticatedManagementUiOwnership: 'react-management-v1'"), 'M44 consolidated React management ownership declaration missing.');
+} else {
+  for (const token of ['createAccountFeature', 'createSettingsFeature', 'createUserManagementFeature']) assert(runtimeIndex.includes(token) || runtimeAssets.includes(token), `Legacy management authority signature ${token} is no longer present; update inventory if intentionally retired.`);
+  assert(manifest.includes("authenticatedManagementUiOwnership: 'react-account-settings-user-management-v1'"), 'React management ownership declaration missing.');
 }
-assert(manifest.includes("authenticatedManagementUiOwnership: 'react-account-settings-user-management-v1'"), 'React management ownership declaration missing.');
 
 // Evidence harness contract.
 for (const token of ["page.on('console'", "page.on('pageerror'", "page.on('requestfailed'", "page.on('response'", 'runtimeContext', 'domOwnership', 'hasSession']) assert(probe.includes(token), `M37 browser probe missing ${token}.`);

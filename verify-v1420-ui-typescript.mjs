@@ -26,8 +26,10 @@ const authorities = [
   'assets/js/runtime/motion-design.ts',
   'assets/js/features/home/index.ts',
   'assets/js/features/commands/index.ts',
-  'assets/js/features/settings/index.ts',
-  'assets/js/features/user-management/index.ts',
+  'src/app/management/AuthenticatedManagementUI.tsx',
+  'src/app/management/authenticated-management-ui-runtime.ts',
+  'assets/js/features/account/account-service.ts',
+  'assets/js/features/settings/settings-recovery.ts',
 ];
 for (const filePath of authorities) {
   assert.ok(exists(filePath), `authoritative UI TypeScript source missing: ${filePath}`);

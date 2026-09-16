@@ -1,9 +1,6 @@
 /* Public dependency gateway for the Work Management shell. */
 export { modules, moduleRegistry, nativeModuleRegistry, registerNativeModuleAdapter } from '../features/modules/index.ts';
 export { auth, AUTH_EVENT, AUTH_FEATURE } from '../features/auth/index.ts';
-export { createAccountFeature } from '../features/account/index.ts';
-export { createUserManagementFeature } from '../features/user-management/index.ts';
-export { createSettingsFeature } from '../features/settings/index.ts';
 export { createHomeFeature } from '../features/home/index.ts';
 export { createCommandPaletteFeature, createCommandRegistry } from '../features/commands/index.ts';
 export { createBoardsFeature } from '../features/boards/index.ts';

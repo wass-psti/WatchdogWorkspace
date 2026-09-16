@@ -5,11 +5,9 @@ export type FeatureId =
   | 'home'
   | 'commands'
   | 'auth'
-  | 'account'
+  | 'management'
   | 'boards'
   | 'modules'
-  | 'settings'
-  | 'user-management'
   | 'module-host';
 
 export interface RouteDefinition {
@@ -42,7 +40,7 @@ export interface ArchitectureDefinition {
   readonly authenticationUiOwnership?: 'react-authentication-ui-v1';
   readonly authenticatedManagementUi?: string;
   readonly authenticatedManagementUiRuntime?: string;
-  readonly authenticatedManagementUiOwnership?: 'react-account-settings-user-management-v1';
+  readonly authenticatedManagementUiOwnership?: 'react-account-settings-user-management-v1' | 'react-management-v1';
   readonly sharedApplicationUi?: string;
   readonly sharedApplicationUiRuntime?: string;
   readonly sharedApplicationUiOwnership?: 'react-command-palette-shared-ui-v1';
@@ -171,6 +169,11 @@ export interface ArchitectureDefinition {
   readonly settingsFunctionalRecoveryRuntime?: string;
   readonly settingsEvidencePersistence?: 'browser-local-verification-evidence-v1';
   readonly settingsBackupAuthority?: string;
+  readonly managementAuthorityConsolidation?: 'single-react-management-runtime-v1';
+  readonly managementAuthorityFeature?: 'management';
+  readonly managementAuthorityUi?: string;
+  readonly managementAuthorityRuntime?: string;
+  readonly managementLegacyControllers?: 'retired-not-shipped-v1';
   readonly serverState: string;
   readonly serverStateLibrary?: 'tanstack-query-v5';
   readonly clientState?: string;

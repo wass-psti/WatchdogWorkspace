@@ -208,7 +208,7 @@
       "module": "account/users/settings",
       "severity": "medium",
       "classification": "duplicate-legacy-authority",
-      "status": "confirmed-source-debt",
+      "status": "resolved-m44",
       "summary": "Legacy Account, Settings, and User Management feature implementations remain exported/listed even though React AuthenticatedManagementUI is the declared route owner.",
       "reproduction": "Inspect runtime exports/runtime-assets and compare them with application-manifest route ownership.",
       "testIds": [
@@ -225,7 +225,15 @@
         "config/runtime-assets.js",
         "config/application-manifest.ts"
       ],
-      "remediationMilestone": "M44"
+      "remediationMilestone": "M44",
+      "resolution": "M44 removed the three obsolete imperative management controllers, retired their runtime exports/cache entries, and consolidated Account/Settings/Users lifecycle ownership under one management runtime feature.",
+      "resolutionEvidence": [
+        "src/app/management/AuthenticatedManagementUI.tsx",
+        "src/app/management/authenticated-management-ui-runtime.ts",
+        "config/application-manifest.ts",
+        "assets/js/runtime/index.ts",
+        "config/runtime-assets.js"
+      ]
     }
   ]
 }

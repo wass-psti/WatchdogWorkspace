@@ -45,16 +45,21 @@ assert(architectureVersion >= 23, `M13 package must preserve Architecture Versio
 for (const marker of [
   "authenticatedManagementUi: 'src/app/management/AuthenticatedManagementUI.tsx'",
   "authenticatedManagementUiRuntime: 'src/app/management/authenticated-management-ui-runtime.ts'",
-  "authenticatedManagementUiOwnership: 'react-account-settings-user-management-v1'",
-]) assert(manifest.includes(marker), `Application manifest missing M13 authority: ${marker}`);
-for (const feature of ['account','settings','user-management']) assert(manifest.includes(`{ id: '${feature}', state: 'active', boundary: 'src/app/management/AuthenticatedManagementUI.tsx'`), `M13 manifest boundary missing for ${feature}.`);
-for (const marker of ['authenticatedManagementUi?: string','authenticatedManagementUiRuntime?: string',"authenticatedManagementUiOwnership?: 'react-account-settings-user-management-v1'"]) assert(manifestTypes.includes(marker), `Manifest type contract missing ${marker}`);
-assert(manifestSchema.includes("authenticatedManagementUiOwnership: z.literal('react-account-settings-user-management-v1').optional()"), 'Manifest runtime schema must model M13 management ownership.');
-assert(manifestSchema.includes('manifest.architectureVersion >= 23') && manifestSchema.includes('React ownership of Account, Settings, and User Management'), 'Manifest runtime schema must enforce Architecture v23 management ownership.');
+  architectureVersion >= 52 ? "authenticatedManagementUiOwnership: 'react-management-v1'" : "authenticatedManagementUiOwnership: 'react-account-settings-user-management-v1'",
+]) assert(manifest.includes(marker), `Application manifest missing M13/M44 authority: ${marker}`);
+if (architectureVersion >= 52) {
+  assert(manifest.includes("{ id: 'management', state: 'active', boundary: 'src/app/management/AuthenticatedManagementUI.tsx'"), 'M44 consolidated management manifest boundary missing.');
+  for (const route of ['account','settings','users']) assert(manifest.includes(`{ id: '${route}', pattern:`) && manifest.includes(`owner: 'management'`), `M44 consolidated route ownership missing for ${route}.`);
+} else {
+  for (const feature of ['account','settings','user-management']) assert(manifest.includes(`{ id: '${feature}', state: 'active', boundary: 'src/app/management/AuthenticatedManagementUI.tsx'`), `M13 manifest boundary missing for ${feature}.`);
+}
+for (const marker of ['authenticatedManagementUi?: string','authenticatedManagementUiRuntime?: string',"authenticatedManagementUiOwnership?: 'react-account-settings-user-management-v1' | 'react-management-v1'"]) assert(manifestTypes.includes(marker), `Manifest type contract missing ${marker}`);
+assert(manifestSchema.includes("authenticatedManagementUiOwnership: z.enum(['react-account-settings-user-management-v1', 'react-management-v1']).optional()"), 'Manifest runtime schema must model historical and consolidated management ownership.');
+assert(manifestSchema.includes('manifest.architectureVersion >= 23') && manifestSchema.includes('manifest.architectureVersion < 52') && manifestSchema.includes("authenticatedManagementUiOwnership !== 'react-management-v1'"), 'Manifest runtime schema must preserve M13 history while enforcing the M44 consolidated ownership contract.');
 
 for (const marker of [
   'data-wm-authenticated-management-ui-host',
-  'data-wm-composition-owner="react-account-settings-user-management"',
+  architectureVersion >= 52 ? 'data-wm-composition-owner="react-management"' : 'data-wm-composition-owner="react-account-settings-user-management"',
   'data-wm-management-view="account"',
   'data-wm-management-view="settings"',
   'data-wm-management-view="users"',
@@ -101,7 +106,12 @@ for (const route of ['account','settings','users']) {
     assert(app.includes(directDelegation), `Application route table must delegate ${route} to M13 React management UI.`);
   }
 }
-for (const id of ['account','settings','user-management']) assert(app.includes(`featureRegistry.register('${id}', authenticatedManagementUiRuntime`), `Runtime registry must expose the M13 authority for ${id}.`);
+if (architectureVersion >= 52) {
+  assert(app.includes("featureRegistry.register('management', authenticatedManagementUiRuntime"), 'Runtime registry must expose exactly one M44 management authority.');
+  for (const id of ['account','settings','user-management']) assert(!app.includes(`featureRegistry.register('${id}', authenticatedManagementUiRuntime`), `M44 must not retain duplicate management registration ${id}.`);
+} else {
+  for (const id of ['account','settings','user-management']) assert(app.includes(`featureRegistry.register('${id}', authenticatedManagementUiRuntime`), `Runtime registry must expose the M13 authority for ${id}.`);
+}
 for (const forbidden of ['createAccountFeature','createSettingsFeature','createUserManagementFeature','accountFeature.handleAction','settingsFeature.handleAction','userManagementFeature.handleAction','accountFeature.handleSubmit','userManagementFeature.handleSubmit','userManagementFeature.handleInput']) assert(!app.includes(forbidden), `Application runtime still contains retired imperative management wiring: ${forbidden}`);
 assert(app.includes('authenticatedManagementUiRuntime.hide();') && app.includes("publishReactShell(view, 'page', true)"), 'M13 route bridge must enforce mutual exclusion with legacy content while preserving React shell ownership.');
 assert(app.includes('const ROUTE_FOCUS_SELECTORS') && app.includes('const resolveShellRouteContentTarget = (owner: string | null = null)') && app.includes("[data-wm-authenticated-management-ui-host] #main") && app.includes("[data-wm-runtime-host] #main"), 'Shell focus/motion targeting must resolve both React-owned M13 routes and the M10 runtime route-content island.');
@@ -117,7 +127,7 @@ for (const preserved of ['downloadWorkspaceBackup','parseBackupFile','restoreWor
 assert(viteSmoke.includes('Stage C M13 browser exclusivity contract'), 'Vite dev/preview smoke must execute the M13 ownership exclusivity contract.');
 for (const expression of [
   "countElementsWithAttribute(dom, 'data-wm-authenticated-management-ui-host')",
-  "countElementsWithAttribute(dom, 'data-wm-composition-owner', 'react-account-settings-user-management')",
+  architectureVersion >= 52 ? "countElementsWithAttribute(dom, 'data-wm-composition-owner', 'react-management')" : "countElementsWithAttribute(dom, 'data-wm-composition-owner', 'react-account-settings-user-management')",
 ]) assert(viteSmoke.includes(expression), `M13 browser smoke missing ownership assertion: ${expression}`);
 assert(browserGlobals.includes('authenticatedManagementUiRuntime') && browserGlobals.includes('src/app/management/authenticated-management-ui-runtime.ts'), 'Browser runtime bundle must expose the M13 management runtime.');
 for (const marker of [

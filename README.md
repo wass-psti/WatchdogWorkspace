@@ -2,6 +2,12 @@
 > Stage D M16: Board component decomposition implemented at Architecture Version 26; release certification pending.
 > Stage D M15: React Board presentation facade implemented at Architecture Version 25; release certification pending.
 
+# Stage G M44 — Management Authority Consolidation
+
+**Current management authority (Architecture 52):** Account, Settings, and Users are three views of one React management feature owner, `management`. `src/app/management/AuthenticatedManagementUI.tsx` is the sole management presentation boundary and `src/app/management/authenticated-management-ui-runtime.ts` is the sole management route/UI runtime authority. The historical imperative controllers `assets/js/features/account/index.ts`, `assets/js/features/settings/index.ts`, and `assets/js/features/user-management/index.ts` are retired from shipped source, runtime exports, and runtime asset caching. Historical release notes below describe the architecture that existed at those milestones and are not current ownership declarations.
+
+See `M44-MANAGEMENT-AUTHORITY-CONSOLIDATION.md` and `RELEASE-STATUS-v1.43.2-STAGE-G-M44-MANAGEMENT-AUTHORITY-CONSOLIDATION.md`.
+
 # Work Management App v1.43.2 — Stage C M13 Account / Settings / User Management RC
 
 This package continues from the release-certified M12 Authentication UI baseline and advances the platform to **Architecture Version 23** with **Stage C Milestone 13 — Account / Settings / User Management**. React now owns the authenticated Account, Settings, and User Management route presentation through `src/app/management/AuthenticatedManagementUI.tsx`, while the typed `authenticated-management-ui-runtime.ts` coordinates only presentation state and delegates domain operations to the existing authorities.
@@ -16,7 +22,7 @@ M13 ships as **implementation-complete-pending-certification** and is promoted w
 
 This package advances the certified M5 platform to **Architecture Version 16** and introduces the Work Management-owned runtime schema authority under `src/runtime-schemas/`. It exact-pins `zod@4.5.4`, validates application/module manifests, host↔module messages, identity/session context, lifecycle/navigation inputs, authorization roles, runtime context, and persistence envelopes, while preserving Board domain invariants and Supabase RLS as their existing authorities. M4 and M5 remain `active-certified`; M6 ships in `dependencies-installed-pending-certification` and can be release-certified with `npm run stage-b:certify`. See `docs/WORK-MANAGEMENT-RUNTIME-SCHEMAS.md` and `M6-ACTIVATION-RUNBOOK.md`.
 
-**M6 governed toolchain dispatch hotfix:** public M6 and `stage-b:certify` commands now automatically switch from an accidental Node 24/npm 11 shell to the governed `.nvmrc` Node 22.16.0 / npm 10.9.2 toolchain through NVM before certification. See `M6-GOVERNED-TOOLCHAIN-DISPATCH-HOTFIX.md`. 
+**M6 governed toolchain dispatch hotfix:** public M6 and `stage-b:certify` commands now automatically switch from an accidental Node 24/npm 11 shell to the governed `.nvmrc` Node 22.16.0 / npm 10.9.2 toolchain through NVM before certification. See `M6-GOVERNED-TOOLCHAIN-DISPATCH-HOTFIX.md`.
 
 # Stage B M5 — Primitive Interaction Architecture corrective continuation
 

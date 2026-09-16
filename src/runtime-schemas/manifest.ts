@@ -3,7 +3,7 @@ import { workManagementModuleDefinitionSchema } from './modules.ts';
 import { nonEmptyStringSchema } from './primitives.ts';
 
 export const featureIdSchema = z.enum([
-  'shell', 'home', 'commands', 'auth', 'account', 'boards', 'modules', 'settings', 'user-management', 'module-host',
+  'shell', 'home', 'commands', 'auth', 'management', 'boards', 'modules', 'module-host',
 ]);
 
 export const routeDefinitionSchema = z.object({
@@ -36,7 +36,7 @@ export const architectureDefinitionSchema = z.object({
   authenticationUiOwnership: z.literal('react-authentication-ui-v1').optional(),
   authenticatedManagementUi: nonEmptyStringSchema.optional(),
   authenticatedManagementUiRuntime: nonEmptyStringSchema.optional(),
-  authenticatedManagementUiOwnership: z.literal('react-account-settings-user-management-v1').optional(),
+  authenticatedManagementUiOwnership: z.enum(['react-account-settings-user-management-v1', 'react-management-v1']).optional(),
   sharedApplicationUi: nonEmptyStringSchema.optional(),
   sharedApplicationUiRuntime: nonEmptyStringSchema.optional(),
   sharedApplicationUiOwnership: z.literal('react-command-palette-shared-ui-v1').optional(),
@@ -165,6 +165,11 @@ export const architectureDefinitionSchema = z.object({
   settingsFunctionalRecoveryRuntime: nonEmptyStringSchema.optional(),
   settingsEvidencePersistence: z.literal('browser-local-verification-evidence-v1').optional(),
   settingsBackupAuthority: nonEmptyStringSchema.optional(),
+  managementAuthorityConsolidation: z.literal('single-react-management-runtime-v1').optional(),
+  managementAuthorityFeature: z.literal('management').optional(),
+  managementAuthorityUi: nonEmptyStringSchema.optional(),
+  managementAuthorityRuntime: nonEmptyStringSchema.optional(),
+  managementLegacyControllers: z.literal('retired-not-shipped-v1').optional(),
   serverState: nonEmptyStringSchema,
   serverStateLibrary: z.literal('tanstack-query-v5').optional(),
   clientState: nonEmptyStringSchema.optional(),
@@ -237,8 +242,11 @@ export const applicationManifestSchema = z.object({
   if (manifest.architectureVersion >= 22 && (manifest.architecture.authenticationUiOwnership !== 'react-authentication-ui-v1' || !manifest.architecture.authenticationUi || !manifest.architecture.authenticationUiRuntime)) {
     context.addIssue({ code: 'custom', message: 'Architecture v22+ requires React ownership of the Work Management authentication UI with a dedicated route/UI runtime bridge.' });
   }
-  if (manifest.architectureVersion >= 23 && (manifest.architecture.authenticatedManagementUiOwnership !== 'react-account-settings-user-management-v1' || !manifest.architecture.authenticatedManagementUi || !manifest.architecture.authenticatedManagementUiRuntime)) {
-    context.addIssue({ code: 'custom', message: 'Architecture v23+ requires React ownership of Account, Settings, and User Management presentation with a dedicated authenticated management UI runtime.' });
+  if (manifest.architectureVersion >= 23 && manifest.architectureVersion < 52 && (manifest.architecture.authenticatedManagementUiOwnership !== 'react-account-settings-user-management-v1' || !manifest.architecture.authenticatedManagementUi || !manifest.architecture.authenticatedManagementUiRuntime)) {
+    context.addIssue({ code: 'custom', message: 'Architecture v23-v51 requires the historical React Account/Settings/User Management ownership contract.' });
+  }
+  if (manifest.architectureVersion >= 52 && (manifest.architecture.authenticatedManagementUiOwnership !== 'react-management-v1' || !manifest.architecture.authenticatedManagementUi || !manifest.architecture.authenticatedManagementUiRuntime)) {
+    context.addIssue({ code: 'custom', message: 'Architecture v52+ requires the consolidated React management ownership contract.' });
   }
   if (manifest.architectureVersion >= 24 && (manifest.architecture.sharedApplicationUiOwnership !== 'react-command-palette-shared-ui-v1' || !manifest.architecture.sharedApplicationUi || !manifest.architecture.sharedApplicationUiRuntime || !manifest.architecture.commandRegistry)) {
     context.addIssue({ code: 'custom', message: 'Architecture v24+ requires React ownership of the command palette and shared application UI while preserving the typed command registry authority.' });
@@ -320,5 +328,8 @@ export const applicationManifestSchema = z.object({
   }
   if (manifest.architectureVersion >= 51 && (manifest.architecture.settingsFunctionalRecovery !== 'reload-resilient-settings-control-plane-v1' || !manifest.architecture.settingsFunctionalRecoveryRuntime || manifest.architecture.settingsEvidencePersistence !== 'browser-local-verification-evidence-v1' || !manifest.architecture.settingsBackupAuthority)) {
     context.addIssue({ code: 'custom', message: 'Architecture v51+ requires reload-resilient Settings functional recovery with persisted verification evidence and governed backup authority.', path: ['architecture'] });
+  }
+  if (manifest.architectureVersion >= 52 && (manifest.architecture.managementAuthorityConsolidation !== 'single-react-management-runtime-v1' || manifest.architecture.managementAuthorityFeature !== 'management' || manifest.architecture.managementAuthorityUi !== 'src/app/management/AuthenticatedManagementUI.tsx' || manifest.architecture.managementAuthorityRuntime !== 'src/app/management/authenticated-management-ui-runtime.ts' || manifest.architecture.managementLegacyControllers !== 'retired-not-shipped-v1')) {
+    context.addIssue({ code: 'custom', message: 'Architecture v52+ requires one consolidated React management feature/runtime authority with obsolete imperative management controllers retired from the shipped source tree.', path: ['architecture'] });
   }
 });

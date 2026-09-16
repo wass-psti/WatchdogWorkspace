@@ -44,8 +44,10 @@ for (const token of ['registrationDraft', 'consumeReturnRoute', 'function cleanR
 }
 assert.ok(authFeature.includes("presentation: 'react-authentication-ui-v1'") && !authFeature.includes('<form'), 'legacy Authentication feature must remain a non-rendering compatibility facade');
 
-assert.ok(app.includes("featureRegistry.register('settings', authenticatedManagementUiRuntime"), 'Settings M13 authority is not registered');
 const phaseFourArchitecture = Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0);
+if (phaseFourArchitecture >= 52) assert.ok(app.includes("featureRegistry.register('management', authenticatedManagementUiRuntime"), 'M44 consolidated Settings management authority is not registered');
+else assert.ok(app.includes("featureRegistry.register('settings', authenticatedManagementUiRuntime"), 'Settings M13 authority is not registered');
+// phaseFourArchitecture declared above for M44-aware historical compatibility.
 const directSettingsDelegation = "settings: () => showAuthenticatedManagement('settings')";
 const gatedSettingsDelegation = "settings: () => gateBackendCapability('settings', 'settings', () => showAuthenticatedManagement('settings'))";
 if (phaseFourArchitecture >= 48) {
@@ -111,12 +113,13 @@ assert.ok(boardsUi.includes('let boardResizeCleanup: (() => void) | null = null;
 assert.ok(boardsUi.includes('dialogs.closeAll()') && boardsUi.includes('columnWorkflows.reset()'), 'Boards teardown does not clean workflow overlays');
 
 for (const path of [
-  './assets/js/features/settings/index.ts',
   './assets/js/features/boards/views/table-view.ts',
   './assets/js/features/boards/views/kanban-view.ts',
   './assets/js/features/boards/controllers/dialog-controller.ts',
   './assets/js/features/boards/controllers/column-workflows.ts',
 ]) assert.ok(assets.includes(path), `runtime cache manifest missing ${path}`);
+if (phaseFourArchitecture >= 52) assert.equal(assets.includes('./assets/js/features/settings/index.ts'), false, 'M44 retired Settings controller must not remain in runtime cache');
+else assert.ok(assets.includes('./assets/js/features/settings/index.ts'), 'runtime cache manifest missing historical Settings controller');
 
 assert.ok(docs.includes('Architecture Phase Four') && docs.includes('Remaining safe targets'), 'Phase Four architecture documentation missing');
 assert.ok(!fs.existsSync('supabase/migrations/v1.27.0-architecture.sql'), 'architecture-only release must not introduce a v1.25 database migration');

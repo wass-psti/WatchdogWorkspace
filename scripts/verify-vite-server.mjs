@@ -153,7 +153,7 @@ try {
   // authenticated session, so the public login smoke proves the new authenticated
   // management owner is not mounted concurrently with the M12 standalone owner.
   const managementHosts = countElementsWithAttribute(dom, 'data-wm-authenticated-management-ui-host');
-  const managementOwners = countElementsWithAttribute(dom, 'data-wm-composition-owner', 'react-account-settings-user-management');
+  const managementOwners = countElementsWithAttribute(dom, 'data-wm-composition-owner', 'react-management');
   if (managementHosts !== 0 || managementOwners !== 0) throw new Error(`M13 browser exclusivity contract exposed authenticated management UI on login; hosts=${managementHosts}, owners=${managementOwners}.`);
 
   // Stage C M14 browser ownership contract. Shared application UI is page-lifetime

@@ -3,9 +3,9 @@ import { installM39Fixture, installM40CompositionDiagnostics, seedM39Session, wa
 
 const routeTable = [
   { path:'boards', route:'boards', owner:'boards', surface:'boards' },
-  { path:'users', route:'users', owner:'user-management', surface:'management' },
-  { path:'settings', route:'settings', owner:'settings', surface:'management' },
-  { path:'account', route:'account', owner:'account', surface:'management' },
+  { path:'users', route:'users', owner:'management', surface:'management' },
+  { path:'settings', route:'settings', owner:'management', surface:'management' },
+  { path:'account', route:'account', owner:'management', surface:'management' },
   { path:'app/time-tracker', route:'app', owner:'module-host', surface:'runtime', moduleId:'time-tracker' },
   { path:'app/tradelink', route:'app', owner:'module-host', surface:'runtime', moduleId:'tradelink' },
   { path:'', route:'home', owner:'home', surface:'runtime' },
@@ -200,7 +200,7 @@ test('@m40-disabled-surface account disablement transfers same-URL ownership fro
   await page.goto('/#/account');
   await waitForM39Identity(page, { role:'admin_general_manager' });
   await waitForM40ApplicationReady(page);
-  await expectCommittedSurface(page, { route:'account', owner:'account', surface:'management' }, diagnostics);
+  await expectCommittedSurface(page, { route:'account', owner:'management', surface:'management' }, diagnostics);
   fixture.updateAccess({ status:'disabled' });
   await triggerIdentityRevalidation(page);
   await expect(page.getByRole('heading', { name:'This account is disabled' })).toBeVisible();

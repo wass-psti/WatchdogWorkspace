@@ -7,16 +7,16 @@ import { createPresentationFrameToken, isPresentationFrameCurrent } from '../ass
 let vectors = 0;
 const vector = (name, fn) => { fn(); vectors += 1; console.log(`PASS: ${name}`); };
 const owners = new Map([
-  ['home','home'],['boards','boards'],['board','boards'],['users','user-management'],['settings','settings'],['account','account'],['app','module-host'],['login','auth'],['register','auth'],['verify','auth'],
+  ['home','home'],['boards','boards'],['board','boards'],['users','management'],['settings','management'],['account','management'],['app','module-host'],['login','auth'],['register','auth'],['verify','auth'],
 ]);
 const ownerForRoute = (name) => owners.get(name) ?? null;
 
 vector('allowed routes resolve to their declared feature owner', () => {
   assert.equal(resolveRoutePresentationOwner({ kind:'allow' }, { name:'home' }, ownerForRoute), 'home');
   assert.equal(resolveRoutePresentationOwner({ kind:'allow' }, { name:'boards' }, ownerForRoute), 'boards');
-  assert.equal(resolveRoutePresentationOwner({ kind:'allow' }, { name:'users' }, ownerForRoute), 'user-management');
-  assert.equal(resolveRoutePresentationOwner({ kind:'allow' }, { name:'settings' }, ownerForRoute), 'settings');
-  assert.equal(resolveRoutePresentationOwner({ kind:'allow' }, { name:'account' }, ownerForRoute), 'account');
+  assert.equal(resolveRoutePresentationOwner({ kind:'allow' }, { name:'users' }, ownerForRoute), 'management');
+  assert.equal(resolveRoutePresentationOwner({ kind:'allow' }, { name:'settings' }, ownerForRoute), 'management');
+  assert.equal(resolveRoutePresentationOwner({ kind:'allow' }, { name:'account' }, ownerForRoute), 'management');
   assert.equal(resolveRoutePresentationOwner({ kind:'allow' }, { name:'app', moduleId:'time-tracker' }, ownerForRoute), 'module-host');
 });
 vector('disabled/recovery/wait states are owned by authentication presentation', () => {
@@ -39,10 +39,10 @@ vector('route lifecycle rejects stale generation commits', () => {
 });
 vector('same committed route preserves the committed generation without superseding pending focus', () => {
   const lifecycle = createRouteLifecycleCoordinator();
-  const first = lifecycle.begin({ name:'account' }, 'account');
+  const first = lifecycle.begin({ name:'account' }, 'management');
   assert.equal(first.changed, true);
   assert.equal(lifecycle.commit(first.revision), true);
-  const repeat = lifecycle.begin({ name:'account' }, 'account');
+  const repeat = lifecycle.begin({ name:'account' }, 'management');
   assert.equal(repeat.changed, false);
   assert.equal(repeat.revision, first.revision);
   assert.equal(lifecycle.getSnapshot().phase, 'committed');
@@ -61,14 +61,14 @@ vector('route identity includes module and board identifiers', () => {
 });
 vector('previous owner and route remain observable during transition', () => {
   const lifecycle = createRouteLifecycleCoordinator();
-  let transition = lifecycle.begin({ name:'settings' }, 'settings');
+  let transition = lifecycle.begin({ name:'settings' }, 'management');
   lifecycle.commit(transition.revision);
-  transition = lifecycle.begin({ name:'users' }, 'user-management');
+  transition = lifecycle.begin({ name:'users' }, 'management');
   const snapshot = lifecycle.getSnapshot();
   assert.equal(snapshot.previousRoute?.name, 'settings');
-  assert.equal(snapshot.previousOwner, 'settings');
+  assert.equal(snapshot.previousOwner, 'management');
   assert.equal(snapshot.route?.name, 'users');
-  assert.equal(snapshot.owner, 'user-management');
+  assert.equal(snapshot.owner, 'management');
 });
 vector('dispose invalidates the active generation and clears ownership', () => {
   const lifecycle = createRouteLifecycleCoordinator();

@@ -268,13 +268,13 @@ export function AuthenticatedManagementUI() {
     if (runtime.view === 'hidden') return;
     const main = document.querySelector<HTMLElement>('[data-wm-authenticated-management-ui-host] #main');
     if (!main) return;
-    const owner = runtime.view === 'users' ? 'user-management' : runtime.view;
+    const owner = 'management' as const;
     presentationReadinessRuntime.acknowledge(owner, main);
     return () => presentationReadinessRuntime.release(owner, main);
   }, [runtime.view, runtime.authRevision]);
   if (runtime.view === 'hidden') return null;
   return (
-    <div className="workspace" data-workspace-root="" aria-label="Workspace content" data-wm-authenticated-management-ui-host="" data-wm-composition-owner="react-account-settings-user-management" data-wm-management-route={runtime.view}>
+    <div className="workspace" data-workspace-root="" aria-label="Workspace content" data-wm-authenticated-management-ui-host="" data-wm-composition-owner="react-management" data-wm-management-route={runtime.view}>
       {runtime.view === 'account' ? <AccountView /> : runtime.view === 'settings' ? <SettingsView /> : <UsersView />}
     </div>
   );

@@ -32,12 +32,21 @@ Non-administrators retain the explicit access-restricted presentation. Server au
 
 The M10 legacy route-content host remains page-lifetime mounted but becomes hidden and inert while an M13 management route is active. The M13 workspace is a React-owned sibling inside the existing React shell. M11 global overlays remain page-lifetime siblings and M12 standalone authentication remains mutually exclusive with M13 authenticated management presentation.
 
-## Temporary compatibility boundaries
+## Temporary compatibility boundaries (historical M13)
 
-- `assets/js/features/account/index.ts`, `assets/js/features/settings/index.ts`, and `assets/js/features/user-management/index.ts` remain repository compatibility artifacts for historical verification and downstream references, but `assets/js/app.ts` no longer constructs or delegates active route presentation/actions/forms to those controllers.
-- The M11 account/profile dropdown remains imperative overlay content hosted in the React-owned global overlay root.
-- Home, Boards, module launch/error pages, and other not-yet-migrated authenticated route content remain in the M10 legacy route-content island.
-- TimeTracker, FuelTrack+, and TradeLink remain isolated same-origin iframe runtimes.
+At M13, the M10 legacy route-content host remained mounted but hidden/inert while React owned Account, Settings, and Users; M11 global overlays remained page-lifetime siblings; and M12 standalone authentication remained mutually exclusive with authenticated management presentation. Password values remained ephemeral form input and were never copied into shared runtime state or persistence. M44 supersedes only the obsolete per-route management controller ownership described by that historical compatibility period; it does not weaken these state-security boundaries. M13 required **no Supabase migration**.
+
+## M44 supersession — current management authority
+
+M44 retires the former repository-compatibility Account, Settings, and User Management controllers. They are no longer shipped, exported by the public runtime gateway, cached as runtime assets, or registered as feature owners. `#/account`, `#/settings`, and `#/users` now share one feature/lifecycle owner, `management`, while the React runtime `view` continues to distinguish the three surfaces. Historical M13 details above remain an architecture record; they are not current ownership declarations.
+
+Current retained boundaries:
+
+- The M11 account/profile dropdown remains a shell-overlay authority hosted in the React-owned global overlay root; it is not an Account route controller.
+- Account domain mutation remains delegated to `assets/js/features/account/account-service.ts` and core Auth.
+- Settings domain/runtime behavior remains delegated to platform/backup/Auth plus `assets/js/features/settings/settings-recovery.ts`.
+- Users server state remains TanStack Query-backed and protected role/status changes remain backend-authoritative.
+- TimeTracker, FuelTrack+, and TradeLink remain isolated same-origin iframe runtimes under the retained M26 boundary.
 
 ## Database and dependencies
 

@@ -57,9 +57,7 @@ const reactShellRoot = resolveReactShellRoot();
 const shellQuery = <T extends Element>(selector: string): T | null => reactShellRoot.querySelector<T>(selector);
 const ROUTE_FOCUS_SELECTORS: Readonly<Record<string, string>> = Object.freeze({
   auth: '[data-wm-authentication-ui-host]#main, [data-wm-authentication-ui-host] #main',
-  account: '[data-wm-authenticated-management-ui-host] #main',
-  settings: '[data-wm-authenticated-management-ui-host] #main',
-  'user-management': '[data-wm-authenticated-management-ui-host] #main',
+  management: '[data-wm-authenticated-management-ui-host] #main',
   boards: '[data-wm-board-presentation-host] #main',
   home: '[data-wm-runtime-host] #main',
   'module-host': '[data-wm-runtime-host] #main',
@@ -975,7 +973,7 @@ function syncPersistentShell(active: string = 'home', preserveManagement = false
   const workspaceMode = reactShellRuntime.getSnapshot().workspaceMode;
   const owner = routeLifecycle.getSnapshot().owner;
   if (owner === 'auth') return;
-  const managementOwned = owner === 'account' || owner === 'settings' || owner === 'user-management';
+  const managementOwned = owner === 'management';
   const boardOwned = owner === 'boards';
   publishReactShell(active, workspaceMode, preserveManagement || managementOwned, preserveBoardPresentation || boardOwned);
   const nav = shellQuery<HTMLElement>('[data-shell-nav]');
@@ -1197,11 +1195,9 @@ featureRegistry.register('shell', {}, { kind: 'shell' });
 featureRegistry.register('home', homeFeature, { kind: 'native-feature' });
 featureRegistry.register('commands', commandFeature, { kind: 'react-feature', boundary: 'src/app/shared-ui/SharedApplicationUI.tsx' });
 featureRegistry.register('auth', authenticationUiRuntime, { kind: 'react-feature', boundary: 'src/app/auth/AuthenticationUI.tsx' });
-featureRegistry.register('account', authenticatedManagementUiRuntime, { kind: 'react-feature', boundary: 'src/app/management/AuthenticatedManagementUI.tsx' });
+featureRegistry.register('management', authenticatedManagementUiRuntime, { kind: 'react-feature', boundary: 'src/app/management/AuthenticatedManagementUI.tsx', views: Object.freeze(['account', 'settings', 'users']) });
 featureRegistry.register('boards', boardsPresentationFeature, { kind: 'react-feature', boundary: 'src/app/boards/BoardPresentationFacade.tsx', engine: 'assets/js/boards-ui.ts' });
 featureRegistry.register('modules', moduleRegistry, { kind: 'module-registry' });
-featureRegistry.register('settings', authenticatedManagementUiRuntime, { kind: 'react-feature', boundary: 'src/app/management/AuthenticatedManagementUI.tsx' });
-featureRegistry.register('user-management', authenticatedManagementUiRuntime, { kind: 'react-feature', boundary: 'src/app/management/AuthenticatedManagementUI.tsx' });
 featureRegistry.register('module-host', modulePresentationHost, { kind: 'hybrid-module-presentation-host', iframeCompatibility: true, nativeRetirementGate: true });
 const featureValidation = featureRegistry.validate();
 if (!featureValidation.valid) console.error('[Work Management] Runtime feature registry is incomplete', featureValidation.missing);
