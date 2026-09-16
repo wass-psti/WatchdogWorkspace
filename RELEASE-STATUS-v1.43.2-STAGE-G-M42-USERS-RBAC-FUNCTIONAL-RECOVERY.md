@@ -261,3 +261,11 @@ The project-side corrective for the currently reproduced hosted npm peer-set fai
 
 Latest continuation package root after this corrective: `Work-Management-App-v1.43.2-Stage-G-M42-Hosted-Npm-Arborist-Peer-Set-Corrective-Continuation-Candidate-2026-09-16`.
 
+## Exact-revision certified-baseline deterministic-fixture corrective — 2026-09-16
+
+Manual `Stage G M42 Certified Baseline` run `35044563541` reached the real `active-certified` state, passed 6/6 M42 browser scenarios, 96/96 Database/RLS assertions, and 152/152 historical verifiers, then failed when `release:check` reran the activation gate-ownership regression. The regression inherited the now-active live state, so its literal pending-state replacement produced no mismatch.
+
+The regression sandbox now normalizes both state authorities to `implementation-complete-pending-certification` independently of the live lifecycle state and explicitly covers an `active-certified` source snapshot. Production activation/finalization logic is unchanged. See `M42-ACTIVATION-GATE-OWNERSHIP-DETERMINISTIC-FIXTURE-CORRECTIVE-2026-09-16.md`.
+
+M42 remains **implementation-complete-pending-certification** until the corrected exact revision passes the complete automatic hosted workflow and a subsequent exact-revision certified-baseline transaction.
+

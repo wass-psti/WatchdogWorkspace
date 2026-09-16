@@ -11,8 +11,25 @@ const m41Source = join(root, 'config/stage-g-m41-account-functional-recovery-tar
 const releaseStatusSource = join(root, 'RELEASE-STATUS-v1.43.2-STAGE-G-M42-USERS-RBAC-FUNCTIONAL-RECOVERY.md');
 const certificationTreeSource = join(root, 'scripts/lib/stage-g-m42-certification-tree.mjs');
 const dependencyTreeSource = join(root, 'scripts/lib/stage-g-m42-dependency-tree.mjs');
+const deterministicFixtureState = 'implementation-complete-pending-certification';
 
-const prepareSandbox = () => {
+const normalizeTargetState = (file, state) => {
+  const current = readFileSync(file, 'utf8');
+  assert.match(current, /activationState:\s*'[^']+'/, 'sandbox target fixture must expose an activationState authority');
+  const next = current.replace(/activationState:\s*'[^']+'/, `activationState:'${state}'`);
+  assert.ok(next.includes(`activationState:'${state}'`), `sandbox target fixture must normalize to ${state}`);
+  if (next !== current) writeFileSync(file, next);
+};
+
+const normalizeReleaseStatusState = (file, state) => {
+  const current = readFileSync(file, 'utf8');
+  assert.match(current, /^- \*\*State:\*\*\s*[^\n]+$/m, 'sandbox release-status fixture must expose a state authority');
+  const next = current.replace(/^- \*\*State:\*\*\s*[^\n]+$/m, `- **State:** ${state}`);
+  assert.ok(next.includes(`- **State:** ${state}`), `sandbox release-status fixture must normalize to ${state}`);
+  if (next !== current) writeFileSync(file, next);
+};
+
+const prepareSandbox = ({ sourceState = null } = {}) => {
   const sandbox = mkdtempSync(join(tmpdir(), 'wm-m42-activation-'));
   const project = join(sandbox, 'project');
   const scriptsDir = join(project, 'scripts');
@@ -29,6 +46,17 @@ const prepareSandbox = () => {
   cpSync(m41Source, join(configDir, 'stage-g-m41-account-functional-recovery-target.ts'));
   const releaseStatus = join(project, 'RELEASE-STATUS-v1.43.2-STAGE-G-M42-USERS-RBAC-FUNCTIONAL-RECOVERY.md');
   cpSync(releaseStatusSource, releaseStatus);
+  const target = join(configDir, 'stage-g-m42-users-rbac-functional-recovery-target.ts');
+  if (sourceState) {
+    normalizeTargetState(target, sourceState);
+    normalizeReleaseStatusState(releaseStatus, sourceState);
+  }
+  // Regression fixtures must not inherit the live M42 lifecycle state. During
+  // real certification release:check runs after activation has already moved
+  // the live records to active-certified. Normalize every sandbox to the same
+  // pre-certification authority so mismatch/rollback vectors remain deterministic.
+  normalizeTargetState(target, deterministicFixtureState);
+  normalizeReleaseStatusState(releaseStatus, deterministicFixtureState);
   const sourceDir = join(project, 'src');
   mkdirSync(sourceDir, { recursive: true });
   const sourceSentinel = join(sourceDir, 'm42-certification-source.txt');
@@ -46,7 +74,6 @@ if [ -n "${'$'}{M42_TEST_FAIL_ON:-}" ] && [ "${'$'}*" = "${'$'}M42_TEST_FAIL_ON"
 exit 0
 `);
   chmodSync(npmStub, 0o755);
-  const target = join(configDir, 'stage-g-m42-users-rbac-functional-recovery-target.ts');
   return { sandbox, project, binDir, log, target, releaseStatus, sourceSentinel, originalTarget: readFileSync(target, 'utf8'), originalReleaseStatus: readFileSync(releaseStatus, 'utf8') };
 };
 
@@ -73,9 +100,11 @@ const strictReleaseCalls = [
   'run release:check',
 ];
 
-const mismatchedAuthority = prepareSandbox();
+const mismatchedAuthority = prepareSandbox({ sourceState: 'active-certified' });
 try {
-  writeFileSync(mismatchedAuthority.releaseStatus, mismatchedAuthority.originalReleaseStatus.replace('- **State:** implementation-complete-pending-certification', '- **State:** active-pending-browser-certification'));
+  assert.match(mismatchedAuthority.originalTarget, /activationState:'implementation-complete-pending-certification'/, 'sandbox target must normalize an active-certified source snapshot to the deterministic pending fixture state');
+  assert.match(mismatchedAuthority.originalReleaseStatus, /- \*\*State:\*\* implementation-complete-pending-certification/, 'sandbox release-status must normalize an active-certified source snapshot to the deterministic pending fixture state');
+  normalizeReleaseStatusState(mismatchedAuthority.releaseStatus, 'active-pending-browser-certification');
   const result = runActivation(mismatchedAuthority);
   assert.notEqual(result.status, 0, 'activation must fail before gates when target and release-status authority disagree');
   assert.deepEqual(readCalls(mismatchedAuthority.log), [], 'authority mismatch must fail before invoking any npm gate');
