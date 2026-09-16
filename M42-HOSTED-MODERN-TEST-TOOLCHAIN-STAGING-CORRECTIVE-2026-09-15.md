@@ -1,5 +1,7 @@
 # Stage G M42 — Hosted Modern Test-Toolchain Staging Corrective (2026-09-15)
 
+> **Root-cause attribution superseded — 2026-09-16.** Hosted commit `7d88003fdcdcf2ffef5efcc754feac58eb67af4a` reproduced the same npm `edgesOut` crash after this external-staging design was active, disproving physical nesting under application `node_modules` as the cause. External staging remains the publication/rollback boundary. The corrected root cause and peer-set containment are recorded in `M42-HOSTED-NPM-ARBORIST-PEER-SET-CORRECTIVE-2026-09-16.md`.
+
 ## Hosted evidence that triggered this corrective
 
 GitHub-hosted commit `424e68a02bbda0168d7bc12c19811c8d73c7e7d1` (`Fix M42 Supabase CLI temp evidence boundary`) exposed one shared infrastructure failure before the remaining M42 certification gates could execute.

@@ -236,3 +236,28 @@ State remains **implementation-complete-pending-certification**.
 - Certified baseline/PASS record: **not created**.
 
 Accordingly, milestone state remains **implementation-complete-pending-certification**.
+
+## Hosted npm Arborist peer-set corrective — 2026-09-16
+
+Hosted revalidation of commit `7d88003fdcdcf2ffef5efcc754feac58eb67af4a` disproved the prior physical-nesting hypothesis: root `npm ci --ignore-scripts` passed and the externally staged `modern-tests:toolchain:ensure` still failed inside npm 10.9.2 with `Cannot read properties of null (reading 'edgesOut')`. The failure is now isolated to npm Arborist peer-set auto-resolution, consistent with npm CLI `#9787` and the related detached-peer-set analysis in `#9911`.
+
+The governed staging manifest now exact-pins the required application peers React `19.2.8`, ReactDOM `19.2.8`, and Vite `8.2.2` alongside the eight exact test tools. The bootstrap uses `--legacy-peer-deps` only to bypass the known Arborist peer auto-placement defect; it does not permit missing required peers because those peers are explicit and version-verified. After staging verification, React/ReactDOM/Vite are replaced inside the isolated workspace with managed symlinks to the lockfile-governed application packages, preserving singleton runtime identity. Deterministic regression coverage reproduces the hosted `edgesOut` failure whenever the bypass is removed and verifies exact peer ownership, rollback, and application lockfile/package-byte preservation. See `M42-HOSTED-NPM-ARBORIST-PEER-SET-CORRECTIVE-2026-09-16.md`.
+
+No Users/RBAC production logic changed. M42 remains `implementation-complete-pending-certification` until this exact corrective revision passes the complete hosted workflow and the subsequent exact-revision certified-baseline transaction.
+
+### Local verification after npm Arborist peer-set corrective — 2026-09-16
+
+- M42 static contract: **164/164 PASS**.
+- Users/RBAC deterministic aggregate: **PASS**, including all **31/31** Users/RBAC execution vectors and finalizer rollback, activation ownership, clean dependency materialization, governed modern-toolchain preservation/rollback, certifier rollback, certified-package hygiene, evidence-stability, and hosted-workflow regressions.
+- Governed modern test-toolchain focused regression: **PASS**; the fixture deterministically emits the hosted `edgesOut` failure if the peer-resolution bypass is removed and verifies the exact staging dependency set plus React/ReactDOM/Vite singleton bridges.
+- Stage A security baseline: **PASS**.
+- Full UI verifier chain: **PASS**.
+- Historical collect-all: **152 total / 136 PASS / 16 dependency-execution blocked** in this dependency-less sandbox. The failed executions are the same missing-package class (`zod`, `@tanstack/react-query`, `zustand` and dependent verifier paths), not new assertion regressions introduced by this corrective.
+- Aggregate M42 preflight: **FAIL CLOSED on exactly 2 external capabilities** — npm registry/cache materialization (`EAI_AGAIN` / uncached package tarballs) and missing Docker-compatible runtime. Chromium and packaging tools are available.
+- Actual finalizer attempt: **FAIL CLOSED** at the same environment preflight boundary. M42 target SHA-256 remained `4f9069656711396db2d91737888da61b12be06594518a22247451fd68cb96dfc`; the release-status record also remained byte-for-byte unchanged; no M42 certified ZIP/PASS record was created.
+- JavaScript/shell syntax checks and GitHub workflow YAML parsing: **PASS**.
+
+The project-side corrective for the currently reproduced hosted npm peer-set failure is complete and locally verified to the extent this environment permits. Live npm materialization, browser/Database-RLS/release certification on this exact revision still require GitHub-hosted execution. Do not create or accept a certified M42 baseline until the automatic `Users RBAC Functional Recovery` workflow is fully green and the exact-revision `Stage G M42 Certified Baseline` transaction subsequently passes.
+
+Latest continuation package root after this corrective: `Work-Management-App-v1.43.2-Stage-G-M42-Hosted-Npm-Arborist-Peer-Set-Corrective-Continuation-Candidate-2026-09-16`.
+

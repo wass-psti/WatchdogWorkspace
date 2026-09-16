@@ -5,9 +5,11 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   MODERN_TEST_TOOLCHAIN,
+  MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS,
   EXPECTED_JSDOM_NODE_ENGINE,
   MODERN_TEST_TOOLCHAIN_WORKSPACE,
   MODERN_TEST_TOOLCHAIN_STAGING_PREFIX,
+  modernTestToolchainWorkspaceDependencies,
   materializeModernTestToolchain,
   verifyModernTestToolchain,
   verifyModernTestToolchainIsolation,
@@ -34,7 +36,14 @@ function fixtureApplication(project) {
     version: '1.0.0',
     private: true,
     packageManager: 'npm@10.9.2',
-    devDependencies: { typescript: '1.0.0', vite: '1.0.0' },
+    dependencies: {
+      react: MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS.react,
+      'react-dom': MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS['react-dom'],
+    },
+    devDependencies: {
+      typescript: '1.0.0',
+      vite: MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS.vite,
+    },
   };
   const packageLock = {
     name: packageJson.name,
@@ -42,14 +51,26 @@ function fixtureApplication(project) {
     lockfileVersion: 3,
     requires: true,
     packages: {
-      '': { name: packageJson.name, version: packageJson.version, devDependencies: packageJson.devDependencies },
+      '': {
+        name: packageJson.name,
+        version: packageJson.version,
+        dependencies: packageJson.dependencies,
+        devDependencies: packageJson.devDependencies,
+      },
+      'node_modules/react': { version: MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS.react },
+      'node_modules/react-dom': { version: MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS['react-dom'] },
       'node_modules/typescript': { version: '1.0.0', dev: true },
-      'node_modules/vite': { version: '1.0.0', dev: true },
+      'node_modules/vite': { version: MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS.vite, dev: true },
     },
   };
   writeJson(path.join(project, 'package.json'), packageJson);
   writeJson(path.join(project, 'package-lock.json'), packageLock);
-  for (const [name, version] of [['typescript', '1.0.0'], ['vite', '1.0.0']]) {
+  for (const [name, version] of [
+    ['react', MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS.react],
+    ['react-dom', MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS['react-dom']],
+    ['typescript', '1.0.0'],
+    ['vite', MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS.vite],
+  ]) {
     writeJson(path.join(project, 'node_modules', name, 'package.json'), { name, version, fixture: 'application-lockfile-authority' });
   }
   const binDir = path.join(project, 'node_modules', '.bin');
@@ -59,13 +80,15 @@ function fixtureApplication(project) {
 
 function writeFakeNpm(binDir, logFile, project) {
   const executable = path.join(binDir, 'npm');
+  const expectedDependencies = modernTestToolchainWorkspaceDependencies();
   const source = `#!/usr/bin/env node\n` +
 `const fs=require('node:fs'); const path=require('node:path');\n` +
 `const cwd=process.cwd(); const args=process.argv.slice(2); fs.appendFileSync(${JSON.stringify(logFile)}, 'CWD='+cwd+'\\nARGS='+args.join(' ')+'\\n');\n` +
 `if(cwd===${JSON.stringify(project)}||cwd.startsWith(${JSON.stringify(project + path.sep)})){ const f=${JSON.stringify(path.join(project, 'node_modules', 'vite', 'package.json'))}; const j=JSON.parse(fs.readFileSync(f,'utf8')); j.version='9.9.9'; fs.writeFileSync(f,JSON.stringify(j)); process.exit(91); }\n` +
 `if(!path.basename(cwd).startsWith(${JSON.stringify('wm-modern-test-toolchain-stage-')}))process.exit(92);\n` +
-`const specs=args.filter((value)=>!value.startsWith('-')&&value!=='install');\n` +
-`for(const spec of specs){ const cut=spec.lastIndexOf('@'); const name=spec.slice(0,cut); const version=spec.slice(cut+1); const dir=path.join(cwd,'node_modules',...name.split('/')); fs.mkdirSync(dir,{recursive:true}); const meta={name,version}; if(name==='jsdom')meta.engines={node:${JSON.stringify(EXPECTED_JSDOM_NODE_ENGINE)}}; if(name==='vitest')meta.bin={vitest:'./vitest.mjs'}; if(name==='@playwright/test')meta.bin={playwright:'./cli.js'}; fs.writeFileSync(path.join(dir,'package.json'),JSON.stringify(meta,null,2)+'\\n'); if(name==='vitest')fs.writeFileSync(path.join(dir,'vitest.mjs'),'#!/usr/bin/env node\\n'); if(name==='@playwright/test')fs.writeFileSync(path.join(dir,'cli.js'),'#!/usr/bin/env node\\n'); }\n` +
+`if(!args.includes('--legacy-peer-deps')){ console.error("Cannot read properties of null (reading 'edgesOut')"); process.exit(93); }\n` +
+`const manifest=JSON.parse(fs.readFileSync(path.join(cwd,'package.json'),'utf8')); const deps=manifest.dependencies||{}; const expected=${JSON.stringify(expectedDependencies)}; if(JSON.stringify(deps)!==JSON.stringify(expected)){ console.error('governed staging manifest mismatch'); process.exit(94); }\n` +
+`for(const [name,version] of Object.entries(deps)){ const dir=path.join(cwd,'node_modules',...name.split('/')); fs.mkdirSync(dir,{recursive:true}); const meta={name,version}; if(name==='jsdom')meta.engines={node:${JSON.stringify(EXPECTED_JSDOM_NODE_ENGINE)}}; if(name==='vitest')meta.bin={vitest:'./vitest.mjs'}; if(name==='@playwright/test')meta.bin={playwright:'./cli.js'}; fs.writeFileSync(path.join(dir,'package.json'),JSON.stringify(meta,null,2)+'\\n'); if(name==='vitest')fs.writeFileSync(path.join(dir,'vitest.mjs'),'#!/usr/bin/env node\\n'); if(name==='@playwright/test')fs.writeFileSync(path.join(dir,'cli.js'),'#!/usr/bin/env node\\n'); }\n` +
 `const bindir=path.join(cwd,'node_modules','.bin'); fs.mkdirSync(bindir,{recursive:true}); for(const [name,target] of [['vitest','../vitest/vitest.mjs'],['playwright','../@playwright/test/cli.js']]){ const dest=path.join(bindir,name); try{fs.unlinkSync(dest)}catch{} fs.symlinkSync(target,dest); }\n`;
   fs.mkdirSync(binDir, { recursive: true });
   fs.writeFileSync(executable, source, { mode: 0o755 });
@@ -98,7 +121,8 @@ try {
   const npmCwd = log.split(/\n/).find((line) => line.startsWith('CWD='))?.slice(4) || '';
   assert(npmCwd && !npmCwd.startsWith(`${project}${path.sep}`) && npmCwd !== project, 'modern test-toolchain npm install must execute outside the application tree');
   assert(path.basename(npmCwd).startsWith(MODERN_TEST_TOOLCHAIN_STAGING_PREFIX), 'modern test-toolchain npm install must execute from a disposable governed staging workspace');
-  for (const flag of ['--no-save', '--package-lock=false', '--ignore-scripts']) assert(log.includes(flag), `isolated modern test-toolchain bootstrap must preserve ${flag}`);
+  for (const flag of ['--no-save', '--package-lock=false', '--ignore-scripts', '--legacy-peer-deps']) assert(log.includes(flag), `isolated modern test-toolchain bootstrap must preserve ${flag}`);
+  for (const spec of Object.values(modernTestToolchainWorkspaceDependencies())) assert(!log.includes(`@${spec}`), 'governed staging bootstrap must read exact dependencies from its manifest instead of passing package specs on the npm command line');
   assert(Buffer.compare(packageBefore, fs.readFileSync(path.join(project, 'package.json'))) === 0, 'isolated bootstrap must preserve package.json byte-for-byte');
   assert(Buffer.compare(lockBefore, fs.readFileSync(path.join(project, 'package-lock.json'))) === 0, 'isolated bootstrap must preserve package-lock.json byte-for-byte');
   assert(Buffer.compare(viteBefore, fs.readFileSync(path.join(project, 'node_modules', 'vite', 'package.json'))) === 0, 'isolated bootstrap must not re-resolve or replace lockfile-governed application packages');
@@ -108,6 +132,12 @@ try {
   const isolation = verifyModernTestToolchainIsolation(project);
   assert(tools.ok && tools.checked === tools.expected, `isolated governed toolchain fixture must verify: ${tools.issues.join('; ')}`);
   assert(isolation.ok, `governed toolchain bridges must remain isolated: ${isolation.issues.join('; ')}`);
+  for (const name of Object.keys(MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS)) {
+    const appPeer = path.join(project, 'node_modules', ...name.split('/'));
+    const workspacePeer = path.join(project, 'node_modules', MODERN_TEST_TOOLCHAIN_WORKSPACE, 'node_modules', ...name.split('/'));
+    assert(fs.lstatSync(workspacePeer).isSymbolicLink(), `published ${name} peer must be a singleton bridge to the application dependency tree`);
+    assert(fs.realpathSync(workspacePeer) === fs.realpathSync(appPeer), `published ${name} peer must resolve to the lockfile-governed application package`);
+  }
   assert(run.stdout.includes('application lockfile tree preserved'), 'bootstrap success output must explicitly report application dependency preservation');
   const workspaceBeforeFailure = fs.readFileSync(path.join(project, 'node_modules', MODERN_TEST_TOOLCHAIN_WORKSPACE, 'node_modules', 'vitest', 'package.json'));
   fs.writeFileSync(path.join(fakeBin, 'npm'), '#!/bin/sh\nexit 73\n', { mode: 0o755 });
@@ -139,13 +169,24 @@ try {
   ]) copy(root, preserveTemp, rel);
 
   const workspace = path.join(preserveTemp, 'node_modules', MODERN_TEST_TOOLCHAIN_WORKSPACE);
-  writeJson(path.join(workspace, 'package.json'), { name: 'work-management-modern-test-toolchain', version: '1.0.0', private: true });
+  writeJson(path.join(workspace, 'package.json'), {
+    name: 'work-management-modern-test-toolchain',
+    version: '1.0.0',
+    private: true,
+    dependencies: modernTestToolchainWorkspaceDependencies(),
+  });
   for (const [name, version] of Object.entries(MODERN_TEST_TOOLCHAIN)) {
     const metadata = { name, version };
     if (name === 'jsdom') metadata.engines = { node: EXPECTED_JSDOM_NODE_ENGINE };
     const source = path.join(workspace, 'node_modules', ...name.split('/'));
     writeJson(path.join(source, 'package.json'), metadata);
     const destination = path.join(preserveTemp, 'node_modules', ...name.split('/'));
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    relativeLink(source, destination, 'dir');
+  }
+  for (const name of Object.keys(MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS)) {
+    const source = path.join(preserveTemp, 'node_modules', ...name.split('/'));
+    const destination = path.join(workspace, 'node_modules', ...name.split('/'));
     fs.mkdirSync(path.dirname(destination), { recursive: true });
     relativeLink(source, destination, 'dir');
   }
@@ -181,7 +222,7 @@ try {
   assert(workflow.includes('WM_M42_PRESERVE_GOVERNED_TEST_TOOLCHAIN=1'), 'M42 CI must preserve the governed toolchain across dependency checks');
   assert(workflow.includes('WM_M42_CERTIFICATION_DEPENDENCY_DIGEST='), 'M42 CI must bind nested dependency checks to its captured dependency digest');
 
-  console.log('Stage G M42 governed modern test-toolchain preservation regression: PASS (external staged bootstrap avoids application-tree npm resolution, preserves the last verified toolchain on staging failure, preserves application lockfile tree, and keeps the digest-bound certification extension)');
+  console.log('Stage G M42 governed modern test-toolchain preservation regression: PASS (external staged bootstrap pins required React/ReactDOM/Vite peers, bypasses the known npm Arborist peer-set null-dereference, publishes singleton application-peer bridges, preserves the last verified toolchain on staging failure, preserves the application lockfile tree, and keeps the digest-bound certification extension)');
 } finally {
   fs.rmSync(preserveTemp, { recursive: true, force: true });
 }

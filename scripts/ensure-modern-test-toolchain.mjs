@@ -29,13 +29,14 @@ if (!applicationTree.ok) {
   throw new Error(`Modern test-toolchain bootstrap requires an exact application npm-ci baseline and refuses to repair application dependency drift:\n- ${applicationTree.issues.join('\n- ')}`);
 }
 
-// The isolated bootstrap intentionally retains the M30 no-save/package-lock policy.
-// npm install --no-save --package-lock=false --ignore-scripts runs in a disposable
-// OS-temporary staging workspace outside the application tree, then the verified
-// workspace is transactionally published under node_modules/.wm-modern-test-toolchain.
-// This avoids npm Arborist treating the application node_modules tree as an ancestor
-// install graph while still keeping the governed toolchain isolated from package.json
-// and package-lock.json.
+// The isolated bootstrap retains the M30 no-save/package-lock policy but no longer
+// delegates required peer selection to npm Arborist. The staging manifest pins the
+// exact test packages plus the application's React/ReactDOM/Vite peer versions, and
+// npm runs with --legacy-peer-deps so the known Arborist #loadPeerSet null-dereference
+// path is never entered. After verification, the staged React/ReactDOM/Vite copies
+// are replaced by symlinks to the lockfile-governed application packages so runtime
+// tests use singletons rather than duplicate framework instances. The application
+// package.json and package-lock.json remain byte-for-byte unchanged.
 const result = materializeModernTestToolchain(root);
 if (!result.ok) {
   throw new Error(`Modern test toolchain bootstrap failed${result.status == null ? '' : ` with exit code ${result.status}`}:${result.output ? `\n${result.output}` : ''}`);

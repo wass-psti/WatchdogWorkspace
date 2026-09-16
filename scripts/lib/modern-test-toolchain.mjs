@@ -14,6 +14,17 @@ export const MODERN_TEST_TOOLCHAIN = Object.freeze({
   jsdom: '27.4.0',
 });
 
+// These are required runtime peers of the governed test packages. They are pinned
+// to the exact application versions so npm never has to synthesize an unbounded
+// peer set while bootstrapping the isolated toolchain. The published toolchain
+// links these peer packages back to the application's lockfile-governed copies so
+// React/Vite are singletons rather than duplicate installations.
+export const MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS = Object.freeze({
+  react: '19.2.8',
+  'react-dom': '19.2.8',
+  vite: '8.2.2',
+});
+
 export const EXPECTED_JSDOM_NODE_ENGINE = '^20.19.0 || ^22.12.0 || >=24.0.0';
 export const MODERN_TEST_TOOLCHAIN_WORKSPACE = '.wm-modern-test-toolchain';
 export const MODERN_TEST_TOOLCHAIN_STAGING_PREFIX = 'wm-modern-test-toolchain-stage-';
@@ -34,8 +45,8 @@ export function modernTestToolchainWorkspace(root) {
   return path.join(path.resolve(root), 'node_modules', MODERN_TEST_TOOLCHAIN_WORKSPACE);
 }
 
-export function modernTestToolchainInstallSpecs() {
-  return Object.entries(MODERN_TEST_TOOLCHAIN).map(([name, version]) => `${name}@${version}`);
+export function modernTestToolchainWorkspaceDependencies() {
+  return Object.freeze({ ...MODERN_TEST_TOOLCHAIN, ...MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS });
 }
 
 export function modernTestToolchainInstallArgs({ offline = false } = {}) {
@@ -44,10 +55,10 @@ export function modernTestToolchainInstallArgs({ offline = false } = {}) {
     '--no-save',
     '--package-lock=false',
     '--ignore-scripts',
+    '--legacy-peer-deps',
     ...(offline ? ['--offline'] : []),
     '--no-audit',
     '--no-fund',
-    ...modernTestToolchainInstallSpecs(),
   ];
 }
 
@@ -75,7 +86,7 @@ function verifyStagedModernTestToolchain(workspace) {
   const nodeModulesRoot = path.join(workspace, 'node_modules');
   const issues = [];
   let checked = 0;
-  for (const [name, expected] of Object.entries(MODERN_TEST_TOOLCHAIN)) {
+  for (const [name, expected] of Object.entries(modernTestToolchainWorkspaceDependencies())) {
     const metadata = readMetadataAtNodeModules(nodeModulesRoot, name);
     const actual = metadata?.version ?? null;
     if (actual !== expected) {
@@ -89,7 +100,7 @@ function verifyStagedModernTestToolchain(workspace) {
   if (engine !== EXPECTED_JSDOM_NODE_ENGINE) {
     issues.push(`staged jsdom engine contract mismatch: expected ${EXPECTED_JSDOM_NODE_ENGINE}, found ${engine ?? 'missing'}`);
   }
-  return { ok: issues.length === 0, issues, checked, expected: Object.keys(MODERN_TEST_TOOLCHAIN).length };
+  return { ok: issues.length === 0, issues, checked, expected: Object.keys(modernTestToolchainWorkspaceDependencies()).length };
 }
 
 function expectedPackageSource(root, name) {
@@ -98,6 +109,10 @@ function expectedPackageSource(root, name) {
 
 function packageBridge(root, name) {
   return path.join(path.resolve(root), 'node_modules', ...name.split('/'));
+}
+
+function workspaceApplicationPeerBridge(root, name) {
+  return path.join(modernTestToolchainWorkspace(root), 'node_modules', ...name.split('/'));
 }
 
 function linkRelative(source, destination, type = 'file') {
@@ -118,13 +133,33 @@ function packageBins(metadata) {
   return [];
 }
 
+function verifyWorkspaceManifest(root, issues) {
+  const manifestPath = path.join(modernTestToolchainWorkspace(root), 'package.json');
+  let manifest = null;
+  try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch {}
+  if (!manifest) {
+    issues.push(`isolated modern test-toolchain workspace is missing: ${normalize(path.relative(path.resolve(root), modernTestToolchainWorkspace(root)))}`);
+    return;
+  }
+  const expected = modernTestToolchainWorkspaceDependencies();
+  const actual = manifest.dependencies ?? {};
+  const expectedNames = Object.keys(expected).sort();
+  const actualNames = Object.keys(actual).sort();
+  if (JSON.stringify(actualNames) !== JSON.stringify(expectedNames)) {
+    issues.push('isolated modern test-toolchain manifest dependency names do not match the governed toolchain + application-peer set');
+    return;
+  }
+  for (const [name, version] of Object.entries(expected)) {
+    if (actual[name] !== version) issues.push(`isolated modern test-toolchain manifest must pin ${name}@${version}`);
+  }
+}
+
 export function verifyModernTestToolchainIsolation(root) {
   const projectRoot = path.resolve(root);
   const workspace = modernTestToolchainWorkspace(projectRoot);
   const issues = [];
-  if (!fs.existsSync(path.join(workspace, 'package.json'))) {
-    issues.push(`isolated modern test-toolchain workspace is missing: ${normalize(path.relative(projectRoot, workspace))}`);
-  }
+  verifyWorkspaceManifest(projectRoot, issues);
+
   for (const name of Object.keys(MODERN_TEST_TOOLCHAIN)) {
     const source = expectedPackageSource(projectRoot, name);
     const bridge = packageBridge(projectRoot, name);
@@ -142,6 +177,29 @@ export function verifyModernTestToolchainIsolation(root) {
       issues.push(`${normalize(path.relative(projectRoot, bridge))} is a broken modern test-toolchain bridge`);
     }
   }
+
+  for (const [name, expected] of Object.entries(MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS)) {
+    const application = packageBridge(projectRoot, name);
+    const applicationMetadata = readMetadata(projectRoot, name);
+    if (applicationMetadata?.version !== expected) {
+      issues.push(`application peer ${name} expected ${expected} but found ${applicationMetadata?.version ?? 'missing'}`);
+      continue;
+    }
+    const bridge = workspaceApplicationPeerBridge(projectRoot, name);
+    let bridgeStat = null;
+    try { bridgeStat = fs.lstatSync(bridge); } catch {}
+    if (!bridgeStat?.isSymbolicLink()) {
+      issues.push(`${normalize(path.relative(projectRoot, bridge))} must be a managed symlink to lockfile-governed application peer ${name}`);
+      continue;
+    }
+    try {
+      if (fs.realpathSync(bridge) !== fs.realpathSync(application)) {
+        issues.push(`${normalize(path.relative(projectRoot, bridge))} must resolve to application peer ${normalize(path.relative(projectRoot, application))}`);
+      }
+    } catch {
+      issues.push(`${normalize(path.relative(projectRoot, bridge))} is a broken application-peer bridge`);
+    }
+  }
   return { ok: issues.length === 0, issues, workspace };
 }
 
@@ -151,6 +209,7 @@ function writeWorkspacePackage(workspace) {
     name: 'work-management-modern-test-toolchain',
     version: '1.0.0',
     private: true,
+    dependencies: modernTestToolchainWorkspaceDependencies(),
   }, null, 2)}\n`);
 }
 
@@ -184,6 +243,18 @@ function publishWorkspaceSnapshot(root, stagingWorkspace) {
   } catch (error) {
     fs.rmSync(replacement, { recursive: true, force: true });
     throw error;
+  }
+}
+
+function publishWorkspaceApplicationPeerBridges(root) {
+  const projectRoot = path.resolve(root);
+  for (const [name, expected] of Object.entries(MODERN_TEST_TOOLCHAIN_APPLICATION_PEERS)) {
+    const source = packageBridge(projectRoot, name);
+    const metadata = readMetadata(projectRoot, name);
+    if (metadata?.version !== expected) {
+      throw new Error(`Cannot publish modern test-toolchain application peer bridge: ${name} expected ${expected} but found ${metadata?.version ?? 'missing'}`);
+    }
+    linkRelative(source, workspaceApplicationPeerBridge(projectRoot, name), 'dir');
   }
 }
 
@@ -242,6 +313,7 @@ export function materializeModernTestToolchain(root, { offline = false, stdio = 
 
     try {
       publishWorkspaceSnapshot(projectRoot, stagingWorkspace);
+      publishWorkspaceApplicationPeerBridges(projectRoot);
       publishWorkspaceBridges(projectRoot);
     } catch (error) {
       return {
