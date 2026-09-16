@@ -70,6 +70,9 @@ export async function installM39Fixture(page, { principal = 'admin', expiredRefr
     userMutationCalls: 0,
     userDirectoryFailure: false,
     userMutationFailure: false,
+    authHealthCalls: 0,
+    authHealthFailure: false,
+    backupRestoreCalls: 0,
     directory: [
       { id: ADMIN_ID, email:'m39-admin@example.test', display_name:'M39 Admin', platform_role:'admin_general_manager', status:'active', is_bootstrap_admin:false, is_self:principal !== 'employee', is_last_active_admin:false },
       { id:'00000000-0000-4000-8000-000000000239', email:'bootstrap@example.test', display_name:'Bootstrap Admin', platform_role:'admin_general_manager', status:'active', is_bootstrap_admin:true, is_self:false, is_last_active_admin:false },
@@ -84,7 +87,7 @@ export async function installM39Fixture(page, { principal = 'admin', expiredRefr
     const url = new URL(request.url());
     const path = url.pathname;
     if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' } });
-    if (path === '/auth/v1/health') return json(route, 200, { status: 'ok' });
+    if (path === '/auth/v1/health') { state.authHealthCalls += 1; return state.authHealthFailure ? json(route, 503, { status:'unavailable', milestone:43 }) : json(route, 200, { status: 'ok' }); }
     if (path === '/auth/v1/token' && url.searchParams.get('grant_type') === 'refresh_token') {
       state.refreshCalls += 1;
       if (state.expiredRefreshFailure) return error(route, 400, 'invalid_grant', 'Invalid Refresh Token: Refresh Token Not Found');
@@ -154,6 +157,12 @@ export async function installM39Fixture(page, { principal = 'admin', expiredRefr
       }
       return json(route, 200, [{ ...target }]);
     }
+    if (path === '/rest/v1/rpc/wm_restore_workspace_backup_v4' && request.method() === 'POST') {
+      state.backupRestoreCalls += 1;
+      const body = request.postDataJSON?.() || {};
+      const boards = Array.isArray(body.p_boards) ? body.p_boards.length : 0;
+      return json(route, 200, { verified:true, restored:0, boards });
+    }
     if (path === '/rest/v1/rpc/wm_list_boards') return json(route, 200, []);
     if (path === '/auth/v1/logout') {
       const scope = url.searchParams.get('scope') || 'global';
@@ -174,6 +183,8 @@ export async function installM39Fixture(page, { principal = 'admin', expiredRefr
     get displayName() { return state.displayName; },
     get userDirectoryCalls() { return state.userDirectoryCalls; },
     get userMutationCalls() { return state.userMutationCalls; },
+    get authHealthCalls() { return state.authHealthCalls; },
+    get backupRestoreCalls() { return state.backupRestoreCalls; },
     get accessRole() { return state.role; },
     get accessStatus() { return state.status; },
     get accessRevision() { return state.revision; },
@@ -190,6 +201,7 @@ export async function installM39Fixture(page, { principal = 'admin', expiredRefr
     setGlobalLogoutFailure(value) { state.globalLogoutFailure = Boolean(value); },
     setUserDirectoryFailure(value) { state.userDirectoryFailure = Boolean(value); },
     setUserMutationFailure(value) { state.userMutationFailure = Boolean(value); },
+    setAuthHealthFailure(value) { state.authHealthFailure = Boolean(value); },
     setDirectory(entries) { state.directory = entries.map((entry) => ({ ...entry })); },
   });
 }

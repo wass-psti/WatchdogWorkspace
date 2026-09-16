@@ -1,0 +1,40 @@
+name: Settings Functional Recovery
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  m43:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run modern-tests:toolchain:ensure
+      - name: Verify M43 pull-request candidate without publishing certification
+        if: ${{ github.event_name == 'pull_request' }}
+        run: npm run settings-recovery:verify:release
+      - name: Run fail-closed M43 certification and artifact transaction
+        if: ${{ github.event_name == 'push' }}
+        env:
+          M43_SOURCE_COMMIT: ${{ github.sha }}
+        run: npm run settings-recovery:certify
+      - name: Independently verify certified M43 artifact
+        if: ${{ github.event_name == 'push' }}
+        env:
+          M43_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+        run: node scripts/verify-stage-g-m43-certified-artifact.mjs
+      - name: Upload certified M43 baseline
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: work-management-v1.43.2-stage-g-m43-certified-${{ github.sha }}
+          path: |
+            m43-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M43-Certified-Baseline.zip
+            m43-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M43-Certified-Baseline-PASS.txt
+          if-no-files-found: error
+          retention-days: 90

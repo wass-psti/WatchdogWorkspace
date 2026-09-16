@@ -167,6 +167,10 @@ export interface ArchitectureDefinition {
   readonly usersRbacFunctionalRecovery?: 'serialized-admin-user-management-v1';
   readonly usersRbacAuthority?: string;
   readonly usersRbacUi?: string;
+  readonly settingsFunctionalRecovery?: 'reload-resilient-settings-control-plane-v1';
+  readonly settingsFunctionalRecoveryRuntime?: string;
+  readonly settingsEvidencePersistence?: 'browser-local-verification-evidence-v1';
+  readonly settingsBackupAuthority?: string;
   readonly serverState: string;
   readonly serverStateLibrary?: 'tanstack-query-v5';
   readonly clientState?: string;

@@ -18,6 +18,9 @@ import { downloadWorkspaceBackup, inspectBackupFile, restoreWorkspaceBackupGuard
 import { modules } from '../../../config/modules.ts';
 import { applicationManifest } from '../../../config/application-manifest.ts';
 import { createAccountService } from '../../../assets/js/features/account/account-service.ts';
+import { storage } from '../../../assets/js/core/storage.ts';
+import { EMPTY_SETTINGS_EVIDENCE, SETTINGS_EVIDENCE_STORAGE_KEY,
+  SETTINGS_EVIDENCE_VERSION, mergeSettingsEvidence, normalizeSettingsEvidence, type SettingsEvidenceSnapshot } from '../../../assets/js/features/settings/settings-recovery.ts';
 
 export type AuthenticatedManagementUIView = 'hidden' | 'account' | 'settings' | 'users';
 export type AuthenticatedManagementUIFeedbackTone = 'success' | 'warning';
@@ -31,6 +34,7 @@ export interface AuthenticatedManagementUIRuntimeSnapshot {
   readonly storageHealth: StorageHealth | null;
   readonly diagnostics: DiagnosticResult | null;
   readonly compatibility: DiagnosticResult | null;
+  readonly backendStatus: DiagnosticResult | null;
   readonly authRevision: number;
   readonly preferenceRevision: number;
   readonly accountFeedback: AccountOperationFeedback | null;
@@ -59,16 +63,13 @@ const DEFAULT_SNAPSHOT: AuthenticatedManagementUIRuntimeSnapshot = Object.freeze
   storageHealth: null,
   diagnostics: null,
   compatibility: null,
+  backendStatus: null,
   authRevision: 0,
   preferenceRevision: 0,
   accountFeedback: null,
 });
 
 let callbacks: RuntimeCallbacks = DEFAULT_CALLBACKS;
-let snapshot = DEFAULT_SNAPSHOT;
-let epoch = 0;
-const accountService = createAccountService(auth);
-const listeners = new Set<() => void>();
 
 const errorMessage = (error: unknown, fallback: string): string => error instanceof Error ? error.message : fallback;
 const freezeStrings = (values: readonly string[]): readonly string[] => Object.freeze([...values]);
@@ -77,6 +78,16 @@ const uniqueBusy = (values: readonly string[]): readonly string[] => freezeStrin
 function freezeSnapshot(next: AuthenticatedManagementUIRuntimeSnapshot): AuthenticatedManagementUIRuntimeSnapshot {
   return Object.freeze({ ...next, accountBusy: freezeStrings(next.accountBusy), settingsBusy: freezeStrings(next.settingsBusy) });
 }
+
+function readSettingsEvidence(): SettingsEvidenceSnapshot {
+  return normalizeSettingsEvidence(storage.get(SETTINGS_EVIDENCE_STORAGE_KEY, EMPTY_SETTINGS_EVIDENCE));
+}
+
+const initialEvidence = readSettingsEvidence();
+let snapshot = freezeSnapshot({ ...DEFAULT_SNAPSHOT, compatibility: initialEvidence.compatibility, diagnostics: initialEvidence.diagnostics, backendStatus: initialEvidence.backendStatus });
+let epoch = 0;
+const accountService = createAccountService(auth);
+const listeners = new Set<() => void>();
 
 function publish(patch: Partial<AuthenticatedManagementUIRuntimeSnapshot>): AuthenticatedManagementUIRuntimeSnapshot {
   const next = freezeSnapshot({ ...snapshot, ...patch });
@@ -87,6 +98,7 @@ function publish(patch: Partial<AuthenticatedManagementUIRuntimeSnapshot>): Auth
     && next.storageHealth === snapshot.storageHealth
     && next.diagnostics === snapshot.diagnostics
     && next.compatibility === snapshot.compatibility
+    && next.backendStatus === snapshot.backendStatus
     && next.authRevision === snapshot.authRevision
     && next.preferenceRevision === snapshot.preferenceRevision
     && next.accountFeedback === snapshot.accountFeedback
@@ -119,6 +131,30 @@ async function verifyModules(): Promise<DiagnosticResult> {
     checks: Object.freeze(results.flatMap((result) => result.checks.map((check) => ({ ...check, label: `${result.moduleName}: ${check.label}` })))),
     passed: results.every((result) => result.passed),
   });
+}
+
+
+function persistSettingsEvidence(patch: Partial<Pick<SettingsEvidenceSnapshot, 'compatibility' | 'diagnostics' | 'backendStatus'>>): boolean {
+  const current = normalizeSettingsEvidence({
+    version: SETTINGS_EVIDENCE_VERSION,
+    compatibility: snapshot.compatibility,
+    diagnostics: snapshot.diagnostics,
+    backendStatus: snapshot.backendStatus,
+  });
+  const next = mergeSettingsEvidence(current, patch);
+  publish({ compatibility: next.compatibility, diagnostics: next.diagnostics, backendStatus: next.backendStatus });
+  return storage.set(SETTINGS_EVIDENCE_STORAGE_KEY, next);
+}
+
+async function refreshBackendStatus(ticket: number = epoch): Promise<DiagnosticResult | null> {
+  try {
+    const backendStatus = await auth.diagnostics();
+    if (ticket === epoch) persistSettingsEvidence({ backendStatus });
+    return backendStatus;
+  } catch (error) {
+    console.warn('[Work Management] M43 authentication/backend status refresh failed', error);
+    return null;
+  }
 }
 
 async function refreshStorageHealth(ticket: number = epoch): Promise<StorageHealth | null> {
@@ -156,7 +192,7 @@ export const authenticatedManagementUiRuntime = Object.freeze({
   },
   show(view: Exclude<AuthenticatedManagementUIView, 'hidden'>): AuthenticatedManagementUIRuntimeSnapshot {
     const next = publish({ view });
-    if (view === 'settings' && !snapshot.storageHealth) void refreshStorageHealth();
+    if (view === 'settings') { void refreshStorageHealth(); void refreshBackendStatus(); }
     return next;
   },
   hide(): AuthenticatedManagementUIRuntimeSnapshot {
@@ -249,7 +285,7 @@ export const authenticatedManagementUiRuntime = Object.freeze({
     callbacks.onPreferencesChanged(saved, { reason: 'theme' });
     publish({ preferenceRevision: snapshot.preferenceRevision + 1 });
   },
-  async runSettingAction(action: 'density' | 'compatibility' | 'persist' | 'refresh-storage' | 'diagnostics' | 'export-backup' | 'reset-platform'): Promise<void> {
+  async runSettingAction(action: 'density' | 'compatibility' | 'persist' | 'refresh-storage' | 'refresh-auth' | 'diagnostics' | 'export-backup' | 'reset-platform'): Promise<void> {
     if (snapshot.settingsBusy.includes(action)) return;
     const ticket = epoch;
     withBusy('settingsBusy', action, true);
@@ -264,7 +300,7 @@ export const authenticatedManagementUiRuntime = Object.freeze({
         callbacks.toast(`Workspace spacing changed to ${saved.compact ? 'Compact' : 'Comfortable'}.`);
       } else if (action === 'compatibility') {
         const compatibility = await verifyModules();
-        if (ticket === epoch) publish({ compatibility });
+        if (ticket === epoch) persistSettingsEvidence({ compatibility });
         callbacks.toast(compatibility.passed ? 'Application compatibility verification passed.' : 'Application compatibility verification found an issue.', compatibility.passed ? 'success' : 'warning');
       } else if (action === 'persist') {
         const result = await requestPersistentStorage();
@@ -275,6 +311,10 @@ export const authenticatedManagementUiRuntime = Object.freeze({
       } else if (action === 'refresh-storage') {
         await refreshStorageHealth(ticket);
         callbacks.toast('Browser storage status refreshed.');
+      } else if (action === 'refresh-auth') {
+        const backendStatus = await refreshBackendStatus(ticket);
+        if (backendStatus) callbacks.toast(backendStatus.passed ? 'Authentication and backend status verified.' : 'Authentication or backend status requires attention.', backendStatus.passed ? 'success' : 'warning');
+        else callbacks.toast('Authentication and backend status could not be refreshed.', 'warning');
       } else if (action === 'diagnostics') {
         const platform = await runPlatformDiagnostics(modules, applicationManifest);
         const authDiagnostics = await auth.diagnostics();
@@ -283,7 +323,7 @@ export const authenticatedManagementUiRuntime = Object.freeze({
           checks: Object.freeze([...platform.checks, ...authDiagnostics.checks]),
           passed: platform.passed && authDiagnostics.passed,
         });
-        if (ticket === epoch) publish({ diagnostics });
+        if (ticket === epoch) persistSettingsEvidence({ diagnostics, backendStatus: authDiagnostics });
         await refreshStorageHealth(ticket);
         callbacks.toast(diagnostics.passed ? 'Platform verification passed.' : 'Platform verification found an issue requiring attention.', diagnostics.passed ? 'success' : 'warning');
       } else if (action === 'export-backup') {
@@ -301,7 +341,7 @@ export const authenticatedManagementUiRuntime = Object.freeze({
         callbacks.toast('Shell preferences reset to defaults. Registered application data was preserved.');
       }
     } catch (error) {
-      console.error('[Work Management] M13 Settings action failed', action, error);
+      console.error('[Work Management] M43 Settings action failed', action, error);
       callbacks.toast(errorMessage(error, 'The requested setting could not be completed.'), 'warning');
     } finally {
       withBusy('settingsBusy', action, false);
@@ -332,6 +372,8 @@ export const authenticatedManagementUiRuntime = Object.freeze({
       if (!globalThis.confirm(`Restore ${payload.entryCount || Object.keys(payload.data).length} validated data entries from backup created ${when}?${integrityNote}${warningNote}${checkpointNote} Current matching data will be overwritten.`)) return;
       const result = await restoreWorkspaceBackupGuarded(payload, modules);
       const saved = getPreferences();
+      const restoredEvidence = readSettingsEvidence();
+      publish({ compatibility: restoredEvidence.compatibility, diagnostics: restoredEvidence.diagnostics, backendStatus: restoredEvidence.backendStatus });
       applyTheme(saved.theme);
       applyDensity(saved.compact);
       callbacks.onPreferencesChanged(saved, { reason: 'backup-restore' });
@@ -339,7 +381,7 @@ export const authenticatedManagementUiRuntime = Object.freeze({
       callbacks.toast(`Restored ${result.restored} data entr${result.restored === 1 ? 'y' : 'ies'}. Reloading…`);
       globalThis.setTimeout(() => globalThis.location.reload(), 900);
     } catch (error) {
-      console.error('[Work Management] M13 backup restore failed', error);
+      console.error('[Work Management] M43 backup restore failed', error);
       callbacks.toast(errorMessage(error, 'Backup restore failed.'), 'warning');
     } finally {
       withBusy('settingsBusy', action, false);

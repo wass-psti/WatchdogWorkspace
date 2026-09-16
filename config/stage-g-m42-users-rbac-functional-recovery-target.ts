@@ -1,7 +1,7 @@
 export type M42ActivationState = 'implementation-complete-pending-certification' | 'active-pending-browser-certification' | 'active-certified';
 export const stageGM42UsersRbacFunctionalRecoveryTarget = Object.freeze({
   milestone:42, stage:'G', name:'Users / RBAC Functional Recovery',
-  activationState:'implementation-complete-pending-certification' as M42ActivationState,
+  activationState:'active-certified' as M42ActivationState,
   prerequisite:Object.freeze({ milestone:41, requiredState:'active-certified' as const }),
   architectureVersion:50,
   authority:Object.freeze({

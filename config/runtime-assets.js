@@ -63,6 +63,7 @@ self.WM_RUNTIME_ASSETS = Object.freeze([
   './assets/js/features/commands/command-registry.ts',
   './assets/js/features/account/index.ts',
   './assets/js/features/settings/index.ts',
+  './assets/js/features/settings/settings-recovery.ts',
   './assets/js/features/user-management/index.ts',
   './assets/js/features/boards/index.ts',
   './assets/js/features/boards/boards-controller.ts',

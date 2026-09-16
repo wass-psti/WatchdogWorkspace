@@ -41,7 +41,7 @@ export const applicationManifest = Object.freeze({
   id: 'work-management',
   name: 'Work Management',
   version: '1.43.2',
-  architectureVersion: 50,
+  architectureVersion: 51,
   runtime: 'vite-esm',
   architecture: Object.freeze({
     style: 'modular-platform',
@@ -185,6 +185,10 @@ export const applicationManifest = Object.freeze({
     usersRbacFunctionalRecovery: 'serialized-admin-user-management-v1',
     usersRbacAuthority: 'public.list_user_directory + public.admin_set_user_access',
     usersRbacUi: 'src/app/management/AuthenticatedManagementUI.tsx',
+    settingsFunctionalRecovery: 'reload-resilient-settings-control-plane-v1',
+    settingsFunctionalRecoveryRuntime: 'src/app/management/authenticated-management-ui-runtime.ts',
+    settingsEvidencePersistence: 'browser-local-verification-evidence-v1',
+    settingsBackupAuthority: 'assets/js/core/backup.ts',
     serverState: 'assets/js/platform/data/query-client.ts',
     serverStateLibrary: 'tanstack-query-v5',
     clientState: 'assets/js/platform/state/client-state-store.ts',
@@ -349,6 +353,9 @@ export function validateApplicationManifest(manifest: ApplicationManifest = appl
   }
   if (manifest.architectureVersion >= 50 && (manifest.architecture.usersRbacFunctionalRecovery !== 'serialized-admin-user-management-v1' || !manifest.architecture.usersRbacAuthority || !manifest.architecture.usersRbacUi)) {
     throw new Error('Architecture Version 50 requires M42 Users/RBAC recovery authority.');
+  }
+  if (manifest.architectureVersion >= 51 && (manifest.architecture.settingsFunctionalRecovery !== 'reload-resilient-settings-control-plane-v1' || !manifest.architecture.settingsFunctionalRecoveryRuntime || manifest.architecture.settingsEvidencePersistence !== 'browser-local-verification-evidence-v1' || !manifest.architecture.settingsBackupAuthority)) {
+    errors.push('Architecture v51+ requires reload-resilient Settings functional recovery with persisted verification evidence and governed backup authority.');
   }
 
 

@@ -161,6 +161,10 @@ export const architectureDefinitionSchema = z.object({
   usersRbacFunctionalRecovery: z.literal('serialized-admin-user-management-v1').optional(),
   usersRbacAuthority: nonEmptyStringSchema.optional(),
   usersRbacUi: nonEmptyStringSchema.optional(),
+  settingsFunctionalRecovery: z.literal('reload-resilient-settings-control-plane-v1').optional(),
+  settingsFunctionalRecoveryRuntime: nonEmptyStringSchema.optional(),
+  settingsEvidencePersistence: z.literal('browser-local-verification-evidence-v1').optional(),
+  settingsBackupAuthority: nonEmptyStringSchema.optional(),
   serverState: nonEmptyStringSchema,
   serverStateLibrary: z.literal('tanstack-query-v5').optional(),
   clientState: nonEmptyStringSchema.optional(),
@@ -313,5 +317,8 @@ export const applicationManifestSchema = z.object({
   }
   if (manifest.architectureVersion >= 50 && (manifest.architecture.usersRbacFunctionalRecovery !== 'serialized-admin-user-management-v1' || !manifest.architecture.usersRbacAuthority || !manifest.architecture.usersRbacUi)) {
     context.addIssue({ code: 'custom', message: 'Architecture v50+ requires serialized server-authoritative Users/RBAC functional recovery.', path: ['architecture'] });
+  }
+  if (manifest.architectureVersion >= 51 && (manifest.architecture.settingsFunctionalRecovery !== 'reload-resilient-settings-control-plane-v1' || !manifest.architecture.settingsFunctionalRecoveryRuntime || manifest.architecture.settingsEvidencePersistence !== 'browser-local-verification-evidence-v1' || !manifest.architecture.settingsBackupAuthority)) {
+    context.addIssue({ code: 'custom', message: 'Architecture v51+ requires reload-resilient Settings functional recovery with persisted verification evidence and governed backup authority.', path: ['architecture'] });
   }
 });

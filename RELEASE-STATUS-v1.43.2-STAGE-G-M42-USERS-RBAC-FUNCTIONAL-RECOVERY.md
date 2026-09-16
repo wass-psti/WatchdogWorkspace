@@ -1,6 +1,6 @@
 # Release Status — Stage G M42 Users / RBAC Functional Recovery
 
-- **State:** implementation-complete-pending-certification
+- **State:** active-certified
 - **Architecture Version:** 50
 - **Prerequisite:** M41 active-certified
 - **Browser scenarios:** 6
@@ -275,3 +275,7 @@ Exact-revision certified-baseline run `35060842339` on `053bc2975813b18e93c5c8f4
 
 M42 remains **implementation-complete-pending-certification** until this corrective revision passes the automatic hosted M42 workflow and a subsequent exact-revision certified-baseline run publishes and verifies the artifact successfully.
 
+
+## Final certified baseline — 2026-09-16T08:10:41Z
+
+The complete fail-closed M42 certification and artifact-publication transaction passed. This baseline is **active-certified**. The external PASS record is bound to the certified ZIP SHA-256; the packaged release-status record intentionally does not embed that digest to avoid a self-referential archive hash.

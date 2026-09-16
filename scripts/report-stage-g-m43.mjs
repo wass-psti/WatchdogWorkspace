@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+const read=(file)=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
+const target=read('config/stage-g-m43-settings-functional-recovery-target.ts');
+const manifest=read('config/application-manifest.ts');
+const state=target.match(/activationState:\s*'([^']+)'/)?.[1] ?? 'unknown';
+const arch=manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 'unknown';
+console.log(`Stage G M43 Settings Functional Recovery status: ${state}`);
+console.log(`Architecture: ${arch}`);
+console.log('Browser contract: every Settings action + reload persistence + backup round trip.');
+console.log('Persistence boundary: preferences + bounded Settings verification evidence; auth/session credentials excluded.');
+console.log(state==='active-certified' ? 'M43 Settings Functional Recovery is active-certified.' : 'M43 implementation is complete and awaiting exact-revision certification.');
