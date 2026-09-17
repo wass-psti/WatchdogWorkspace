@@ -39,7 +39,7 @@ export const applicationManifest = Object.freeze({
   id: 'work-management',
   name: 'Work Management',
   version: '1.43.2',
-  architectureVersion: 52,
+  architectureVersion: 53,
   runtime: 'vite-esm',
   architecture: Object.freeze({
     style: 'modular-platform',
@@ -192,6 +192,12 @@ export const applicationManifest = Object.freeze({
     managementAuthorityUi: 'src/app/management/AuthenticatedManagementUI.tsx',
     managementAuthorityRuntime: 'src/app/management/authenticated-management-ui-runtime.ts',
     managementLegacyControllers: 'retired-not-shipped-v1',
+    boardCollectionRecovery: 'lifecycle-routed-collection-authority-v1',
+    boardCollectionController: 'assets/js/boards-ui.ts',
+    boardCollectionDataController: 'assets/js/features/boards/controllers/board-data-controller.ts',
+    boardCollectionRepository: 'assets/js/features/boards/data/board-repository.ts',
+    boardCollectionRoutePolicy: 'active-only-board-workspace-v1',
+    boardCollectionBrowser: 'tests/modern/e2e/boards-collection-route-recovery.spec.mjs',
     serverState: 'assets/js/platform/data/query-client.ts',
     serverStateLibrary: 'tanstack-query-v5',
     clientState: 'assets/js/platform/state/client-state-store.ts',
@@ -365,6 +371,9 @@ export function validateApplicationManifest(manifest: ApplicationManifest = appl
   }
   if (manifest.architectureVersion >= 52 && (manifest.architecture.managementAuthorityConsolidation !== 'single-react-management-runtime-v1' || manifest.architecture.managementAuthorityFeature !== 'management' || manifest.architecture.managementAuthorityUi !== 'src/app/management/AuthenticatedManagementUI.tsx' || manifest.architecture.managementAuthorityRuntime !== 'src/app/management/authenticated-management-ui-runtime.ts' || manifest.architecture.managementLegacyControllers !== 'retired-not-shipped-v1')) {
     errors.push('Architecture v52+ requires one consolidated React management feature/runtime authority with obsolete imperative management controllers retired from the shipped source tree.');
+  }
+  if (manifest.architectureVersion >= 53 && (manifest.architecture.boardCollectionRecovery !== 'lifecycle-routed-collection-authority-v1' || !manifest.architecture.boardCollectionController || !manifest.architecture.boardCollectionDataController || !manifest.architecture.boardCollectionRepository || manifest.architecture.boardCollectionRoutePolicy !== 'active-only-board-workspace-v1' || !manifest.architecture.boardCollectionBrowser)) {
+    errors.push('Architecture v53+ requires lifecycle-routed Boards collection recovery with active-only workspace access and explicit collection/data/repository/browser authorities.');
   }
 
 

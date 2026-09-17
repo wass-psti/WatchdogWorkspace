@@ -4,7 +4,7 @@ export const stageGM44ManagementAuthorityConsolidationTarget = Object.freeze({
   milestone: 44,
   stage: 'G',
   name: 'Management Authority Consolidation',
-  activationState: 'implementation-complete-pending-certification' as M44ActivationState,
+  activationState: 'active-certified' as M44ActivationState,
   prerequisite: Object.freeze({ milestone: 43, requiredState: 'active-certified' as const }),
   architectureVersion: 52,
   authority: Object.freeze({

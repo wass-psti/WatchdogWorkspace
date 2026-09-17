@@ -47,7 +47,7 @@ const retired=[
   'assets/js/features/user-management/index.ts',
 ];
 
-check(arch===52,'M44 requires Architecture Version 52');
+check(arch>=52,'Architecture 52+ preserves M44 Management authority consolidation');
 check(m43State==='active-certified','M43 active-certified prerequisite');
 check(target.includes('milestone: 44')&&target.includes("stage: 'G'")&&target.includes('architectureVersion: 52'),'M44 target identity');
 check(['implementation-complete-pending-certification','active-certified'].includes(state),'M44 activation state is recognized');

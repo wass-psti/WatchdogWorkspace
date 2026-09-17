@@ -1,6 +1,6 @@
 # Work Management App v1.43.2 — Stage G M44 Management Authority Consolidation
 
-**State:** implementation-complete-pending-certification
+**State:** active-certified
 **Architecture Version:** 52
 **Prerequisite:** M43 active-certified
 
@@ -20,3 +20,7 @@ The shell account/profile dropdown remains a shell overlay authority; Account do
 ## Certification state-record integrity
 
 The M44 certification-tree digest excludes the M44 target/release-state records to permit isolated promotion from pending source to an active-certified package. The finalizer therefore separately SHA-256 binds both mutable records before pre-certification gates and requires byte-for-byte identity after pre-gates and again after the staged active-candidate historical/build gate. Any unexpected mutation fails closed before PASS publication.
+
+## Final certified baseline — 2026-09-16T14:55:53Z
+
+The fail-closed M44 certification and artifact-publication transaction passed for source commit `1a4354b1222c665276b768d67ac8c1723807ab89`. The packaged Management Authority Consolidation state is **active-certified**. The certification-tree digest excludes only the M44 target and release-state records so the pending repository source and promoted package can be compared without self-referential state mutation.

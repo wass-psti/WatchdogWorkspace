@@ -174,6 +174,12 @@ export interface ArchitectureDefinition {
   readonly managementAuthorityUi?: string;
   readonly managementAuthorityRuntime?: string;
   readonly managementLegacyControllers?: 'retired-not-shipped-v1';
+  readonly boardCollectionRecovery?: 'lifecycle-routed-collection-authority-v1';
+  readonly boardCollectionController?: string;
+  readonly boardCollectionDataController?: string;
+  readonly boardCollectionRepository?: string;
+  readonly boardCollectionRoutePolicy?: 'active-only-board-workspace-v1';
+  readonly boardCollectionBrowser?: string;
   readonly serverState: string;
   readonly serverStateLibrary?: 'tanstack-query-v5';
   readonly clientState?: string;

@@ -86,6 +86,8 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   let boardResizeCleanup: (() => void) | null = null;
   let listMenuController: ReturnType<typeof createBoardMenuController> | null = null;
   let boardMenuController: ReturnType<typeof createBoardMenuController> | null = null;
+  let listEventBinding: AbortController | null = null;
+  let boardEventBinding: AbortController | null = null;
   let selection: ReturnType<typeof createBoardSelectionController>;
   let dragDrop: ReturnType<typeof createBoardDragDropController> | null = null;
   let realtimeController: ReturnType<typeof createBoardRealtimeController> | null = null;
@@ -112,8 +114,10 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
 
   function renderBoardListBody() {
     listMenuController?.close();
-    const main = document.querySelector('#boardsMain');
+    const main = document.querySelector<HTMLElement>('#boardsMain');
     if (!main) return;
+    main.dataset.boardCollectionState = state.loading ? 'loading' : state.error ? 'error' : 'ready';
+    main.dataset.boardCollectionStatus = state.status;
     main.innerHTML = renderBoardListState({ state, escapeHtml: esc, formatDate: fmtDate });
   }
 
@@ -127,12 +131,40 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       const loadedBoardId = state.board?.board?.id;
       if (loadedBoardId) void realtimeController?.connect(loadedBoardId);
     },
+    onLifecycleMismatch: (board) => {
+      state.status = board.status;
+      toast(board.status === 'archived' ? 'Restore this archived board before opening it.' : 'Restore this trashed board before opening it.', 'warning');
+      navigate('boards');
+    },
     onWarning: (message) => toast(message, 'warning'),
   });
   const loadBoards = (status = state.status) => dataController.loadBoards(status);
   const loadBoard = (boardId: string, options: Readonly<{ quiet?: boolean; force?: boolean }> = {}) => dataController.loadBoard(boardId, options);
 
+  function releaseListEventBinding(): void {
+    listEventBinding?.abort();
+    listEventBinding = null;
+  }
+
+  function releaseBoardEventBinding(): void {
+    boardEventBinding?.abort();
+    boardEventBinding = null;
+  }
+
   function renderBoards() {
+    releaseBoardEventBinding();
+    boardResizeCleanup?.();
+    dragDrop?.dispose();
+    structureDrag.dispose();
+    columnResize.dispose();
+    inlineEdit.reset();
+    selection.clear();
+    history.reset();
+    tableVirtualization.reset();
+    cancelAnimationFrame(virtualizationFrame);
+    virtualizationFrame = 0;
+    cancelAnimationFrame(virtualizationMeasureFrame);
+    virtualizationMeasureFrame = 0;
     realtimeController?.disconnect();
     realtimeSnapshot = Object.freeze({ state:'idle', boardId:null, collaborators:[], lastEventAt:null, lastError:null, fallbackPolling:false });
     boardMenuController?.dispose(); boardMenuController = null;
@@ -144,8 +176,11 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
 
   function attachListEvents(): void {
     const root = document.querySelector<HTMLElement>('.boards-page');
-    if (!root || root.dataset.bound === '1') return;
-    root.dataset.bound = '1';
+    if (!root) return;
+    releaseListEventBinding();
+    listEventBinding = new AbortController();
+    const signal = listEventBinding.signal;
+    root.dataset.boardListEventsBound = 'true';
     listMenuController?.dispose();
     listMenuController = createBoardMenuController({ root, escapeHtml: esc, overlayCoordinator });
 
@@ -155,7 +190,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
         state.search = target.value;
         renderBoardListBody();
       }
-    });
+    }, { signal });
 
     root.addEventListener('click', async (event: MouseEvent) => {
       const target = eventElement(event);
@@ -168,7 +203,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       const interactive = target.closest('button,summary,details,a,input,select,textarea,label');
       if (card && !interactive) {
         const boardId = card.dataset.boardId;
-        if (boardId) navigate(`boards/${boardId}`);
+        if (boardId && card.dataset.boardLifecycle === 'active') navigate(`boards/${boardId}`);
         return;
       }
       const btn = target.closest<HTMLButtonElement>('button');
@@ -195,6 +230,8 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
         try {
           btn.disabled = true;
           const id = await commandService.duplicateBoard(boardId);
+          state.status = 'active';
+          await loadBoards('active');
           toast('Board duplicated.');
           navigate(`boards/${id}`);
         } catch (error) {
@@ -217,7 +254,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
         try {
           await commandService.setBoardLifecycle({ boardId, status });
           toast(status === 'active' ? 'Board restored to active boards.' : status === 'archived' ? 'Board archived.' : 'Board moved to trash.');
-          void loadBoards();
+          await loadBoards(state.status);
         } catch (error) {
           toast(errorMessage(error, 'The board status could not be changed.'), 'warning');
         }
@@ -229,12 +266,12 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
         try {
           await commandService.deleteBoard(boardId);
           toast('Board deleted permanently.');
-          void loadBoards();
+          await loadBoards(state.status);
         } catch (error) {
           toast(errorMessage(error, 'The board could not be deleted.'), 'warning');
         }
       }
-    });
+    }, { signal });
 
     root.addEventListener('keydown', (event: KeyboardEvent) => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -243,8 +280,8 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       if (!card || target !== card) return;
       event.preventDefault();
       const boardId = card.dataset.boardId;
-      if (boardId) navigate(`boards/${boardId}`);
-    });
+      if (boardId && card.dataset.boardLifecycle === 'active') navigate(`boards/${boardId}`);
+    }, { signal });
   }
 
   function openCreateBoard(): void {
@@ -263,6 +300,8 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
           description: String(fd.get('description') || ''),
           columns,
         });
+        state.status = 'active';
+        await loadBoards('active');
         toast(columns.length ? `Board created with ${columns.length} starting column${columns.length === 1 ? '' : 's'}.` : 'Board created. Add columns whenever you need them.');
         navigate(`boards/${id}`);
       },
@@ -279,8 +318,9 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     sync();
   }
 
-  function canEdit(){return hasBoardCapability(state.board?.board?.member_role,CAPABILITIES.BOARD_EDIT);}
-  function canManage(){return hasBoardCapability(state.board?.board?.member_role,CAPABILITIES.BOARD_MANAGE);}
+  function hasActiveBoard(){return state.board?.board?.status === 'active';}
+  function canEdit(){return hasActiveBoard() && hasBoardCapability(state.board?.board?.member_role,CAPABILITIES.BOARD_EDIT);}
+  function canManage(){return hasActiveBoard() && hasBoardCapability(state.board?.board?.member_role,CAPABILITIES.BOARD_MANAGE);}
   const memberMap = selectors.memberMap;
   const allColumns = selectors.allColumns;
   const visibleColumns = selectors.visibleColumns;
@@ -615,6 +655,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   }
 
   function renderBoard(boardId: string): void {
+    releaseListEventBinding();
     realtimeController?.disconnect();
     realtimeSnapshot = Object.freeze({ state:'idle', boardId:null, collaborators:[], lastEventAt:null, lastError:null, fallbackPolling:false });
     listMenuController?.dispose();
@@ -863,8 +904,11 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
 
   function attachBoardEvents(): void {
     const root = document.querySelector<HTMLElement>('.board-detail-page');
-    if (!root || root.dataset.bound === '1') return;
-    root.dataset.bound = '1';
+    if (!root) return;
+    releaseBoardEventBinding();
+    boardEventBinding = new AbortController();
+    const signal = boardEventBinding.signal;
+    root.dataset.boardDetailEventsBound = 'true';
 
     boardMenuController?.dispose();
     boardMenuController = createBoardMenuController({ root, escapeHtml: esc, overlayCoordinator });
@@ -875,7 +919,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       if (!target) return;
       if (!target.closest('.column-context-menu')) closeColumnMenus(root);
       if (!target.closest('[data-board-menu-trigger],.board-floating-menu')) closeItemMenus();
-    });
+    }, { signal });
 
     root.addEventListener('keydown', (event: KeyboardEvent) => {
       const target = eventElement(event);
@@ -924,7 +968,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       }
       if (event.key === 'Escape' && overlayCoordinator.active) return;
       itemWorkspace.handleKeydown(event);
-    });
+    }, { signal });
 
     root.addEventListener('scroll', (event: Event) => {
       const target = eventElement(event);
@@ -941,7 +985,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       const virtualColumnChanged = !dragDrop?.activeItemId && tableVirtualization.updateColumnsFromScroller(scroller, tableDynamicColumnWidths());
       if (virtualColumnChanged) requestVirtualizedBoardRender();
       requestAnimationFrame(() => { syncingBoardTableScroll = false; });
-    }, true);
+    }, { capture: true, signal });
 
     boardResizeCleanup?.();
     const onBoardViewportChange = (): void => {
@@ -971,19 +1015,19 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
         itemSearchFrame = 0;
         renderBoardViewOnly();
       });
-    });
+    }, { signal });
 
-    root.addEventListener('submit', (event: SubmitEvent) => { void (async () => { if (await itemWorkspace.submitUpdate(event)) return; await itemWorkspace.submitProperty(event); })(); });
-    root.addEventListener('change', (event: Event) => { void itemWorkspace.uploadFiles(event); });
+    root.addEventListener('submit', (event: SubmitEvent) => { void (async () => { if (await itemWorkspace.submitUpdate(event)) return; await itemWorkspace.submitProperty(event); })(); }, { signal });
+    root.addEventListener('change', (event: Event) => { void itemWorkspace.uploadFiles(event); }, { signal });
     for (const type of ['dragenter', 'dragover', 'dragleave', 'drop'] as const) {
-      root.addEventListener(type, (event: DragEvent) => { itemWorkspace.handleFileDrag(event); });
+      root.addEventListener(type, (event: DragEvent) => { itemWorkspace.handleFileDrag(event); }, { signal });
     }
     root.addEventListener('change', (event: Event) => {
       const target = event.target;
       if (!(target instanceof HTMLSelectElement) || !target.matches('[data-item-status]')) return;
       state.itemStatus = target.value;
       renderBoardData();
-    });
+    }, { signal });
 
     root.addEventListener('click', async (event: MouseEvent) => {
       const target = eventElement(event);
@@ -1178,6 +1222,8 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
         if (!boardId) return;
         try {
           const duplicateId = await commandService.duplicateBoard(boardId);
+          state.status = 'active';
+          await loadBoards('active');
           toast('Board duplicated.');
           navigate(`boards/${duplicateId}`);
         } catch (error) {
@@ -1195,6 +1241,8 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
         if (!await confirmBoardAction(message)) return;
         try {
           await commandService.setBoardLifecycle({ boardId, status });
+          state.status = status;
+          await loadBoards(status);
           toast(status === 'archived' ? 'Board archived.' : 'Board moved to trash.');
           navigate('boards');
         } catch (error) {
@@ -1285,7 +1333,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
         }
         return;
       }
-    });
+    }, { signal });
 
     dragDrop?.bind(root);
     structureDrag.bind(root);
@@ -1337,6 +1385,8 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     history.reset();
     closeColumnMenus();
     closeItemMenus();
+    releaseListEventBinding();
+    releaseBoardEventBinding();
     boardMenuController?.dispose(); boardMenuController=null;
     overlayCoordinator.closeAll({restoreFocus:false});
     listMenuController?.dispose(); listMenuController=null;

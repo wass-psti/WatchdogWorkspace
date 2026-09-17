@@ -46,10 +46,13 @@ export function renderBoardCard(board: BoardListRecord, { escapeHtml, formatDate
       ? `${hasBoardCapability(board.member_role, CAPABILITIES.BOARD_MANAGE) ? `<button role="menuitem" data-board-status-action="${board.id}" data-status="active">Restore board</button><button role="menuitem" class="danger-text" data-board-status-action="${board.id}" data-status="trashed">Move board to trash</button>` : ''}`
       : `${hasBoardCapability(board.member_role, CAPABILITIES.BOARD_MANAGE) ? `<button role="menuitem" data-board-status-action="${board.id}" data-status="active">Restore board</button><button role="menuitem" class="danger-text" data-board-delete="${board.id}">Delete board permanently</button>` : ''}`;
   const count = Number(board.item_count ?? 0);
-  return `<article class="board-card" data-board-id="${board.id}" role="link" tabindex="0" aria-label="Open board: ${esc(board.name)}">
+  const interactive = board.status === 'active';
+  const cardA11y = interactive ? ` role="link" tabindex="0" aria-label="Open board: ${esc(board.name)}"` : '';
+  const menu = actions ? `<span class="board-menu-host" data-board-menu-host><button type="button" class="${iconButtonClass({ tone: 'ghost', size: 'sm' }, 'board-card-more-trigger')}" data-board-menu-trigger="board-card" aria-label="More actions for ${esc(board.name)}" aria-haspopup="menu" aria-expanded="false">•••</button><template data-board-menu-template>${actions}</template></span>` : '';
+  return `<article class="board-card${interactive ? ' is-openable' : ' is-inactive'}" data-board-id="${board.id}" data-board-lifecycle="${board.status}"${cardA11y}>
     <div class="board-card-icon" aria-hidden="true">▦</div><div class="board-card-main"><div class="board-card-meta"><span>${esc(role)}</span><span>${count} item${count === 1 ? '' : 's'}</span></div>
     <h3 title="${esc(board.name)}">${esc(board.name)}</h3><p>${esc(board.description || 'No description yet.')}</p><small>Updated ${esc(formatDate(board.updated_at))}</small></div>
-    <span class="board-menu-host" data-board-menu-host><button type="button" class="${iconButtonClass({ tone: 'ghost', size: 'sm' }, 'board-card-more-trigger')}" data-board-menu-trigger="board-card" aria-label="More actions for ${esc(board.name)}" aria-haspopup="menu" aria-expanded="false">•••</button><template data-board-menu-template>${actions}</template></span>
+    ${menu}
   </article>`;
 }
 

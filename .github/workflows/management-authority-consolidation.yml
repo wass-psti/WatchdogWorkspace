@@ -15,21 +15,33 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run modern-tests:toolchain:ensure
-      - name: Verify M44 pull-request candidate without publishing certification
-        if: ${{ github.event_name == 'pull_request' }}
+      - name: Resolve M44 milestone state
+        id: milestone_state
+        shell: bash
+        run: |
+          if grep -Eq "activationState:[[:space:]]*'active-certified'" config/stage-g-m44-management-authority-consolidation-target.ts; then
+            echo 'state=active-certified' >> "$GITHUB_OUTPUT"
+          elif grep -Eq "activationState:[[:space:]]*'implementation-complete-pending-certification'" config/stage-g-m44-management-authority-consolidation-target.ts; then
+            echo 'state=pending' >> "$GITHUB_OUTPUT"
+          else
+            echo 'FAIL: unrecognized M44 milestone state.' >&2
+            exit 1
+          fi
+      - name: Verify M44 candidate or active-certified regression without publication
+        if: ${{ github.event_name == 'pull_request' || steps.milestone_state.outputs.state == 'active-certified' }}
         run: npm run management-authority:verify:release
       - name: Run fail-closed M44 certification and artifact transaction
-        if: ${{ github.event_name == 'push' }}
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
         env:
           M44_SOURCE_COMMIT: ${{ github.sha }}
         run: npm run management-authority:certify
       - name: Independently verify certified M44 artifact
-        if: ${{ github.event_name == 'push' }}
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
         env:
           M44_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
         run: node scripts/verify-stage-g-m44-certified-artifact.mjs
       - name: Upload certified M44 baseline
-        if: ${{ github.event_name == 'push' }}
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
         uses: actions/upload-artifact@v4
         with:
           name: work-management-v1.43.2-stage-g-m44-certified-${{ github.sha }}

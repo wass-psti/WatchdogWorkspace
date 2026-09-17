@@ -1,3 +1,9 @@
+# Stage G M45 — Boards Collection & Route Recovery
+
+**Current Boards collection authority (Architecture 53):** Active, Archive, and Trash collections are lifecycle-routed through `assets/js/boards-ui.ts`, `board-data-controller.ts`, and the typed Board repository. Active boards alone are openable in the workspace; archived and trashed boards remain collection-only until restored. Create/duplicate and lifecycle/delete transitions refresh the authoritative collection before route progression. M37-BRD-001 is resolved by M40+M45 evidence; deployed `wm_*` Board RPC/schema capability remains explicitly assigned to M46 (M37-BRD-002).
+
+See `M45-BOARDS-COLLECTION-ROUTE-RECOVERY.md` and `RELEASE-STATUS-v1.43.2-STAGE-G-M45-BOARDS-COLLECTION-ROUTE-RECOVERY.md`.
+
 > Stage D M18: conditional Board Table row/column virtualization implemented at Architecture Version 27; M17 TanStack Table adoption remains deferred and release certification is pending.
 > Stage D M16: Board component decomposition implemented at Architecture Version 26; release certification pending.
 > Stage D M15: React Board presentation facade implemented at Architecture Version 25; release certification pending.

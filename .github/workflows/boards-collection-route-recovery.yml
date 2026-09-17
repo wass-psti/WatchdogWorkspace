@@ -1,0 +1,52 @@
+name: Boards Collection Route Recovery
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  m45:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run modern-tests:toolchain:ensure
+      - name: Resolve M45 milestone state
+        id: milestone_state
+        shell: bash
+        run: |
+          if grep -Eq "activationState:[[:space:]]*'active-certified'" config/stage-g-m45-boards-collection-route-recovery-target.ts; then
+            echo 'state=active-certified' >> "$GITHUB_OUTPUT"
+          elif grep -Eq "activationState:[[:space:]]*'implementation-complete-pending-certification'" config/stage-g-m45-boards-collection-route-recovery-target.ts; then
+            echo 'state=pending' >> "$GITHUB_OUTPUT"
+          else
+            echo 'FAIL: unrecognized M45 milestone state.' >&2
+            exit 1
+          fi
+      - name: Verify M45 candidate or active-certified regression without publication
+        if: ${{ github.event_name == 'pull_request' || steps.milestone_state.outputs.state == 'active-certified' }}
+        run: npm run boards-collection:verify:release
+      - name: Run fail-closed M45 certification and artifact transaction
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
+        env:
+          M45_SOURCE_COMMIT: ${{ github.sha }}
+        run: npm run boards-collection:certify
+      - name: Independently verify certified M45 artifact
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
+        env:
+          M45_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+        run: node scripts/verify-stage-g-m45-certified-artifact.mjs
+      - name: Upload certified M45 baseline
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: work-management-v1.43.2-stage-g-m45-certified-${{ github.sha }}
+          path: |
+            m45-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M45-Certified-Baseline.zip
+            m45-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M45-Certified-Baseline-PASS.txt
+          if-no-files-found: error
+          retention-days: 90

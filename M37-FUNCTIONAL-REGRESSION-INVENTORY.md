@@ -9,7 +9,7 @@ Stage G M37 establishes the evidence baseline for the reported loss of functiona
 | ID | Area | Severity | Baseline finding | Next owner |
 |---|---|---:|---|---|
 | M37-XMOD-001 | Cross-module | Critical | Bare source/local run has intentionally empty public Supabase configuration; protected routes enter setup-required/login. | M38 |
-| M37-BRD-001 | Boards | Critical | React Board facade publication is immediately followed by imperative host resolution; missing-host timing is an explicit route failure signature. | M40/M45 |
+| M37-BRD-001 | Boards | Critical | **Resolved M45.** M40 route-readiness ownership plus M45 lifecycle-safe collection routing and active-only workspace entry remove the Board host/route recovery failure boundary. | M40/M45 |
 | M37-BRD-002 | Boards | Critical | Board functionality depends on deployed `wm_*` RPC/schema authority; stale/missing RPCs produce PGRST202/backend-outdated failures. | M46 |
 | M37-USR-001 | Users | Critical | Directory requires authenticated admin context and `list_user_directory`; errors surface as `User directory unavailable`. | M39/M42 |
 | M37-USR-002 | Users | High | Protected RPC authority remains intentional until the M28 Edge Function is actually deployed/cut over. | M42/M54 |

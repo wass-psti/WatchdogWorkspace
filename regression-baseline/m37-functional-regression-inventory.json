@@ -33,7 +33,7 @@
       "module": "boards",
       "severity": "critical",
       "classification": "lifecycle-dom-ownership",
-      "status": "confirmed-source-race-signature",
+      "status": "resolved-m45",
       "summary": "Board routing publishes React facade state and immediately enters the imperative renderer, which synchronously resolves the React-owned Board host; React commit timing is therefore an explicit failure boundary.",
       "reproduction": "Enter #/boards or #/boards/:id during a transition where the React Board host has not committed before boardsFeature.render* resolves the host.",
       "testIds": [
@@ -49,10 +49,15 @@
       "evidence": [
         "assets/js/app.ts",
         "src/app/boards/board-presentation-host.ts",
-        "src/app/boards/BoardPresentationFacade.tsx"
+        "src/app/boards/BoardPresentationFacade.tsx",
+        "assets/js/boards-ui.ts",
+        "assets/js/features/boards/views/board-list-view.ts",
+        "assets/js/features/boards/controllers/board-data-controller.ts",
+        "tests/modern/e2e/boards-collection-route-recovery.spec.mjs"
       ],
       "remediationMilestone": "M40/M45",
-      "certificationObservation": "Operator evidence captured an authenticated Boards route with the React Board host inactive/hidden while the visible Board error state reported a wm_list_boards backend failure."
+      "certificationObservation": "Operator evidence captured an authenticated Boards route with the React Board host inactive/hidden while the visible Board error state reported a wm_list_boards backend failure.",
+      "resolution": "M40 establishes Board presentation readiness/route ownership; M45 adds lifecycle-safe Boards collection routing, active-only workspace entry, awaited collection transitions, and dedicated deterministic/browser coverage."
     },
     {
       "id": "M37-BRD-002",

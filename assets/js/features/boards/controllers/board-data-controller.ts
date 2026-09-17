@@ -1,5 +1,5 @@
 import type { BoardDomainService } from '../../../../../src/features/boards/contracts/service.ts';
-import type { BoardLifecycleStatus } from '../../../../../src/features/boards/contracts/domain.ts';
+import type { BoardLifecycleStatus, BoardRecord } from '../../../../../src/features/boards/contracts/domain.ts';
 import type { MutableBoardViewState } from '../../../../../src/features/boards/contracts/view-state.ts';
 import type { BoardId } from '../../../../../src/types/identifiers.ts';
 import { normalizeAppError } from '../../../platform/errors/app-error.ts';
@@ -10,6 +10,7 @@ export interface BoardDataControllerDependencies {
   readonly onListChange: () => void;
   readonly onBoardChange: () => void;
   readonly onBoardLoaded?: (() => void) | null;
+  readonly onLifecycleMismatch?: ((board: BoardRecord) => void) | null;
   readonly onWarning?: ((message: string) => void) | null;
 }
 
@@ -35,6 +36,7 @@ export function createBoardDataController({
   onListChange,
   onBoardChange,
   onBoardLoaded = null,
+  onLifecycleMismatch = null,
   onWarning = null,
 }: BoardDataControllerDependencies): BoardDataController {
   let epoch = 0;
@@ -72,6 +74,13 @@ export function createBoardDataController({
     try {
       const data = await service.get(id, { force });
       if (ticket !== epoch) return false;
+      if (data?.board && data.board.status !== 'active') {
+        state.board = null;
+        state.error = '';
+        state.prefsLoadedFor = null;
+        onLifecycleMismatch?.(data.board);
+        return false;
+      }
       state.board = data;
       state.error = '';
       onBoardLoaded?.();

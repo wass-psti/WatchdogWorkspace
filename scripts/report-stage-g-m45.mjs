@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+const read=(file)=>fs.readFileSync(file,'utf8');
+const target=read('config/stage-g-m45-boards-collection-route-recovery-target.ts');
+const state=target.match(/activationState:\s*'([^']+)'/)?.[1]??'unknown';
+const arch=read('config/application-manifest.ts').match(/architectureVersion:\s*(\d+)/)?.[1]??'unknown';
+console.log(`Stage G M45 Boards Collection & Route Recovery status: ${state}`);
+console.log(`Architecture: ${arch}`);
+console.log('Boards collection authority: Active/Archive/Trash lifecycle routing through one Boards controller/data/repository chain.');
+console.log('Inactive Board workspace policy: archived/trashed boards are collection-only until restored.');
+console.log('Backend boundary: M46 still owns deployed wm_* Board RPC/schema capability recovery (M37-BRD-002).');
+console.log('Production readiness: NOT YET — M46+ stabilization work and M54 production-readiness certification remain required.');
