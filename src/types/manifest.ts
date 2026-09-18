@@ -180,6 +180,15 @@ export interface ArchitectureDefinition {
   readonly boardCollectionRepository?: string;
   readonly boardCollectionRoutePolicy?: 'active-only-board-workspace-v1';
   readonly boardCollectionBrowser?: string;
+  readonly boardBackendDataContractRecovery?: 'catalog-attested-board-contract-v1';
+  readonly boardBackendContract?: string;
+  readonly boardBackendMigration?: string;
+  readonly boardBackendSchema?: string;
+  readonly boardBackendContractAttestation?: string;
+  readonly boardBackendCacheOwnership?: 'board-query-prefix-scoped-v1';
+  readonly boardAttachmentDeletion?: 'metadata-first-best-effort-object-cleanup-v1';
+  readonly boardBackendDatabaseTest?: string;
+  readonly boardBackendProductionVerifier?: string;
   readonly serverState: string;
   readonly serverStateLibrary?: 'tanstack-query-v5';
   readonly clientState?: string;

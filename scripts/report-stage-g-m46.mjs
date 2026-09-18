@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+const read=(file)=>fs.readFileSync(file,'utf8');
+const target=read('config/stage-g-m46-boards-backend-data-contract-recovery-target.ts');
+const state=target.match(/activationState:\s*'([^']+)'/)?.[1]??'unknown';
+const arch=read('config/application-manifest.ts').match(/architectureVersion:\s*(\d+)/)?.[1]??'unknown';
+const contract=read('config/stage-g-m46-board-backend-contract.ts');
+const version=contract.match(/M46_BOARD_CONTRACT_VERSION\s*=\s*'([^']+)'/)?.[1]??'unknown';
+const digest=contract.match(/M46_BOARD_CONTRACT_DIGEST\s*=\s*'([^']+)'/)?.[1]??'unknown';
+console.log(`Stage G M46 Boards Backend & Data Contract Recovery status: ${state}`);
+console.log(`Architecture: ${arch}`);
+console.log(`Board backend contract version: ${version}`);
+console.log(`Board backend contract digest: ${digest}`);
+console.log('Authority: exact PostgreSQL catalog attestation + frontend DTO/query/mutation contract.');
+console.log('Production readiness: M46 requires local pgTAP and live deployed catalog attestation before active-certified promotion.');

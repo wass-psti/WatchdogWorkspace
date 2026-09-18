@@ -4,6 +4,7 @@ a3657d760ba374ae06768a19d3c2a2236e1b60be0ef767ea9989bd8aaf14c71f  ./.github/work
 107b7fbd8885311c6abe7e4cca5ff874f0dbd78383686aee4a44ff7a6fd61b06  ./.github/workflows/auth-session-access-context.yml
 e2abbda34fc293892507f242e71ee8d8ce673eb5f48ebd18ebbba6bf3427bac1  ./.github/workflows/backend-capability-preflight.yml
 eee4989a246447c8079d3f3eba0a7f03b7c1de1a667f8bc546873d356ed3640b  ./.github/workflows/backup-disaster-recovery.yml
+6a05a42c204b137f4ed404a07f6f6d645d8d1ceb8e9034081dd140107b3603f2  ./.github/workflows/boards-backend-data-contract-recovery.yml
 a659fd44df04d0aad343f7a41c86bed3ffb53cbd1ee8232e49dfbccf12a17170  ./.github/workflows/boards-collection-route-recovery.yml
 9f0bc5b1f463c9ba3e4b04ff1288f031e2df4b6a119162234880643d802197f8  ./.github/workflows/ci.yml
 11d08b0ba79b3df879ff79cbe0b158c30f8b47ce0b9f6515036c3bffb2c5d92b  ./.github/workflows/codeql.yml
@@ -159,6 +160,7 @@ d226d79cc28486444765f6396a20e7f821d1721d1c097eef63cf5cb3a4a80a63  ./M42-V1240-HI
 93a052284584c90fafd7a4cdf62880a30c4f471eca61dc427f0737a0375e36b1  ./M43-SETTINGS-FUNCTIONAL-RECOVERY.md
 c77fbcb318eb7b0fd9afef949efc4693743711e1e8e52658156721d376e38990  ./M44-MANAGEMENT-AUTHORITY-CONSOLIDATION.md
 8e7d2a4a5d4f011fe9778052474dea3a4591865cb78e1e64960c8c9f975afc20  ./M45-BOARDS-COLLECTION-ROUTE-RECOVERY.md
+fed454d0fb7ea7510a5686cd95087a4aa9c71c332e5a7298ba12edcef8bfd08a  ./M46-BOARDS-BACKEND-DATA-CONTRACT-RECOVERY.md
 91df619e971a38ab4767a8b21df24033e3ef190e272f5e62ef9c0bf4fe7feb68  ./M5-ACTIVATION-RUNBOOK.md
 7f145954a3ab537a808a2f6006d257517f2810a596001eee2f2b3e4ba9c472eb  ./M6-ACTIVATION-RUNBOOK.md
 721e0649e315a407ebd38e455c3c2be95abd55d4fa16139aba0077698e1a49c1  ./M6-BROWSER-ESM-HARNESS-HOTFIX.md
@@ -248,7 +250,8 @@ bbdb4f2876394b9c8650ca9449f6d66a2561344e5eddef0f4a11ea8d102b84f6  ./RELEASE-STAT
 542c5af49564da80248fef4889f3d1b62fb28e286ae55252044ce1fc4a3ffe6a  ./RELEASE-STATUS-v1.43.2-STAGE-G-M42-USERS-RBAC-FUNCTIONAL-RECOVERY.md
 f0214d67d1703c2074d5932eebe22ab89ccfa52e142fa2c2874484a7fb76f944  ./RELEASE-STATUS-v1.43.2-STAGE-G-M43-SETTINGS-FUNCTIONAL-RECOVERY.md
 6b2103ca7a287940f0a0a9963aad8a582fa90bc59514062f22c0010791050450  ./RELEASE-STATUS-v1.43.2-STAGE-G-M44-MANAGEMENT-AUTHORITY-CONSOLIDATION.md
-5b18e50a4c173a5d313537599cee5aaf79fb396df307708203cf720664e10665  ./RELEASE-STATUS-v1.43.2-STAGE-G-M45-BOARDS-COLLECTION-ROUTE-RECOVERY.md
+dbee435ec2d4fc7b82d8dadfc46b1fbec673b1bf8eedf8c8449648f22b98636d  ./RELEASE-STATUS-v1.43.2-STAGE-G-M45-BOARDS-COLLECTION-ROUTE-RECOVERY.md
+7f62c40baff2bc61943babb869a085e9383c7584fc47c8b3aa766642f68d1e14  ./RELEASE-STATUS-v1.43.2-STAGE-G-M46-BOARDS-BACKEND-DATA-CONTRACT-RECOVERY.md
 f5456ced7546bf790b612a3900905bd4a25b45ab21bd9fd0c1d8a616395069a7  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-FINAL.md
 2d3c24a6567659c068f896542d02442d2991c2a2ffc15030e90d5f2018c825ad  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE2.md
 73619f1c62c3b893ec438e0cc77f36c7590c5c2a57677e6e8cf1c42e538f3c05  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE3.md
@@ -352,8 +355,8 @@ cdfed4053db0522bff3bafc0acd8cdd86940346ed94aa392922c499469b93815  ./assets/js/fe
 97eca540dbbf2b54982b29d7d51ecdba850f6d414b9163b7cc1d2820eeac7919  ./assets/js/features/boards/controllers/overlay-coordinator.ts
 a034a13eb206dd2218f37e41847fe3d927bf9df528a766a3f8ea649b21d1e47b  ./assets/js/features/boards/controllers/selection-controller.ts
 5c74249408a1456a6ba8127ca7d0a66443dd12b403852ed0cf46e1631560bbe4  ./assets/js/features/boards/controllers/structure-drag-controller.ts
-3a5211f376ce0931dfc0f4defec57073242bed1ab1ff30977648383d3a23e288  ./assets/js/features/boards/data/board-contracts.ts
-9be21215892b1423465d16384141070c3efaeeb8a0b5a4c8e9ab418c6dd9e662  ./assets/js/features/boards/data/board-repository.ts
+fb94f78a21d6bf5b13bbd9f730565f71d848f73e058b44ac5ec988a4496c24db  ./assets/js/features/boards/data/board-contracts.ts
+f2c7c4f0ed09a60e6ddb494a4a652ac5b25da8f3a6ff37c83eca97df3cdd816a  ./assets/js/features/boards/data/board-repository.ts
 f1ad0f3aadd2318c7b3c359faa08eb863369c699e5c7208a68e2072fa9369250  ./assets/js/features/boards/grid/column-type-registry.ts
 2640ed232c4d950fe304f3ccb631ced7bb6bd79d7bf49f4629c3e5792ae9cd19  ./assets/js/features/boards/index.ts
 c9a6d32424b497f4cc0dbb4857d476576497a0ca2c4b4d47a680df22e96a0d6e  ./assets/js/features/boards/selectors/board-selectors.ts
@@ -378,7 +381,7 @@ b57a2c401c1a19ce406decc8aa924f56b02e142aa608dc83807b3fc55c196ab9  ./assets/js/fe
 d0deaae8e5294f1af9ceae7e77b2fd176d06cde106833c90b1420ebac6fa4479  ./assets/js/features/modules/native-module-registry.ts
 40cb7aa60dc4fbbbb517874f4fdf9f33e6ccc07a1b6e26a34e088d153a8080f2  ./assets/js/features/settings/settings-recovery.ts
 be312b120b86c037bee462b53364cdc552386c0bc7e87b06b064feebd32b319b  ./assets/js/platform/auth/permissions.ts
-9366d33ec89ece05c1797d3d23828b0d2fcfcc8669717012e0955aa34aaf372b  ./assets/js/platform/data/backend-capability-preflight.ts
+0da510d1856ac4fd47d4ec53c4600e8beff9716b68d683c9dcd49e2351b36324  ./assets/js/platform/data/backend-capability-preflight.ts
 6946d8c111b9080259afff4b2b9ba98ba67daea2203a36661eeaa140fe59cc41  ./assets/js/platform/data/backend-client.ts
 fe78c129523b5b6aced1bec46f3091dfc8d57599cf1353f99fec9453b31639de  ./assets/js/platform/data/edge-function-client.ts
 905bebf478785be5785eb9a612b23ee4ea07aac4a001dc0db26186cf7bef642e  ./assets/js/platform/data/normalized-module-data-service.ts
@@ -421,7 +424,7 @@ cf0270b8d2d262b5df5bc3706335e12188738152280f82ec687680b838568688  ./assets/js/ru
 23e23596b9703892f9702f07f0c3238962bbb13870d2bc8af589e9b184c2622a  ./assets/js/runtime/work-management-client.ts
 28091d39d503e7233da1215193d062959041101c10c1962fc2ea6eb41526d845  ./assets/js/ui/format.ts
 4c4da3fe5b0a5a5babdf38681a5f504a1d6ec232a04bbfe5d1ca04c58f18f624  ./assets/js/ui/icons.ts
-d30bec561d8c89fbb4f4356887cb204ecad79aba482a9a7a9da256dd3011c715  ./config/application-manifest.ts
+f631ce126df5a4c610543b23ed61b6a33ce657d1416dd50f0e42535129a3594a  ./config/application-manifest.ts
 83aeb42db93fd5d0ce2a37007fc7febfea17e114279e84ced10c600f6bd2314b  ./config/backend-capability-manifest.ts
 83af02ef50c4121f297ee80886a0dd2244924ce0bac20f26654593ec2e5eed9a  ./config/backend-config.example.js
 67925bfe819dcebd00c2b8638c7592af5593c471ebd6e611b144b7ad9ae1d7ed  ./config/backend-config.js
@@ -474,7 +477,9 @@ f8e1a10e8c4ad79dc2c67d0da9d7ca17e6bfb3a703a0c3696861dbfb4b18fa2f  ./config/stage
 c5e4706b861574f311823ae96443b42ee04e74f25e645e49033092e886ae42a3  ./config/stage-g-m42-users-rbac-functional-recovery-target.ts
 7455f517612ad8de65079e39c111f2d5c83d5b305be0a75c82c4dc73f99796b7  ./config/stage-g-m43-settings-functional-recovery-target.ts
 53ca129a470e2c4d4d8150f593d883b7054c71bbf38b4121ad7bd4908fd7c75a  ./config/stage-g-m44-management-authority-consolidation-target.ts
-1f5772d8f57aa15e9d7c4aba70b164588817c678623a228400311574f7a79979  ./config/stage-g-m45-boards-collection-route-recovery-target.ts
+b8afa4aaa4f0feca75ff07d32f96a9fdea00e3f5c78a2103a4f48b4ea3fa07e3  ./config/stage-g-m45-boards-collection-route-recovery-target.ts
+a157debd7f448bfe80cbeb515b5b979986df59c2a668f3f123ce58a36901774d  ./config/stage-g-m46-board-backend-contract.ts
+a7fb25532850ce0d51439b9612ad5357a5a960aa5a479108a87f443e75d2dbbb  ./config/stage-g-m46-boards-backend-data-contract-recovery-target.ts
 6638d1f323815875661464f06cc10bcba859885a1a8bf3f4207758645899f2d5  ./config/vite-runtime-config.ts
 171d7a3b5e48064c6e8c93adf95c72ac35eed9a33553bba65f92785d19269dfd  ./docs/CI-PACKAGE-GOVERNANCE.md
 50abf73a01d7ebead7a08db1be614f6b0732f4bc26eaae31e26c58490ee51114  ./docs/REACT-19-COMPOSITION-BOUNDARY.md
@@ -580,7 +585,7 @@ de0fb5675951c3075bc25c9a72da2d78de29cf23075f70293a36d9c3a6a66989  ./governance-a
 a4bb072413e0927f65df01d7366cc12a3724196ffaf82e95406b0f905cb1e795  ./index.html
 c73879bfdb6e13422a5bb82f0176c7e44bf1d68ddcc79fc0b3fd5f1c7e49138b  ./manifest.webmanifest
 22677ed5a0abd2997e57691e200fa80bd9e11ab1a824a6b64b18048adb2f8b84  ./package-lock.json
-613be54f4b1a487a7556f1262849b5fb6f28421ef510169681b659ef6450e84a  ./package.json
+9cccc9fe25fd680e16fcc2337380bd5469941aef20cb3832fef80527bde5e79c  ./package.json
 f600d177fdc95af705d5609c03b9eb02a1552b9c9921b9a93e074daa16d401fb  ./playwright.config.mjs
 5c7a53c40f31529c80f9e1a588eff079a84e62ee2123a32685a7ab72aa420a4c  ./public/assets/icon.svg
 c73879bfdb6e13422a5bb82f0176c7e44bf1d68ddcc79fc0b3fd5f1c7e49138b  ./public/manifest.webmanifest
@@ -663,6 +668,7 @@ c180a0a5d4569bae360827e4e578aa1499683b57694dced7048fbc87eed2bd7d  ./scripts/cert
 800b4a9dbd3aec6c6b6b962f2d15d89c8c3014e1038113c389c1980e1a2c8bd2  ./scripts/certify-stage-g-m41.sh
 3d28c43f447ea8ce7b599a53507b34e5cc53b403017e95a5b8227aa8202b40e2  ./scripts/certify-stage-g-m42.sh
 286807d4d973e0972659284676c3d152f4263c611e528077322aed9de1bb8d48  ./scripts/clean.mjs
+8773ccb899f5cbf7d5b539b3e9830f39f89554055210cc964e5d52f1c985d16c  ./scripts/deploy-stage-g-m46-production-contract.sh
 4405187688bc159bec5c4dbf8c06cea5a907d410a1e903d0c1de24f660b9941f  ./scripts/ensure-modern-test-toolchain.mjs
 cb2d4f878a01b1544ef633f53357e8e0f56e7dd2d7631848154ec4a4bd26d1b2  ./scripts/ensure-project-dependencies.mjs
 9b50f279d36a1bd9c0d0ecb167b5d3c1fe402195a7873c3c6eaa9ce068e0d442  ./scripts/finalize-stage-g-m41.sh
@@ -670,6 +676,7 @@ cb2d4f878a01b1544ef633f53357e8e0f56e7dd2d7631848154ec4a4bd26d1b2  ./scripts/ensu
 bc12acd7886f3ca32e0ca41229bdf7a804b7035391f847e92b44c1a4aa6064dc  ./scripts/finalize-stage-g-m43.sh
 09e2e0571b339df55ba566eafa4a6a867698530891500233dbef022a3fafc6db  ./scripts/finalize-stage-g-m44.sh
 9021a1a5302bf61dc2e001109758b6d5d1bbd5524b87633911ad267c351e9ada  ./scripts/finalize-stage-g-m45.sh
+bdf6fae696b7f9e4d8003043851e9b233e55635b7a8e6e20245cccbcad506361  ./scripts/finalize-stage-g-m46.sh
 4191b1ce8c4ffa30a595ba03f650475ed5dea210d1216ccadf22ea8a8ebf58d1  ./scripts/generate-functional-regression-evidence.mjs
 ef49e97b37d4f51535895bf71045b7076f1df18bc41995ff07cadf45fbb7db39  ./scripts/generate-production-cutover-evidence.mjs
 270ac34e8a020b57bf44061930be29e6ab75c815879e30f8603c011a1942ded9  ./scripts/lib/browser-cdp-smoke.mjs
@@ -684,9 +691,11 @@ bf1bdaa7d67221a0fe396f297a987bc8c1ed49f6d811c554377b562cc960c15b  ./scripts/lib/
 38e2c959ad6ecafa587aa20dbc9cb92a682831e6936f6cdcc8690b421f28a3f9  ./scripts/lib/stage-g-m43-certification-tree.mjs
 ffb6755eecc9eadb0a1380dd8a1fc8fa47d6db80f514586b3381fa73a34493c7  ./scripts/lib/stage-g-m44-certification-tree.mjs
 1180d506fc1d7fe2349062576e2d6793c01270ff266191e2a2c72327a70a5cd2  ./scripts/lib/stage-g-m45-certification-tree.mjs
+54190c5f3056b5e031f5ddf05c78d3c3d5c93cb640afde2f458e041e5a310694  ./scripts/lib/stage-g-m46-certification-tree.mjs
 891d39f24173d299ff2aa299f0113e97c7df5a301b2b71b9287d258a930dc570  ./scripts/package-stage-g-m43-certified.sh
 291e07be9579f9fbedd66d8ffe0bfbda0fec67510548e696a2808813d361bf7a  ./scripts/package-stage-g-m44-certified.sh
 d0e7bd8535e96a536cc7b55ece0c76af12ec29ebfcd68ed9857c530027784f8e  ./scripts/package-stage-g-m45-certified.sh
+dfe6f8fb626baa850e435fd8b528bb3e1cff906d01f10f0e3a37b5650badb1ee  ./scripts/package-stage-g-m46-certified.sh
 358f6b43e1429f85879d57de221df78f71fe0d6c182f10095ddf4785da3f2f7a  ./scripts/preflight-stage-g-m42-certification.mjs
 7195c96fddfb75642693bdcd81529ec83e54309b0fe718c4be2596f4e26d7cef  ./scripts/report-stage-b-m4.mjs
 35db5a702fbaf66e704f59ad475a53d244cd3c875324b4a7ba2f10ea173ac046  ./scripts/report-stage-b-m5.mjs
@@ -730,10 +739,12 @@ c287359b466811898e08e26918777935bbcb77ff68740cbf0fcc152f18fc6126  ./scripts/repo
 aa1bdcd751c06e40ff8123d24d2ef7538e4a68ee6d8fd2cdbd4c860ba4f3926b  ./scripts/report-stage-g-m43.mjs
 1466f5c2caa92471e2e75a7a99cc8e9c1c2c6d2f2f0e6af2f2eb8aa01a511d12  ./scripts/report-stage-g-m44.mjs
 b8fddeeab5ae45a82d3917cae030988f8221bda2d78a12c35f5654dc49a62310  ./scripts/report-stage-g-m45.mjs
+44ef3bc86c7ce6976a2c6e31d5f81bdeba73f13a70a0c4d3e34aaf6ff282a5bf  ./scripts/report-stage-g-m46.mjs
 99b1b7a60db9d1d764bfce4168355d74dee1962bebb3df31cb6d1a47c1dd9955  ./scripts/restore-required-repository-artifacts.mjs
 e08b86b575e8ce92a2cafca1b5bb533ec25596bd0784f271db3e9a0b49eeb6ff  ./scripts/run-account-functional-recovery-browser.mjs
 6dc25dd2ea0059dc4e10c52f4828395363ca7fae60f57c2da55975cbc7bcfe2c  ./scripts/run-auth-session-access-context-browser.mjs
 8871d48c6512f2828f4eab1246a70296e97f137fb64320177fe1a0d9745bbea7  ./scripts/run-backend-capability-preflight-browser.mjs
+8076c0bd45ed710b351e6b59fcf8fe12803a77cf5960ae2c4dd9e37da989abc9  ./scripts/run-boards-backend-data-contract-recovery-browser.mjs
 6af59ff3276924b330ee0223b5fe9058e1c9b13a4120f342136110a2969e20bc  ./scripts/run-boards-collection-route-recovery-browser.mjs
 5ed1cdb2c8bcac4af0aeb86defa0405e3ead5357ee04e659aafa593bdde6257b  ./scripts/run-database-rls-tests.mjs
 e5066a4c9bf85da54ece3cf1bcd4f85979c97439ac703667e83908869d51f8a9  ./scripts/run-functional-regression-browser.mjs
@@ -744,6 +755,7 @@ fd4e2924fe64b051acbb5c440c54fcfbaa74dd7ed42cf9e73fbcb37b958c7105  ./scripts/run-
 65165cae0ae6f27e94eb1919832b0a7f1041b6e7cc214fd8f48d3c849bb1a801  ./scripts/run-performance-benchmarks.mjs
 98bf636c61a556e9ad786fb9164f26ea489599b2c45f81ee303e52c5bdd4b423  ./scripts/run-route-lifecycle-recovery-browser.mjs
 dce12323011dd82840e71ee13b41b46f33381be54a255764a964f03c35e2ffcc  ./scripts/run-settings-functional-recovery-browser.mjs
+610846623814e2324e0fc192b1933c2928078be7f9182e2d25139a77087cda5e  ./scripts/run-stage-g-m46-database-contract-tests.mjs
 201224b4937877c2ba600768bbabd76fae268235a51add36e7ffc5a0b956b3a3  ./scripts/run-users-rbac-functional-recovery-browser.mjs
 481f40a8b4aec7a47f2e341c5dd52daf9edb6863335bdbf9e0c04132aa093380  ./scripts/scan-secrets.mjs
 967ed201f3974730a20eaa5ba5c5db5d6e9f4694fef8261ac8dbef509dde801a  ./scripts/security/production-csp-policy.mjs
@@ -758,6 +770,7 @@ e2c4951ac59732f35858728ce397f55c4b9ec3ded9de576bd72db1f9759d3f00  ./scripts/veri
 c90923247140921c954a6c0dec072338f01a2562c7478b45df10e6a64c26c127  ./scripts/verify-board-component-decomposition-execution.mjs
 119ccb6454cb8bed4c9c9f04c3095122f378feee2bbf8933d4e8d3a3a6fcf73f  ./scripts/verify-board-presentation-facade-execution.mjs
 106836bb4d9f402c9f28782e6c2d8f8de49cee55aa132edd7b2db642bd1d5ea6  ./scripts/verify-board-virtualization-execution.mjs
+75c651180a41b2e5b6d8a12fdeb42669e530d64199bd860f160f36718bb37d96  ./scripts/verify-boards-backend-data-contract-recovery-execution.mjs
 e4b1ed29097833677738d5170d98b85aa38b95616c55495c9f3b6b4b8efe859c  ./scripts/verify-boards-collection-route-recovery-execution.mjs
 732e04b0ba8d6b66d9812e6eae9faba352afb9c98fb682ac1f38ca57bbba0930  ./scripts/verify-browser-harness-bundle.mjs
 2b08e660af10ab79fa609af47d5d9626a5be0d27cf42b959b190b9784816720a  ./scripts/verify-client-state-execution.mjs
@@ -788,7 +801,7 @@ fabc8ea8a4e56426abe3deb5873e638a2d27ddd45c92d699c56ab6fa3601d9fc  ./scripts/veri
 0e2f81d9d79100666775a64166352803eb66cdea85f0e281b3527ba635986e46  ./scripts/verify-rich-item-workspace-execution.mjs
 4533397169817a0d7bfb681c77549939b8ceb08604c5b2f193b906e805113238  ./scripts/verify-route-lifecycle-recovery-execution.mjs
 ff35501ae49aa9c2f6e682ede0d81cb3c57d35a5c1ae519ca5742c9982d355f9  ./scripts/verify-runtime-backend-config.mjs
-7faf7b98ee4dc8d4b50a1b63a4f17977c68d38446bb740937fcb21a30656d056  ./scripts/verify-runtime-backend-preflight-execution.mjs
+114a1525032cd7096abd13ba59766f86388819b78cb1513b0f5669f0d256cb60  ./scripts/verify-runtime-backend-preflight-execution.mjs
 357cca6e207f304dc2d9b99c51e207bdcf70c49ac8b350445fcc0f57384be2a0  ./scripts/verify-runtime-schema-execution.mjs
 7f50feec63d5a4091ab49c84e0f247df11f37fbed4f12cc1987333e7cbe1a698  ./scripts/verify-service-worker-update-execution.mjs
 b4431fcfac561679e3c344c7e85d71e03afdabb8685d09a20322eb2257b05cc4  ./scripts/verify-settings-functional-recovery-execution.mjs
@@ -808,6 +821,11 @@ bc1d24602dbd2b83b400e1483902574f81f77200bc12ca1f0ae1f4ddfdeecf30  ./scripts/veri
 5b2734f6caf37b7b0155be2741ae18cbe940453735b8937b8beeda1707513edf  ./scripts/verify-stage-g-m45-certified-artifact.mjs
 378b7a647e6c0a1f9f1d10f1de9adbef7f2cd900fe07ac9cdf4fa12c1ac7193d  ./scripts/verify-stage-g-m45-finalizer-fail-closed.mjs
 b43f8b7f7866a4ecd2349ffa8683c578c6380e40933be40603a717b40e9391d7  ./scripts/verify-stage-g-m45-release.sh
+3aba43f494c9ce2bfd5ad1d0065528ddb23283d8f34d1b882691c6335901c9ef  ./scripts/verify-stage-g-m46-certified-artifact.mjs
+e66fadd5eaf670bcd90e8646861ef45f75138694b3b8ed3d7613c319ec2ee166  ./scripts/verify-stage-g-m46-finalizer-fail-closed.mjs
+53aecbb0b2c9b08a27eb948bc98d4e40148c59614061b540daa1a4c238642fc2  ./scripts/verify-stage-g-m46-production-contract.mjs
+993bf6c4a2290a5bf8c5cbcf6197dccbb4df6bcf2ad843af5191f9d5f26e9bd3  ./scripts/verify-stage-g-m46-production-deployment-guard.mjs
+432cb926821d94fad4b19303a260b44cea5d1121e9302ccd7841bca6fc29ff08  ./scripts/verify-stage-g-m46-release.sh
 c7735800203768ff14daf9518ff92f43775286161a558370f6338bbf36c21977  ./scripts/verify-supabase-client-adapter-execution.mjs
 3ab7a6d8edec82fc72a933385c5d2952b3e9e743e7c140d718c239ee09255f9a  ./scripts/verify-tanstack-query-execution.mjs
 fdd1f6f72b678af9295b20e7115eef9e6f9baa9bdff0db6187a2bb5efff9648c  ./scripts/verify-tanstack-table-evaluation-execution.mjs
@@ -924,7 +942,7 @@ bcc4022f277c7f4ec960f598d81cacf17a898c640081c8c682c34dfa113c7765  ./src/platform
 b8eaa31ce16ab4c970f571d9b21ab3dad97b82aa15b75f485d456da4ae2e231c  ./src/platform/contracts/ui.ts
 8aff4b7a6f008e07adf426d5ea86aff3c45c179d7623ac19ba73d4f144acd749  ./src/runtime-schemas/auth.ts
 5d1b5be92f87c0c0d8161fff1b19c65b5c3d5f2ce1348d15a51149ab2a0992c2  ./src/runtime-schemas/index.ts
-ab7e7433781639cfc181c9e3ebf3de22c48034932d8d665e1c3e66a178985802  ./src/runtime-schemas/manifest.ts
+3c21f4496f85344d4c0df23a5ce20d34d91173f708161136e2ebb3781305521a  ./src/runtime-schemas/manifest.ts
 12d035905fb65cfcbf5b988aa1db582d75ba27ccacc2ff4b195698bee76327a0  ./src/runtime-schemas/module-messages.ts
 9ed3433b251d09232111e177afc990519f4f8a343cf6742a0fcfffd1555f2fd3  ./src/runtime-schemas/modules.ts
 1f37b3adfa820cbd38611a0a4c4ff5f474c299ee30e74b20cb592bc07d1d0662  ./src/runtime-schemas/normalized-module-data.ts
@@ -936,11 +954,12 @@ f601437af372d53890cdd781cc2fc4ccc70c01ce01a9c3b30863b7e2989fd75a  ./src/runtime-
 8167055b3ce7bb1681c45c837e59e546c79774dd1b018e237c2dafc168b479d0  ./src/types/errors.ts
 f7aabb62eb5b5d2ad7c06c1886678b51aed5a41324da27c7b4f2a574a7dc4e04  ./src/types/identifiers.ts
 939be702194fd2b9d033d934876cf049a97265acb993b60a003e7229ca0b334c  ./src/types/index.ts
-fe37681642709e9628c9691460d271ddaf4e1db3eafc71981858184fcafa3451  ./src/types/manifest.ts
+752fbbd9db014daf30b6a7fcfd71a663efeaec73543458b596457583fe978b64  ./src/types/manifest.ts
 a0dc74d2b370458e8508304178ec3ec2fc07ad7a963f1e748b0d53bdd6eda00f  ./src/types/modules.ts
 e75127261634e7c340fd2d0f183650dc27c0adc965db68933973bfac8c128497  ./src/types/persistence.ts
 03351222ab3c777c44999ba4b899a39cc3b1827fb3f0ad43738b583820dc1999  ./supabase/README.md
 8506de7bad96c1cec0622610ae3deade507c037d9f809a598271638a085437ab  ./supabase/config.toml
+18e49ea7f3fe76163ab85c8e2f7e7c3bc0c06e26e4e17b355648168268cab55a  ./supabase/deployments/m46/20260917142647_stage_g_m46_boards_backend_data_contract_recovery.sql
 b6c55b889488c3055ddba3eab4f2b4d1168f867c95d5a82b9daa6e57aff22efb  ./supabase/functions/.env.example
 8e91cd116a1c4b432e34369ebf4bafb01d8a3e76738943768d4525d1e6415625  ./supabase/functions/README.md
 60881df48e0bbcec1acea60b2f22f5a8991b7355a6cbb1735f8459cc7fc22a7f  ./supabase/functions/_shared/http.ts
@@ -974,12 +993,14 @@ d57c4e3ca5c6c7e013b85207be82aefd33c91b346011ebea4803201047db280f  ./supabase/mig
 2080311c97c9ce021299e12e11e881d2f9b82b1787b7e5c326ed2fe86f43d7a6  ./supabase/migrations/v1.43.2-stage-g-m39-auth-session-access-context.sql
 01b6026cc074e738b4e2bf3b8502d14d3e0b5fd5f6b8cf6f400ea60b169adbcb  ./supabase/migrations/v1.43.2-stage-g-m42-database-corrective.sql
 bf11929a6efcb77b21e6f938561a634ad238dd16cd069a514a0eef28150f3750  ./supabase/migrations/v1.43.2-stage-g-m42-users-rbac-functional-recovery.sql
-deee001fc7762ada0ab358fd8c826b45f1bfc4c6aa0dc0d0131ac65638459e43  ./supabase/schema.sql
+18e49ea7f3fe76163ab85c8e2f7e7c3bc0c06e26e4e17b355648168268cab55a  ./supabase/migrations/v1.43.2-stage-g-m46-boards-backend-data-contract-recovery.sql
+6c1aeb647e632d2497c44ace164c19f15124a9f7e0b1cd43de381fab40fc335c  ./supabase/schema.sql
 e3c76ddc883280ac56a00fa0edb2e15fb7136a335affc4a217ffc3e46854329a  ./supabase/tests/database/00_rls_structure.test.sql
 a639c2422bb272ffc615eea70fdb44ada05fa93451d17764a8c9649698304461  ./supabase/tests/database/10_account_rbac.test.sql
 c16eb111b60c784caf548af8fc5666955c7cc0658408b6ab231a86557df8bf68  ./supabase/tests/database/20_module_state_authorization.test.sql
 d88d4844d4fd984fad0c2ae99ffd6359c55417d4cea8944ed602b6c13b196b98  ./supabase/tests/database/30_board_authorization.test.sql
 7e53a9dba3e313ae953d7dbf7675087d986757c6338c3de5c3b47fe1dea80bf1  ./supabase/tests/database/40_users_rbac_functional_recovery.test.sql
+a7d9c10dc81850aa1889604e1332a8984000f638f7ad0ffb8fd2e6c43c66619c  ./supabase/tests/m46/boards_backend_contract_recovery.test.sql
 1aff4268fab67eb17211b9417c544689d21e42d49e02b536d6e2866c96b62446  ./tests/browser/build-runtime-bundle.mjs
 7c46e98cc6803c6ad80bf7c584aa377ad9c73b6bd3ca338112802f2136e172a4  ./tests/browser/integration.html
 2ef0426064b83822e479575d283135fd75db1e9ceab072717e8810e562a87014  ./tests/browser/integration.js
@@ -992,11 +1013,12 @@ f99de30d2391815828e044ad7fee4f9e7aaf78ffa1d066558d966401cbef89b8  ./tests/browse
 c01ba75873cf591653b6573e038ce33679d5876a322ad397dcffb7d75024eac7  ./tests/modern/e2e/application-smoke.spec.mjs
 c85ce84cbbd8f28f987df2d722ed1eabeac04777fed8ae4e4661e92d03239472  ./tests/modern/e2e/auth-session-access-context.spec.mjs
 3ae950ac85febc61db27cf9661365a761cc54ddef993c864f273a887ec40a190  ./tests/modern/e2e/backend-capability-preflight.spec.mjs
+87af629c2653f816dc3dc512ca147c1e5150d21aef8ea954e337089467f26d5b  ./tests/modern/e2e/boards-backend-data-contract-recovery.spec.mjs
 d09729e35142e3758b35ea97c2b1c881ccfcb26f8c73fa135e800f736db2a725  ./tests/modern/e2e/boards-collection-route-recovery.spec.mjs
 6a6a0ffb75d20e05ec786a597c9782293c6fdff674b1794a59ed77648a5e117d  ./tests/modern/e2e/functional-regression-baseline.spec.mjs
 dde1347e8fedbe37ba79e4c2388aa5d024a1c0688dfba1ffe7f3f1ad3ee8acae  ./tests/modern/e2e/helpers/m37-regression-probe.mjs
-39c2bf384ec9b9f10c97bfcea715fd58c89e5e6f366a7e7052d606c620a78fb5  ./tests/modern/e2e/helpers/m37-supabase-fixture.mjs
-5a03a7b38e5362aa9206e29c3e443f50dfe46997f4ee7418ddfcd46bda09e7eb  ./tests/modern/e2e/helpers/m39-auth-fixture.mjs
+413c493783b6782455ffd1e9db9e34f6eac762d31678c69eb8aa033aeb01aa15  ./tests/modern/e2e/helpers/m37-supabase-fixture.mjs
+2e3a3818237c8c85bd24e587b9eb48101747054fba2f3da4840f9d06813e7872  ./tests/modern/e2e/helpers/m39-auth-fixture.mjs
 f242ab7269cd4d934229f54421fed0b658b2a54d21322fe9f3f21caf10740cb0  ./tests/modern/e2e/helpers/m45-boards-fixture.mjs
 f47162ddab0c6b05a70adf9e410eb7f27b21ae3ba5c909bb8a2c4311ee3e90e5  ./tests/modern/e2e/management-authority-consolidation.spec.mjs
 3057549b468747754d93fc42241937734d95725da199683d826b9b3570134db0  ./tests/modern/e2e/route-lifecycle-recovery.spec.mjs
@@ -1080,6 +1102,8 @@ d98569891b9c61580da9c45d68ab09b1e1bab7ae0481e081a32ca4062f50b280  ./verify-stage
 f7f511f1f22ee96d2950f94d3ea12b8fdf8de4deafddd23db4dca937ca0eea5f  ./verify-stage-g-m44-management-authority-consolidation.mjs
 6b59c21b8eb0ea996773e20d79a9e9f975823d92abe945dd6180e594aac8dc04  ./verify-stage-g-m45-boards-collection-route-recovery.mjs
 7f132bc6ad1bda5d2502771764f41edfbde4bcda1cf81971aaa4b3f07e471b5a  ./verify-stage-g-m45-state-aware-workflows.mjs
+6309237d0ef1c9fb2d1bc0bd28ecb48a896c8ec22e7ec4ab569bbada3e6b3413  ./verify-stage-g-m46-boards-backend-data-contract-recovery.mjs
+0bd3428670312047ab2e050d47e79097ef7d2460096c8b9564d807b85e1d3310  ./verify-stage-g-m46-state-aware-workflows.mjs
 9c3ca048644f0a54f06bd56a46ce957a2e8f0e9f6d99eefd92b93d135da276f7  ./verify-timetracker-runtime.mjs
 e461f73a558d08bda915d6ecee41df158e47cf99b104a75bc91f1517d8d4ff39  ./verify-timetracker-startup.mjs
 4fc939b5b39fd072246c3a359c6b7bf35c400e222ef98401cd1d3eb3f4a4bc1b  ./verify-timetracker-v2-pass1.mjs
@@ -1137,7 +1161,7 @@ ecc88b5b05480a372ac36e1cf22d91608d4366ae3a06dd2060ca7ca48ddf6a32  ./verify-v1360
 f907d4207fb48d19d7b941d9f5ceccf6d2c9a9d74df8c33acec735218c27b193  ./verify-v1380-typescript-runtime.mjs
 32302c656bb07d4bdd238fcbb0636ce375eff1309235aef370c465ce0b8aed3d  ./verify-v1390-typescript-orchestration.mjs
 af143cee8154f2084c0a2a62d997e7e61fac34c1ad033c977ecfbc0a873c0b69  ./verify-v1400-cloud-module-boundary.mjs
-b81cb357ba12406c1d890202c9e5aa80e20d134bba19268c046d66c97d5be0ad  ./verify-v1400-feature-runtime.mjs
+6bed0c1af219e275f44edf79f1abe6e054701d9d6370f0878fcb0c4c6b92a25e  ./verify-v1400-feature-runtime.mjs
 fe4e5ea3375ba525dbae76ccebd2e17da9e2f4b4eb90123be6a32d19a1c6ec37  ./verify-v1410-nonvisual-runtime.mjs
 6a46a91831e246e5120526909c0a797263752d90319d75e06e896d17b13537ee  ./verify-v1420-ui-typescript.mjs
 2ce05126289d4bfdc3ec264c4bb0de7875da9b0fdec258b611227f28659a8688  ./verify-v1430-production-hardening.mjs

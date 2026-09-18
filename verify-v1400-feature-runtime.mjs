@@ -148,13 +148,13 @@ const boardEnvelope = () => assertBoardEnvelope(rawBoardEnvelope(), 'v1.40.fixtu
   };
   const repo = createBoardRepository(auth, { queryClient, backendClient: backend });
   assert.equal(await repo.addItem('board-1', 'group-1', 'New item'), 'item-new');
-  assert.equal(mutationInvalidations.length, 4);
+  assert.equal(mutationInvalidations.length, 5);
   assert.equal(JSON.stringify(mutationInvalidations).includes('item-workspace'), true);
   await repo.setPreferences('board-1', { item_name_width: 333 });
   assert.equal(setData.length, 1);
   assert.equal(setData[0].data.item_name_width, undefined); // backend response is authoritative, not local optimistic leakage
   repo.invalidate();
-  assert.equal(invalidations.length, 4);
+  assert.equal(invalidations.length, 5);
   assert.equal(rpcCalls.some((call) => call.name === 'wm_add_board_item'), true);
   console.log('PASS Board repository mutations preserve targeted invalidation and authoritative preference caching');
 }

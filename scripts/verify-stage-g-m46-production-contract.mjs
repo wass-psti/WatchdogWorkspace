@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import process from 'node:process';
+import { M46_BOARD_CONTRACT_DIGEST,M46_BOARD_CONTRACT_VERSION,M46_BOARD_BACKEND_CONTRACT } from '../config/stage-g-m46-board-backend-contract.ts';
+
+const base=String(process.env.VITE_SUPABASE_URL||process.env.SUPABASE_URL||'').trim().replace(/\/+$/,'');
+const key=String(process.env.VITE_SUPABASE_PUBLISHABLE_KEY||process.env.SUPABASE_PUBLISHABLE_KEY||'').trim();
+if(!base||!key) throw new Error('M46 production contract verification requires VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.');
+const response=await fetch(`${base}/rest/v1/rpc/wm_board_contract_attestation`,{method:'POST',headers:{apikey:key,'content-type':'application/json'},body:'{}',signal:AbortSignal.timeout(15000)});
+const text=await response.text();
+if(!response.ok) throw new Error(`M46 production attestation failed HTTP ${response.status}: ${text.slice(0,500)}`);
+let payload; try{payload=JSON.parse(text);}catch{throw new Error('M46 production attestation returned non-JSON data.');}
+if(Array.isArray(payload)) payload=payload[0]??{};
+assert.equal(payload.contract_version,M46_BOARD_CONTRACT_VERSION,'Production Board contract version mismatch.');
+assert.equal(payload.contract_digest,M46_BOARD_CONTRACT_DIGEST,'Production Board contract digest mismatch.');
+assert.equal(payload.compatible,true,'Production Board catalog reports incompatible contract.');
+assert.equal(payload.rpc_count,M46_BOARD_BACKEND_CONTRACT.rpcs.length,'Production Board RPC signature count mismatch.');
+assert.equal(payload.expected_rpc_count,M46_BOARD_BACKEND_CONTRACT.rpcs.length,'Production expected Board RPC count mismatch.');
+assert.equal(payload.table_count,M46_BOARD_BACKEND_CONTRACT.tables.length,'Production Board table contract count mismatch.');
+assert.equal(payload.expected_table_count,M46_BOARD_BACKEND_CONTRACT.tables.length,'Production expected Board table count mismatch.');
+assert.equal(payload.rls_table_count,M46_BOARD_BACKEND_CONTRACT.tables.length,'Production Board RLS count mismatch.');
+assert.equal(payload.board_table_policy_count,0,'Production Board tables must retain RPC-only deny-by-default RLS with no direct policies.');
+assert.equal(payload.board_table_policy_table_count,M46_BOARD_BACKEND_CONTRACT.tables.length,'Production Board table-policy contract coverage mismatch.');
+assert.equal(payload.direct_privilege_violations,0,'Production exposes forbidden direct Board table privileges.');
+assert.equal(payload.storage_ok,true,'Production Board storage contract mismatch.');
+assert.equal(payload.storage_policy_count,M46_BOARD_BACKEND_CONTRACT.storage.policies.length,'Production Board storage-policy count mismatch.');
+assert.equal(payload.realtime_function_count,M46_BOARD_BACKEND_CONTRACT.realtime.functions.length,'Production Board realtime-function contract count mismatch.');
+assert.equal(payload.realtime_policy_count,M46_BOARD_BACKEND_CONTRACT.realtime.policies.length,'Production Board realtime-policy count mismatch.');
+assert.equal(payload.realtime_trigger_count,M46_BOARD_BACKEND_CONTRACT.realtime.triggers.length,'Production Board realtime-trigger count mismatch.');
+assert.equal(payload.capabilities_ok,true,'Production Board capability contract mismatch.');
+console.log(`Stage G M46 production Board contract verification: PASS (version=${payload.contract_version}; digest=${payload.contract_digest}; rpcs=${payload.rpc_count}; tables=${payload.table_count}; rls=${payload.rls_table_count}; realtimeFunctions=${payload.realtime_function_count}; realtimePolicies=${payload.realtime_policy_count}; realtimeTriggers=${payload.realtime_trigger_count})`);

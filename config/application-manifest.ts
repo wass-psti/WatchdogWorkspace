@@ -39,7 +39,7 @@ export const applicationManifest = Object.freeze({
   id: 'work-management',
   name: 'Work Management',
   version: '1.43.2',
-  architectureVersion: 53,
+  architectureVersion: 54,
   runtime: 'vite-esm',
   architecture: Object.freeze({
     style: 'modular-platform',
@@ -198,6 +198,15 @@ export const applicationManifest = Object.freeze({
     boardCollectionRepository: 'assets/js/features/boards/data/board-repository.ts',
     boardCollectionRoutePolicy: 'active-only-board-workspace-v1',
     boardCollectionBrowser: 'tests/modern/e2e/boards-collection-route-recovery.spec.mjs',
+    boardBackendDataContractRecovery: 'catalog-attested-board-contract-v1',
+    boardBackendContract: 'config/stage-g-m46-board-backend-contract.ts',
+    boardBackendMigration: 'supabase/migrations/v1.43.2-stage-g-m46-boards-backend-data-contract-recovery.sql',
+    boardBackendSchema: 'supabase/schema.sql',
+    boardBackendContractAttestation: 'public.wm_board_contract_attestation',
+    boardBackendCacheOwnership: 'board-query-prefix-scoped-v1',
+    boardAttachmentDeletion: 'metadata-first-best-effort-object-cleanup-v1',
+    boardBackendDatabaseTest: 'supabase/tests/m46/boards_backend_contract_recovery.test.sql',
+    boardBackendProductionVerifier: 'scripts/verify-stage-g-m46-production-contract.mjs',
     serverState: 'assets/js/platform/data/query-client.ts',
     serverStateLibrary: 'tanstack-query-v5',
     clientState: 'assets/js/platform/state/client-state-store.ts',
@@ -374,6 +383,10 @@ export function validateApplicationManifest(manifest: ApplicationManifest = appl
   }
   if (manifest.architectureVersion >= 53 && (manifest.architecture.boardCollectionRecovery !== 'lifecycle-routed-collection-authority-v1' || !manifest.architecture.boardCollectionController || !manifest.architecture.boardCollectionDataController || !manifest.architecture.boardCollectionRepository || manifest.architecture.boardCollectionRoutePolicy !== 'active-only-board-workspace-v1' || !manifest.architecture.boardCollectionBrowser)) {
     errors.push('Architecture v53+ requires lifecycle-routed Boards collection recovery with active-only workspace access and explicit collection/data/repository/browser authorities.');
+  }
+
+  if (manifest.architectureVersion >= 54 && (manifest.architecture.boardBackendDataContractRecovery !== 'catalog-attested-board-contract-v1' || manifest.architecture.boardBackendContract !== 'config/stage-g-m46-board-backend-contract.ts' || manifest.architecture.boardBackendMigration !== 'supabase/migrations/v1.43.2-stage-g-m46-boards-backend-data-contract-recovery.sql' || manifest.architecture.boardBackendSchema !== 'supabase/schema.sql' || manifest.architecture.boardBackendContractAttestation !== 'public.wm_board_contract_attestation' || manifest.architecture.boardBackendCacheOwnership !== 'board-query-prefix-scoped-v1' || manifest.architecture.boardAttachmentDeletion !== 'metadata-first-best-effort-object-cleanup-v1' || manifest.architecture.boardBackendDatabaseTest !== 'supabase/tests/m46/boards_backend_contract_recovery.test.sql' || manifest.architecture.boardBackendProductionVerifier !== 'scripts/verify-stage-g-m46-production-contract.mjs')) {
+    errors.push('Architecture v54+ requires catalog-attested Boards backend/data-contract recovery with governed schema, migration, cache, attachment, database-test, and production-attestation authorities.');
   }
 
 

@@ -111,7 +111,7 @@ export function createBoardRepository(auth: AuthTransportPort, options: BoardRep
 
   const scope = (): readonly QueryKeyPart[] => boardUserQueryScope(auth.user?.id) as readonly QueryKeyPart[];
   const key = (...parts: readonly (string | number | boolean | null)[]): QueryKey => [...scope(), ...parts];
-  const invalidationTargets = (): readonly QueryKey[] => [boardListQueryPrefix(auth.user?.id), key('board'), key('item-workspace'), key('events')];
+  const invalidationTargets = (): readonly QueryKey[] => [boardListQueryPrefix(auth.user?.id), key('board'), key('preferences'), key('item-workspace'), key('events')];
 
   const invalidateBoardState = (): void => {
     for (const target of invalidationTargets()) queries.invalidateQueries(target);
@@ -137,8 +137,26 @@ export function createBoardRepository(auth: AuthTransportPort, options: BoardRep
   }
 
   async function removeItemFile(file: ItemWorkspaceFile): Promise<void> {
-    await backend.storageDelete('work-board-files', file.storage_path, { ignoreMissing: true });
-    await rpc('wm_delete_board_item_file', { p_file_id: file.id });
+    const deletedPath = boardScalar(await rpc('wm_delete_board_item_file', { p_file_id: file.id }));
+    const canonicalPath = typeof deletedPath === 'string' ? deletedPath.trim() : '';
+    if (!canonicalPath) {
+      throw new WorkManagementError('The server did not return the deleted attachment path.', {
+        code: 'WM_BOARD_FILE_DELETE_CONTRACT_INVALID',
+        category: 'internal',
+        retryable: true,
+        operation: 'boards.file.delete',
+        cause: deletedPath,
+      });
+    }
+    try {
+      await backend.storageDelete('work-board-files', canonicalPath, { ignoreMissing: true });
+    } catch (error: unknown) {
+      diagnostics?.warn('BOARD_FILE_STORAGE_CLEANUP_PENDING', 'Board attachment metadata was deleted but private-object cleanup did not complete.', {
+        fileId: file.id,
+        storagePath: canonicalPath,
+        error: error instanceof Error ? error.message : String(error ?? ''),
+      });
+    }
     queries.invalidateQueries(key('item-workspace', String(file.item_id || '')));
   }
 
@@ -383,7 +401,7 @@ export function createBoardRepository(auth: AuthTransportPort, options: BoardRep
       await mutateVoid('boards.file.delete', () => removeItemFile(file));
     },
     invalidate: invalidateBoardState,
-    clearCache: () => queries.clear(),
+    clearCache: () => { queries.removeQueries(scope()); },
   };
 
   return Object.freeze(repository);

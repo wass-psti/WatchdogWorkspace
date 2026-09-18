@@ -4,7 +4,7 @@ export const stageGM45BoardsCollectionRouteRecoveryTarget = Object.freeze({
   milestone: 45,
   stage: 'G',
   name: 'Boards Collection & Route Recovery',
-  activationState: 'implementation-complete-pending-certification' as M45ActivationState,
+  activationState: 'active-certified' as M45ActivationState,
   prerequisite: Object.freeze({ milestone: 44, requiredState: 'active-certified' as const }),
   architectureVersion: 53,
   authority: Object.freeze({

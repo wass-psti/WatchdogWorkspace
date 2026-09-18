@@ -1,4 +1,5 @@
 import { M38_BACKEND_CAPABILITY_SCHEMA,M38_MODULE_REQUIREMENTS,type M38CapabilityModule } from '../../../../config/backend-capability-manifest.ts';
+import { M46_BOARD_CONTRACT_DIGEST,M46_BOARD_CONTRACT_VERSION } from '../../../../config/stage-g-m46-board-backend-contract.ts';
 import type { BackendCapabilitySnapshot,BackendModuleCapabilityStatus } from '../../../../src/platform/contracts/backend-capability-preflight.ts';
 import type { BackendConfigurationSource,WorkManagementRuntimeEnvironment } from '../../../../config/vite-runtime-config.ts';
 import { createSupabaseClientAdapter, SupabaseClientAdapterError } from './supabase-client-adapter.ts';
@@ -72,7 +73,24 @@ export const backendCapabilityPreflight=Object.freeze({
         const schemaVersion=typeof payload.schema_version==='string'?payload.schema_version.trim():'';
         if(schemaVersion!==M38_BACKEND_CAPABILITY_SCHEMA)return publish(blocked('WM_BACKEND_CAPABILITY_SCHEMA_MISMATCH',`Backend capability contract version ${schemaVersion||'(missing)'} does not match required ${M38_BACKEND_CAPABILITY_SCHEMA}.`,'capability-schema-mismatch',schemaVersion||null));
         const available={tables:new Set(strings(payload.tables)),rpcs:new Set(strings(payload.rpcs)),storage:new Set(strings(payload.storage)),realtime:new Set(strings(payload.realtime))};
-        const modules=Object.freeze(Object.fromEntries(moduleNames.map((name)=>[name,moduleStatus(name,available)])) as Record<M38CapabilityModule,BackendModuleCapabilityStatus>);
+        const baseModules=Object.fromEntries(moduleNames.map((name)=>[name,moduleStatus(name,available)])) as Record<M38CapabilityModule,BackendModuleCapabilityStatus>;
+        const boardContractMissing:string[]=[];
+        if(baseModules.boards.ready){
+          try{
+            const attestation=recordOf(await client.rpc<unknown>('wm_board_contract_attestation',{},token,{timeoutMs:15_000}));
+            const version=typeof attestation.contract_version==='string'?attestation.contract_version.trim():'';
+            const digest=typeof attestation.contract_digest==='string'?attestation.contract_digest.trim():'';
+            if(version!==M46_BOARD_CONTRACT_VERSION)boardContractMissing.push(`contract-version:${version||'missing'}`);
+            if(digest!==M46_BOARD_CONTRACT_DIGEST)boardContractMissing.push(`contract-digest:${digest||'missing'}`);
+            if(attestation.compatible!==true)boardContractMissing.push('contract-compatible:false');
+          }catch(error){
+            boardContractMissing.push(`contract-attestation:${failureCode(error)}`);
+          }
+        }
+        if(boardContractMissing.length){
+          baseModules.boards=Object.freeze({ready:false,missing:Object.freeze([...baseModules.boards.missing,...boardContractMissing])});
+        }
+        const modules=Object.freeze(baseModules);
         const missing=Object.freeze({tables:strings(payload.missing_tables),rpcs:strings(payload.missing_rpcs),storage:strings(payload.missing_storage),realtime:strings(payload.missing_realtime)});
         const complete=moduleNames.every((name)=>modules[name].ready);
         return publish(Object.freeze({state:'ready',checkedAt:new Date().toISOString(),code:complete?null:'WM_BACKEND_CAPABILITY_MISMATCH',message:complete?'Backend capability preflight passed.':'Backend capability preflight completed; one or more modules are gated because required capabilities are missing.',schemaVersion,environment:environmentOf(cfg),configurationSource:source,projectHost:projectHostOf(url),missing,modules}));

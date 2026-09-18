@@ -48,7 +48,7 @@ const json = (route, status, body) => route.fulfill({
 });
 const error = (route, status, code, message) => json(route, status, { code, message, hint: null, details: null });
 
-export async function installM39Fixture(page, { principal = 'admin', expiredRefreshFailure = false, accessContextFailure = false } = {}) {
+export async function installM39Fixture(page, { principal = 'admin', expiredRefreshFailure = false, accessContextFailure = false, boardContractOverrides = null, boardContractFailure = false } = {}) {
   const state = {
     principal,
     role: principal === 'employee' ? 'employee' : 'admin_general_manager',
@@ -129,6 +129,11 @@ export async function installM39Fixture(page, { principal = 'admin', expiredRefr
       return json(route, 200, { id:userId(), email:email(), email_confirmed_at:'2026-09-11T00:00:00.000Z', user_metadata:{ display_name:state.displayName } });
     }
     if (path === '/rest/v1/rpc/wm_runtime_capabilities') return json(route, 200, { schema_version:'1.43.2-m38-v2', tables:M38_TABLES, rpcs:M38_RPCS, storage:['work-board-files'], realtime:M38_REALTIME, missing_tables:[], missing_rpcs:[], missing_storage:[], missing_realtime:[] });
+    if (path === '/rest/v1/rpc/wm_board_contract_attestation') {
+      if (boardContractFailure) return error(route, 404, 'PGRST202', 'Could not find the function public.wm_board_contract_attestation in the schema cache');
+      const base = { contract_version:'1.43.2-m46-v1', contract_digest:'2e5db3073f702cad96be3eb1d4a18b33ea039252ad4d0532dc9b6e1b3ca0da1c', compatible:true, rpc_count:40, expected_rpc_count:40, table_count:9, expected_table_count:9, rls_table_count:9, board_table_policy_count:0, board_table_policy_table_count:9, direct_privilege_violations:0, storage_ok:true, storage_policy_count:3, realtime_function_count:2, realtime_policy_count:2, realtime_trigger_count:8, capabilities_ok:true };
+      return json(route, 200, boardContractOverrides ? { ...base, ...boardContractOverrides } : base);
+    }
     if (path === '/rest/v1/rpc/list_user_directory') {
       state.userDirectoryCalls += 1;
       if (state.principal !== 'admin' || state.role !== 'admin_general_manager' || state.status !== 'active') return error(route, 403, 'M42_ADMIN_REQUIRED', 'Administrator access required');

@@ -120,7 +120,7 @@ export function mapBoardRecord(value: unknown, operation = 'board.record'): Boar
   return {
     ...record,
     id,
-    name: String(record.name ?? '').trim(),
+    name: requiredString(record, 'name', operation),
     description: String(record.description ?? ''),
     status: lifecycle(record.status),
     view: viewMode(rawView),
@@ -140,7 +140,7 @@ export function mapBoardGroup(value: unknown): BoardGroup {
     ...record,
     id: requiredString(record, 'id', 'board.group') as BoardGroupId,
     board_id: requiredString(record, 'board_id', 'board.group') as BoardId,
-    title: String(record.title ?? '').trim(),
+    title: requiredString(record, 'title', 'board.group'),
     position: numberValue(record, 'position'),
     accent_color: optionalString(record, 'accent_color'),
   };
@@ -155,7 +155,7 @@ export function mapBoardItem(value: unknown): BoardItem {
     id: requiredString(record, 'id', 'board.item') as BoardItemId,
     board_id: requiredString(record, 'board_id', 'board.item') as BoardId,
     group_id: requiredString(record, 'group_id', 'board.item') as BoardGroupId,
-    title: String(record.title ?? '').trim(),
+    title: requiredString(record, 'title', 'board.item'),
     position: numberValue(record, 'position'),
     status: status as StatusLabelId | null,
     assignee_id: optionalString(record, 'assignee_id') as UserId | null,
@@ -171,7 +171,7 @@ function mapColumnBase(record: UnknownRecord, type: BoardColumnType) {
     ...record,
     id: requiredString(record, 'id', 'board.column') as BoardColumnId,
     board_id: requiredString(record, 'board_id', 'board.column') as BoardId,
-    name: String(record.name ?? '').trim(),
+    name: requiredString(record, 'name', 'board.column'),
     data_type: type,
     position: numberValue(record, 'position'),
     visible: record.visible !== false,
@@ -397,7 +397,7 @@ function mapWorkspaceUpdate(value: unknown, itemId: BoardItemId): ItemWorkspaceU
     item_id: itemId,
     body: typeof record.body === 'string' ? record.body : '',
     author_name: optionalString(record, 'author_name'),
-    author_id: optionalString(record, 'author_id') as UserId | null,
+    author_id: (optionalString(record, 'author_id') ?? optionalString(record, 'created_by')) as UserId | null,
     can_delete: record.can_delete === true,
     ...(optionalString(record, 'created_at') ? { created_at: optionalString(record, 'created_at') as string } : {}),
   };
@@ -414,7 +414,7 @@ function mapWorkspaceFile(value: unknown, itemId: BoardItemId): ItemWorkspaceFil
     file_name: optionalString(record, 'file_name'),
     size_bytes: size,
     author_name: optionalString(record, 'author_name'),
-    author_id: optionalString(record, 'author_id') as UserId | null,
+    author_id: (optionalString(record, 'author_id') ?? optionalString(record, 'created_by')) as UserId | null,
     can_delete: record.can_delete === true,
     ...(optionalString(record, 'created_at') ? { created_at: optionalString(record, 'created_at') as string } : {}),
   };

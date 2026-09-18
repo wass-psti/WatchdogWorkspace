@@ -1,6 +1,6 @@
 # Work Management App v1.43.2 — Stage G M45 Boards Collection & Route Recovery
 
-**State:** implementation-complete-pending-certification
+**State:** active-certified
 **Architecture Version:** 53
 **Prerequisite:** M44 active-certified
 
@@ -52,3 +52,7 @@ The Checkpoint 10 Mac transaction passed the exact 34-path commit gate and creat
 ## Canonical Git-mode staging corrective — 2026-09-17
 
 The Checkpoint 11 Mac preflight failed inside the newly added staging-parity regression before any clone, commit, push, or hosted certification. Its diagnostic contract exposed the platform-sensitive assumption directly: Git archives reconstruct ordinary file rw permission bits according to extraction/platform policy, while Git itself versions only the regular-file executable bit. Treating `0644` versus `0664`, or `0755` versus `0775`, as source drift therefore bound M45 certification to ambient filesystem/umask state rather than repository identity. Checkpoint 12 derives the isolated candidate from `git archive` of the exact bound source commit and normalizes certification-tree mode identity to Git-significant modes (`100644`, `100755`, and `120000` for symlinks), while continuing to bind every included path, entry type, symlink target, and file SHA-256. The finalizer regression now creates a real temporary Git commit and proves the same exact-commit staging path. No Boards runtime behavior is changed. M45 remains pending until local exact-commit certification, push, hosted exact-SHA certification, and hosted artifact verification pass.
+
+## Final certified baseline — 2026-09-17T08:18:58Z
+
+The fail-closed M45 certification and artifact-publication transaction passed for source commit `556e098c51281714a88e6f899254a01117b839c7`. The packaged Boards Collection & Route Recovery state is **active-certified**. The certification-tree digest excludes only the M45 target and release-state records so the pending repository source and promoted package can be compared without self-referential state mutation.

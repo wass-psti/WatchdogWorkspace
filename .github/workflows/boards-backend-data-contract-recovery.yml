@@ -1,0 +1,63 @@
+name: Boards Backend Data Contract Recovery
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  m46:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://jtlusodorfnyzgyuewkz.supabase.co' }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_CrkvaTRYTYAMVbieywNMyg_a0F7HpB6' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.117.0
+      - run: npm ci --ignore-scripts
+      - run: npm run modern-tests:toolchain:ensure
+      - name: Verify M46 fail-closed certification harnesses
+        run: |
+          npm run board-backend-contract:finalizer:test
+          npm run board-backend-contract:deployment-guard:test
+      - name: Resolve M46 milestone state
+        id: milestone_state
+        shell: bash
+        run: |
+          if grep -Eq "activationState:[[:space:]]*'active-certified'" config/stage-g-m46-boards-backend-data-contract-recovery-target.ts; then
+            echo 'state=active-certified' >> "$GITHUB_OUTPUT"
+          elif grep -Eq "activationState:[[:space:]]*'implementation-complete-pending-certification'" config/stage-g-m46-boards-backend-data-contract-recovery-target.ts; then
+            echo 'state=pending' >> "$GITHUB_OUTPUT"
+          else
+            echo 'FAIL: unrecognized M46 milestone state.' >&2
+            exit 1
+          fi
+      - name: Verify M46 candidate or active-certified regression without publication
+        if: ${{ github.event_name == 'pull_request' || steps.milestone_state.outputs.state == 'active-certified' }}
+        run: npm run board-backend-contract:verify:release
+      - name: Run fail-closed M46 certification and artifact transaction
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
+        env:
+          M46_SOURCE_COMMIT: ${{ github.sha }}
+        run: npm run board-backend-contract:certify
+      - name: Independently verify certified M46 artifact
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
+        env:
+          M46_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+        run: node scripts/verify-stage-g-m46-certified-artifact.mjs
+      - name: Upload certified M46 baseline
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: work-management-v1.43.2-stage-g-m46-certified-${{ github.sha }}
+          path: |
+            m46-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M46-Certified-Baseline.zip
+            m46-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M46-Certified-Baseline-PASS.txt
+          if-no-files-found: error
+          retention-days: 90
