@@ -59,6 +59,8 @@ export function createBoardSelectionController({
       await reloadBoard();
       return true;
     } catch (error) {
+      selection.clear();
+      try { await reloadBoard(); } catch { /* preserve the original bulk-operation failure */ }
       toast(errorMessage(error, 'The selected items could not be updated.'), 'warning');
       return false;
     }
@@ -119,9 +121,15 @@ export function createBoardSelectionController({
       submitLabel: 'Move items',
       onSubmit: async (fd) => {
         const groupId = String(fd.get('group') || '');
-        const count = await selection.moveSelected(groupId);
-        toast(`${count} selected item${count === 1 ? '' : 's'} moved.`);
-        await reloadBoard();
+        try {
+          const count = await selection.moveSelected(groupId);
+          toast(`${count} selected item${count === 1 ? '' : 's'} moved.`);
+          await reloadBoard();
+        } catch (error) {
+          selection.clear();
+          try { await reloadBoard(); } catch { /* preserve the original bulk-operation failure */ }
+          throw error;
+        }
       },
     });
   }

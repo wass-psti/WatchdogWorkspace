@@ -185,6 +185,13 @@ export const architectureDefinitionSchema = z.object({
   boardAttachmentDeletion: z.literal('metadata-first-best-effort-object-cleanup-v1').optional(),
   boardBackendDatabaseTest: nonEmptyStringSchema.optional(),
   boardBackendProductionVerifier: nonEmptyStringSchema.optional(),
+  boardTableGroupItemRecovery: z.literal('transactional-table-group-item-recovery-v1').optional(),
+  boardTableGroupItemTarget: nonEmptyStringSchema.optional(),
+  boardTableGroupItemMigration: nonEmptyStringSchema.optional(),
+  boardTableGroupItemDatabaseTest: nonEmptyStringSchema.optional(),
+  boardTableGroupItemBrowser: nonEmptyStringSchema.optional(),
+  boardTableGroupItemPreferencePersistence: z.literal('board-scoped-flush-on-deactivate-v1').optional(),
+  boardTableGroupItemProductionVerifier: nonEmptyStringSchema.optional(),
   serverState: nonEmptyStringSchema,
   serverStateLibrary: z.literal('tanstack-query-v5').optional(),
   clientState: nonEmptyStringSchema.optional(),
@@ -350,6 +357,10 @@ export const applicationManifestSchema = z.object({
   if (manifest.architectureVersion >= 53 && (manifest.architecture.boardCollectionRecovery !== 'lifecycle-routed-collection-authority-v1' || !manifest.architecture.boardCollectionController || !manifest.architecture.boardCollectionDataController || !manifest.architecture.boardCollectionRepository || manifest.architecture.boardCollectionRoutePolicy !== 'active-only-board-workspace-v1' || !manifest.architecture.boardCollectionBrowser)) {
     context.addIssue({ code: 'custom', message: 'Architecture v53+ requires lifecycle-routed Boards collection recovery with active-only workspace access and explicit collection/data/repository/browser authorities.', path: ['architecture'] });
   }
+  if (manifest.architectureVersion >= 55 && (manifest.architecture.boardTableGroupItemRecovery !== 'transactional-table-group-item-recovery-v1' || manifest.architecture.boardTableGroupItemTarget !== 'config/stage-g-m47-boards-table-group-item-recovery-target.ts' || manifest.architecture.boardTableGroupItemMigration !== 'supabase/migrations/v1.43.2-stage-g-m47-boards-table-group-item-recovery.sql' || manifest.architecture.boardTableGroupItemDatabaseTest !== 'supabase/tests/m47/boards_table_group_item_recovery.test.sql' || manifest.architecture.boardTableGroupItemBrowser !== 'tests/modern/e2e/boards-table-group-item-recovery.spec.mjs' || manifest.architecture.boardTableGroupItemPreferencePersistence !== 'board-scoped-flush-on-deactivate-v1' || manifest.architecture.boardTableGroupItemProductionVerifier !== 'scripts/verify-stage-g-m47-production-invariants.mjs')) {
+    context.addIssue({ code: 'custom', message: 'Architecture v55+ requires governed Boards table/group/item recovery with transactional ordering, database/browser validation, and route-safe preference persistence authorities.', path: ['architecture'] });
+  }
+
   if (manifest.architectureVersion >= 54 && (manifest.architecture.boardBackendDataContractRecovery !== 'catalog-attested-board-contract-v1' || manifest.architecture.boardBackendContract !== 'config/stage-g-m46-board-backend-contract.ts' || manifest.architecture.boardBackendMigration !== 'supabase/migrations/v1.43.2-stage-g-m46-boards-backend-data-contract-recovery.sql' || manifest.architecture.boardBackendSchema !== 'supabase/schema.sql' || manifest.architecture.boardBackendContractAttestation !== 'public.wm_board_contract_attestation' || manifest.architecture.boardBackendCacheOwnership !== 'board-query-prefix-scoped-v1' || manifest.architecture.boardAttachmentDeletion !== 'metadata-first-best-effort-object-cleanup-v1' || manifest.architecture.boardBackendDatabaseTest !== 'supabase/tests/m46/boards_backend_contract_recovery.test.sql' || manifest.architecture.boardBackendProductionVerifier !== 'scripts/verify-stage-g-m46-production-contract.mjs')) {
     context.addIssue({ code: 'custom', message: 'Architecture v54+ requires catalog-attested Boards backend/data-contract recovery with governed schema, migration, cache, attachment, database-test, and production-attestation authorities.', path: ['architecture'] });
   }

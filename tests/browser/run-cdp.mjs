@@ -400,11 +400,14 @@ const testProgram = String.raw`(async () => {
     root.querySelector('#groupHandle1').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true}));await wait();
     assert(structureState.board.groups.find((entry)=>entry.id==='g1').position===1&&structureCalls.some((entry)=>entry[0]==='group'&&entry[2]===1),'ArrowDown reorders a focused Board group');structure.dispose();
 
-    root.innerHTML='<span id="itemHandle1" data-item-drag="i1" tabindex="0"></span><span data-item-drag="i2" tabindex="0"></span>';
+    root.innerHTML='<table><tbody><tr class="board-item-row" draggable="true" data-item-id="i1"><td><span id="itemHandle1" class="drag-handle" data-item-drag="i1" role="button" tabindex="0" aria-label="Reorder Item one. Use Arrow Up or Arrow Down."></span></td></tr><tr class="board-item-row" draggable="true" data-item-id="i2"><td><span class="drag-handle" data-item-drag="i2" role="button" tabindex="0" aria-label="Reorder Item two. Use Arrow Up or Arrow Down."></span></td></tr></tbody></table>';
     const items=[{id:'i1',group_id:'g1',position:0,status:'not_started'},{id:'i2',group_id:'g1',position:1,status:'not_started'}],itemMoves=[];
     const itemDrag=createBoardDragDropController({commands:{moveItem:async(command)=>itemMoves.push(command)},state:{board:{board:{id:'b1'}}},canEdit:()=>true,getItems:()=>items,toast:()=>{},renderBoard:()=>{},history:null});itemDrag.bind(root);
     root.querySelector('#itemHandle1').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true}));await wait();
-    assert(items.find((entry)=>entry.id==='i1').position===1&&itemMoves[0]?.position===1,'ArrowDown reorders a focused Board item within its group');itemDrag.dispose();
+    assert(items.find((entry)=>entry.id==='i1').position===1&&itemMoves[0]?.position===1,'ArrowDown reorders a focused Board item within its group');
+    root.querySelector('[data-item-id="i1"]').setAttribute('draggable','false');
+    root.querySelector('#itemHandle1').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',bubbles:true,cancelable:true}));await wait();
+    assert(items.find((entry)=>entry.id==='i1').position===1&&itemMoves.length===1,'Keyboard item reorder ignores a non-draggable Board row');itemDrag.dispose();
   });
 
   await run('Stage D M18 Board virtualization windowing authority', async()=>{

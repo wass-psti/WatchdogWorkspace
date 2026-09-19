@@ -37,6 +37,7 @@ export interface BoardSelectors {
   searchableCellText(item: BoardItem, column: BoardColumn): string;
   itemMatches(item: BoardItem): boolean;
   compareItems(left: BoardItem, right: BoardItem): number;
+  visibleTableItems(): readonly BoardItem[];
 }
 
 const clamp = (value: unknown, min: number, max: number, fallback: number): number => {
@@ -150,7 +151,7 @@ export function createBoardSelectors(state: MutableBoardViewState): BoardSelecto
 
   const itemMatches = (item: BoardItem): boolean => {
     const query = state.itemSearch.trim().toLowerCase();
-    if (Boolean(item.archived_at) !== Boolean(state.showArchived)) return false;
+    if (item.archived_at && !state.showArchived) return false;
     if (state.itemStatus !== 'all' && String(item.status ?? '') !== String(state.itemStatus)) return false;
     const filters = state.boardPrefs.column_filters ?? {};
     for (const [columnId, rawFilter] of Object.entries(filters)) {
@@ -189,6 +190,19 @@ export function createBoardSelectors(state: MutableBoardViewState): BoardSelecto
     return direction === 'desc' ? -result : result;
   };
 
+  const visibleTableItems = (): readonly BoardItem[] => {
+    const envelope = state.board;
+    if (!envelope) return [];
+    const ordered: BoardItem[] = [];
+    for (const group of [...envelope.groups].sort((left, right) => (left.position - right.position) || String(left.id).localeCompare(String(right.id)))) {
+      if (isGroupCollapsed(group.id)) continue;
+      ordered.push(...envelope.items
+        .filter((item) => String(item.group_id) === String(group.id) && itemMatches(item))
+        .sort(compareItems));
+    }
+    return ordered;
+  };
+
   return Object.freeze({
     memberMap,
     allColumns,
@@ -209,5 +223,6 @@ export function createBoardSelectors(state: MutableBoardViewState): BoardSelecto
     searchableCellText,
     itemMatches,
     compareItems,
+    visibleTableItems,
   });
 }

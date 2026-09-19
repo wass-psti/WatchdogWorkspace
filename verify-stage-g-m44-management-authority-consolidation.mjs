@@ -109,6 +109,10 @@ check(deterministic.includes('checks=${checks}')&&deterministic.includes("regist
 for(const tag of ['@m44-single-authority','@m44-users-authorization']) check(browser.includes(tag),`M44 browser scenario ${tag}`);
 check(browser.includes("for (let cycle = 0; cycle < 3; cycle += 1)")&&browser.includes("['settings','users','account']"),'M44 browser suite exercises repeated same-owner route cycles');
 check(browser.includes('data.m44HostToken')||browser.includes('m44HostToken'),'M44 browser suite asserts persistent React management host identity');
+check(browser.includes('retryM39RuntimeBoundary')&&browser.includes('captureManagementAuthority')&&browser.includes('runtime-replaced-during-authority-read'),'M44 browser suite consumes management readiness and authority atomically across hosted main-document replacement');
+check(browser.includes('expectedHostToken')&&browser.includes('management-host-token-mismatch'),'M44 browser suite proves persistent host identity inside the retryable management-route boundary');
+check(browser.includes('runtime-replaced-during-readiness-read')&&browser.includes('runtime-replaced-during-authorization-read'),'M44 browser suite protects presentation-readiness and authorization probes from split runtime consumption');
+check(!browser.includes('page.waitForFunction('),'M44 browser suite no longer uses split wait/value probes that can cross document replacement');
 check(browser.includes("lifecycle?.owner === 'shell'")&&browser.includes('Administrator access required'),'M44 browser suite verifies Users authorization cannot be bypassed');
 check(browserRunner.includes('management-authority-consolidation.spec.mjs')&&browserRunner.includes('scenarios=2'),'M44 browser runner is dedicated and reports two scenarios');
 

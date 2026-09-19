@@ -22,7 +22,8 @@ assert.equal(target.prerequisite.milestone,45);
 const manifest=read('config/application-manifest.ts');
 const manifestTypes=read('src/types/manifest.ts');
 const manifestSchema=read('src/runtime-schemas/manifest.ts');
-assert.match(manifest,/architectureVersion:\s*54/,'Application architecture must be 54 for M46.');
+const applicationArchitectureVersion=Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? Number.NaN);
+assert.ok(Number.isInteger(applicationArchitectureVersion)&&applicationArchitectureVersion>=target.architectureVersion,`Application architecture ${applicationArchitectureVersion} must retain M46 architecture ${target.architectureVersion}+ authority.`);
 for(const token of [
   "boardBackendDataContractRecovery: 'catalog-attested-board-contract-v1'",
   "boardBackendContract: 'config/stage-g-m46-board-backend-contract.ts'",

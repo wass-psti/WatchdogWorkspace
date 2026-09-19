@@ -144,7 +144,7 @@ export function createBoardDragDropController({ commands, state: _state, canEdit
 
     root.addEventListener('keydown', (event: KeyboardEvent) => {
       const handle = eventElement(event)?.closest<HTMLElement>('[data-item-drag]') ?? null;
-      if (!handle || !canEdit() || !['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+      if (!handle || !canEdit() || handle.closest<HTMLElement>('[data-item-id]')?.getAttribute('draggable') !== 'true' || !['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
       const id = handle.dataset.itemDrag;
       if (!id) return;
       const item = getItems().find((entry) => String(entry.id) === String(id));
@@ -169,9 +169,11 @@ export function createBoardDragDropController({ commands, state: _state, canEdit
       const interactive = target.closest('button,input,select,textarea,a,summary,[contenteditable="true"]');
       if (interactive && !target.closest('.drag-handle')) return;
       const item = target.closest<HTMLElement>('[data-item-id]');
-      if (!item || !canEdit() || !event.dataTransfer) return;
+      if (!item || !canEdit() || item.getAttribute('draggable') !== 'true' || !event.dataTransfer) return;
       const id = item.dataset.itemId;
       if (!id) return;
+      const record = getItems().find((entry) => String(entry.id) === String(id));
+      if (!record || isArchived(record)) return;
       dragItemId = id;
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', id);
@@ -217,7 +219,7 @@ export function createBoardDragDropController({ commands, state: _state, canEdit
         if (!activeId || !canEdit()) return;
         const items = getItems();
         const item = items.find((entry) => String(entry.id) === String(activeId));
-        if (!item) {
+        if (!item || isArchived(item)) {
           reset(root);
           return;
         }

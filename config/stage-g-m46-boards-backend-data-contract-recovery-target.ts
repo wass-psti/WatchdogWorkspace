@@ -4,7 +4,7 @@ export const stageGM46BoardsBackendDataContractRecoveryTarget = Object.freeze({
   milestone: 46,
   stage: 'G',
   name: 'Boards Backend & Data Contract Recovery',
-  activationState: 'implementation-complete-pending-certification' as M46ActivationState,
+  activationState: 'active-certified' as M46ActivationState,
   prerequisite: Object.freeze({ milestone: 45, requiredState: 'active-certified' as const }),
   architectureVersion: 54,
   authority: Object.freeze({

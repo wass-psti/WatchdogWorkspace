@@ -57,14 +57,22 @@ for (const asset of [
 assert.ok(boardFacade.includes('createBoardsController') && boardController.includes('createService(auth)'), 'Boards controller/service boundary missing');
 assert.ok(boardUi.includes('service = null') && boardUi.includes('Board domain service is required'), 'Boards view must require an injected domain service');
 assert.ok(boardState.includes('createBoardViewState') && boardState.includes('resetItemPanel'), 'Boards state boundary incomplete');
+const deactivateStart = boardUi.indexOf('function deactivate()');
+const deactivateEnd = deactivateStart >= 0 ? boardUi.indexOf('return Object.freeze', deactivateStart) : -1;
+const deactivateSource = deactivateStart >= 0 && deactivateEnd > deactivateStart
+  ? boardUi.slice(deactivateStart, deactivateEnd)
+  : '';
+const preferenceTeardownComplete = applicationManifest.architectureVersion >= 55
+  ? deactivateSource.includes('preferencePersistence.flushPending()')
+  : deactivateSource.includes('preferencePersistence.cancel()');
 assert.ok(
-  boardUi.includes('function deactivate()')
-    && boardUi.includes('dataController.cancelPending()')
-    && boardUi.includes('preferencePersistence.cancel()')
-    && (boardUi.includes('dragDrop.dispose()') || boardUi.includes('dragDrop?.dispose()'))
-    && boardUi.includes('itemWorkspace.reset()')
-    && boardUi.includes('columnWorkflows.reset()')
-    && boardUi.includes('dialogs.closeAll()'),
+  deactivateSource.includes('function deactivate()')
+    && deactivateSource.includes('dataController.cancelPending()')
+    && preferenceTeardownComplete
+    && (deactivateSource.includes('dragDrop.dispose()') || deactivateSource.includes('dragDrop?.dispose()'))
+    && deactivateSource.includes('itemWorkspace.reset()')
+    && deactivateSource.includes('columnWorkflows.reset()')
+    && deactivateSource.includes('dialogs.closeAll()'),
   'Boards lifecycle cleanup incomplete'
 );
 

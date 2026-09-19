@@ -189,6 +189,13 @@ export interface ArchitectureDefinition {
   readonly boardAttachmentDeletion?: 'metadata-first-best-effort-object-cleanup-v1';
   readonly boardBackendDatabaseTest?: string;
   readonly boardBackendProductionVerifier?: string;
+  readonly boardTableGroupItemRecovery?: 'transactional-table-group-item-recovery-v1';
+  readonly boardTableGroupItemTarget?: string;
+  readonly boardTableGroupItemMigration?: string;
+  readonly boardTableGroupItemDatabaseTest?: string;
+  readonly boardTableGroupItemBrowser?: string;
+  readonly boardTableGroupItemPreferencePersistence?: 'board-scoped-flush-on-deactivate-v1';
+  readonly boardTableGroupItemProductionVerifier?: string;
   readonly serverState: string;
   readonly serverStateLibrary?: 'tanstack-query-v5';
   readonly clientState?: string;

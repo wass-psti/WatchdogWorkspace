@@ -5,6 +5,7 @@ interface BoardMenuControllerOptions {
   readonly root: HTMLElement;
   readonly escapeHtml?: EscapeHtml;
   readonly overlayCoordinator?: OverlayManager | null;
+  readonly onClose?: (() => void) | null;
 }
 
 interface BoardMenuCloseOptions extends OverlayCloseOptions {}
@@ -22,7 +23,7 @@ const menuItems = (menu: HTMLElement): HTMLElement[] => [...menu.querySelectorAl
 )].filter((element) => !element.hidden && element.getClientRects().length > 0);
 
 /** Unified Work Boards floating-menu controller. */
-export function createBoardMenuController({ root, escapeHtml: _escapeHtml = (value) => String(value ?? ''), overlayCoordinator = null }: BoardMenuControllerOptions) {
+export function createBoardMenuController({ root, escapeHtml: _escapeHtml = (value) => String(value ?? ''), overlayCoordinator = null, onClose = null }: BoardMenuControllerOptions) {
   if (!(root instanceof HTMLElement)) throw new Error('Board menu controller requires a root element.');
   const abort = new AbortController();
   let activeTrigger: HTMLElement | null = null;
@@ -31,6 +32,9 @@ export function createBoardMenuController({ root, escapeHtml: _escapeHtml = (val
   let modality: InputModality = 'pointer';
   let typeahead = '';
   let typeaheadTimer = 0;
+  let activationScrollHost: HTMLElement | null = null;
+  let activationScrollLeft = 0;
+  let activationScrollTop = 0;
 
   const ensureMenu = (): HTMLDivElement => {
     if (menu?.isConnected) return menu;
@@ -105,6 +109,7 @@ export function createBoardMenuController({ root, escapeHtml: _escapeHtml = (val
   };
 
   const close = ({ restoreFocus = false, fromCoordinator = false }: BoardMenuCloseOptions = {}): void => {
+    const wasActive = Boolean(activeTrigger && menu && !menu.hidden);
     if (activeTrigger) {
       activeTrigger.setAttribute('aria-expanded', 'false');
       const details = activeTrigger.closest<HTMLDetailsElement>('details');
@@ -112,6 +117,9 @@ export function createBoardMenuController({ root, escapeHtml: _escapeHtml = (val
     }
     const previous = activeTrigger;
     activeTrigger = null;
+    activationScrollHost = null;
+    activationScrollLeft = 0;
+    activationScrollTop = 0;
     typeahead = '';
     if (typeaheadTimer) window.clearTimeout(typeaheadTimer);
     typeaheadTimer = 0;
@@ -125,6 +133,7 @@ export function createBoardMenuController({ root, escapeHtml: _escapeHtml = (val
     }
     if (!fromCoordinator) overlayCoordinator?.release('board-menu');
     if (restoreFocus && previous?.isConnected) previous.focus({ preventScroll: true });
+    if (wasActive) onClose?.();
   };
 
   const open = (trigger: HTMLElement): boolean => {
@@ -145,6 +154,9 @@ export function createBoardMenuController({ root, escapeHtml: _escapeHtml = (val
     if (menuLabel) target.setAttribute('aria-label', menuLabel);
     else target.removeAttribute('aria-label');
     activeTrigger = trigger;
+    activationScrollHost = trigger.closest<HTMLElement>('.board-table-scroll,.kanban-board,.board-view-region');
+    activationScrollLeft = activationScrollHost?.scrollLeft ?? 0;
+    activationScrollTop = activationScrollHost?.scrollTop ?? 0;
     const nativeDetails = trigger.closest<HTMLDetailsElement>('details');
     if (nativeDetails) nativeDetails.open = false;
     trigger.setAttribute('aria-expanded', 'true');
@@ -217,7 +229,25 @@ export function createBoardMenuController({ root, escapeHtml: _escapeHtml = (val
   window.addEventListener('resize', () => { if (activeTrigger) position(); }, { passive: true, signal: abort.signal });
   root.addEventListener('scroll', (event: Event) => {
     if (!activeTrigger || menu?.hidden) return;
-    if (event.target instanceof Element && event.target.closest('.board-table-scroll,.kanban-board,.board-view-region')) close();
+    const scrollHost = event.target instanceof Element
+      ? event.target.closest<HTMLElement>('.board-table-scroll,.kanban-board,.board-view-region')
+      : null;
+    if (!scrollHost) return;
+    const isActivationPosition = Math.abs(scrollHost.scrollLeft - activationScrollLeft) <= 1
+      && Math.abs(scrollHost.scrollTop - activationScrollTop) <= 1;
+    const isDeferredActivationScroll = scrollHost === activationScrollHost && isActivationPosition;
+    const isSynchronizedPeerTableScroll = Boolean(
+      activationScrollHost?.matches('.board-table-scroll')
+      && scrollHost !== activationScrollHost
+      && scrollHost.matches('.board-table-scroll')
+      && isActivationPosition,
+    );
+    if (isDeferredActivationScroll || isSynchronizedPeerTableScroll) {
+      requestAnimationFrame(position);
+      return;
+    }
+    activationScrollHost = null;
+    close();
   }, { capture: true, passive: true, signal: abort.signal });
 
   return Object.freeze({

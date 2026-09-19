@@ -1,0 +1,68 @@
+name: Boards Table Group Item Recovery
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  m47:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://jtlusodorfnyzgyuewkz.supabase.co' }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_CrkvaTRYTYAMVbieywNMyg_a0F7HpB6' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.117.0
+      - run: npm ci --ignore-scripts
+      - run: npm run modern-tests:toolchain:ensure
+      - name: Verify M47 fail-closed certification harnesses
+        run: |
+          npm run boards-table-recovery:finalizer:test
+          npm run boards-table-recovery:deployment-guard:test
+      - name: Resolve M47 milestone state
+        id: milestone_state
+        shell: bash
+        run: |
+          if grep -Eq "activationState:[[:space:]]*'active-certified'" config/stage-g-m47-boards-table-group-item-recovery-target.ts; then
+            echo 'state=active-certified' >> "$GITHUB_OUTPUT"
+          elif grep -Eq "activationState:[[:space:]]*'implementation-complete-pending-certification'" config/stage-g-m47-boards-table-group-item-recovery-target.ts; then
+            echo 'state=pending' >> "$GITHUB_OUTPUT"
+          elif grep -Eq "activationState:[[:space:]]*'implementation-in-progress'" config/stage-g-m47-boards-table-group-item-recovery-target.ts; then
+            echo 'state=in-progress' >> "$GITHUB_OUTPUT"
+          else
+            echo 'FAIL: unrecognized M47 milestone state.' >&2
+            exit 1
+          fi
+      - name: Verify M47 candidate without publication
+        if: ${{ github.event_name == 'pull_request' || steps.milestone_state.outputs.state == 'in-progress' }}
+        run: npm run boards-table-recovery:verify:candidate
+      - name: Verify active-certified M47 regression without publication
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'active-certified' }}
+        run: npm run boards-table-recovery:verify:release
+      - name: Run fail-closed M47 certification and artifact transaction
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
+        env:
+          M47_SOURCE_COMMIT: ${{ github.sha }}
+        run: npm run boards-table-recovery:certify
+      - name: Independently verify certified M47 artifact
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
+        env:
+          M47_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+        run: node scripts/verify-stage-g-m47-certified-artifact.mjs
+      - name: Upload certified M47 baseline
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: work-management-v1.43.2-stage-g-m47-certified-${{ github.sha }}
+          path: |
+            m47-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M47-Certified-Baseline.zip
+            m47-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M47-Certified-Baseline-PASS.txt
+          if-no-files-found: error
+          retention-days: 90

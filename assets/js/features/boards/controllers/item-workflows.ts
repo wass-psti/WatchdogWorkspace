@@ -77,8 +77,25 @@ export function createItemWorkflows({
         const dueDate = asIsoDate(fd.get('due'));
         const notes = String(fd.get('notes') || '');
         if (item) {
-          await commands.updateItem({ itemId: item.id, title, status: selectedStatus, assigneeId, dueDate, notes });
-          if (selectedGroup !== item.group_id) await commands.moveItem({ itemId: item.id, groupId: selectedGroup, position: 9999, status: selectedStatus });
+          const groupChanged = String(selectedGroup) !== String(item.group_id);
+          if (groupChanged) {
+            await commands.moveItem({ itemId: item.id, groupId: selectedGroup, position: 9999, status: selectedStatus });
+            try {
+              await commands.updateItem({ itemId: item.id, title, status: selectedStatus, assigneeId, dueDate, notes });
+            } catch (updateError) {
+              try {
+                await commands.moveItem({ itemId: item.id, groupId: item.group_id, position: item.position, status: item.status });
+              } catch (rollbackError) {
+                await reloadBoard();
+                const message = rollbackError instanceof Error ? rollbackError.message : 'rollback failed';
+                throw new Error(`The item update failed after it moved, and the original position could not be restored (${message}). The board was reloaded to reconcile the authoritative state.`);
+              }
+              await reloadBoard();
+              throw updateError;
+            }
+          } else {
+            await commands.updateItem({ itemId: item.id, title, status: selectedStatus, assigneeId, dueDate, notes });
+          }
           toast(`“${title}” updated.`);
         } else {
           await commands.createItem({ boardId: boardRecord.id, groupId: selectedGroup, title, status: selectedStatus, assigneeId, dueDate, notes });

@@ -78,15 +78,29 @@ export function createBoardCommandService({ service }: BoardCommandServiceDepend
     const title = requiredText(command.title, 'Item name', 240);
     const notes = optionalText(command.notes, 5000, 'Item notes');
     const itemId = await service.addItem(command.boardId, command.groupId, title);
-    await service.updateItem({
-      id: itemId,
-      title,
-      status: command.status ?? null,
-      assignee_id: command.assigneeId ?? null,
-      due_date: command.dueDate ?? null,
-      notes,
-    });
-    return itemId;
+    try {
+      await service.updateItem({
+        id: itemId,
+        title,
+        status: command.status ?? null,
+        assignee_id: command.assigneeId ?? null,
+        due_date: command.dueDate ?? null,
+        notes,
+      });
+      return itemId;
+    } catch (updateError) {
+      try {
+        await service.deleteItem(itemId);
+      } catch (rollbackError) {
+        throw new WorkManagementError('Item creation failed and automatic rollback could not remove the partially created item. Reload the board before retrying.', {
+          code: 'WM_BOARD_ITEM_CREATE_ROLLBACK_FAILED',
+          category: 'internal',
+          retryable: true,
+          cause: { updateError, rollbackError },
+        });
+      }
+      throw updateError;
+    }
   });
 
   const updateItem = (command: UpdateItemCommand): Promise<void> => run('boards.command.update-item', () =>

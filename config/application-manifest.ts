@@ -39,7 +39,7 @@ export const applicationManifest = Object.freeze({
   id: 'work-management',
   name: 'Work Management',
   version: '1.43.2',
-  architectureVersion: 54,
+  architectureVersion: 55,
   runtime: 'vite-esm',
   architecture: Object.freeze({
     style: 'modular-platform',
@@ -207,6 +207,13 @@ export const applicationManifest = Object.freeze({
     boardAttachmentDeletion: 'metadata-first-best-effort-object-cleanup-v1',
     boardBackendDatabaseTest: 'supabase/tests/m46/boards_backend_contract_recovery.test.sql',
     boardBackendProductionVerifier: 'scripts/verify-stage-g-m46-production-contract.mjs',
+    boardTableGroupItemRecovery: 'transactional-table-group-item-recovery-v1',
+    boardTableGroupItemTarget: 'config/stage-g-m47-boards-table-group-item-recovery-target.ts',
+    boardTableGroupItemMigration: 'supabase/migrations/v1.43.2-stage-g-m47-boards-table-group-item-recovery.sql',
+    boardTableGroupItemDatabaseTest: 'supabase/tests/m47/boards_table_group_item_recovery.test.sql',
+    boardTableGroupItemBrowser: 'tests/modern/e2e/boards-table-group-item-recovery.spec.mjs',
+    boardTableGroupItemPreferencePersistence: 'board-scoped-flush-on-deactivate-v1',
+    boardTableGroupItemProductionVerifier: 'scripts/verify-stage-g-m47-production-invariants.mjs',
     serverState: 'assets/js/platform/data/query-client.ts',
     serverStateLibrary: 'tanstack-query-v5',
     clientState: 'assets/js/platform/state/client-state-store.ts',
@@ -383,6 +390,10 @@ export function validateApplicationManifest(manifest: ApplicationManifest = appl
   }
   if (manifest.architectureVersion >= 53 && (manifest.architecture.boardCollectionRecovery !== 'lifecycle-routed-collection-authority-v1' || !manifest.architecture.boardCollectionController || !manifest.architecture.boardCollectionDataController || !manifest.architecture.boardCollectionRepository || manifest.architecture.boardCollectionRoutePolicy !== 'active-only-board-workspace-v1' || !manifest.architecture.boardCollectionBrowser)) {
     errors.push('Architecture v53+ requires lifecycle-routed Boards collection recovery with active-only workspace access and explicit collection/data/repository/browser authorities.');
+  }
+
+  if (manifest.architectureVersion >= 55 && (manifest.architecture.boardTableGroupItemRecovery !== 'transactional-table-group-item-recovery-v1' || manifest.architecture.boardTableGroupItemTarget !== 'config/stage-g-m47-boards-table-group-item-recovery-target.ts' || manifest.architecture.boardTableGroupItemMigration !== 'supabase/migrations/v1.43.2-stage-g-m47-boards-table-group-item-recovery.sql' || manifest.architecture.boardTableGroupItemDatabaseTest !== 'supabase/tests/m47/boards_table_group_item_recovery.test.sql' || manifest.architecture.boardTableGroupItemBrowser !== 'tests/modern/e2e/boards-table-group-item-recovery.spec.mjs' || manifest.architecture.boardTableGroupItemPreferencePersistence !== 'board-scoped-flush-on-deactivate-v1' || manifest.architecture.boardTableGroupItemProductionVerifier !== 'scripts/verify-stage-g-m47-production-invariants.mjs')) {
+    errors.push('Architecture v55+ requires governed Boards table/group/item recovery with transactional ordering, database/browser validation, and route-safe preference persistence authorities.');
   }
 
   if (manifest.architectureVersion >= 54 && (manifest.architecture.boardBackendDataContractRecovery !== 'catalog-attested-board-contract-v1' || manifest.architecture.boardBackendContract !== 'config/stage-g-m46-board-backend-contract.ts' || manifest.architecture.boardBackendMigration !== 'supabase/migrations/v1.43.2-stage-g-m46-boards-backend-data-contract-recovery.sql' || manifest.architecture.boardBackendSchema !== 'supabase/schema.sql' || manifest.architecture.boardBackendContractAttestation !== 'public.wm_board_contract_attestation' || manifest.architecture.boardBackendCacheOwnership !== 'board-query-prefix-scoped-v1' || manifest.architecture.boardAttachmentDeletion !== 'metadata-first-best-effort-object-cleanup-v1' || manifest.architecture.boardBackendDatabaseTest !== 'supabase/tests/m46/boards_backend_contract_recovery.test.sql' || manifest.architecture.boardBackendProductionVerifier !== 'scripts/verify-stage-g-m46-production-contract.mjs')) {

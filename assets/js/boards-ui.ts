@@ -42,7 +42,6 @@ const ESCAPE_MAP: Readonly<Record<string, string>> = Object.freeze({'&':'&amp;',
 const esc = (value: unknown): string => String(value ?? '').replace(/[&<>'"]/g, (character) => ESCAPE_MAP[character] ?? character);
 const fmtDate = (value: unknown): string => value ? new Date(String(value)).toLocaleString() : '—';
 const day = (value: unknown): string => value ? new Date(`${String(value)}T00:00:00`).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : '—';
-const asArray = <T>(value: readonly T[] | null | undefined): readonly T[] => Array.isArray(value) ? value : [];
 const eventElement = (event: Event): Element | null => event.target instanceof Element ? event.target : null;
 const errorMessage = (error: unknown, fallback = 'The operation could not be completed.'): string => normalizeAppError(error, { fallbackMessage: fallback }).message;
 const isTimelineValue = (value: unknown): value is TimelineValue => Boolean(value && typeof value === 'object' && !Array.isArray(value) && 'start' in value && 'end' in value);
@@ -72,6 +71,19 @@ interface BoardViewGeometry {
   readonly kanbanLeft: number;
 }
 
+interface BoardViewRenderOptions {
+  readonly tableScrollLeft?: number | null;
+}
+
+interface PendingGridFocus {
+  readonly itemId: string;
+  readonly groupId: string;
+  readonly rowIndex: number;
+  readonly totalRows: number;
+  readonly columnIndex: number;
+  readonly scrollLeft: number | null;
+}
+
 export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navigate, icons, service = null, commands = null, realtime = null }: BoardsFeatureOptions) {
   // Transport injection is the v1.23 feature boundary. The compatibility fallback keeps direct consumers working.
   if (!service) throw new TypeError('Board domain service is required. Construct it through the feature/composition boundary.');
@@ -95,6 +107,9 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   const tableVirtualization = createBoardTableVirtualizationController();
   let virtualizationFrame = 0;
   let virtualizationMeasureFrame = 0;
+  let virtualizationRenderDeferredForMenu = false;
+  let fullBoardRenderDeferredForMenu = false;
+  let pendingGridFocus: PendingGridFocus | null = null;
   const boardMarkup = new WeakMap<HTMLElement, string>();
 
   const overlayCoordinator = createBoardOverlayCoordinator();
@@ -152,6 +167,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   }
 
   function renderBoards() {
+    void preferencePersistence.flushPending();
     releaseBoardEventBinding();
     boardResizeCleanup?.();
     dragDrop?.dispose();
@@ -165,6 +181,9 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     virtualizationFrame = 0;
     cancelAnimationFrame(virtualizationMeasureFrame);
     virtualizationMeasureFrame = 0;
+    pendingGridFocus = null;
+    virtualizationRenderDeferredForMenu = false;
+    fullBoardRenderDeferredForMenu = false;
     realtimeController?.disconnect();
     realtimeSnapshot = Object.freeze({ state:'idle', boardId:null, collaborators:[], lastEventAt:null, lastError:null, fallbackPolling:false });
     boardMenuController?.dispose(); boardMenuController = null;
@@ -434,7 +453,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     });
   };
   const history = createBoardHistoryController({ toast, onChange: syncHistoryControls });
-  const visibleItemsForSelection = (): readonly BoardItem[] => asArray(state.board?.items).filter(itemMatches).sort(compareItems);
+  const visibleItemsForSelection = (): readonly BoardItem[] => selectors.visibleTableItems();
   selection = createBoardSelectionController({ state, commands: commandService, toast, getVisibleItems: visibleItemsForSelection, reloadBoard: reloadCurrentBoard, escapeHtml: esc, canEdit, confirmAction: confirmBoardAction });
 
   const groupWorkflows = createGroupWorkflows({ commands: commandService, state, dialog, toast, escapeHtml: esc, reloadBoard: reloadCurrentBoard, confirmAction: confirmBoardAction });
@@ -472,8 +491,10 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   const hasVariableHeightRows = (): boolean => tableDynamicColumns().some((column) => isWrapped(column.id));
   const forceFullRowRendering = (): boolean => hasVariableHeightRows() || Boolean(dragDrop?.activeItemId);
 
+  const canReorderTableItems = (): boolean => canEdit() && !state.showArchived && !sortConfig().id;
+
   function itemRow(item: BoardItem, group: BoardGroup, columns: readonly BoardColumn[], context: BoardTableItemRenderContext): string {
-    return renderBoardItemRow({ state, item, group, columns, canEdit: canEdit(), isWrapped, formatCell, escapeHtml: esc, isSelected: selection.isSelected(item.id), ...context });
+    return renderBoardItemRow({ state, item, group, columns, canEdit: canEdit(), canReorder: canReorderTableItems() && !item.archived_at, isWrapped, formatCell, escapeHtml: esc, isSelected: selection.isSelected(item.id), ...context });
   }
 
   function columnHeader(column: BoardColumn, logicalColumnIndex: number): string {
@@ -593,12 +614,24 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     else viewHost.removeAttribute('aria-labelledby');
   }
 
-  function renderBoardViewOnly(): void {
+  function renderBoardViewOnly(options: BoardViewRenderOptions = {}): void {
+    if (boardMenuController?.active) {
+      virtualizationRenderDeferredForMenu = true;
+      return;
+    }
+    const preservedGridFocus = pendingGridFocus ? null : captureActiveGridFocusTarget();
     const main = document.querySelector<HTMLElement>('#boardMain');
     const host = main?.querySelector<HTMLElement>('[data-board-view-host]') ?? null;
     const envelope = activeBoardEnvelope();
     if (!main || !host || !envelope?.board) return;
-    const geometry = captureBoardViewGeometry(host);
+    const capturedGeometry = captureBoardViewGeometry(host);
+    const requestedLeft = options.tableScrollLeft;
+    const geometry = typeof requestedLeft === 'number' && Number.isFinite(requestedLeft)
+      ? {
+          tables: new Map([...capturedGeometry.tables].map(([groupId]) => [groupId, Number(requestedLeft)] as const)),
+          kanbanLeft: capturedGeometry.kanbanLeft,
+        } satisfies BoardViewGeometry
+      : capturedGeometry;
     const nextMarkup = (envelope.board.view_mode ?? envelope.board.view) === 'kanban' ? kanbanView() : tableView();
     if (boardMarkup.get(host) !== nextMarkup) boardMenuController?.close();
     patchHost(host, nextMarkup);
@@ -607,9 +640,17 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     scheduleBoardVirtualizationSync();
     patchHost(main.querySelector<HTMLElement>('[data-board-selection-host]'), selection.renderToolbar());
     syncHistoryControls();
+    if (preservedGridFocus && focusLogicalGridCell(preservedGridFocus.itemId, preservedGridFocus.columnIndex, preservedGridFocus.scrollLeft)) {
+      armPendingGridFocus(preservedGridFocus);
+    }
   }
 
   function renderBoardData(): void {
+    if (boardMenuController?.active) {
+      fullBoardRenderDeferredForMenu = true;
+      return;
+    }
+    const preservedGridFocus = pendingGridFocus ? null : captureActiveGridFocusTarget();
     const main = document.querySelector<HTMLElement>('#boardMain');
     if (!main) return;
     ensureBoardWorkspaceShell(main);
@@ -652,9 +693,13 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     patchHost(main.querySelector<HTMLElement>('[data-item-panel-host]'), itemPanelMarkup());
     document.body.classList.toggle('board-item-panel-open', Boolean(state.itemPanel.itemId));
     syncHistoryControls();
+    if (preservedGridFocus && focusLogicalGridCell(preservedGridFocus.itemId, preservedGridFocus.columnIndex, preservedGridFocus.scrollLeft)) {
+      armPendingGridFocus(preservedGridFocus);
+    }
   }
 
   function renderBoard(boardId: string): void {
+    void preferencePersistence.flushPending();
     releaseListEventBinding();
     realtimeController?.disconnect();
     realtimeSnapshot = Object.freeze({ state:'idle', boardId:null, collaborators:[], lastEventAt:null, lastError:null, fallbackPolling:false });
@@ -800,8 +845,8 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     return rows;
   }
 
-  function focusLogicalGridCell(itemId: string, logicalColumnIndex: number, scrollLeft: number | null = null): void {
-    requestAnimationFrame(() => {
+  function focusLogicalGridCell(itemId: string, logicalColumnIndex: number, scrollLeft: number | null = null): boolean {
+    const focusNow = (): boolean => {
       if (scrollLeft !== null) {
         document.querySelectorAll<HTMLElement>('.board-table-scroll').forEach((scroller) => {
           scroller.scrollLeft = scrollLeft;
@@ -811,16 +856,46 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       const next = logicalColumnIndex === 0
         ? row?.querySelector<HTMLElement>('.item-inline-title[data-grid-column-index="0"]')
         : row?.querySelector<HTMLElement>(`.board-cell-button[data-grid-column-index="${logicalColumnIndex}"]`);
-      next?.focus({ preventScroll: true });
-      next?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    });
+      if (!next) return false;
+      next.focus({ preventScroll: true });
+      next.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      return true;
+    };
+    if (focusNow()) return true;
+    requestAnimationFrame(() => { focusNow(); });
+    return false;
   }
 
-  function focusAdjacentCell(target: HTMLElement, key: GridNavigationKey): boolean {
-    const row = target.closest<HTMLElement>('.board-item-row[data-item-id][data-group-id]');
-    const currentItemId = row?.dataset.itemId;
-    if (!row || !currentItemId) return false;
-    const currentColumnIndex = Number(target.dataset.gridColumnIndex ?? Number.NaN);
+  function armPendingGridFocus(target: PendingGridFocus): void {
+    pendingGridFocus = target;
+    // Settle against an actual viewport measurement instead of a fixed frame count.
+    // This keeps logical focus authoritative through delayed Resize/scroll-driven
+    // virtualization work, while still releasing it as soon as the measured
+    // row/column windows and DOM focus agree on the requested cell.
+    scheduleBoardVirtualizationSync();
+  }
+
+  function settlePendingGridFocusIfStable(rowChanged: boolean, columnChanged: boolean): void {
+    const target = pendingGridFocus;
+    if (!target || rowChanged || columnChanged) return;
+    const active = activeGridCoordinate();
+    if (active && active.itemId === target.itemId && active.groupId === target.groupId && active.rowIndex === target.rowIndex && active.columnIndex === target.columnIndex) {
+      pendingGridFocus = null;
+      return;
+    }
+    // A DOM replacement can drop focus after the logical row/column windows have
+    // already stabilized. Reassert the requested cell instead of leaving a stale
+    // pending target with document/body focus and no future render to recover it.
+    if (focusLogicalGridCell(target.itemId, target.columnIndex, target.scrollLeft)) {
+      scheduleBoardVirtualizationSync();
+      return;
+    }
+    // Stable viewport state without the target cell is inconsistent with the
+    // logical navigation contract; force one governed materialization pass.
+    requestVirtualizedBoardRender();
+  }
+
+  function focusAdjacentGridCoordinate(currentItemId: string, currentColumnIndex: number, key: GridNavigationKey): boolean {
     if (!Number.isInteger(currentColumnIndex) || currentColumnIndex < 0) return false;
     const logicalColumns = tableDynamicColumns();
     const rows = gridNavigationRows();
@@ -842,9 +917,44 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     const columnResult = targetColumnIndex > 0
       ? tableVirtualization.ensureColumnVisible(targetColumnIndex - 1, tableDynamicColumnWidths())
       : Object.freeze({ changed: false, scrollLeft: 0 });
-    if (rowChanged || columnResult.changed) renderBoardViewOnly();
-    focusLogicalGridCell(String(targetRow.item.id), targetColumnIndex, columnResult.changed ? columnResult.scrollLeft : null);
+    const focusTarget: PendingGridFocus = Object.freeze({
+      itemId: String(targetRow.item.id),
+      groupId: String(targetRow.group.id),
+      rowIndex: targetRow.rowIndex,
+      totalRows: targetRow.totalRows,
+      columnIndex: targetColumnIndex,
+      scrollLeft: columnResult.changed ? columnResult.scrollLeft : null,
+    });
+    if (rowChanged || columnResult.changed) {
+      renderBoardViewOnly(columnResult.changed ? { tableScrollLeft: columnResult.scrollLeft } : undefined);
+    }
+    focusLogicalGridCell(focusTarget.itemId, focusTarget.columnIndex, focusTarget.scrollLeft);
+    armPendingGridFocus(focusTarget);
     return true;
+  }
+
+  function focusAdjacentCell(target: HTMLElement, key: GridNavigationKey): boolean {
+    const row = target.closest<HTMLElement>('.board-item-row[data-item-id][data-group-id]');
+    const currentItemId = row?.dataset.itemId;
+    if (!row || !currentItemId) return false;
+    const currentColumnIndex = Number(target.dataset.gridColumnIndex ?? Number.NaN);
+    return focusAdjacentGridCoordinate(currentItemId, currentColumnIndex, key);
+  }
+
+  function captureActiveGridFocusTarget(): PendingGridFocus | null {
+    const active = activeGridCoordinate();
+    if (!active) return null;
+    const row = gridNavigationRows().find((entry) => String(entry.item.id) === active.itemId);
+    if (!row) return null;
+    const scroller = document.querySelector<HTMLElement>(`.board-table-scroll[data-group-table-scroll="${CSS.escape(active.groupId)}"]`);
+    return Object.freeze({
+      itemId: active.itemId,
+      groupId: active.groupId,
+      rowIndex: active.rowIndex,
+      totalRows: row.totalRows,
+      columnIndex: active.columnIndex,
+      scrollLeft: scroller?.scrollLeft ?? null,
+    });
   }
 
   function activeGridCoordinate(): { readonly itemId: string; readonly groupId: string; readonly rowIndex: number; readonly columnIndex: number } | null {
@@ -864,8 +974,20 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     if (virtualizationFrame || dragDrop?.activeItemId) return;
     virtualizationFrame = requestAnimationFrame(() => {
       virtualizationFrame = 0;
-      const coordinate = activeGridCoordinate();
-      if (coordinate) {
+      if (boardMenuController?.active) {
+        virtualizationRenderDeferredForMenu = true;
+        return;
+      }
+      const navigationTarget = pendingGridFocus;
+      const coordinate = navigationTarget ?? activeGridCoordinate();
+      let tableScrollLeft: number | null = navigationTarget?.scrollLeft ?? null;
+      if (navigationTarget) {
+        tableVirtualization.ensureRowVisible(navigationTarget.groupId, navigationTarget.rowIndex, navigationTarget.totalRows, boardRowHeight(), forceFullRowRendering());
+        if (navigationTarget.columnIndex > 0) {
+          const columnResult = tableVirtualization.ensureColumnVisible(navigationTarget.columnIndex - 1, tableDynamicColumnWidths());
+          if (columnResult.changed || tableScrollLeft === null) tableScrollLeft = columnResult.scrollLeft;
+        }
+      } else if (coordinate) {
         const envelope = activeBoardEnvelope();
         const totalRows = envelope?.items.filter((item) => String(item.group_id) === coordinate.groupId && itemMatches(item)).length ?? 0;
         const rowWindow = tableVirtualization.rowWindow(coordinate.groupId, totalRows, boardRowHeight(), forceFullRowRendering());
@@ -879,8 +1001,24 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       }
       inlineEdit.dismissPopover({ restore: false });
       closeColumnMenus(document);
-      renderBoardViewOnly();
+      renderBoardViewOnly(tableScrollLeft !== null ? { tableScrollLeft } : undefined);
+      if (navigationTarget) {
+        focusLogicalGridCell(navigationTarget.itemId, navigationTarget.columnIndex, tableScrollLeft);
+        armPendingGridFocus({ ...navigationTarget, scrollLeft: tableScrollLeft });
+      }
     });
+  }
+
+  function flushDeferredBoardRender(): void {
+    if (fullBoardRenderDeferredForMenu) {
+      fullBoardRenderDeferredForMenu = false;
+      virtualizationRenderDeferredForMenu = false;
+      renderBoardData();
+      return;
+    }
+    if (!virtualizationRenderDeferredForMenu) return;
+    virtualizationRenderDeferredForMenu = false;
+    requestVirtualizedBoardRender();
   }
 
   let syncingBoardTableScroll = false;
@@ -890,7 +1028,11 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     const rowChanged = tableVirtualization.updateRowsFromViewport(root, boardRowHeight(), forceFullRowRendering());
     const scroller = root.querySelector<HTMLElement>('.board-table-scroll');
     const columnChanged = Boolean(scroller && tableVirtualization.updateColumnsFromScroller(scroller, tableDynamicColumnWidths()));
-    if (rowChanged || columnChanged) requestVirtualizedBoardRender();
+    if (rowChanged || columnChanged) {
+      requestVirtualizedBoardRender();
+      return;
+    }
+    settlePendingGridFocusIfStable(rowChanged, columnChanged);
   }
 
   function scheduleBoardVirtualizationSync(): void {
@@ -911,15 +1053,34 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     root.dataset.boardDetailEventsBound = 'true';
 
     boardMenuController?.dispose();
-    boardMenuController = createBoardMenuController({ root, escapeHtml: esc, overlayCoordinator });
+    boardMenuController = createBoardMenuController({ root, escapeHtml: esc, overlayCoordinator, onClose: flushDeferredBoardRender });
+
+    // During a virtual-window replacement the focused cell can be detached between
+    // sequential keyboard events. Capture only that transient interval so rapid
+    // Arrow/Home/End sequences continue from the governed logical target instead
+    // of dropping keystrokes on document.body.
+    document.addEventListener('keydown', (event: KeyboardEvent) => {
+      const target = pendingGridFocus;
+      if (!target || !isGridNavigationKey(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && root.contains(active) && active.matches('.item-inline-title,.board-cell-button')) return;
+      if (focusAdjacentGridCoordinate(target.itemId, target.columnIndex, event.key)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }, { capture: true, signal });
 
     root.addEventListener('pointerdown', (event: PointerEvent) => {
+      pendingGridFocus = null;
       inlineEdit.handleDocumentPointer();
       const target = eventElement(event);
       if (!target) return;
       if (!target.closest('.column-context-menu')) closeColumnMenus(root);
       if (!target.closest('[data-board-menu-trigger],.board-floating-menu')) closeItemMenus();
     }, { signal });
+
+    root.addEventListener('wheel', () => { pendingGridFocus = null; }, { passive: true, signal });
+    root.addEventListener('touchstart', () => { pendingGridFocus = null; }, { passive: true, signal });
 
     root.addEventListener('keydown', (event: KeyboardEvent) => {
       const target = eventElement(event);
@@ -1364,12 +1525,12 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   }
 
   function deactivate() {
-    // Invalidate in-flight loads and cancel deferred preference writes when leaving the feature.
+    // Invalidate in-flight loads and flush any deferred preference write before leaving the feature.
     dataController.cancelPending();
     realtimeController?.disconnect();
     realtimeSnapshot = Object.freeze({ state:'idle', boardId:null, collaborators:[], lastEventAt:null, lastError:null, fallbackPolling:false });
     boardResizeCleanup?.();
-    preferencePersistence.cancel();
+    void preferencePersistence.flushPending();
     cancelAnimationFrame(itemSearchFrame);
     itemSearchFrame = 0;
     dragDrop?.dispose();
@@ -1378,6 +1539,9 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     virtualizationFrame = 0;
     cancelAnimationFrame(virtualizationMeasureFrame);
     virtualizationMeasureFrame = 0;
+    pendingGridFocus = null;
+    virtualizationRenderDeferredForMenu = false;
+    fullBoardRenderDeferredForMenu = false;
     structureDrag.dispose();
     columnResize.dispose();
     inlineEdit.reset();

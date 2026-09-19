@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'..');
+const migration=path.join(root,'supabase/migrations/v1.43.2-stage-g-m47-boards-table-group-item-recovery.sql');
+const dir=path.join(root,'supabase/deployments/m47');
+const expected='20260919165239_stage_g_m47_boards_table_group_item_recovery.sql';
+assert.ok(fs.existsSync(dir),'M47 deployment provenance directory is missing.');
+const files=fs.readdirSync(dir).filter((name)=>/^\d+_stage_g_m47_boards_table_group_item_recovery\.sql$/.test(name)).sort();
+assert.deepEqual(files,[expected],`M47 requires exactly the governed production deployment provenance ${expected}.`);
+const source=fs.readFileSync(migration);
+const deployed=fs.readFileSync(path.join(dir,expected));
+assert.deepEqual(deployed,source,'M47 timestamped production deployment SQL must be byte-identical to the governed source migration.');
+console.log(`Stage G M47 production deployment provenance verification: PASS (deployment=${expected}; exactTimestamp=true; byteIdentity=true)`);

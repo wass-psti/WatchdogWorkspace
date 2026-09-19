@@ -43,6 +43,7 @@ export interface BoardItemRowRenderOptions {
   readonly group: BoardGroup;
   readonly columns: readonly BoardColumn[];
   readonly canEdit: boolean;
+  readonly canReorder?: boolean;
   readonly isWrapped: (columnId: BoardColumnId | string) => boolean;
   readonly formatCell: (item: BoardItem, column: BoardColumn) => string;
   readonly escapeHtml: EscapeHtml;
@@ -241,6 +242,7 @@ export function renderBoardItemRow({
   group,
   columns,
   canEdit,
+  canReorder = canEdit,
   isWrapped,
   formatCell,
   escapeHtml,
@@ -255,15 +257,15 @@ export function renderBoardItemRow({
   const detailOpen = state.itemPanel.itemId === item.id;
   const leadingSpacer = leadingVirtualColumnWidth > 0 ? `<td class="board-virtual-column-spacer" aria-hidden="true" role="presentation" style="width:${leadingVirtualColumnWidth}px;min-width:${leadingVirtualColumnWidth}px;max-width:${leadingVirtualColumnWidth}px"></td>` : '';
   const trailingSpacer = trailingVirtualColumnWidth > 0 ? `<td class="board-virtual-column-spacer" aria-hidden="true" role="presentation" style="width:${trailingVirtualColumnWidth}px;min-width:${trailingVirtualColumnWidth}px;max-width:${trailingVirtualColumnWidth}px"></td>` : '';
-  return `<tr class="board-item-row ${detailOpen ? 'is-detail-open' : ''} ${isSelected ? 'is-selected' : ''}" draggable="${canEdit}" data-item-id="${item.id}" data-group-id="${group.id}" data-virtual-row-index="${logicalRowIndex}" aria-rowindex="${logicalRowIndex + 2}" aria-selected="${isSelected}">
+  return `<tr class="board-item-row ${detailOpen ? 'is-detail-open' : ''} ${isSelected ? 'is-selected' : ''}" draggable="${canReorder}" data-item-id="${item.id}" data-group-id="${group.id}" data-virtual-row-index="${logicalRowIndex}" aria-rowindex="${logicalRowIndex + 2}" aria-selected="${isSelected}">
     <td class="selection-cell" aria-colindex="1"><input class="wm-checkbox" type="checkbox" data-select-item="${item.id}" ${isSelected ? 'checked' : ''} aria-label="Select item: ${esc(item.title)}"></td>
-    <td class="drag-cell" aria-colindex="2">${canEdit ? `<span class="drag-handle" data-item-drag="${item.id}" role="button" tabindex="0" aria-label="Reorder ${esc(item.title)}. Use Arrow Up or Arrow Down." title="Drag or use Arrow Up/Down to reorder item">⋮⋮</span>` : '<span class="drag-handle-spacer" aria-hidden="true"></span>'}</td>
+    <td class="drag-cell" aria-colindex="2">${canReorder ? `<span class="drag-handle" data-item-drag="${item.id}" role="button" tabindex="0" aria-label="Reorder ${esc(item.title)}. Use Arrow Up or Arrow Down." title="Drag or use Arrow Up/Down to reorder item">⋮⋮</span>` : '<span class="drag-handle-spacer" aria-hidden="true"></span>'}</td>
     <td class="board-item-name-cell" data-column-width-key="__item" aria-colindex="3"><div class="board-item-name-shell"><span class="board-item-accent" aria-hidden="true"></span><button type="button" class="item-inline-title" data-open-item="${item.id}" data-grid-column-index="0" title="Open ${esc(item.title)}">${esc(item.title)}</button>${canEdit ? `<button type="button" class="wm-icon-button wm-icon-button--ghost wm-control--sm item-title-edit-button" data-edit-item-title="${item.id}" aria-label="Rename ${esc(item.title)}" title="Rename item">✎</button>` : ''}<button type="button" class="wm-icon-button wm-icon-button--ghost wm-control--sm item-details-bubble" data-open-item="${item.id}" aria-label="Open details for ${esc(item.title)}" title="Open item details">↗</button></div></td>
     ${leadingSpacer}${columns.map((column, offset) => {
       const content = formatCell(item, column);
       const empty = content.includes('board-cell-empty');
       const logicalColumnIndex = logicalColumnStart + offset;
-      return `<td class="board-data-cell board-data-cell--${column.data_type} ${empty ? 'is-empty' : ''} ${isWrapped(column.id) ? 'is-wrapped' : ''}" data-column-type="${column.data_type}" data-column-id="${column.id}" data-column-width-key="${column.id}" aria-colindex="${logicalColumnIndex + 4}"><button type="button" class="board-cell-button board-cell-button--${column.data_type}" data-edit-cell="${item.id}" data-column-id="${column.id}" data-grid-column-index="${logicalColumnIndex + 1}" data-cell-state="${empty ? 'empty' : 'value'}" ${canEdit ? '' : 'disabled'} aria-label="${esc(cellActionLabel(column, item.title, canEdit))}">${content}</button></td>`;
+      return `<td class="board-data-cell board-data-cell--${column.data_type} ${empty ? 'is-empty' : ''} ${isWrapped(column.id) ? 'is-wrapped' : ''}" data-column-type="${column.data_type}" data-column-id="${column.id}" data-column-width-key="${column.id}" aria-colindex="${logicalColumnIndex + 4}"><button type="button" class="board-cell-button board-cell-button--${column.data_type}" data-edit-cell="${item.id}" data-column-id="${column.id}" data-grid-column-index="${logicalColumnIndex + 1}" data-cell-state="${empty ? 'empty' : 'value'}" ${canEdit ? '' : 'aria-disabled="true" data-readonly-cell="true"'} aria-label="${esc(cellActionLabel(column, item.title, canEdit))}">${content}</button></td>`;
     }).join('')}${trailingSpacer}
     <td class="item-actions" aria-colindex="${totalLogicalColumns}"><span class="board-menu-host item-menu-host" data-board-menu-host><button type="button" class="wm-icon-button wm-icon-button--ghost wm-control--sm item-more-trigger" data-board-menu-trigger="item" aria-label="More actions for ${esc(item.title)}" aria-haspopup="menu" aria-expanded="false"><span aria-hidden="true">•••</span></button><template data-board-menu-template><button role="menuitem" data-open-item="${item.id}">Open item details</button>${canEdit ? `<button role="menuitem" data-edit-item="${item.id}">Edit item</button><button role="menuitem" data-duplicate-item="${item.id}">Duplicate item</button><button role="menuitem" data-archive-item="${item.id}" data-archive="${item.archived_at ? 'false' : 'true'}">${item.archived_at ? 'Restore item' : 'Archive item'}</button><button role="menuitem" class="danger-text" data-delete-item="${item.id}">Delete item permanently</button>` : ''}</template></span></td>
   </tr>`;

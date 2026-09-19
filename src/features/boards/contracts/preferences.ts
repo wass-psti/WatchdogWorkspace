@@ -14,6 +14,7 @@ export interface BoardPreferencePersistenceDependencies {
 export interface BoardPreferencePersistenceController {
   schedule(): void;
   saveNow(): Promise<boolean>;
+  flushPending(): Promise<boolean>;
   removeColumnReferences(columnId: BoardColumnId | string): Promise<boolean>;
   cancel(): void;
   dispose(): void;
