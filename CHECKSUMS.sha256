@@ -162,7 +162,7 @@ d226d79cc28486444765f6396a20e7f821d1721d1c097eef63cf5cb3a4a80a63  ./M42-V1240-HI
 c77fbcb318eb7b0fd9afef949efc4693743711e1e8e52658156721d376e38990  ./M44-MANAGEMENT-AUTHORITY-CONSOLIDATION.md
 8e7d2a4a5d4f011fe9778052474dea3a4591865cb78e1e64960c8c9f975afc20  ./M45-BOARDS-COLLECTION-ROUTE-RECOVERY.md
 fed454d0fb7ea7510a5686cd95087a4aa9c71c332e5a7298ba12edcef8bfd08a  ./M46-BOARDS-BACKEND-DATA-CONTRACT-RECOVERY.md
-cd59ceeb4620e65fc2d76dbd318602e322adf5ce67c296dcd8520b446a3810dd  ./M47-CONTINUATION-STATE.md
+8ed103035d0507296b851f090f746fd52867133fab04691f18b2c6cc93036106  ./M47-CONTINUATION-STATE.md
 91df619e971a38ab4767a8b21df24033e3ef190e272f5e62ef9c0bf4fe7feb68  ./M5-ACTIVATION-RUNBOOK.md
 7f145954a3ab537a808a2f6006d257517f2810a596001eee2f2b3e4ba9c472eb  ./M6-ACTIVATION-RUNBOOK.md
 721e0649e315a407ebd38e455c3c2be95abd55d4fa16139aba0077698e1a49c1  ./M6-BROWSER-ESM-HARNESS-HOTFIX.md
@@ -254,7 +254,7 @@ f0214d67d1703c2074d5932eebe22ab89ccfa52e142fa2c2874484a7fb76f944  ./RELEASE-STAT
 6b2103ca7a287940f0a0a9963aad8a582fa90bc59514062f22c0010791050450  ./RELEASE-STATUS-v1.43.2-STAGE-G-M44-MANAGEMENT-AUTHORITY-CONSOLIDATION.md
 dbee435ec2d4fc7b82d8dadfc46b1fbec673b1bf8eedf8c8449648f22b98636d  ./RELEASE-STATUS-v1.43.2-STAGE-G-M45-BOARDS-COLLECTION-ROUTE-RECOVERY.md
 b4aea9c243764dc2beb53b765cdb2880ae39015e6f4db4da89e2a914d7249e46  ./RELEASE-STATUS-v1.43.2-STAGE-G-M46-BOARDS-BACKEND-DATA-CONTRACT-RECOVERY.md
-2d709f7968cf1a64fcea4cc21357440841f544dc8a87d7ab10ebc672ed9062da  ./RELEASE-STATUS-v1.43.2-STAGE-G-M47-BOARDS-TABLE-GROUP-ITEM-RECOVERY.md
+6a7793fbeed868bc07703b284821797f334693dbd7af9f4078773931f6e5c0a7  ./RELEASE-STATUS-v1.43.2-STAGE-G-M47-BOARDS-TABLE-GROUP-ITEM-RECOVERY.md
 f5456ced7546bf790b612a3900905bd4a25b45ab21bd9fd0c1d8a616395069a7  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-FINAL.md
 2d3c24a6567659c068f896542d02442d2991c2a2ffc15030e90d5f2018c825ad  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE2.md
 73619f1c62c3b893ec438e0cc77f36c7590c5c2a57677e6e8cf1c42e538f3c05  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE3.md
@@ -321,7 +321,7 @@ e78da29f4dd4fe0e77905011c1bfca6299dd5f13e1c747bcb42c00908d3972c4  ./assets/css/s
 11339e8d164d19baeacb50ecca8d8c4b7a0a9e9889dcf85776d0b02c47749131  ./assets/css/shell-overlays.css
 5c7a53c40f31529c80f9e1a588eff079a84e62ee2123a32685a7ab72aa420a4c  ./assets/icon.svg
 08b3f39a3e4f43bc01a837e2936b412c8b69167cd8b05b5689d9701ac72c8d5e  ./assets/js/app.ts
-3efcffaf0fadf213e547a31efe85abc895a4c5060de63eb4d026f36068f46f8f  ./assets/js/boards-ui.ts
+5c2ac88fc8a7064cda3303871dbe831eb24375d6fbe02248a8b40146a9f86264  ./assets/js/boards-ui.ts
 faf553d8926e31c7f835031e1837f4e927af9e31b3ff7e2bd77bbe5416364048  ./assets/js/core/auth-state.ts
 2a6e16fc6af7e08a1736ad7529c4d11d4965dccb2ee7aa367ade98d52790692f  ./assets/js/core/auth.ts
 a2067c3ac4ac10032332572ca4707fec82015b034e9239be15da86f5406e8df6  ./assets/js/core/backup.ts
@@ -1036,7 +1036,7 @@ c01ba75873cf591653b6573e038ce33679d5876a322ad397dcffb7d75024eac7  ./tests/modern
 c85ce84cbbd8f28f987df2d722ed1eabeac04777fed8ae4e4661e92d03239472  ./tests/modern/e2e/auth-session-access-context.spec.mjs
 3ae950ac85febc61db27cf9661365a761cc54ddef993c864f273a887ec40a190  ./tests/modern/e2e/backend-capability-preflight.spec.mjs
 87af629c2653f816dc3dc512ca147c1e5150d21aef8ea954e337089467f26d5b  ./tests/modern/e2e/boards-backend-data-contract-recovery.spec.mjs
-d09729e35142e3758b35ea97c2b1c881ccfcb26f8c73fa135e800f736db2a725  ./tests/modern/e2e/boards-collection-route-recovery.spec.mjs
+072a9c375751614fcd6f0d893c74b101e78a65f427b2b1ac158fc33c65a3de97  ./tests/modern/e2e/boards-collection-route-recovery.spec.mjs
 7ac61eecf63955bbc9ff3e5b59bbe54feacbca53529ac6d7b27158e05c12abe0  ./tests/modern/e2e/boards-table-group-item-recovery.spec.mjs
 6a6a0ffb75d20e05ec786a597c9782293c6fdff674b1794a59ed77648a5e117d  ./tests/modern/e2e/functional-regression-baseline.spec.mjs
 dde1347e8fedbe37ba79e4c2388aa5d024a1c0688dfba1ffe7f3f1ad3ee8acae  ./tests/modern/e2e/helpers/m37-regression-probe.mjs
@@ -1124,11 +1124,11 @@ c81dc318330def0a898a3464aa821e4fcc44790f6a1772551981680081fbc449  ./verify-stage
 5769f58a7ad47b28cd1bf30bb03ffaa1deeed100b43d5dbd361fc1538d05ef39  ./verify-stage-g-m42-users-rbac-functional-recovery.mjs
 d98569891b9c61580da9c45d68ab09b1e1bab7ae0481e081a32ca4062f50b280  ./verify-stage-g-m43-settings-functional-recovery.mjs
 de6dd30cc8cfe06a7eded3cd579e23493fe02e83777b970b12d43fc0ac572106  ./verify-stage-g-m44-management-authority-consolidation.mjs
-6b59c21b8eb0ea996773e20d79a9e9f975823d92abe945dd6180e594aac8dc04  ./verify-stage-g-m45-boards-collection-route-recovery.mjs
+94351e7564ea98856791745dd3e62c39944e02ba4b4f8ef72e54f3a790c669d0  ./verify-stage-g-m45-boards-collection-route-recovery.mjs
 7f132bc6ad1bda5d2502771764f41edfbde4bcda1cf81971aaa4b3f07e471b5a  ./verify-stage-g-m45-state-aware-workflows.mjs
 a460db31e6e19e42fbef95a47a0e96d34cdb308a990d225d217b91f03642f0c0  ./verify-stage-g-m46-boards-backend-data-contract-recovery.mjs
 0bd3428670312047ab2e050d47e79097ef7d2460096c8b9564d807b85e1d3310  ./verify-stage-g-m46-state-aware-workflows.mjs
-51c24f03756b81f363d36186b90ed7e6ee0d555262098f90209ab2a5c6c3bf38  ./verify-stage-g-m47-boards-table-group-item-recovery.mjs
+719f61dff3598b3f97a8c1cea8e327eabb831d2baa879328533c0a00cbf2c5b5  ./verify-stage-g-m47-boards-table-group-item-recovery.mjs
 abb8a67ab959a26b960441c993fe0117734b1f0ba7fdad049d19d37285298fb9  ./verify-stage-g-m47-state-aware-workflows.mjs
 9c3ca048644f0a54f06bd56a46ce957a2e8f0e9f6d99eefd92b93d135da276f7  ./verify-timetracker-runtime.mjs
 e461f73a558d08bda915d6ecee41df158e47cf99b104a75bc91f1517d8d4ff39  ./verify-timetracker-startup.mjs

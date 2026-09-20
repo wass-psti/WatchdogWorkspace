@@ -100,6 +100,7 @@ const m45Finalizer = read('scripts/finalize-stage-g-m45.sh');
 const m46Finalizer = read('scripts/finalize-stage-g-m46.sh');
 const databaseRlsStructure = read('supabase/tests/database/00_rls_structure.test.sql');
 const m47Candidate = read('scripts/verify-stage-g-m47-candidate.sh');
+const m45Browser = read('tests/modern/e2e/boards-collection-route-recovery.spec.mjs');
 exists('M47-CONTINUATION-STATE.md'); checks += 1;
 
 has(target, "milestone: 47", 'M47 target owns milestone 47');
@@ -111,13 +112,13 @@ const state = target.match(/activationState: '([^']+)'/)?.[1] ?? 'unknown';
 ok(['implementation-in-progress','implementation-complete-pending-certification','active-certified'].includes(state), 'M47 target exposes a recognized fail-closed certification state');
 ok(releaseStatus.includes(`**State:** ${state}`), 'M47 release-status state is synchronized with target state');
 notHas(releaseStatus, 'This source remains `implementation-in-progress`', 'M47 release narrative does not contradict the pending certification state');
-has(continuationState, 'Certification-Ready Checkpoint 29', 'M47 continuation handoff identifies the current checkpoint');
+has(continuationState, 'Certification-Ready Checkpoint 30', 'M47 continuation handoff identifies the current checkpoint');
 has(continuationState, 'Overall M47 completion at this checkpoint: 99% implementation-corrected/certification-ready', 'M47 continuation handoff reports implementation complete with certification-only work remaining');
-has(continuationState, 'official four-scenario browser gate is now PASS', 'M47 continuation handoff records the governed four-scenario browser PASS');
-has(releaseStatus, 'Checkpoint 29 hosted historical-regression synchronization', 'M47 release status records the post-deployment publication resume corrective');
-has(continuationState, 'PASS — 269 static checks', 'M47 continuation summary reports the current static authority count');
+has(continuationState, 'four-scenario M47 Playwright authority', 'M47 continuation handoff records the governed four-scenario browser PASS');
+has(releaseStatus, 'Checkpoint 30 Board-detail data-commit readiness corrective', 'M47 release status records the hosted historical browser-readiness corrective');
+has(continuationState, 'PASS — 275 static checks', 'M47 continuation summary reports the current static authority count');
 has(continuationState, 'PASS — 50 checks', 'M47 continuation summary reports the current deterministic authority count');
-has(releaseStatus, 'Current M47 static verifier: **PASS (269 checks)**', 'M47 release summary reports the current static authority count');
+has(releaseStatus, 'Current M47 static verifier: **PASS (275 checks)**', 'M47 release summary reports the current static authority count');
 has(releaseStatus, 'Current dependency-free M47 deterministic verifier: **PASS (50 checks)**', 'M47 release summary reports the current deterministic authority count');
 ok(!/[ \t]+$/m.test(releaseStatus), 'M47 release-status authority contains no trailing whitespace that can block atomic publication');
 ok(Buffer.compare(Buffer.from(migration),m47DeploymentProvenance)===0, 'M47 packaged timestamped deployment provenance is byte-identical to the governed semantic migration');
@@ -137,6 +138,13 @@ has(m47Candidate, 'npm run boards-collection:finalizer:test', 'M47 candidate re-
 has(m47Candidate, 'npm run board-backend-contract:finalizer:test', 'M47 candidate re-runs the retained M46 fail-closed finalizer self-test before publication');
 has(m47Candidate, 'npm run database-rls:test:local', 'M47 candidate runs the global disposable Database/RLS suite before publication');
 has(m47Candidate, 'npm run boards-collection:workflows', 'M47 candidate retains M45 state-aware workflow governance before publication');
+
+has(boardsUi, "main.dataset.boardDetailState = 'ready';", 'M47 corrective publishes an explicit Board-detail committed-readiness state');
+has(boardsUi, 'main.dataset.boardDetailId = String(envelope.board.id);', 'M47 corrective binds Board-detail readiness to the exact loaded Board identifier');
+has(m45Browser, "toHaveAttribute('data-board-detail-state', 'ready')", 'retained M45 browser authority waits for Board-detail committed readiness');
+has(m45Browser, "toHaveAttribute('data-board-detail-id', boardId)", 'retained M45 browser authority waits for the exact routed Board identity');
+has(m45Browser, "boardMain.locator('[data-board-workspace-shell]')", 'retained M45 browser authority requires the committed workspace shell');
+ok(m45Browser.indexOf("toHaveAttribute('data-board-detail-state', 'ready')") < m45Browser.indexOf("await expect(detail.locator('.button-spinner')).toHaveCount(0);"), 'retained M45 browser readiness establishes committed Board identity before using spinner absence as a secondary guard');
 
 has(appManifest, 'architectureVersion: 55', 'application manifest advances global architecture to 55');
 has(appManifest, "boardTableGroupItemRecovery: 'transactional-table-group-item-recovery-v1'", 'application manifest registers M47 recovery authority');

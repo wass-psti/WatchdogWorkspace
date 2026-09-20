@@ -21,14 +21,14 @@
 
 ## Verification state
 
-- Current M47 static verifier: **PASS (269 checks)** with architecture 55, 34 governed pgTAP assertions, and four governed browser scenarios bound.
+- Current M47 static verifier: **PASS (275 checks)** with architecture 55, 34 governed pgTAP assertions, and four governed browser scenarios bound.
 - Current dependency-free M47 deterministic verifier: **PASS (50 checks)**, including strict DTO fixture validation and full routed browser-fixture lifecycle execution through production mappers.
 - M47 backend SQL: transactionally dry-run against the production Supabase engine with full rollback; semantic sequence PASS and M46 attestation remained compatible.
 - Dedicated M47 pgTAP behavioral suite: **PASS — 34/34 assertions** in the governed disposable local Supabase stack.
 - Retained M17 table evaluation, M18 virtualization, and M46 static/deterministic regressions remain PASS under architecture 55.
 - Official four-scenario M47 Playwright authority: **PASS — 4/4 scenarios** in the governed Mac candidate runs.
 
-M47 is not yet certified. The production M47 migration is applied and semantically attested, but no M47 PASS record or certified source baseline is valid until exact publication commit/push, hosted exact-SHA regressions/certification, hosted artifact verification, and final remote binding all succeed.
+The Checkpoint 30 corrective source is not yet certified. The prior corrective commit `522a32e01639fe6a385a9e5ffe84cd3fda0fd996` has a valid local and hosted M47 PASS/artifact, but the aggregate transaction stopped on a retained M46→M45 browser synchronization race; this new source must complete exact publication, hosted M46 regression, hosted M47 recertification, artifact verification, and final remote binding before it becomes the authoritative certified baseline.
 
 ## Browser validation candidate — 2026-09-18
 
@@ -189,3 +189,12 @@ GitHub `main` is already on M47 commit `8daeb2679d19fd4c41dc9cd13b625542c5f854ee
 Checkpoint 29 corrects the M45/M46 finalizer self-tests so each isolated fixture explicitly models the pending source state required by its unchanged pending-only finalizer, instead of copying the live active-certified historical target into the fixture. It also synchronizes the global M29 Database/RLS structural suite to the certified M46 security contract: only `wm_board_contract_attestation()` is exempted from the anon SECURITY DEFINER prohibition, and only the two governed Board Realtime functions plus the Board attestation may use the exact empty `search_path`; every other public SECURITY DEFINER must continue pinning `search_path=public`.
 
 The M47 candidate now runs these retained finalizer and global Database/RLS regressions locally before any corrective publication. Current M47 static authority is **269 checks**; deterministic authority remains **50 checks** and workflow authority remains **62 checks**. No Board runtime, M47 RPC, M47 migration semantic, RLS grant, official M47 Playwright scenario, or M47 pgTAP assertion changes in this corrective.
+
+
+## Checkpoint 30 Board-detail data-commit readiness corrective
+
+The corrective publication at `522a32e01639fe6a385a9e5ffe84cd3fda0fd996` passed local exact-commit M47 certification, global CI, dedicated M45 hosted verification, and dedicated hosted M47 certification/artifact upload. The remaining fail-closed stop came from hosted M46 run `35504341378`, whose retained M45 create/open browser scenario observed the new Board route and workspace shell before the created Board payload/title had committed. The same M45 suite passed in its dedicated workflow on the same SHA, isolating the problem to readiness synchronization rather than backend contract semantics.
+
+Checkpoint 30 adds an explicit Board-detail data-commit runtime contract in `assets/js/boards-ui.ts`: loading, error, not-found, and ready states are published on `#boardMain`; stale Board identity is cleared outside ready state; and `data-board-detail-id` plus `ready` are written only after the complete Board workspace render has committed. The retained M45 Playwright helper now waits for that exact ready identity and visible workspace shell before asserting Board content, eliminating spinner disappearance as the primary readiness boundary. M45 static authority and M47 corrective authority both lock this behavior against regression.
+
+No production migration, M47 SQL semantic, Board RPC signature, RLS/grant, or production contract change is introduced. Current M47 static authority is **275 checks**; deterministic authority remains **50 checks** and workflow authority remains **62 checks**. The new corrective source remains `implementation-complete-pending-certification` until the full fail-closed publication and hosted regression/certification transaction passes.

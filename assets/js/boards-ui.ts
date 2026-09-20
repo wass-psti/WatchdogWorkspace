@@ -658,12 +658,16 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     const workspace = main.querySelector<HTMLElement>('[data-board-workspace-shell]');
     if (!stateHost || !workspace) return;
     if (state.loading) {
+      main.dataset.boardDetailState = 'loading';
+      delete main.dataset.boardDetailId;
       workspace.hidden = true;
       stateHost.hidden = false;
       patchHost(stateHost, '<div class="boards-state"><span class="button-spinner"></span><h3>Loading board</h3><p>Fetching groups, items, columns, and your saved view…</p></div>');
       return;
     }
     if (state.error) {
+      main.dataset.boardDetailState = 'error';
+      delete main.dataset.boardDetailId;
       workspace.hidden = true;
       stateHost.hidden = false;
       patchHost(stateHost, `<div class="boards-state error"><h3>This board couldn’t load</h3><p>${esc(state.error)}</p><button class="secondary-btn" data-board-detail-retry>Try again</button></div>`);
@@ -671,6 +675,8 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     }
     const envelope = activeBoardEnvelope();
     if (!envelope?.board) {
+      main.dataset.boardDetailState = 'not-found';
+      delete main.dataset.boardDetailId;
       workspace.hidden = true;
       stateHost.hidden = false;
       patchHost(stateHost, '<div class="boards-state"><h3>Board not found</h3><p>This board may have been deleted, moved, or you may no longer have access.</p></div>');
@@ -696,6 +702,8 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     if (preservedGridFocus && focusLogicalGridCell(preservedGridFocus.itemId, preservedGridFocus.columnIndex, preservedGridFocus.scrollLeft)) {
       armPendingGridFocus(preservedGridFocus);
     }
+    main.dataset.boardDetailId = String(envelope.board.id);
+    main.dataset.boardDetailState = 'ready';
   }
 
   function renderBoard(boardId: string): void {

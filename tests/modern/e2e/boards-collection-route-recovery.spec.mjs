@@ -27,6 +27,10 @@ async function waitForM45BoardDetailReady(page, boardId = null) {
   await expect(host).toBeVisible();
   const detail = host.locator('.board-detail-page');
   await expect(detail).toBeVisible();
+  const boardMain = detail.locator('#boardMain');
+  await expect(boardMain).toHaveAttribute('data-board-detail-state', 'ready');
+  if (boardId) await expect(boardMain).toHaveAttribute('data-board-detail-id', boardId);
+  await expect(boardMain.locator('[data-board-workspace-shell]')).toBeVisible();
   await expect(detail.locator('.button-spinner')).toHaveCount(0);
   return detail;
 }
