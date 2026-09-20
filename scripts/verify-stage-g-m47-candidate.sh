@@ -15,9 +15,13 @@ npm run board-backend-contract:test
 npm run board-backend-contract:browser
 npm run board-backend-contract:database
 npm run board-backend-contract:production
+npm run board-backend-contract:finalizer:test
+npm run database-rls:test:local
 npm run boards-collection:check
 npm run boards-collection:test
 npm run boards-collection:browser
+npm run boards-collection:workflows
+npm run boards-collection:finalizer:test
 npm run backend-preflight:check
 npm run backend-preflight:test
 npm run backend-preflight:browser

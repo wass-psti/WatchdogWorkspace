@@ -162,7 +162,7 @@ d226d79cc28486444765f6396a20e7f821d1721d1c097eef63cf5cb3a4a80a63  ./M42-V1240-HI
 c77fbcb318eb7b0fd9afef949efc4693743711e1e8e52658156721d376e38990  ./M44-MANAGEMENT-AUTHORITY-CONSOLIDATION.md
 8e7d2a4a5d4f011fe9778052474dea3a4591865cb78e1e64960c8c9f975afc20  ./M45-BOARDS-COLLECTION-ROUTE-RECOVERY.md
 fed454d0fb7ea7510a5686cd95087a4aa9c71c332e5a7298ba12edcef8bfd08a  ./M46-BOARDS-BACKEND-DATA-CONTRACT-RECOVERY.md
-21f1d26be9865ea689b7cbb11ff9a8257d47c967a8d54147da892517562e574f  ./M47-CONTINUATION-STATE.md
+cd59ceeb4620e65fc2d76dbd318602e322adf5ce67c296dcd8520b446a3810dd  ./M47-CONTINUATION-STATE.md
 91df619e971a38ab4767a8b21df24033e3ef190e272f5e62ef9c0bf4fe7feb68  ./M5-ACTIVATION-RUNBOOK.md
 7f145954a3ab537a808a2f6006d257517f2810a596001eee2f2b3e4ba9c472eb  ./M6-ACTIVATION-RUNBOOK.md
 721e0649e315a407ebd38e455c3c2be95abd55d4fa16139aba0077698e1a49c1  ./M6-BROWSER-ESM-HARNESS-HOTFIX.md
@@ -254,7 +254,7 @@ f0214d67d1703c2074d5932eebe22ab89ccfa52e142fa2c2874484a7fb76f944  ./RELEASE-STAT
 6b2103ca7a287940f0a0a9963aad8a582fa90bc59514062f22c0010791050450  ./RELEASE-STATUS-v1.43.2-STAGE-G-M44-MANAGEMENT-AUTHORITY-CONSOLIDATION.md
 dbee435ec2d4fc7b82d8dadfc46b1fbec673b1bf8eedf8c8449648f22b98636d  ./RELEASE-STATUS-v1.43.2-STAGE-G-M45-BOARDS-COLLECTION-ROUTE-RECOVERY.md
 b4aea9c243764dc2beb53b765cdb2880ae39015e6f4db4da89e2a914d7249e46  ./RELEASE-STATUS-v1.43.2-STAGE-G-M46-BOARDS-BACKEND-DATA-CONTRACT-RECOVERY.md
-2917eb60ae221aab9564b20bad7e10d8397f86adf3198631e62c44856aa92fd6  ./RELEASE-STATUS-v1.43.2-STAGE-G-M47-BOARDS-TABLE-GROUP-ITEM-RECOVERY.md
+2d709f7968cf1a64fcea4cc21357440841f544dc8a87d7ab10ebc672ed9062da  ./RELEASE-STATUS-v1.43.2-STAGE-G-M47-BOARDS-TABLE-GROUP-ITEM-RECOVERY.md
 f5456ced7546bf790b612a3900905bd4a25b45ab21bd9fd0c1d8a616395069a7  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-FINAL.md
 2d3c24a6567659c068f896542d02442d2991c2a2ffc15030e90d5f2018c825ad  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE2.md
 73619f1c62c3b893ec438e0cc77f36c7590c5c2a57677e6e8cf1c42e538f3c05  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE3.md
@@ -831,14 +831,14 @@ fe2edabb933274c12397dea267d3370faaa43acc7e25866fc2319c7c6ab559bb  ./scripts/veri
 f298d3ca7fce22d4e37c09301d88c2b6d0c9de439377f78fb7bed27f17ce1169  ./scripts/verify-stage-g-m44-certified-artifact.mjs
 bc1d24602dbd2b83b400e1483902574f81f77200bc12ca1f0ae1f4ddfdeecf30  ./scripts/verify-stage-g-m44-release.sh
 5b2734f6caf37b7b0155be2741ae18cbe940453735b8937b8beeda1707513edf  ./scripts/verify-stage-g-m45-certified-artifact.mjs
-378b7a647e6c0a1f9f1d10f1de9adbef7f2cd900fe07ac9cdf4fa12c1ac7193d  ./scripts/verify-stage-g-m45-finalizer-fail-closed.mjs
+a1d5290da2d1eeaec693112197911082e7c890b4d392b4309cebe447d89c6bbb  ./scripts/verify-stage-g-m45-finalizer-fail-closed.mjs
 b43f8b7f7866a4ecd2349ffa8683c578c6380e40933be40603a717b40e9391d7  ./scripts/verify-stage-g-m45-release.sh
 3aba43f494c9ce2bfd5ad1d0065528ddb23283d8f34d1b882691c6335901c9ef  ./scripts/verify-stage-g-m46-certified-artifact.mjs
-e66fadd5eaf670bcd90e8646861ef45f75138694b3b8ed3d7613c319ec2ee166  ./scripts/verify-stage-g-m46-finalizer-fail-closed.mjs
+cb0acdea4b5cff261de4546a1961a9ce006ef6f00e5c8bb4b1ae968111429d34  ./scripts/verify-stage-g-m46-finalizer-fail-closed.mjs
 53aecbb0b2c9b08a27eb948bc98d4e40148c59614061b540daa1a4c238642fc2  ./scripts/verify-stage-g-m46-production-contract.mjs
 993bf6c4a2290a5bf8c5cbcf6197dccbb4df6bcf2ad843af5191f9d5f26e9bd3  ./scripts/verify-stage-g-m46-production-deployment-guard.mjs
 432cb926821d94fad4b19303a260b44cea5d1121e9302ccd7841bca6fc29ff08  ./scripts/verify-stage-g-m46-release.sh
-e0055d6e8995c43c700f2be91ace0cd48f01cdfae09cca66594f250f43f97ee6  ./scripts/verify-stage-g-m47-candidate.sh
+e5a9f22483145ad7d2ed7f1fbf1e21fd2be69534a5acc4cb6c5d02d7ad90c7d2  ./scripts/verify-stage-g-m47-candidate.sh
 b405dc7bd175daedc9d717cced7db39fffc08ce078bffb150ca09cc93f147ba8  ./scripts/verify-stage-g-m47-certified-artifact.mjs
 cee5264ba83095e43287403dfdea366a662c77ad1506059cab4953b25d4b82b7  ./scripts/verify-stage-g-m47-deployment-provenance.mjs
 bcf59f8a44d66a4a5677b6c206c7d06fbe830fc6d23b699d38008a11ebf471c9  ./scripts/verify-stage-g-m47-finalizer-fail-closed.mjs
@@ -1016,7 +1016,7 @@ bf11929a6efcb77b21e6f938561a634ad238dd16cd069a514a0eef28150f3750  ./supabase/mig
 18e49ea7f3fe76163ab85c8e2f7e7c3bc0c06e26e4e17b355648168268cab55a  ./supabase/migrations/v1.43.2-stage-g-m46-boards-backend-data-contract-recovery.sql
 aff4feaa9c1f1467f67b1e52649b96aef9a5c1790f56cf0b1f9d8e65034796ca  ./supabase/migrations/v1.43.2-stage-g-m47-boards-table-group-item-recovery.sql
 e85e914d9f93410a2d8504615747ffd078f10dd7ad46552496e57fa989f74d96  ./supabase/schema.sql
-e3c76ddc883280ac56a00fa0edb2e15fb7136a335affc4a217ffc3e46854329a  ./supabase/tests/database/00_rls_structure.test.sql
+c12981b5e785cd508674d062a8b70f35151a8daaf9f4e1662d3ff6787b0e2cdb  ./supabase/tests/database/00_rls_structure.test.sql
 a639c2422bb272ffc615eea70fdb44ada05fa93451d17764a8c9649698304461  ./supabase/tests/database/10_account_rbac.test.sql
 c16eb111b60c784caf548af8fc5666955c7cc0658408b6ab231a86557df8bf68  ./supabase/tests/database/20_module_state_authorization.test.sql
 d88d4844d4fd984fad0c2ae99ffd6359c55417d4cea8944ed602b6c13b196b98  ./supabase/tests/database/30_board_authorization.test.sql
@@ -1128,7 +1128,7 @@ de6dd30cc8cfe06a7eded3cd579e23493fe02e83777b970b12d43fc0ac572106  ./verify-stage
 7f132bc6ad1bda5d2502771764f41edfbde4bcda1cf81971aaa4b3f07e471b5a  ./verify-stage-g-m45-state-aware-workflows.mjs
 a460db31e6e19e42fbef95a47a0e96d34cdb308a990d225d217b91f03642f0c0  ./verify-stage-g-m46-boards-backend-data-contract-recovery.mjs
 0bd3428670312047ab2e050d47e79097ef7d2460096c8b9564d807b85e1d3310  ./verify-stage-g-m46-state-aware-workflows.mjs
-39e4d65fb70b24c7b64e81e85421c9ae62756c2717d82a6bed52386cef1edd79  ./verify-stage-g-m47-boards-table-group-item-recovery.mjs
+51c24f03756b81f363d36186b90ed7e6ee0d555262098f90209ab2a5c6c3bf38  ./verify-stage-g-m47-boards-table-group-item-recovery.mjs
 abb8a67ab959a26b960441c993fe0117734b1f0ba7fdad049d19d37285298fb9  ./verify-stage-g-m47-state-aware-workflows.mjs
 9c3ca048644f0a54f06bd56a46ce957a2e8f0e9f6d99eefd92b93d135da276f7  ./verify-timetracker-runtime.mjs
 e461f73a558d08bda915d6ecee41df158e47cf99b104a75bc91f1517d8d4ff39  ./verify-timetracker-startup.mjs

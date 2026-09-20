@@ -47,6 +47,9 @@ const required = [
   'tests/modern/e2e/management-authority-consolidation.spec.mjs',
   'verify-stage-g-m44-management-authority-consolidation.mjs',
   'supabase/deployments/m47/20260919165239_stage_g_m47_boards_table_group_item_recovery.sql',
+  'scripts/verify-stage-g-m45-finalizer-fail-closed.mjs',
+  'scripts/verify-stage-g-m46-finalizer-fail-closed.mjs',
+  'supabase/tests/database/00_rls_structure.test.sql',
 ];
 required.forEach(exists); checks += required.length;
 
@@ -91,6 +94,12 @@ const m44Browser = read('tests/modern/e2e/management-authority-consolidation.spe
 const m44Verifier = read('verify-stage-g-m44-management-authority-consolidation.mjs');
 const m47DeploymentProvenance = fs.readFileSync('supabase/deployments/m47/20260919165239_stage_g_m47_boards_table_group_item_recovery.sql');
 const m47DeploymentGuard = read('scripts/verify-stage-g-m47-production-deployment-guard.mjs');
+const m45FinalizerVerifier = read('scripts/verify-stage-g-m45-finalizer-fail-closed.mjs');
+const m46FinalizerVerifier = read('scripts/verify-stage-g-m46-finalizer-fail-closed.mjs');
+const m45Finalizer = read('scripts/finalize-stage-g-m45.sh');
+const m46Finalizer = read('scripts/finalize-stage-g-m46.sh');
+const databaseRlsStructure = read('supabase/tests/database/00_rls_structure.test.sql');
+const m47Candidate = read('scripts/verify-stage-g-m47-candidate.sh');
 exists('M47-CONTINUATION-STATE.md'); checks += 1;
 
 has(target, "milestone: 47", 'M47 target owns milestone 47');
@@ -102,16 +111,33 @@ const state = target.match(/activationState: '([^']+)'/)?.[1] ?? 'unknown';
 ok(['implementation-in-progress','implementation-complete-pending-certification','active-certified'].includes(state), 'M47 target exposes a recognized fail-closed certification state');
 ok(releaseStatus.includes(`**State:** ${state}`), 'M47 release-status state is synchronized with target state');
 notHas(releaseStatus, 'This source remains `implementation-in-progress`', 'M47 release narrative does not contradict the pending certification state');
-has(continuationState, 'Certification-Ready Checkpoint 28', 'M47 continuation handoff identifies the current checkpoint');
+has(continuationState, 'Certification-Ready Checkpoint 29', 'M47 continuation handoff identifies the current checkpoint');
 has(continuationState, 'Overall M47 completion at this checkpoint: 99% implementation-corrected/certification-ready', 'M47 continuation handoff reports implementation complete with certification-only work remaining');
-has(continuationState, 'the official four-scenario browser gate is now PASS', 'M47 continuation handoff records the governed four-scenario browser PASS');
-has(releaseStatus, 'Checkpoint 28 post-deployment publication resume hardening', 'M47 release status records the post-deployment publication resume corrective');
-has(continuationState, 'PASS — 250 static checks', 'M47 continuation summary reports the current static authority count');
+has(continuationState, 'official four-scenario browser gate is now PASS', 'M47 continuation handoff records the governed four-scenario browser PASS');
+has(releaseStatus, 'Checkpoint 29 hosted historical-regression synchronization', 'M47 release status records the post-deployment publication resume corrective');
+has(continuationState, 'PASS — 269 static checks', 'M47 continuation summary reports the current static authority count');
 has(continuationState, 'PASS — 50 checks', 'M47 continuation summary reports the current deterministic authority count');
-has(releaseStatus, 'Current M47 static verifier: **PASS (250 checks)**', 'M47 release summary reports the current static authority count');
+has(releaseStatus, 'Current M47 static verifier: **PASS (269 checks)**', 'M47 release summary reports the current static authority count');
 has(releaseStatus, 'Current dependency-free M47 deterministic verifier: **PASS (50 checks)**', 'M47 release summary reports the current deterministic authority count');
 ok(!/[ \t]+$/m.test(releaseStatus), 'M47 release-status authority contains no trailing whitespace that can block atomic publication');
 ok(Buffer.compare(Buffer.from(migration),m47DeploymentProvenance)===0, 'M47 packaged timestamped deployment provenance is byte-identical to the governed semantic migration');
+has(m45FinalizerVerifier, 'preparePendingCertificationFixture', 'retained M45 finalizer self-test explicitly synthesizes a pending certification fixture from the active-certified historical source');
+has(m45FinalizerVerifier, "replace(\"activationState: 'active-certified'\", \"activationState: 'implementation-complete-pending-certification'\")", 'retained M45 finalizer self-test rewrites only its isolated target fixture to pending');
+has(m45FinalizerVerifier, "## Final certified baseline —", 'retained M45 finalizer self-test strips the historical certified-baseline marker from its isolated pending fixture');
+has(m46FinalizerVerifier, 'preparePendingCertificationFixture', 'retained M46 finalizer self-test explicitly synthesizes a pending certification fixture from the active-certified historical source');
+has(m46FinalizerVerifier, "replace(\"activationState: 'active-certified'\", \"activationState: 'implementation-complete-pending-certification'\")", 'retained M46 finalizer self-test rewrites only its isolated target fixture to pending');
+has(m46FinalizerVerifier, "## Final certified baseline —", 'retained M46 finalizer self-test strips the historical certified-baseline marker from its isolated pending fixture');
+has(m45Finalizer, "activationState:[[:space:]]*'implementation-complete-pending-certification'", 'actual M45 finalizer remains pending-only despite historical self-test synchronization');
+has(m46Finalizer, "activationState:[[:space:]]*'implementation-complete-pending-certification'", 'actual M46 finalizer remains pending-only despite historical self-test synchronization');
+has(databaseRlsStructure, "p.oid <> 'public.wm_board_contract_attestation()'::regprocedure", 'global Database/RLS suite permits only the governed Board contract attestation through the anon SECURITY DEFINER exception');
+has(databaseRlsStructure, "'public.work_board_realtime_topic_access(text)'::regprocedure", 'global Database/RLS suite binds the hardened Board Realtime topic-access search_path exception');
+has(databaseRlsStructure, "'public.work_board_realtime_broadcast_change()'::regprocedure", 'global Database/RLS suite binds the hardened Board Realtime trigger search_path exception');
+has(databaseRlsStructure, "array['search_path=\"\"']", 'global Database/RLS suite requires the exact empty search_path for governed hardened Board SECURITY DEFINER functions');
+has(m47Candidate, 'npm run boards-collection:finalizer:test', 'M47 candidate re-runs the retained M45 fail-closed finalizer self-test before publication');
+has(m47Candidate, 'npm run board-backend-contract:finalizer:test', 'M47 candidate re-runs the retained M46 fail-closed finalizer self-test before publication');
+has(m47Candidate, 'npm run database-rls:test:local', 'M47 candidate runs the global disposable Database/RLS suite before publication');
+has(m47Candidate, 'npm run boards-collection:workflows', 'M47 candidate retains M45 state-aware workflow governance before publication');
+
 has(appManifest, 'architectureVersion: 55', 'application manifest advances global architecture to 55');
 has(appManifest, "boardTableGroupItemRecovery: 'transactional-table-group-item-recovery-v1'", 'application manifest registers M47 recovery authority');
 has(appManifest, "boardTableGroupItemPreferencePersistence: 'board-scoped-flush-on-deactivate-v1'", 'application manifest registers M47 preference persistence authority');

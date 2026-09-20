@@ -40,9 +40,10 @@ select is(
    where n.nspname='public'
      and p.prosecdef
      and p.prorettype<>'trigger'::regtype
+     and p.oid <> 'public.wm_board_contract_attestation()'::regprocedure
      and has_function_privilege('anon',p.oid,'EXECUTE')),
   0,
-  'anon cannot execute any non-trigger public SECURITY DEFINER function'
+  'anon cannot execute any non-trigger public SECURITY DEFINER function except governed Board contract attestation'
 );
 select ok(has_function_privilege('authenticated','public.is_platform_admin(uuid)','EXECUTE'),'authenticated can execute is_platform_admin for RLS evaluation');
 
@@ -54,10 +55,26 @@ select ok(exists(select 1 from pg_policies where schemaname='realtime' and table
 select is((select count(*)::integer from pg_policies where schemaname='realtime' and tablename='messages' and cmd='INSERT'),1,'Realtime exposes exactly one authenticated INSERT policy (presence only)');
 
 select is(
-  (select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-   where n.nspname='public' and p.prosecdef and not (coalesce(p.proconfig,'{}'::text[]) @> array['search_path=public']::text[])),
+  (select count(*)::integer
+   from pg_proc p
+   join pg_namespace n on n.oid=p.pronamespace
+   where n.nspname='public'
+     and p.prosecdef
+     and (
+       (p.oid in (
+          'public.work_board_realtime_topic_access(text)'::regprocedure,
+          'public.work_board_realtime_broadcast_change()'::regprocedure,
+          'public.wm_board_contract_attestation()'::regprocedure
+        ) and not (coalesce(p.proconfig,'{}'::text[]) @> array['search_path=""']::text[]))
+       or
+       (p.oid not in (
+          'public.work_board_realtime_topic_access(text)'::regprocedure,
+          'public.work_board_realtime_broadcast_change()'::regprocedure,
+          'public.wm_board_contract_attestation()'::regprocedure
+        ) and not (coalesce(p.proconfig,'{}'::text[]) @> array['search_path=public']::text[]))
+     )),
   0,
-  'all public SECURITY DEFINER functions pin search_path=public'
+  'public SECURITY DEFINER functions pin the governed search_path (Board hardened functions use empty; all others use public)'
 );
 select ok(
   not exists(

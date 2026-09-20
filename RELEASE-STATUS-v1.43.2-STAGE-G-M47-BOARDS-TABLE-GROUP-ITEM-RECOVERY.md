@@ -21,7 +21,7 @@
 
 ## Verification state
 
-- Current M47 static verifier: **PASS (250 checks)** with architecture 55, 34 governed pgTAP assertions, and four governed browser scenarios bound.
+- Current M47 static verifier: **PASS (269 checks)** with architecture 55, 34 governed pgTAP assertions, and four governed browser scenarios bound.
 - Current dependency-free M47 deterministic verifier: **PASS (50 checks)**, including strict DTO fixture validation and full routed browser-fixture lifecycle execution through production mappers.
 - M47 backend SQL: transactionally dry-run against the production Supabase engine with full rollback; semantic sequence PASS and M46 attestation remained compatible.
 - Dedicated M47 pgTAP behavioral suite: **PASS — 34/34 assertions** in the governed disposable local Supabase stack.
@@ -179,4 +179,13 @@ The governed Checkpoint 27 transaction passes the corrected M44 browser authorit
 
 Checkpoint 28 removes that publication-hygiene defect and treats the current state as a post-deployment resume, not a fresh migration attempt. The exact applied timestamped M47 provenance is now packaged as a governed source file and must remain byte-identical to the semantic migration. The production helper is resume-only: when live M47 invariants pass it records an explicit replay skip; if live semantics do not attest, it fails closed and cannot call `db push`, create a second migration, run `migration repair`, or reset production. Static authority also rejects trailing whitespace in this release-status file so the atomic commit gate cannot regress for the same reason.
 
-Current M47 static verifier: **PASS (250 checks)**; deterministic authority remains **PASS (50 checks)** and workflow authority remains **PASS (62 checks)**. The official M47 browser authority remains **PASS — 4/4**, the M47 pgTAP authority remains **PASS — 34/34**, and the retained M44 browser authority is **PASS — 2/2** from the governed Checkpoint 27 transaction. The remaining work is exact publication commit, local exact-commit certification, push, hosted exact-SHA regressions/certification, certified-artifact verification, and final `ACTIVE-CERTIFIED / PASS` binding.
+Current M47 static verifier: **PASS (269 checks)**; deterministic authority remains **PASS (50 checks)** and workflow authority remains **PASS (62 checks)**. The official M47 browser authority remains **PASS — 4/4**, the M47 pgTAP authority remains **PASS — 34/34**, and the retained M44 browser authority is **PASS — 2/2** from the governed Checkpoint 27 transaction. The remaining work is exact publication commit, local exact-commit certification, push, hosted exact-SHA regressions/certification, certified-artifact verification, and final `ACTIVE-CERTIFIED / PASS` binding.
+
+
+## Checkpoint 29 hosted historical-regression synchronization
+
+GitHub `main` is already on M47 commit `8daeb2679d19fd4c41dc9cd13b625542c5f854ee`; production is already on exact M47 migration `20260919165239_stage_g_m47_boards_table_group_item_recovery.sql`; the dedicated M47 hosted workflow for that SHA succeeded and produced its SHA-bound certified artifact. The remaining hosted failures are retained historical-test synchronization defects rather than Board runtime or production migration defects.
+
+Checkpoint 29 corrects the M45/M46 finalizer self-tests so each isolated fixture explicitly models the pending source state required by its unchanged pending-only finalizer, instead of copying the live active-certified historical target into the fixture. It also synchronizes the global M29 Database/RLS structural suite to the certified M46 security contract: only `wm_board_contract_attestation()` is exempted from the anon SECURITY DEFINER prohibition, and only the two governed Board Realtime functions plus the Board attestation may use the exact empty `search_path`; every other public SECURITY DEFINER must continue pinning `search_path=public`.
+
+The M47 candidate now runs these retained finalizer and global Database/RLS regressions locally before any corrective publication. Current M47 static authority is **269 checks**; deterministic authority remains **50 checks** and workflow authority remains **62 checks**. No Board runtime, M47 RPC, M47 migration semantic, RLS grant, official M47 Playwright scenario, or M47 pgTAP assertion changes in this corrective.

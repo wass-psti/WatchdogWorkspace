@@ -7,6 +7,22 @@ import { spawnSync } from 'node:child_process';
 const root = resolve(import.meta.dirname, '..');
 const base = 'Work-Management-App-v1.43.2-Stage-G-M46-Certified-Baseline';
 
+function preparePendingCertificationFixture(project) {
+  const target = join(project, 'config', 'stage-g-m46-boards-backend-data-contract-recovery-target.ts');
+  const status = join(project, 'RELEASE-STATUS-v1.43.2-STAGE-G-M46-BOARDS-BACKEND-DATA-CONTRACT-RECOVERY.md');
+  let targetSource = readFileSync(target, 'utf8');
+  let statusSource = readFileSync(status, 'utf8');
+  targetSource = targetSource.replace("activationState: 'active-certified'", "activationState: 'implementation-complete-pending-certification'");
+  statusSource = statusSource.replace('**State:** active-certified', '**State:** implementation-complete-pending-certification');
+  const finalMarker = '\n## Final certified baseline —';
+  const finalIndex = statusSource.indexOf(finalMarker);
+  if (finalIndex >= 0) statusSource = `${statusSource.slice(0, finalIndex).trimEnd()}\n`;
+  writeFileSync(target, targetSource);
+  writeFileSync(status, statusSource);
+  assert.match(targetSource, /activationState:\s*'implementation-complete-pending-certification'/, 'M46 finalizer fixture target must model pending certification');
+  assert.match(statusSource, /\*\*State:\*\* implementation-complete-pending-certification/, 'M46 finalizer fixture release status must model pending certification');
+}
+
 function prepare() {
   const sandbox = mkdtempSync(join(tmpdir(), 'wm-m46-finalizer-fail-closed-'));
   const project = join(sandbox, 'project');
@@ -23,6 +39,7 @@ function prepare() {
     ['config/stage-g-m45-boards-collection-route-recovery-target.ts', 'config/stage-g-m45-boards-collection-route-recovery-target.ts'],
     ['RELEASE-STATUS-v1.43.2-STAGE-G-M46-BOARDS-BACKEND-DATA-CONTRACT-RECOVERY.md', 'RELEASE-STATUS-v1.43.2-STAGE-G-M46-BOARDS-BACKEND-DATA-CONTRACT-RECOVERY.md'],
   ]) cpSync(join(root, from), join(project, to));
+  preparePendingCertificationFixture(project);
   writeFileSync(join(project, 'scripts', 'verify-stage-g-m46-production-contract.mjs'), 'process.exit(0);\n');
   writeFileSync(join(project, 'src', 'm46-certification-source.txt'), 'stable-source\n');
   writeFileSync(join(project, 'src', 'm46-executable-fixture.sh'), '#!/bin/sh\nexit 0\n');

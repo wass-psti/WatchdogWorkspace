@@ -7,6 +7,22 @@ import { spawnSync } from 'node:child_process';
 const root = resolve(import.meta.dirname, '..');
 const base = 'Work-Management-App-v1.43.2-Stage-G-M45-Certified-Baseline';
 
+function preparePendingCertificationFixture(project) {
+  const target = join(project, 'config', 'stage-g-m45-boards-collection-route-recovery-target.ts');
+  const status = join(project, 'RELEASE-STATUS-v1.43.2-STAGE-G-M45-BOARDS-COLLECTION-ROUTE-RECOVERY.md');
+  let targetSource = readFileSync(target, 'utf8');
+  let statusSource = readFileSync(status, 'utf8');
+  targetSource = targetSource.replace("activationState: 'active-certified'", "activationState: 'implementation-complete-pending-certification'");
+  statusSource = statusSource.replace('**State:** active-certified', '**State:** implementation-complete-pending-certification');
+  const finalMarker = '\n## Final certified baseline —';
+  const finalIndex = statusSource.indexOf(finalMarker);
+  if (finalIndex >= 0) statusSource = `${statusSource.slice(0, finalIndex).trimEnd()}\n`;
+  writeFileSync(target, targetSource);
+  writeFileSync(status, statusSource);
+  assert.match(targetSource, /activationState:\s*'implementation-complete-pending-certification'/, 'M45 finalizer fixture target must model pending certification');
+  assert.match(statusSource, /\*\*State:\*\* implementation-complete-pending-certification/, 'M45 finalizer fixture release status must model pending certification');
+}
+
 function prepare() {
   const sandbox = mkdtempSync(join(tmpdir(), 'wm-m45-finalizer-fail-closed-'));
   const project = join(sandbox, 'project');
@@ -22,6 +38,7 @@ function prepare() {
     ['config/stage-g-m44-management-authority-consolidation-target.ts', 'config/stage-g-m44-management-authority-consolidation-target.ts'],
     ['RELEASE-STATUS-v1.43.2-STAGE-G-M45-BOARDS-COLLECTION-ROUTE-RECOVERY.md', 'RELEASE-STATUS-v1.43.2-STAGE-G-M45-BOARDS-COLLECTION-ROUTE-RECOVERY.md'],
   ]) cpSync(join(root, from), join(project, to));
+  preparePendingCertificationFixture(project);
   writeFileSync(join(project, 'src', 'm45-certification-source.txt'), 'stable-source\n');
   writeFileSync(join(project, 'src', 'm45-executable-fixture.sh'), '#!/bin/sh\nexit 0\n');
   chmodSync(join(project, 'src', 'm45-executable-fixture.sh'), 0o755);
