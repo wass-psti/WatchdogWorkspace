@@ -21,14 +21,14 @@
 
 ## Verification state
 
-- Current M47 static verifier: **PASS (285 checks)** with architecture 55, 34 governed pgTAP assertions, and four governed browser scenarios bound.
+- Current M47 static verifier: **PASS (296 checks)** with architecture 55, 34 governed pgTAP assertions, and four governed browser scenarios bound.
 - Current dependency-free M47 deterministic verifier: **PASS (50 checks)**, including strict DTO fixture validation and full routed browser-fixture lifecycle execution through production mappers.
 - M47 backend SQL: transactionally dry-run against the production Supabase engine with full rollback; semantic sequence PASS and M46 attestation remained compatible.
 - Dedicated M47 pgTAP behavioral suite: **PASS — 34/34 assertions** in the governed disposable local Supabase stack.
 - Retained M17 table evaluation, M18 virtualization, and M46 static/deterministic regressions remain PASS under architecture 55.
 - Official four-scenario M47 Playwright authority: **PASS — 4/4 scenarios** in the governed Mac candidate runs.
 
-The Checkpoint 31 corrective source is not yet certified. The published corrective commit `c2cd7487a3be8ff4139c98f3df556949b177fe78` has a valid local exact-commit M47 PASS and the retained M45 standalone browser authority is green, but the aggregate transaction stopped on hosted M46 run `35506818269` because the retained M45 create/open scenario observed Board-detail readiness before the expected title was committed. Checkpoint 31 must complete exact publication, hosted M46 regression, hosted M47 recertification, artifact verification, and final remote binding before it becomes the authoritative certified baseline.
+The Checkpoint 32 corrective source is not yet certified. Published commit `204977748ed3c3973bfb9105ff94a9efe1208f33` has a valid local exact-commit M47 PASS; standalone hosted M45 and hosted M46 are green. Dedicated hosted M47 run `35511713732` reached its retained M45 create/open regression after the M47 browser/database authorities passed, then stopped fail-closed because the intercepted create RPC reported a concatenated `p_name`. Checkpoint 32 must complete exact publication, all hosted regressions, hosted M47 recertification, artifact verification, and final remote binding before it becomes the authoritative certified baseline.
 
 ## Browser validation candidate — 2026-09-18
 
@@ -207,3 +207,12 @@ Hosted M46 run `35506818269` demonstrated that the Checkpoint 30 synchronous rea
 Checkpoint 31 introduces a bounded animation-frame commit verifier. The Board detail remains in `committing` until the current connected React Board presentation host owns the expected route ID, the authoritative Board envelope has the expected ID/name, the workspace is visible, the header commit metadata carries the same ID/name/revision, and `#board-workspace-title` renders the exact Board name. Only then are `data-board-detail-id`, `data-board-detail-name`, `data-board-detail-commit-revision`, and `data-board-detail-state="ready"` published. If the route/render boundary changes before that proof, the source performs at most two controlled rerender recovery attempts; no arbitrary delays or timeout extensions are used.
 
 The retained M45 Playwright helper now waits for the committed Board name and header identity in addition to the route ID, and validates the rendered title before returning readiness. The create scenario also asserts that `wm_create_board_configured` received the intended Board name before navigation. No production migration replay, SQL semantic change, RPC signature change, RLS/grant change, or M47 database contract change is part of this corrective. Current static authority is **285 M47 checks** and **144 M45 checks**; deterministic/workflow authority remains **50 / 62** respectively.
+
+
+## Checkpoint 32 create-board transaction-boundary corrective
+
+The Checkpoint 31 commit `204977748ed3c3973bfb9105ff94a9efe1208f33` resolved the previous hosted M46 Board-detail readiness blocker: standalone hosted M45 and hosted M46 both passed. Dedicated hosted M47 run `35511713732` then exposed a narrower retained-M45 create-transaction anomaly after the primary M47 browser suite had already passed 4/4. The captured `wm_create_board_configured` request reported `p_name` as the Board name concatenated with the description, so the certification correctly stopped before hosted artifact publication.
+
+Checkpoint 32 hardens the create transaction at every observable boundary. The create dialog uses deterministic name/description control identities and explicit label associations. Submit handling compares the FormData snapshot with the live controls, fails closed on any divergence, and freezes a single immutable name/description draft before dispatch. Retained M45 Playwright authority now proves exact DOM values before submit, verifies JSON content type, parses the raw intercepted request body, and independently verifies `p_name`, `p_description`, and empty configured columns. The fixture parses raw JSON directly and retains raw body/content type for failure diagnostics. This removes ambiguity between browser interaction, FormData serialization, command dispatch, and request decoding without weakening the functional assertion or adding timing sleeps.
+
+No production migration replay, M47 SQL semantic, public Board RPC signature, RLS/grant, or production data change is introduced. Current static authority is **296 M47 checks** and **154 M45 checks**; deterministic/workflow authority remains **50 / 62** respectively.

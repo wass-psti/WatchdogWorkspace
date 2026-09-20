@@ -96,12 +96,26 @@ test('@m45-collection-create-open-duplicate Active collection search/create/open
 
   await page.getByRole('button', { name:'+ New board' }).click();
   const createDialog = page.getByRole('dialog', { name:'Create a board' });
-  await createDialog.getByRole('textbox', { name:'Board name' }).fill('M45 Created Board');
-  await createDialog.getByRole('textbox', { name:'Description' }).fill('Created through M45 collection recovery');
+  const createName = createDialog.locator('[data-board-create-name]');
+  const createDescription = createDialog.locator('[data-board-create-description]');
+  await expect(createName).toHaveAccessibleName('Board name');
+  await expect(createDescription).toHaveAccessibleName('Description');
+  await createName.fill('M45 Created Board');
+  await createDescription.fill('Created through M45 collection recovery');
+  await expect(createName).toHaveValue('M45 Created Board');
+  await expect(createDescription).toHaveValue('Created through M45 collection recovery');
   await createDialog.getByRole('button', { name:'Create board' }).click();
   await expect(page).toHaveURL(/#\/boards\/board-created-1$/);
-  expect(fixture.calls('wm_create_board_configured')).toHaveLength(1);
-  expect(fixture.calls('wm_create_board_configured')[0]?.body?.p_name).toBe('M45 Created Board');
+  const createCalls = fixture.calls('wm_create_board_configured');
+  expect(createCalls).toHaveLength(1);
+  expect(createCalls[0]?.contentType).toContain('application/json');
+  expect(JSON.parse(createCalls[0]?.rawBody || '{}')).toEqual({
+    p_name: 'M45 Created Board',
+    p_description: 'Created through M45 collection recovery',
+    p_columns: [],
+  });
+  expect(createCalls[0]?.body?.p_name).toBe('M45 Created Board');
+  expect(createCalls[0]?.body?.p_description).toBe('Created through M45 collection recovery');
   const createdDetail = await waitForM45BoardDetailReady(page, 'board-created-1', 'M45 Created Board');
   await expect(createdDetail.getByRole('heading', { name:'M45 Created Board', exact:true })).toBeVisible();
   await page.getByRole('button', { name:'Back to Boards' }).click();

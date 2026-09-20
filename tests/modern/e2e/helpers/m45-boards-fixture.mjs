@@ -46,7 +46,7 @@ export async function installM45BoardsFixture(page) {
   };
 
   const find = (id) => state.boards.find((entry) => entry.id === id) ?? null;
-  const record = (name, body) => state.calls.push({ name, body: clone(body ?? {}) });
+  const record = (name, body, rawBody, contentType) => state.calls.push({ name, body: clone(body ?? {}), rawBody, contentType });
 
   await page.route(`${M39_FIXTURE_ORIGIN}/**`, async (route) => {
     const request = route.request();
@@ -63,11 +63,19 @@ export async function installM45BoardsFixture(page) {
         },
       });
     }
+    const rawBody = request.postData() ?? '';
+    const contentType = request.headers()['content-type'] ?? '';
     let body = {};
-    try { body = request.postDataJSON() ?? {}; } catch { body = {}; }
+    try {
+      const parsed = rawBody ? JSON.parse(rawBody) : {};
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('RPC body must be a JSON object.');
+      body = parsed;
+    } catch (error) {
+      return json(route, 400, { code:'M45_FIXTURE_INVALID_JSON_BODY', message:error instanceof Error ? error.message : 'Invalid RPC request body' });
+    }
     const name = path.split('/').at(-1) ?? '';
     if (!['wm_list_boards','wm_get_board','wm_get_board_preferences','wm_create_board_configured','wm_duplicate_board','wm_set_board_status','wm_delete_board_permanently','wm_list_board_events'].includes(name)) return route.fallback();
-    record(name, body);
+    record(name, body, rawBody, contentType);
 
     if (name === 'wm_list_boards') {
       const status = String(body.p_status || 'active');

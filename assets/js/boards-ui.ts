@@ -316,16 +316,27 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     const typeChoices = Object.entries(COLUMN_TYPES).map(([type, meta]) => `<label class="board-setup-column"><input type="checkbox" name="setup_column" value="${type}"><span class="column-type-icon">${esc(meta.icon)}</span><span><strong>${esc(meta.label)}</strong><small>${esc(meta.hint)}</small></span></label>`).join('');
     const modal = dialog({
       title: 'Create a board',
-      body: `<label class="field-label">Board name<input name="name" required maxlength="120" value="New board" placeholder="For example, Project delivery plan" autocomplete="off"></label><label class="field-label">Description<textarea name="description" maxlength="1200" rows="3" placeholder="Describe the purpose of this board"></textarea></label><fieldset class="board-setup-fieldset"><legend>Starting setup</legend><label class="choice-card"><input type="radio" name="setup_mode" value="empty" checked><span><strong>Start empty</strong><small>Create the board without custom columns. Add them whenever you need them.</small></span></label><label class="choice-card"><input type="radio" name="setup_mode" value="custom"><span><strong>Choose starting columns</strong><small>Choose the columns you want to start with. You can change or remove them later.</small></span></label><div class="board-setup-columns" data-board-setup-columns hidden>${typeChoices}</div></fieldset><p class="field-help">Your board stays flexible. Add, rename, reorder, configure, duplicate, hide, or delete columns as your workflow changes.</p>`,
+      body: `<label class="field-label" for="boardCreateName">Board name<input id="boardCreateName" data-board-create-name name="name" required maxlength="120" value="New board" placeholder="For example, Project delivery plan" autocomplete="off"></label><label class="field-label" for="boardCreateDescription">Description<textarea id="boardCreateDescription" data-board-create-description name="description" maxlength="1200" rows="3" placeholder="Describe the purpose of this board"></textarea></label><fieldset class="board-setup-fieldset"><legend>Starting setup</legend><label class="choice-card"><input type="radio" name="setup_mode" value="empty" checked><span><strong>Start empty</strong><small>Create the board without custom columns. Add them whenever you need them.</small></span></label><label class="choice-card"><input type="radio" name="setup_mode" value="custom"><span><strong>Choose starting columns</strong><small>Choose the columns you want to start with. You can change or remove them later.</small></span></label><div class="board-setup-columns" data-board-setup-columns hidden>${typeChoices}</div></fieldset><p class="field-help">Your board stays flexible. Add, rename, reorder, configure, duplicate, hide, or delete columns as your workflow changes.</p>`,
       submitLabel: 'Create board',
       onSubmit: async (fd) => {
+        const nameControl = modal.wrap.querySelector<HTMLInputElement>('[data-board-create-name]');
+        const descriptionControl = modal.wrap.querySelector<HTMLTextAreaElement>('[data-board-create-description]');
+        if (!nameControl || !descriptionControl) throw new Error('The create-board form is not ready. Close it and try again.');
+        const submittedName = String(fd.get('name') ?? '');
+        const submittedDescription = String(fd.get('description') ?? '');
+        if (submittedName !== nameControl.value || submittedDescription !== descriptionControl.value) {
+          throw new Error('The create-board form changed during submission. Review the Board name and description, then try again.');
+        }
+        const draft = Object.freeze({
+          name: nameControl.value.trim(),
+          description: descriptionControl.value,
+        });
         const mode = String(fd.get('setup_mode') || 'empty');
         const types = mode === 'custom' ? fd.getAll('setup_column').map(String) : [];
         if (mode === 'custom' && !types.length) throw new Error('Choose at least one starting column, or select Start empty.');
         const columns = startingColumns(types);
         const id = await commandService.createBoard({
-          name: String(fd.get('name') || '').trim(),
-          description: String(fd.get('description') || ''),
+          ...draft,
           columns,
         });
         state.status = 'active';
