@@ -19,7 +19,7 @@ async function waitForM45CollectionReady(page, status = 'active') {
 }
 
 
-async function waitForM45BoardDetailReady(page, boardId = null) {
+async function waitForM45BoardDetailReady(page, boardId = null, boardName = null) {
   const selector = boardId
     ? `[data-wm-board-presentation-host][data-wm-board-presentation-route="workspace"][data-wm-board-id="${boardId}"]`
     : '[data-wm-board-presentation-host][data-wm-board-presentation-route="workspace"][data-wm-board-id]';
@@ -30,6 +30,11 @@ async function waitForM45BoardDetailReady(page, boardId = null) {
   const boardMain = detail.locator('#boardMain');
   await expect(boardMain).toHaveAttribute('data-board-detail-state', 'ready');
   if (boardId) await expect(boardMain).toHaveAttribute('data-board-detail-id', boardId);
+  if (boardName) await expect(boardMain).toHaveAttribute('data-board-detail-name', boardName);
+  const headerHost = boardMain.locator('[data-board-header-host]');
+  if (boardId) await expect(headerHost).toHaveAttribute('data-board-detail-commit-id', boardId);
+  if (boardName) await expect(headerHost).toHaveAttribute('data-board-detail-commit-name', boardName);
+  if (boardName) await expect(headerHost.locator('#board-workspace-title')).toHaveText(boardName);
   await expect(boardMain.locator('[data-board-workspace-shell]')).toBeVisible();
   await expect(detail.locator('.button-spinner')).toHaveCount(0);
   return detail;
@@ -83,7 +88,7 @@ test('@m45-collection-create-open-duplicate Active collection search/create/open
   await alpha.focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/#\/boards\/board-active-alpha$/);
-  const alphaDetail = await waitForM45BoardDetailReady(page, 'board-active-alpha');
+  const alphaDetail = await waitForM45BoardDetailReady(page, 'board-active-alpha', 'Alpha Roadmap');
   await expect(alphaDetail.getByRole('heading', { name:'Alpha Roadmap', exact:true })).toBeVisible();
   await page.getByRole('button', { name:'Back to Boards' }).click();
   await expect(page).toHaveURL(/#\/boards$/);
@@ -95,7 +100,9 @@ test('@m45-collection-create-open-duplicate Active collection search/create/open
   await createDialog.getByRole('textbox', { name:'Description' }).fill('Created through M45 collection recovery');
   await createDialog.getByRole('button', { name:'Create board' }).click();
   await expect(page).toHaveURL(/#\/boards\/board-created-1$/);
-  const createdDetail = await waitForM45BoardDetailReady(page, 'board-created-1');
+  expect(fixture.calls('wm_create_board_configured')).toHaveLength(1);
+  expect(fixture.calls('wm_create_board_configured')[0]?.body?.p_name).toBe('M45 Created Board');
+  const createdDetail = await waitForM45BoardDetailReady(page, 'board-created-1', 'M45 Created Board');
   await expect(createdDetail.getByRole('heading', { name:'M45 Created Board', exact:true })).toBeVisible();
   await page.getByRole('button', { name:'Back to Boards' }).click();
   await waitForM45CollectionReady(page, 'active');
@@ -107,7 +114,7 @@ test('@m45-collection-create-open-duplicate Active collection search/create/open
   await expect(page).toHaveURL(/#\/boards\/board-duplicate-\d+$/);
   const duplicateId = page.url().split('/').at(-1);
   expect(duplicateId).toMatch(/^board-duplicate-\d+$/);
-  const duplicateDetail = await waitForM45BoardDetailReady(page, duplicateId);
+  const duplicateDetail = await waitForM45BoardDetailReady(page, duplicateId, 'M45 Created Board copy');
   await expect(duplicateDetail.getByRole('heading', { name:'M45 Created Board copy', exact:true })).toBeVisible();
 
   expect(fixture.calls('wm_create_board_configured')).toHaveLength(1);

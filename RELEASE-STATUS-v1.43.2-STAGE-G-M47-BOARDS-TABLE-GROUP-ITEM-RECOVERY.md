@@ -21,14 +21,14 @@
 
 ## Verification state
 
-- Current M47 static verifier: **PASS (275 checks)** with architecture 55, 34 governed pgTAP assertions, and four governed browser scenarios bound.
+- Current M47 static verifier: **PASS (285 checks)** with architecture 55, 34 governed pgTAP assertions, and four governed browser scenarios bound.
 - Current dependency-free M47 deterministic verifier: **PASS (50 checks)**, including strict DTO fixture validation and full routed browser-fixture lifecycle execution through production mappers.
 - M47 backend SQL: transactionally dry-run against the production Supabase engine with full rollback; semantic sequence PASS and M46 attestation remained compatible.
 - Dedicated M47 pgTAP behavioral suite: **PASS — 34/34 assertions** in the governed disposable local Supabase stack.
 - Retained M17 table evaluation, M18 virtualization, and M46 static/deterministic regressions remain PASS under architecture 55.
 - Official four-scenario M47 Playwright authority: **PASS — 4/4 scenarios** in the governed Mac candidate runs.
 
-The Checkpoint 30 corrective source is not yet certified. The prior corrective commit `522a32e01639fe6a385a9e5ffe84cd3fda0fd996` has a valid local and hosted M47 PASS/artifact, but the aggregate transaction stopped on a retained M46→M45 browser synchronization race; this new source must complete exact publication, hosted M46 regression, hosted M47 recertification, artifact verification, and final remote binding before it becomes the authoritative certified baseline.
+The Checkpoint 31 corrective source is not yet certified. The published corrective commit `c2cd7487a3be8ff4139c98f3df556949b177fe78` has a valid local exact-commit M47 PASS and the retained M45 standalone browser authority is green, but the aggregate transaction stopped on hosted M46 run `35506818269` because the retained M45 create/open scenario observed Board-detail readiness before the expected title was committed. Checkpoint 31 must complete exact publication, hosted M46 regression, hosted M47 recertification, artifact verification, and final remote binding before it becomes the authoritative certified baseline.
 
 ## Browser validation candidate — 2026-09-18
 
@@ -198,3 +198,12 @@ The corrective publication at `522a32e01639fe6a385a9e5ffe84cd3fda0fd996` passed 
 Checkpoint 30 adds an explicit Board-detail data-commit runtime contract in `assets/js/boards-ui.ts`: loading, error, not-found, and ready states are published on `#boardMain`; stale Board identity is cleared outside ready state; and `data-board-detail-id` plus `ready` are written only after the complete Board workspace render has committed. The retained M45 Playwright helper now waits for that exact ready identity and visible workspace shell before asserting Board content, eliminating spinner disappearance as the primary readiness boundary. M45 static authority and M47 corrective authority both lock this behavior against regression.
 
 No production migration, M47 SQL semantic, Board RPC signature, RLS/grant, or production contract change is introduced. Current M47 static authority is **275 checks**; deterministic authority remains **50 checks** and workflow authority remains **62 checks**. The new corrective source remains `implementation-complete-pending-certification` until the full fail-closed publication and hosted regression/certification transaction passes.
+
+
+## Checkpoint 31 committed Board-payload readiness corrective
+
+Hosted M46 run `35506818269` demonstrated that the Checkpoint 30 synchronous readiness marker could still be observed before the expected Board title existed, even though the route host, exact Board ID, workspace shell, and `ready` state were present. This proves the remaining defect is a presentation-commit ordering race, not an M46 database contract failure.
+
+Checkpoint 31 introduces a bounded animation-frame commit verifier. The Board detail remains in `committing` until the current connected React Board presentation host owns the expected route ID, the authoritative Board envelope has the expected ID/name, the workspace is visible, the header commit metadata carries the same ID/name/revision, and `#board-workspace-title` renders the exact Board name. Only then are `data-board-detail-id`, `data-board-detail-name`, `data-board-detail-commit-revision`, and `data-board-detail-state="ready"` published. If the route/render boundary changes before that proof, the source performs at most two controlled rerender recovery attempts; no arbitrary delays or timeout extensions are used.
+
+The retained M45 Playwright helper now waits for the committed Board name and header identity in addition to the route ID, and validates the rendered title before returning readiness. The create scenario also asserts that `wm_create_board_configured` received the intended Board name before navigation. No production migration replay, SQL semantic change, RPC signature change, RLS/grant change, or M47 database contract change is part of this corrective. Current static authority is **285 M47 checks** and **144 M45 checks**; deterministic/workflow authority remains **50 / 62** respectively.

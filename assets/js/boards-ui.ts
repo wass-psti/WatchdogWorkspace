@@ -107,6 +107,11 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   const tableVirtualization = createBoardTableVirtualizationController();
   let virtualizationFrame = 0;
   let virtualizationMeasureFrame = 0;
+  let boardDetailCommitFrame = 0;
+  let boardDetailCommitRevision = 0;
+  let boardDetailCommitRetryBoardId: string | null = null;
+  let boardDetailCommitRetryCount = 0;
+  const BOARD_DETAIL_COMMIT_RETRY_LIMIT = 2;
   let virtualizationRenderDeferredForMenu = false;
   let fullBoardRenderDeferredForMenu = false;
   let pendingGridFocus: PendingGridFocus | null = null;
@@ -181,6 +186,10 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     virtualizationFrame = 0;
     cancelAnimationFrame(virtualizationMeasureFrame);
     virtualizationMeasureFrame = 0;
+    cancelAnimationFrame(boardDetailCommitFrame);
+    boardDetailCommitFrame = 0;
+    boardDetailCommitRetryBoardId = null;
+    boardDetailCommitRetryCount = 0;
     pendingGridFocus = null;
     virtualizationRenderDeferredForMenu = false;
     fullBoardRenderDeferredForMenu = false;
@@ -584,6 +593,70 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     main.innerHTML = `<div class="board-state-host" data-board-state-host></div><div class="board-workspace-shell" data-board-workspace-shell hidden><div data-board-header-host></div><div data-board-controls-host></div><section id="boardViewRegion" class="board-view-region" data-board-view-host role="tabpanel" aria-live="polite"></section><div data-board-selection-host></div><div data-item-panel-host></div></div>`;
   }
 
+  function clearBoardDetailCommitIdentity(main: HTMLElement): void {
+    delete main.dataset.boardDetailId;
+    delete main.dataset.boardDetailName;
+    delete main.dataset.boardDetailCommitRevision;
+  }
+
+  function scheduleBoardDetailCommittedReady(main: HTMLElement, board: BoardRecord): void {
+    cancelAnimationFrame(boardDetailCommitFrame);
+    const expectedId = String(board.id);
+    const expectedName = String(board.name ?? '').trim();
+    const revision = ++boardDetailCommitRevision;
+    const headerHost = main.querySelector<HTMLElement>('[data-board-header-host]');
+    if (headerHost) {
+      headerHost.dataset.boardDetailCommitId = expectedId;
+      headerHost.dataset.boardDetailCommitName = expectedName;
+      headerHost.dataset.boardDetailCommitRevision = String(revision);
+    }
+    boardDetailCommitFrame = requestAnimationFrame(() => {
+      boardDetailCommitFrame = 0;
+      const presentationHost = main.closest<HTMLElement>('[data-wm-board-presentation-host]');
+      const currentMain = presentationHost?.querySelector<HTMLElement>('#boardMain') ?? null;
+      const currentBoard = activeBoardEnvelope()?.board ?? null;
+      const workspace = main.querySelector<HTMLElement>('[data-board-workspace-shell]');
+      const committedHeaderHost = main.querySelector<HTMLElement>('[data-board-header-host]');
+      const title = committedHeaderHost?.querySelector<HTMLElement>('#board-workspace-title') ?? null;
+      const committed = main.isConnected
+        && currentMain === main
+        && presentationHost?.dataset.wmBoardPresentationRoute === 'workspace'
+        && String(presentationHost?.dataset.wmBoardId ?? '') === expectedId
+        && String(currentBoard?.id ?? '') === expectedId
+        && String(currentBoard?.name ?? '').trim() === expectedName
+        && Boolean(workspace && !workspace.hidden)
+        && committedHeaderHost?.dataset.boardDetailCommitId === expectedId
+        && committedHeaderHost?.dataset.boardDetailCommitName === expectedName
+        && committedHeaderHost?.dataset.boardDetailCommitRevision === String(revision)
+        && title?.textContent?.trim() === expectedName;
+      if (committed) {
+        main.dataset.boardDetailId = expectedId;
+        main.dataset.boardDetailName = expectedName;
+        main.dataset.boardDetailCommitRevision = String(revision);
+        main.dataset.boardDetailState = 'ready';
+        boardDetailCommitRetryBoardId = expectedId;
+        boardDetailCommitRetryCount = 0;
+        return;
+      }
+      if (currentMain === main && main.isConnected) {
+        main.dataset.boardDetailState = 'committing';
+        clearBoardDetailCommitIdentity(main);
+      }
+      if (!currentBoard || String(currentBoard.id) !== expectedId || state.loading || state.error) return;
+      if (boardDetailCommitRetryBoardId !== expectedId) {
+        boardDetailCommitRetryBoardId = expectedId;
+        boardDetailCommitRetryCount = 0;
+      }
+      if (boardDetailCommitRetryCount >= BOARD_DETAIL_COMMIT_RETRY_LIMIT) return;
+      boardDetailCommitRetryCount += 1;
+      queueMicrotask(() => {
+        const latest = activeBoardEnvelope()?.board ?? null;
+        if (!latest || String(latest.id) !== expectedId || state.loading || state.error) return;
+        renderBoardData();
+      });
+    });
+  }
+
   function captureBoardViewGeometry(host: HTMLElement | null): BoardViewGeometry {
     const tables = new Map<string, number>();
     host?.querySelectorAll<HTMLElement>('.board-group[data-group-id] .board-table-scroll').forEach((scroll) => {
@@ -658,16 +731,20 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     const workspace = main.querySelector<HTMLElement>('[data-board-workspace-shell]');
     if (!stateHost || !workspace) return;
     if (state.loading) {
+      cancelAnimationFrame(boardDetailCommitFrame);
+      boardDetailCommitFrame = 0;
       main.dataset.boardDetailState = 'loading';
-      delete main.dataset.boardDetailId;
+      clearBoardDetailCommitIdentity(main);
       workspace.hidden = true;
       stateHost.hidden = false;
       patchHost(stateHost, '<div class="boards-state"><span class="button-spinner"></span><h3>Loading board</h3><p>Fetching groups, items, columns, and your saved view…</p></div>');
       return;
     }
     if (state.error) {
+      cancelAnimationFrame(boardDetailCommitFrame);
+      boardDetailCommitFrame = 0;
       main.dataset.boardDetailState = 'error';
-      delete main.dataset.boardDetailId;
+      clearBoardDetailCommitIdentity(main);
       workspace.hidden = true;
       stateHost.hidden = false;
       patchHost(stateHost, `<div class="boards-state error"><h3>This board couldn’t load</h3><p>${esc(state.error)}</p><button class="secondary-btn" data-board-detail-retry>Try again</button></div>`);
@@ -675,17 +752,24 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     }
     const envelope = activeBoardEnvelope();
     if (!envelope?.board) {
+      cancelAnimationFrame(boardDetailCommitFrame);
+      boardDetailCommitFrame = 0;
       main.dataset.boardDetailState = 'not-found';
-      delete main.dataset.boardDetailId;
+      clearBoardDetailCommitIdentity(main);
       workspace.hidden = true;
       stateHost.hidden = false;
       patchHost(stateHost, '<div class="boards-state"><h3>Board not found</h3><p>This board may have been deleted, moved, or you may no longer have access.</p></div>');
       return;
     }
+    cancelAnimationFrame(boardDetailCommitFrame);
+    boardDetailCommitFrame = 0;
+    main.dataset.boardDetailState = 'committing';
+    clearBoardDetailCommitIdentity(main);
     stateHost.hidden = true;
     patchHost(stateHost, '');
     workspace.hidden = false;
-    patchHost(main.querySelector<HTMLElement>('[data-board-header-host]'), boardHeader());
+    const headerHost = main.querySelector<HTMLElement>('[data-board-header-host]');
+    patchHost(headerHost, boardHeader());
     patchHost(main.querySelector<HTMLElement>('[data-board-controls-host]'), boardControls());
     const viewHost = main.querySelector<HTMLElement>('[data-board-view-host]');
     const geometry = captureBoardViewGeometry(viewHost);
@@ -702,11 +786,14 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     if (preservedGridFocus && focusLogicalGridCell(preservedGridFocus.itemId, preservedGridFocus.columnIndex, preservedGridFocus.scrollLeft)) {
       armPendingGridFocus(preservedGridFocus);
     }
-    main.dataset.boardDetailId = String(envelope.board.id);
-    main.dataset.boardDetailState = 'ready';
+    scheduleBoardDetailCommittedReady(main, envelope.board);
   }
 
   function renderBoard(boardId: string): void {
+    cancelAnimationFrame(boardDetailCommitFrame);
+    boardDetailCommitFrame = 0;
+    boardDetailCommitRetryBoardId = String(boardId);
+    boardDetailCommitRetryCount = 0;
     void preferencePersistence.flushPending();
     releaseListEventBinding();
     realtimeController?.disconnect();
@@ -1547,6 +1634,10 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     virtualizationFrame = 0;
     cancelAnimationFrame(virtualizationMeasureFrame);
     virtualizationMeasureFrame = 0;
+    cancelAnimationFrame(boardDetailCommitFrame);
+    boardDetailCommitFrame = 0;
+    boardDetailCommitRetryBoardId = null;
+    boardDetailCommitRetryCount = 0;
     pendingGridFocus = null;
     virtualizationRenderDeferredForMenu = false;
     fullBoardRenderDeferredForMenu = false;
