@@ -159,7 +159,10 @@ export function createBoardSelectors(state: MutableBoardViewState): BoardSelecto
       if (!filter) continue;
       const column = allColumns().find((candidate) => String(candidate.id) === String(columnId));
       if (!column) continue;
-      if (!searchableCellText(item, column).toLowerCase().includes(filter.toLowerCase())) return false;
+      const value = getCellValue(item, column);
+      if (column.data_type === 'status' || column.data_type === 'dropdown') {
+        if (String(value ?? '') !== filter) return false;
+      } else if (!searchableCellText(item, column).toLowerCase().includes(filter.toLowerCase())) return false;
     }
     if (!query) return true;
     if (String(item.title ?? '').toLowerCase().includes(query)) return true;
@@ -174,19 +177,21 @@ export function createBoardSelectors(state: MutableBoardViewState): BoardSelecto
     if (!column) return stableOrder();
     const leftValue = getCellValue(left, column);
     const rightValue = getCellValue(right, column);
+    if (leftValue == null && rightValue == null) return stableOrder();
+    if (leftValue == null) return 1;
+    if (rightValue == null) return -1;
     let result = 0;
-    if (leftValue == null && rightValue != null) result = 1;
-    else if (leftValue != null && rightValue == null) result = -1;
-    else if (column.data_type === 'number') result = Number(leftValue ?? 0) - Number(rightValue ?? 0);
-    else if (column.data_type === 'date') result = String(leftValue ?? '').localeCompare(String(rightValue ?? ''));
+    if (column.data_type === 'number') result = Number(leftValue) - Number(rightValue);
+    else if (column.data_type === 'date') result = String(leftValue).localeCompare(String(rightValue));
     else if (column.data_type === 'status') {
       const leftLabel = statusLabelForValue(column, leftValue);
       const rightLabel = statusLabelForValue(column, rightValue);
       result = Number(leftLabel?.position ?? 999) - Number(rightLabel?.position ?? 999)
-        || String(leftLabel?.name ?? leftValue ?? '').localeCompare(String(rightLabel?.name ?? rightValue ?? ''), undefined, { numeric: true, sensitivity: 'base' });
+        || String(leftLabel?.name ?? leftValue).localeCompare(String(rightLabel?.name ?? rightValue), undefined, { numeric: true, sensitivity: 'base' });
     } else {
       result = searchableCellText(left, column).localeCompare(searchableCellText(right, column), undefined, { numeric: true, sensitivity: 'base' });
     }
+    if (result === 0) return stableOrder();
     return direction === 'desc' ? -result : result;
   };
 

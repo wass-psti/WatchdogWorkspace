@@ -1,7 +1,7 @@
 # Release Status — Work Management App v1.43.2 — Stage G M47
 
 **Milestone:** M47 — Boards Table / Group / Item Recovery
-**State:** implementation-complete-pending-certification
+**State:** active-certified
 **Architecture:** 55
 **Prerequisite:** M46 active-certified
 
@@ -216,3 +216,7 @@ The Checkpoint 31 commit `204977748ed3c3973bfb9105ff94a9efe1208f33` resolved the
 Checkpoint 32 hardens the create transaction at every observable boundary. The create dialog uses deterministic name/description control identities and explicit label associations. Submit handling compares the FormData snapshot with the live controls, fails closed on any divergence, and freezes a single immutable name/description draft before dispatch. Retained M45 Playwright authority now proves exact DOM values before submit, verifies JSON content type, parses the raw intercepted request body, and independently verifies `p_name`, `p_description`, and empty configured columns. The fixture parses raw JSON directly and retains raw body/content type for failure diagnostics. This removes ambiguity between browser interaction, FormData serialization, command dispatch, and request decoding without weakening the functional assertion or adding timing sleeps.
 
 No production migration replay, M47 SQL semantic, public Board RPC signature, RLS/grant, or production data change is introduced. Current static authority is **296 M47 checks** and **154 M45 checks**; deterministic/workflow authority remains **50 / 62** respectively.
+
+## Final certified baseline — 2026-09-20T14:33:04Z
+
+The fail-closed M47 certification passed for source commit `076233918b885e71834dd2b5814c26397bdaaed5`. The packaged Boards Table / Group / Item Recovery state is **active-certified**. The retained backend contract is `1.43.2-m46-v1` / `2e5db3073f702cad96be3eb1d4a18b33ea039252ad4d0532dc9b6e1b3ca0da1c`; M47 semantic attestation is `1.43.2-m47-v1`. Browser, disposable pgTAP, production ordering/security/index attestation, historical regressions, build, and package hygiene passed before promotion.

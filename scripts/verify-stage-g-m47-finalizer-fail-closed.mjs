@@ -5,6 +5,18 @@ import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 const root=resolve(import.meta.dirname,'..');
 const base='Work-Management-App-v1.43.2-Stage-G-M47-Certified-Baseline';
+function preparePendingCertificationFixture(project){
+  const target=join(project,'config/stage-g-m47-boards-table-group-item-recovery-target.ts');
+  const status=join(project,'RELEASE-STATUS-v1.43.2-STAGE-G-M47-BOARDS-TABLE-GROUP-ITEM-RECOVERY.md');
+  let targetSource=readFileSync(target,'utf8'); let statusSource=readFileSync(status,'utf8');
+  targetSource=targetSource.replace("activationState: 'active-certified'", "activationState: 'implementation-complete-pending-certification'");
+  statusSource=statusSource.replace('**State:** active-certified','**State:** implementation-complete-pending-certification');
+  const finalMarker='\n## Final certified baseline —'; const finalIndex=statusSource.indexOf(finalMarker);
+  if(finalIndex>=0) statusSource=`${statusSource.slice(0,finalIndex).trimEnd()}\n`;
+  writeFileSync(target,targetSource); writeFileSync(status,statusSource);
+  assert.match(targetSource,/activationState:\s*'implementation-complete-pending-certification'/);
+  assert.match(statusSource,/\*\*State:\*\* implementation-complete-pending-certification/);
+}
 function prepare(){
   const sandbox=mkdtempSync(join(tmpdir(),'wm-m47-finalizer-')); const project=join(sandbox,'project'); const bin=join(sandbox,'bin');
   for(const d of ['scripts/lib','config','src'])mkdirSync(join(project,d),{recursive:true}); mkdirSync(bin,{recursive:true});
@@ -14,9 +26,7 @@ function prepare(){
   cpSync(join(root,'config/stage-g-m46-boards-backend-data-contract-recovery-target.ts'),join(project,'config/stage-g-m46-boards-backend-data-contract-recovery-target.ts'));
   cpSync(join(root,'config/stage-g-m46-board-backend-contract.ts'),join(project,'config/stage-g-m46-board-backend-contract.ts'));
   cpSync(join(root,'RELEASE-STATUS-v1.43.2-STAGE-G-M47-BOARDS-TABLE-GROUP-ITEM-RECOVERY.md'),join(project,'RELEASE-STATUS-v1.43.2-STAGE-G-M47-BOARDS-TABLE-GROUP-ITEM-RECOVERY.md'));
-  for(const file of ['config/stage-g-m47-boards-table-group-item-recovery-target.ts','RELEASE-STATUS-v1.43.2-STAGE-G-M47-BOARDS-TABLE-GROUP-ITEM-RECOVERY.md']){
-    const p=join(project,file); let s=readFileSync(p,'utf8'); s=s.replace("activationState: 'implementation-in-progress'","activationState: 'implementation-complete-pending-certification'").replace('**State:** implementation-in-progress','**State:** implementation-complete-pending-certification'); writeFileSync(p,s);
-  }
+  preparePendingCertificationFixture(project);
   for(const [file,body] of [
     ['verify-stage-g-m47-boards-table-group-item-recovery.mjs','process.exit(0);\n'],
     ['scripts/verify-stage-g-m47-production-invariants.mjs','process.exit(0);\n'],

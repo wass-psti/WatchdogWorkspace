@@ -4,7 +4,7 @@ export const stageGM47BoardsTableGroupItemRecoveryTarget = Object.freeze({
   milestone: 47,
   stage: 'G',
   name: 'Boards Table / Group / Item Recovery',
-  activationState: 'implementation-complete-pending-certification' as M47ActivationState,
+  activationState: 'active-certified' as M47ActivationState,
   prerequisite: Object.freeze({ milestone: 46, requiredState: 'active-certified' as const }),
   architectureVersion: 55,
   authority: Object.freeze({

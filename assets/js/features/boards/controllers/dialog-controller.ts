@@ -1,4 +1,4 @@
-import type { BoardDialog, BoardDialogHandle, BoardDialogOptions } from '../../../../../src/features/boards/contracts/presentation.ts';
+import type { BoardDialog, BoardDialogHandle, BoardDialogOptions, ConfirmActionOptions } from '../../../../../src/features/boards/contracts/presentation.ts';
 import type { OverlayManager } from '../../../../../src/platform/contracts/overlay.ts';
 import type { EscapeHtml, ToastRenderer } from '../../../../../src/platform/contracts/ui.ts';
 import { buttonClass, iconButtonClass } from '../../../platform/ui/primitives.ts';
@@ -13,7 +13,7 @@ export interface BoardDialogControllerDependencies {
 
 export interface BoardDialogController {
   open: BoardDialog;
-  confirm(message: string): Promise<boolean>;
+  confirm(message: string, options?: ConfirmActionOptions): Promise<boolean>;
   closeAll(): void;
   count(): number;
 }
@@ -32,7 +32,7 @@ export function createBoardDialogController({ toast, escapeHtml, overlaySelector
   const openDialogs = new Set<HTMLElement>();
   let sequence = 0;
 
-  function open({ title, body, submitLabel = 'Save', danger = false, onSubmit }: BoardDialogOptions): BoardDialogHandle {
+  function open({ title, body, submitLabel = 'Save', danger = false, parentOverlayId = null, onSubmit }: BoardDialogOptions): BoardDialogHandle {
     const overlay = overlaySelector === '#overlayRoot'
       ? resolveGlobalOverlayRoot()
       : document.querySelector<HTMLElement>(overlaySelector) || resolveGlobalOverlayRoot();
@@ -93,6 +93,7 @@ export function createBoardDialogController({ toast, escapeHtml, overlaySelector
       element: wrap,
       trigger: previous instanceof HTMLElement ? previous : null,
       close: ({ restoreFocus = false, fromCoordinator = false } = {}) => closeInternal({ restoreFocus, fromCoordinator }),
+      parentId: parentOverlayId,
     });
 
     wrap.addEventListener('click', (event: MouseEvent) => {
@@ -157,7 +158,7 @@ export function createBoardDialogController({ toast, escapeHtml, overlaySelector
     return Object.freeze({ wrap, close });
   }
 
-  function confirm(message: string): Promise<boolean> {
+  function confirm(message: string, { parentOverlayId = null }: ConfirmActionOptions = {}): Promise<boolean> {
     const destructive = /delete|permanent|remove|trash|cannot be undone/i.test(message);
     return new Promise<boolean>((resolve) => {
       let settled = false;
@@ -171,6 +172,7 @@ export function createBoardDialogController({ toast, escapeHtml, overlaySelector
         body: `<div class="board-confirm-copy"><span class="board-confirm-symbol" aria-hidden="true">${destructive ? '!' : '?'}</span><p>${esc(message)}</p></div>`,
         submitLabel: destructive ? 'Confirm action' : 'Continue',
         danger: destructive,
+        parentOverlayId,
         onSubmit: () => { finish(true); },
       });
       const observer = new MutationObserver(() => {

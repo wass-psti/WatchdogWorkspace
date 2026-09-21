@@ -30,6 +30,7 @@ interface BoardInlineEditDependencies {
   readonly statusLabelsFor?: (column: BoardColumn) => readonly StatusLabel[];
   readonly statusLabelForValue?: (column: BoardColumn, value: unknown) => StatusLabel | null;
   readonly confirmAction?: ConfirmAction;
+  readonly onClose?: (() => void) | null;
 }
 
 interface CommitOptions { readonly label?: string; readonly deferRender?: boolean; }
@@ -51,7 +52,7 @@ interface ExplicitInputOptions {
   readonly type?: string;
 }
 interface ActivePopover { readonly inline: false; readonly popover: HTMLDivElement; readonly anchor: HTMLElement; }
-interface ActiveInline { readonly inline: true; readonly anchor: HTMLElement; readonly container: HTMLElement; readonly input: HTMLInputElement; readonly restore: () => void; }
+interface ActiveInline { readonly inline: true; readonly anchor: HTMLElement; readonly container: HTMLElement; readonly input: HTMLInputElement; readonly restore: () => void; readonly restoreFocus: () => void; }
 type ActiveEditor = ActivePopover | ActiveInline;
 interface StatusDraft {
   labels: StatusLabel[];
@@ -98,6 +99,7 @@ export function createBoardInlineEditController({
   reloadBoard = null,
   preferencePatches,
   confirmAction = (message) => globalThis.confirm(message),
+  onClose = null,
 }: BoardInlineEditDependencies) {
   const esc = escapeHtml;
   let active: ActiveEditor | null = null;
@@ -191,7 +193,11 @@ export function createBoardInlineEditController({
     if (current.inline && cancel) current.restore();
     if (!current.inline) current.popover.remove();
     if (!fromCoordinator) releaseOverlay();
-    if (restore && current.anchor.isConnected) current.anchor.focus({ preventScroll: true });
+    if (restore) {
+      if (current.inline) current.restoreFocus();
+      else if (current.anchor.isConnected) current.anchor.focus({ preventScroll: true });
+    }
+    onClose?.();
   }
 
   function position(popover: HTMLDivElement, anchor: HTMLElement): void {
@@ -444,7 +450,7 @@ export function createBoardInlineEditController({
           const label = editor.label(id);
           if (!label) return;
           const used = statusUsageCount(column, label.id, label.name);
-          if (used && !await confirmAction(`Delete “${label.name}”? ${used} item${used === 1 ? '' : 's'} currently use this label. Those values will be cleared.`)) return;
+          if (used && !await confirmAction(`Delete “${label.name}”? ${used} item${used === 1 ? '' : 's'} currently use this label. Those values will be cleared.`, { parentOverlayId: 'inline-editor' })) return;
           try { editor.remove(label.id); }
           catch (error) { toast(errorMessage(error, 'The status label could not be deleted.'), 'warning'); return; }
           draft.expandedId = null;
@@ -485,6 +491,19 @@ export function createBoardInlineEditController({
   function openExplicitInput({ anchor, container, value, maxLength = 240, ariaLabel, onSave, type = 'text' }: ExplicitInputOptions): void {
     close({ restore: false });
     const original = container.innerHTML;
+    const focusIdentity = ['data-edit-cell', 'data-edit-item-title', 'data-rename-column-inline', 'data-rename-group-inline']
+      .map((attribute) => [attribute, anchor.getAttribute(attribute)] as const)
+      .find(([, value]) => Boolean(value));
+    const anchorAriaLabel = anchor.getAttribute('aria-label');
+    const restoreFocus = (): void => {
+      if (!container.isConnected) return;
+      const replacement = focusIdentity
+        ? container.querySelector<HTMLElement>(`[${focusIdentity[0]}="${CSS.escape(focusIdentity[1] || '')}"]`)
+        : anchorAriaLabel
+          ? container.querySelector<HTMLElement>(`[aria-label="${CSS.escape(anchorAriaLabel)}"]`)
+          : container.querySelector<HTMLElement>('button,[tabindex]:not([tabindex="-1"])');
+      replacement?.focus({ preventScroll: true });
+    };
     const shell = document.createElement('div');
     shell.className = 'board-inline-editor-shell';
     shell.setAttribute('data-inline-editor-state', 'editing');
@@ -509,7 +528,7 @@ export function createBoardInlineEditController({
     let closed = false;
     let pending = false;
     const restore = (): void => { if (container.isConnected) container.innerHTML = original; };
-    active = { inline: true, anchor, container, input, restore };
+    active = { inline: true, anchor, container, input, restore, restoreFocus };
     overlayCoordinator?.open({ id: 'inline-editor', element: shell, trigger: anchor, close: ({ restoreFocus = false, fromCoordinator = false } = {}) => close({ restore: restoreFocus, fromCoordinator, cancel: true }) });
 
     const setPending = (next: boolean): void => {
@@ -527,7 +546,7 @@ export function createBoardInlineEditController({
       active = null;
       releaseOverlay();
       restore();
-      if (anchor.isConnected) anchor.focus({ preventScroll: true });
+      restoreFocus();
     };
 
     const save = async (): Promise<void> => {
@@ -573,7 +592,6 @@ export function createBoardInlineEditController({
     requestAnimationFrame(() => {
       input.focus();
       if (['text', 'email', 'url'].includes(input.type)) input.select();
-      if (input.type === 'date') input.showPicker?.();
     });
   }
 

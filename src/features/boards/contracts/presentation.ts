@@ -15,12 +15,17 @@ export interface BoardDialogOptions {
   readonly body: string;
   readonly submitLabel?: string;
   readonly danger?: boolean;
+  readonly parentOverlayId?: string | null;
   readonly onSubmit: (data: FormData) => void | Promise<void>;
 }
 
 export type BoardDialog = (options: BoardDialogOptions) => BoardDialogHandle;
 export type ReloadBoard = () => void | Promise<unknown>;
-export type ConfirmAction = (message: string) => boolean | Promise<boolean>;
+export interface ConfirmActionOptions {
+  readonly parentOverlayId?: string | null;
+}
+
+export type ConfirmAction = (message: string, options?: ConfirmActionOptions) => boolean | Promise<boolean>;
 
 export interface BoardWorkflowBaseDependencies {
   readonly commands: BoardCommandService;

@@ -96,6 +96,7 @@ export function createStatusLabelEditor(column: unknown): StatusLabelEditor {
   const toggleActive = (labelId: StatusLabelId | string): void => {
     const index = requireIndex(labelId);
     const current = labelAt(index);
+    if (current.active && labels.filter((entry) => entry.active).length <= 1) throw new Error('Keep at least one active status label.');
     const updated = { ...current, active: !current.active };
     labels[index] = updated;
     if (defaultId === current.id && updated.active === false) defaultId = labels.find((entry) => entry.active && entry.id !== current.id)?.id ?? null;
@@ -112,6 +113,7 @@ export function createStatusLabelEditor(column: unknown): StatusLabelEditor {
     if (labels.length <= 1) throw new Error('Keep at least one status label.');
     const index = requireIndex(labelId);
     const removed = labelAt(index);
+    if (removed.active && labels.filter((entry) => entry.active).length <= 1) throw new Error('Keep at least one active status label.');
     labels = labels.filter((_, candidate) => candidate !== index);
     normalizePositions();
     if (defaultId === removed.id) defaultId = labels.find((entry) => entry.active)?.id ?? null;

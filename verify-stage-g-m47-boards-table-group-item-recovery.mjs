@@ -167,7 +167,8 @@ has(m45Browser, "JSON.parse(createCalls[0]?.rawBody || '{}')", 'retained M45 bro
 has(m45Browser, "body?.p_description).toBe('Created through M45 collection recovery')", 'retained M45 browser authority proves parsed create RPC description separation');
 has(read('tests/modern/e2e/helpers/m45-boards-fixture.mjs'), "const rawBody = request.postData() ?? ''", 'retained M45 fixture captures the raw RPC request body for deterministic payload diagnostics');
 
-has(appManifest, 'architectureVersion: 55', 'application manifest advances global architecture to 55');
+const applicationArchitectureVersion = Number(appManifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0);
+ok(applicationArchitectureVersion >= 55, 'application manifest preserves M47 architecture authority at version 55 or later');
 has(appManifest, "boardTableGroupItemRecovery: 'transactional-table-group-item-recovery-v1'", 'application manifest registers M47 recovery authority');
 has(appManifest, "boardTableGroupItemPreferencePersistence: 'board-scoped-flush-on-deactivate-v1'", 'application manifest registers M47 preference persistence authority');
 has(manifestTypes, "boardTableGroupItemRecovery?: 'transactional-table-group-item-recovery-v1'", 'manifest types expose M47 architecture contract');
@@ -366,4 +367,4 @@ for (const script of ['boards-table-recovery:workflows','boards-table-recovery:f
 has(m46Contract, '"version": "1.43.2-m46-v1"', 'M46 backend contract version remains unchanged');
 notHas(migration, 'create function public.wm_', 'M47 uses CREATE OR REPLACE for existing public Board RPCs rather than adding shadow signatures');
 
-console.log(`Stage G M47 Boards Table / Group / Item Recovery static verification: PASS (architecture=55; state=${state}; checks=${checks}; dbAssertions=34; browserScenarios=4)`);
+console.log(`Stage G M47 Boards Table / Group / Item Recovery static verification: PASS (architecture=${applicationArchitectureVersion}; m47Authority>=55; state=${state}; checks=${checks}; dbAssertions=34; browserScenarios=4)`);

@@ -59,6 +59,22 @@ const metaFor = (type: BoardColumnType) => {
 };
 const assertNever = (value: never): never => { throw new Error(`Unsupported Board column type: ${String(value)}`); };
 
+const DEFAULT_DROPDOWN_OPTIONS = Object.freeze(['Option 1', 'Option 2'] as const);
+const normalizeDropdownOptions = (raw: unknown): readonly string[] => {
+  const options = String(raw ?? '').split(/\r?\n/).map((entry) => entry.trim()).filter(Boolean);
+  if (options.length === 0) throw new Error('Add at least one dropdown option.');
+  if (options.length > 50) throw new Error('Dropdown columns support at most 50 options.');
+  const used = new Set<string>();
+  for (const option of options) {
+    if (option.length > 80) throw new Error('Dropdown options can contain up to 80 characters.');
+    const key = option.toLowerCase();
+    if (used.has(key)) throw new Error('Dropdown option names must be unique.');
+    used.add(key);
+  }
+  return Object.freeze([...options]);
+};
+
+
 /** Work Board column workflow controller. */
 export function createColumnWorkflows({
   state,
@@ -93,8 +109,8 @@ export function createColumnWorkflows({
       return `<div class="status-config-summary"><strong>${labels.length} configurable status label${labels.length === 1 ? '' : 's'}</strong><span>${labels.slice(0, 4).map((label) => `<i style="--status-color:${esc(label.color)}">${esc(label.name)}</i>`).join('')}</span><p class="field-help">Status labels use stable internal IDs. Open any Status cell and choose <strong>Manage labels</strong> to rename, recolor, reorder, activate, deactivate, or delete them.</p></div>`;
     }
     if (type !== 'dropdown') return '';
-    const options = Array.isArray(configRecord.options) ? configRecord.options.map(String) : [];
-    return `<label class="field-label">Options<textarea name="options" rows="5" maxlength="3000" placeholder="Enter one option per line">${esc(options.join('\n'))}</textarea><span class="field-help">One unique option per line, up to 50 options.</span></label>`;
+    const options = Array.isArray(configRecord.options) && configRecord.options.length ? configRecord.options.map(String) : [...DEFAULT_DROPDOWN_OPTIONS];
+    return `<label class="field-label">Options<textarea name="options" rows="5" maxlength="4049" placeholder="Enter one option per line">${esc(options.join('\n'))}</textarea><span class="field-help">One unique option per line, up to 50 options. Each option can contain up to 80 characters.</span></label>`;
   }
 
   function openFilter(column: BoardColumn | null | undefined): void {
@@ -269,8 +285,8 @@ export function createColumnWorkflows({
       onSubmit: async (formData) => {
         const name = String(formData.get('name') || '').trim();
         if (existingNames.has(name.toLowerCase())) throw new Error(`A column named “${name}” already exists.`);
-        const options = dataType === 'dropdown' ? String(formData.get('options') || '').split(/\r?\n/).map((entry) => entry.trim()).filter(Boolean) : [];
-        const config: Readonly<Record<string, unknown>> = dataType === 'status' ? { ...(column?.config || {}) } : options.length ? { options } : {};
+        const options = dataType === 'dropdown' ? normalizeDropdownOptions(formData.get('options')) : [];
+        const config: Readonly<Record<string, unknown>> = dataType === 'status' ? { ...(column?.config || {}) } : dataType === 'dropdown' ? { options } : {};
         const visible = formData.get('visible') === 'on';
         if (column) {
           await commands.updateColumn({ columnId: column.id, name, config, visible });
@@ -296,8 +312,8 @@ export function createColumnWorkflows({
       body: `<div class="column-type-summary"><span class="column-type-icon">${esc(meta.icon)}</span><div><strong>${esc(meta.label)}</strong><small>${esc(meta.hint)}</small></div></div>${typeOptionsConfig(newType, {})}${needsClear ? '<div class="warning-panel"><strong>Current values can’t be kept.</strong><p>Changing to this type requires permanently clearing the values already stored in this column.</p></div><label class="check-field"><input type="checkbox" name="clear" required><span>Clear the current values and change the column type</span></label>' : '<p class="field-help">Compatible values will be kept.</p>'}`,
       submitLabel: 'Change type',
       onSubmit: async (formData) => {
-        const options = newType === 'dropdown' ? String(formData.get('options') || '').split(/\r?\n/).map((entry) => entry.trim()).filter(Boolean) : [];
-        await commands.changeColumnType({ columnId: column.id, dataType: newType, config: options.length ? { options } : {}, clearValues: needsClear && formData.get('clear') === 'on' });
+        const options = newType === 'dropdown' ? normalizeDropdownOptions(formData.get('options')) : [];
+        await commands.changeColumnType({ columnId: column.id, dataType: newType, config: newType === 'dropdown' ? { options } : {}, clearValues: needsClear && formData.get('clear') === 'on' });
         toast(`“${column.name}” changed to ${meta.label}.`);
         await loadBoard(activeBoardId, { quiet: true });
       },

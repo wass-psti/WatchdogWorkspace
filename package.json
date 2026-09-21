@@ -446,7 +446,18 @@
     "boards-table-recovery:deployment-provenance": "node scripts/verify-stage-g-m47-deployment-provenance.mjs",
     "boards-table-recovery:certify": "bash scripts/finalize-stage-g-m47.sh",
     "boards-table-recovery:package": "bash scripts/package-stage-g-m47-certified.sh",
-    "boards-table-recovery:status": "node scripts/report-stage-g-m47.mjs"
+    "boards-table-recovery:status": "node scripts/report-stage-g-m47.mjs",
+    "boards-columns-cells-status:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning verify-stage-g-m48-boards-columns-cells-status-system-recovery.mjs",
+    "boards-columns-cells-status:test": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-boards-columns-cells-status-recovery-execution.mjs",
+    "boards-columns-cells-status:browser": "node scripts/run-boards-columns-cells-status-recovery-browser.mjs",
+    "boards-columns-cells-status:production-boundary": "node scripts/verify-stage-g-m48-production-boundary.mjs",
+    "boards-columns-cells-status:workflows": "node verify-stage-g-m48-state-aware-workflows.mjs",
+    "boards-columns-cells-status:finalizer:test": "node scripts/verify-stage-g-m48-finalizer-fail-closed.mjs",
+    "boards-columns-cells-status:verify:candidate": "bash scripts/verify-stage-g-m48-candidate.sh",
+    "boards-columns-cells-status:verify:release": "bash scripts/verify-stage-g-m48-release.sh",
+    "boards-columns-cells-status:certify": "bash scripts/finalize-stage-g-m48.sh",
+    "boards-columns-cells-status:package": "bash scripts/package-stage-g-m48-certified.sh",
+    "boards-columns-cells-status:status": "node scripts/report-stage-g-m48.mjs"
   },
   "devDependencies": {
     "@types/react": "19.2.18",

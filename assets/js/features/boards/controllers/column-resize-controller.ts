@@ -63,11 +63,19 @@ export function createColumnResizeController({ state, preferencePatches, persist
       latest = clamp(Math.round(startWidth + moveEvent.clientX - startX), min, max);
       applyWidth(root, key, latest);
     };
-    const end = (): void => {
+    let settled = false;
+    const finish = (commit: boolean): void => {
+      if (settled) return;
+      settled = true;
       window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', end);
-      window.removeEventListener('pointercancel', end);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerCancel);
       root.classList.remove('is-resizing-column');
+      handle.releasePointerCapture?.(event.pointerId);
+      if (!commit) {
+        applyWidth(root, key, startWidth);
+        return;
+      }
       if (latest !== startWidth) {
         saveWidth(key, latest);
         history?.push({
@@ -77,9 +85,11 @@ export function createColumnResizeController({ state, preferencePatches, persist
         });
       }
     };
+    const onPointerUp = (): void => finish(true);
+    const onPointerCancel = (): void => finish(false);
     window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', end, { once: true });
-    window.addEventListener('pointercancel', end, { once: true });
+    window.addEventListener('pointerup', onPointerUp, { once: true });
+    window.addEventListener('pointercancel', onPointerCancel, { once: true });
     event.preventDefault();
     return true;
   }

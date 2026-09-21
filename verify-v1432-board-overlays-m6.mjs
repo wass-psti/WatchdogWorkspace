@@ -43,9 +43,9 @@ for (const marker of [
   'data.dialogState',
   'initialFocus',
   'aria-busy',
-  'function confirm(message: string): Promise<boolean>',
   'MutationObserver',
 ]) assert.ok(dialog.includes(marker.replace('data.dialogState','dataset.dialogState')), `Milestone 6 dialog contract missing ${marker}`);
+assert.match(dialog, /confirm\(message: string(?:, options\?: ConfirmActionOptions)?\): Promise<boolean>/, 'Milestone 6 confirmation contract must remain message-first asynchronous and may add only backward-compatible optional confirmation options');
 
 for (const marker of [
   'board-popover-surface',
@@ -58,8 +58,8 @@ for (const marker of [
 ]) assert.ok(inline.includes(marker.replace('data.popoverKind','dataset.popoverKind').replace('data.placement','dataset.placement')), `Milestone 6 popover contract missing ${marker}`);
 
 assert.ok(presentation.includes('boolean | Promise<boolean>'), 'Milestone 6 async confirmation contract missing');
+assert.match(boardsUi, /const confirmBoardAction = \(message: string(?:, options: ConfirmActionOptions = \{\})?\): Promise<boolean> => dialogs\.confirm\(message(?:, options)?\);/, 'Milestone 6 Board confirmation wiring must remain message-first and may forward only backward-compatible optional confirmation options');
 for (const marker of [
-  'const confirmBoardAction = (message: string): Promise<boolean> => dialogs.confirm(message);',
   'confirmAction: confirmBoardAction',
   'confirmAction:confirmBoardAction',
   'await confirmBoardAction',

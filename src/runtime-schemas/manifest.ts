@@ -192,6 +192,14 @@ export const architectureDefinitionSchema = z.object({
   boardTableGroupItemBrowser: nonEmptyStringSchema.optional(),
   boardTableGroupItemPreferencePersistence: z.literal('board-scoped-flush-on-deactivate-v1').optional(),
   boardTableGroupItemProductionVerifier: nonEmptyStringSchema.optional(),
+  boardColumnsCellsStatusRecovery: z.literal('typed-columns-cells-status-recovery-v1').optional(),
+  boardColumnsCellsStatusTarget: nonEmptyStringSchema.optional(),
+  boardColumnsCellsStatusColumnWorkflows: nonEmptyStringSchema.optional(),
+  boardColumnsCellsStatusInlineEditor: nonEmptyStringSchema.optional(),
+  boardColumnsCellsStatusSelectors: nonEmptyStringSchema.optional(),
+  boardColumnsCellsStatusStatusEditor: nonEmptyStringSchema.optional(),
+  boardColumnsCellsStatusBrowser: nonEmptyStringSchema.optional(),
+  boardColumnsCellsStatusBackendBoundary: z.literal('retained-m46-m47-no-schema-change-v1').optional(),
   serverState: nonEmptyStringSchema,
   serverStateLibrary: z.literal('tanstack-query-v5').optional(),
   clientState: nonEmptyStringSchema.optional(),
@@ -359,6 +367,9 @@ export const applicationManifestSchema = z.object({
   }
   if (manifest.architectureVersion >= 55 && (manifest.architecture.boardTableGroupItemRecovery !== 'transactional-table-group-item-recovery-v1' || manifest.architecture.boardTableGroupItemTarget !== 'config/stage-g-m47-boards-table-group-item-recovery-target.ts' || manifest.architecture.boardTableGroupItemMigration !== 'supabase/migrations/v1.43.2-stage-g-m47-boards-table-group-item-recovery.sql' || manifest.architecture.boardTableGroupItemDatabaseTest !== 'supabase/tests/m47/boards_table_group_item_recovery.test.sql' || manifest.architecture.boardTableGroupItemBrowser !== 'tests/modern/e2e/boards-table-group-item-recovery.spec.mjs' || manifest.architecture.boardTableGroupItemPreferencePersistence !== 'board-scoped-flush-on-deactivate-v1' || manifest.architecture.boardTableGroupItemProductionVerifier !== 'scripts/verify-stage-g-m47-production-invariants.mjs')) {
     context.addIssue({ code: 'custom', message: 'Architecture v55+ requires governed Boards table/group/item recovery with transactional ordering, database/browser validation, and route-safe preference persistence authorities.', path: ['architecture'] });
+  }
+  if (manifest.architectureVersion >= 56 && (manifest.architecture.boardColumnsCellsStatusRecovery !== 'typed-columns-cells-status-recovery-v1' || manifest.architecture.boardColumnsCellsStatusTarget !== 'config/stage-g-m48-boards-columns-cells-status-recovery-target.ts' || manifest.architecture.boardColumnsCellsStatusColumnWorkflows !== 'assets/js/features/boards/controllers/column-workflows.ts' || manifest.architecture.boardColumnsCellsStatusInlineEditor !== 'assets/js/features/boards/controllers/inline-edit-controller.ts' || manifest.architecture.boardColumnsCellsStatusSelectors !== 'assets/js/features/boards/selectors/board-selectors.ts' || manifest.architecture.boardColumnsCellsStatusStatusEditor !== 'assets/js/features/boards/services/status-label-editor.ts' || manifest.architecture.boardColumnsCellsStatusBrowser !== 'tests/modern/e2e/boards-columns-cells-status-recovery.spec.mjs' || manifest.architecture.boardColumnsCellsStatusBackendBoundary !== 'retained-m46-m47-no-schema-change-v1')) {
+    context.addIssue({ code: 'custom', message: 'Architecture v56+ requires governed typed Board column/cell/status recovery with explicit workflow, editor, selector, status-lifecycle, browser, and retained-backend authorities.', path: ['architecture'] });
   }
 
   if (manifest.architectureVersion >= 54 && (manifest.architecture.boardBackendDataContractRecovery !== 'catalog-attested-board-contract-v1' || manifest.architecture.boardBackendContract !== 'config/stage-g-m46-board-backend-contract.ts' || manifest.architecture.boardBackendMigration !== 'supabase/migrations/v1.43.2-stage-g-m46-boards-backend-data-contract-recovery.sql' || manifest.architecture.boardBackendSchema !== 'supabase/schema.sql' || manifest.architecture.boardBackendContractAttestation !== 'public.wm_board_contract_attestation' || manifest.architecture.boardBackendCacheOwnership !== 'board-query-prefix-scoped-v1' || manifest.architecture.boardAttachmentDeletion !== 'metadata-first-best-effort-object-cleanup-v1' || manifest.architecture.boardBackendDatabaseTest !== 'supabase/tests/m46/boards_backend_contract_recovery.test.sql' || manifest.architecture.boardBackendProductionVerifier !== 'scripts/verify-stage-g-m46-production-contract.mjs')) {

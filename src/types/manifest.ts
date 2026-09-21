@@ -196,6 +196,14 @@ export interface ArchitectureDefinition {
   readonly boardTableGroupItemBrowser?: string;
   readonly boardTableGroupItemPreferencePersistence?: 'board-scoped-flush-on-deactivate-v1';
   readonly boardTableGroupItemProductionVerifier?: string;
+  readonly boardColumnsCellsStatusRecovery?: 'typed-columns-cells-status-recovery-v1';
+  readonly boardColumnsCellsStatusTarget?: string;
+  readonly boardColumnsCellsStatusColumnWorkflows?: string;
+  readonly boardColumnsCellsStatusInlineEditor?: string;
+  readonly boardColumnsCellsStatusSelectors?: string;
+  readonly boardColumnsCellsStatusStatusEditor?: string;
+  readonly boardColumnsCellsStatusBrowser?: string;
+  readonly boardColumnsCellsStatusBackendBoundary?: 'retained-m46-m47-no-schema-change-v1';
   readonly serverState: string;
   readonly serverStateLibrary?: 'tanstack-query-v5';
   readonly clientState?: string;

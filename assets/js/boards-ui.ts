@@ -1,6 +1,6 @@
 import type { BoardCommandService } from '../../src/features/boards/contracts/commands.ts';
 import type { BoardColumn, BoardColumnType, BoardEnvelope, BoardGroup, BoardItem, BoardLifecycleStatus, BoardRecord, BoardViewMode, TimelineValue } from '../../src/features/boards/contracts/domain.ts';
-import type { BoardDialogOptions } from '../../src/features/boards/contracts/presentation.ts';
+import type { BoardDialogOptions, ConfirmActionOptions } from '../../src/features/boards/contracts/presentation.ts';
 import type { BoardDomainService } from '../../src/features/boards/contracts/service.ts';
 import type { BoardRealtimeService, BoardRealtimeSnapshot } from '../../src/features/boards/contracts/realtime.ts';
 import type { BoardHistorySnapshot } from './features/boards/controllers/history-controller.ts';
@@ -113,6 +113,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   let boardDetailCommitRetryCount = 0;
   const BOARD_DETAIL_COMMIT_RETRY_LIMIT = 2;
   let virtualizationRenderDeferredForMenu = false;
+  let virtualizationRenderDeferredForEditor = false;
   let fullBoardRenderDeferredForMenu = false;
   let pendingGridFocus: PendingGridFocus | null = null;
   const boardMarkup = new WeakMap<HTMLElement, string>();
@@ -120,7 +121,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   const overlayCoordinator = createBoardOverlayCoordinator();
   const dialogs = createBoardDialogController({ toast, escapeHtml: esc, overlayCoordinator });
   const dialog = (options: BoardDialogOptions) => { overlayCoordinator.closeAll({ restoreFocus:false }); return dialogs.open(options); };
-  const confirmBoardAction = (message: string): Promise<boolean> => dialogs.confirm(message);
+  const confirmBoardAction = (message: string, options: ConfirmActionOptions = {}): Promise<boolean> => dialogs.confirm(message, options);
   const preferencePersistence = createBoardPreferencePersistenceController({
     state,
     commands: commandService,
@@ -178,6 +179,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     dragDrop?.dispose();
     structureDrag.dispose();
     columnResize.dispose();
+    virtualizationRenderDeferredForEditor = false;
     inlineEdit.reset();
     selection.clear();
     history.reset();
@@ -480,7 +482,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   const itemWorkflows = createItemWorkflows({ commands: commandService, state, dialog, toast, escapeHtml: esc, reloadBoard: reloadCurrentBoard, getStatusLabels:boardStatusLabels, getDefaultStatus:()=>statusConfig(systemStatusColumn()).defaultLabelId, confirmAction: confirmBoardAction });
   const memberWorkflows = createMemberWorkflows({ commands: commandService, state, dialog, toast, escapeHtml: esc, reloadBoard: reloadCurrentBoard, confirmAction: confirmBoardAction });
   const activityWorkflows = createActivityWorkflows({ api, state, dialog, toast, escapeHtml: esc, formatDate: fmtDate });
-  const inlineEdit = createBoardInlineEditController({ state, api, commands: commandService, toast, canEdit, allColumns, getCellValue, optionList, renderBoardData, history, escapeHtml:esc, overlayCoordinator, reloadBoard:reloadCurrentBoard, preferencePatches, statusLabelsFor, statusLabelForValue, confirmAction:confirmBoardAction });
+  const inlineEdit = createBoardInlineEditController({ state, api, commands: commandService, toast, canEdit, allColumns, getCellValue, optionList, renderBoardData, history, escapeHtml:esc, overlayCoordinator, reloadBoard:reloadCurrentBoard, preferencePatches, statusLabelsFor, statusLabelForValue, confirmAction:confirmBoardAction, onClose:flushDeferredEditorVirtualization });
   const columnResize = createColumnResizeController({ state, preferencePatches, persistPreferences:persistBoardPrefs, history, renderBoardData });
   const structureDrag = createBoardStructureDragController({ state, commands: commandService, canEdit, toast, renderBoardData, history });
 
@@ -518,7 +520,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   }
 
   function columnHeader(column: BoardColumn, logicalColumnIndex: number): string {
-    return renderBoardColumnHeader({ column, canEdit: canEdit(), sort: sortConfig(), filter: activeColumnFilter(column.id), wrapped: isWrapped(column.id), columnTypeLabel, escapeHtml: esc, logicalColumnIndex });
+    return renderBoardColumnHeader({ column, canEdit: canEdit(), sort: sortConfig(), filter: activeColumnFilter(column.id), wrapped: isWrapped(column.id), currentWidth: columnWidth(column.id), columnTypeLabel, escapeHtml: esc, logicalColumnIndex });
   }
 
   function tableView(): string {
@@ -1077,9 +1079,10 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   }
 
   function requestVirtualizedBoardRender(): void {
-    if (virtualizationFrame || dragDrop?.activeItemId) return;
+    if (virtualizationFrame || dragDrop?.activeItemId || inlineEdit.activeEditor) return;
     virtualizationFrame = requestAnimationFrame(() => {
       virtualizationFrame = 0;
+      if (inlineEdit.activeEditor) return;
       if (boardMenuController?.active) {
         virtualizationRenderDeferredForMenu = true;
         return;
@@ -1129,8 +1132,21 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
 
   let syncingBoardTableScroll = false;
 
+  function flushDeferredEditorVirtualization(): void {
+    if (!virtualizationRenderDeferredForEditor) return;
+    virtualizationRenderDeferredForEditor = false;
+    requestAnimationFrame(() => {
+      const root = document.querySelector<HTMLElement>('.board-detail-page');
+      if (root) syncBoardVirtualizationFromViewport(root);
+    });
+  }
+
   function syncBoardVirtualizationFromViewport(root: HTMLElement): void {
     if (!root.isConnected || dragDrop?.activeItemId) return;
+    if (inlineEdit.activeEditor) {
+      virtualizationRenderDeferredForEditor = true;
+      return;
+    }
     const rowChanged = tableVirtualization.updateRowsFromViewport(root, boardRowHeight(), forceFullRowRendering());
     const scroller = root.querySelector<HTMLElement>('.board-table-scroll');
     const columnChanged = Boolean(scroller && tableVirtualization.updateColumnsFromScroller(scroller, tableDynamicColumnWidths()));
@@ -1241,17 +1257,27 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       const target = eventElement(event);
       const scroller = target?.closest<HTMLElement>('.board-table-scroll');
       if (!scroller) return;
-      closeColumnMenus(root);
-      inlineEdit.dismissPopover({ restore: false });
       if (syncingBoardTableScroll) return;
+      const editorActive = inlineEdit.activeEditor;
+      if (!editorActive) {
+        closeColumnMenus(root);
+        inlineEdit.dismissPopover({ restore: false });
+      } else {
+        virtualizationRenderDeferredForEditor = true;
+      }
       syncingBoardTableScroll = true;
       const left = scroller.scrollLeft;
       root.querySelectorAll<HTMLElement>('.board-table-scroll').forEach((peer) => {
         if (peer !== scroller && Math.abs(peer.scrollLeft - left) > 1) peer.scrollLeft = left;
       });
-      const virtualColumnChanged = !dragDrop?.activeItemId && tableVirtualization.updateColumnsFromScroller(scroller, tableDynamicColumnWidths());
-      if (virtualColumnChanged) requestVirtualizedBoardRender();
-      requestAnimationFrame(() => { syncingBoardTableScroll = false; });
+      if (!editorActive) {
+        const virtualColumnChanged = !dragDrop?.activeItemId && tableVirtualization.updateColumnsFromScroller(scroller, tableDynamicColumnWidths());
+        if (virtualColumnChanged) requestVirtualizedBoardRender();
+      }
+      requestAnimationFrame(() => {
+        syncingBoardTableScroll = false;
+        if (editorActive) inlineEdit.repositionPopover();
+      });
     }, { capture: true, signal });
 
     boardResizeCleanup?.();
@@ -1654,6 +1680,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     fullBoardRenderDeferredForMenu = false;
     structureDrag.dispose();
     columnResize.dispose();
+    virtualizationRenderDeferredForEditor = false;
     inlineEdit.reset();
     selection.clear();
     history.reset();

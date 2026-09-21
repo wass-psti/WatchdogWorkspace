@@ -1,0 +1,45 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import crypto from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { computeM48CertificationTreeDigest } from './lib/stage-g-m48-certification-tree.mjs';
+
+const root=path.resolve(import.meta.dirname,'..');
+const dir=path.join(root,'m48-certified-artifacts-upload');
+const base='Work-Management-App-v1.43.2-Stage-G-M48-Certified-Baseline';
+const zip=path.join(dir,`${base}.zip`);
+const pass=path.join(dir,`${base}-PASS.txt`);
+const fail=(message)=>{throw new Error(`M48 certified artifact verification failed: ${message}`);};
+const hash=(file)=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+if(!fs.existsSync(zip)||!fs.existsSync(pass))fail('certified ZIP/PASS record is missing');
+const text=fs.readFileSync(pass,'utf8');
+if(!text.includes('RESULT: PASS')||!text.includes('CERTIFICATION STATE: active-certified'))fail('PASS record is not active-certified');
+const zipSha=text.match(/CERTIFIED ZIP SHA-256: ([a-f0-9]{64})/)?.[1];
+const sourceSha=text.match(/CERTIFIED SOURCE TREE SHA-256: ([a-f0-9]{64})/)?.[1];
+const sourceCommit=text.match(/CERTIFIED SOURCE COMMIT: ([a-f0-9]{40})/)?.[1];
+const semanticsVersion=text.match(/M48 SEMANTICS VERSION: ([^\n]+)/)?.[1]?.trim();
+if(!zipSha||zipSha!==hash(zip))fail('certified ZIP SHA binding mismatch');
+if(!sourceSha||!sourceCommit)fail('source provenance binding is missing');
+if(semanticsVersion!=='1.43.2-m48-v1')fail(`M48 semantic-version binding mismatch: ${semanticsVersion||'missing'}`);
+if(!text.includes('BACKEND BOUNDARY: retained-m46-m47-no-schema-change-v1'))fail('retained backend boundary is missing');
+const expectedCommit=process.env.M48_EXPECTED_SOURCE_COMMIT||process.env.GITHUB_SHA||'';
+if(expectedCommit&&sourceCommit!==expectedCommit)fail(`source commit mismatch: expected ${expectedCommit}, received ${sourceCommit}`);
+const liveDigest=computeM48CertificationTreeDigest(root).digest;
+if(liveDigest!==sourceSha)fail(`current source-tree digest mismatch: expected ${sourceSha}, received ${liveDigest}`);
+if(spawnSync('unzip',['-t',zip],{stdio:'ignore'}).status!==0)fail('ZIP integrity check failed');
+const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'m48-certified-'));
+try{
+  if(spawnSync('unzip',['-q',zip,'-d',tmp]).status!==0)fail('ZIP extraction failed');
+  const project=path.join(tmp,base);
+  if(!fs.existsSync(project)||fs.readdirSync(tmp).length!==1)fail('ZIP root structure is invalid');
+  const target=fs.readFileSync(path.join(project,'config/stage-g-m48-boards-columns-cells-status-recovery-target.ts'),'utf8');
+  const status=fs.readFileSync(path.join(project,'RELEASE-STATUS-v1.43.2-STAGE-G-M48-BOARDS-COLUMNS-CELLS-STATUS-SYSTEM-RECOVERY.md'),'utf8');
+  if(!target.includes("activationState: 'active-certified'")||!status.includes('**State:** active-certified'))fail('packaged state is not active-certified');
+  const packagedDigest=computeM48CertificationTreeDigest(project).digest;
+  if(packagedDigest!==sourceSha)fail(`packaged source-tree digest mismatch: expected ${sourceSha}, received ${packagedDigest}`);
+  const manifest=path.join(project,'CHECKSUMS.sha256');
+  if(!fs.existsSync(manifest)||!fs.readFileSync(manifest,'utf8').trim())fail('checksum manifest is missing/empty');
+  if(spawnSync('sha256sum',['-c','CHECKSUMS.sha256'],{cwd:project,stdio:'ignore'}).status!==0)fail('package checksum manifest failed');
+}finally{fs.rmSync(tmp,{recursive:true,force:true});}
+console.log(`Stage G M48 certified artifact verification: PASS (zipSha=${zipSha}; source=${sourceSha}; commit=${sourceCommit})`);
