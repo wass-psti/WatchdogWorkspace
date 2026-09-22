@@ -53,7 +53,13 @@ must(boards.includes("event.key.toLowerCase() === 'z'") && boards.includes("even
 must(boards.includes("type GridNavigationKey = 'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown' | 'Home' | 'End'") && boards.includes('isGridNavigationKey(event.key)'), 'keyboard grid navigation is wired');
 must(resize.includes('setPointerCapture') && resize.includes('item_name_width') && resize.includes('column_widths'), 'column resizing is pointer-driven and preference-backed');
 must(structure.includes("commands.moveColumn") && structure.includes("commands.moveGroup"), 'column and group reorder persist through protected services');
-must(drag.includes('item-drop-before') && drag.includes('item-drop-after') && drag.includes('applyLocalMove'), 'item row drag/reorder provides positional and optimistic feedback');
+const legacyOptimisticItemMove = drag.includes('applyLocalMove');
+const canonicalOptimisticItemMove =
+  drag.includes('applyBoardItemMove') &&
+  drag.includes('snapshotBoardItemMoveState') &&
+  drag.includes('restoreBoardItemMoveState') &&
+  drag.includes('renderBoard()');
+must(drag.includes('item-drop-before') && drag.includes('item-drop-after') && (legacyOptimisticItemMove || canonicalOptimisticItemMove), 'item row drag/reorder provides positional and optimistic feedback');
 must(drag.includes('status = item.status') && drag.includes('position -= 1'), 'table row reorder preserves workflow status and normalizes same-group downward indices');
 must(drag.includes("button,input,select,textarea,a,summary"), 'item dragging does not hijack normal interactive controls');
 

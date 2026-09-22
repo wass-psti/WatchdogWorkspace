@@ -204,6 +204,15 @@ export interface ArchitectureDefinition {
   readonly boardColumnsCellsStatusStatusEditor?: string;
   readonly boardColumnsCellsStatusBrowser?: string;
   readonly boardColumnsCellsStatusBackendBoundary?: 'retained-m46-m47-no-schema-change-v1';
+  readonly boardKanbanDragDropRecovery?: 'canonical-kanban-drag-drop-recovery-v1';
+  readonly boardKanbanDragDropTarget?: string;
+  readonly boardKanbanView?: string;
+  readonly boardItemDragController?: string;
+  readonly boardStructureDragController?: string;
+  readonly boardViewSwitchController?: string;
+  readonly boardMoveState?: string;
+  readonly boardKanbanDragDropBrowser?: string;
+  readonly boardKanbanDragDropBackendBoundary?: 'retained-m46-m47-no-schema-change-v1';
   readonly serverState: string;
   readonly serverStateLibrary?: 'tanstack-query-v5';
   readonly clientState?: string;

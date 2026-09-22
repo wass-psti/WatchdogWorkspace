@@ -1,0 +1,7 @@
+import assert from 'node:assert/strict'; import fs from 'node:fs';
+const read=(p)=>fs.readFileSync(p,'utf8'); let checks=0; const has=(s,t)=>{assert.ok(s.includes(t),`missing ${t}`);checks++};
+const y=read('.github/workflows/boards-kanban-drag-drop-recovery.yml'); const pkg=JSON.parse(read('package.json')); const target=read('config/stage-g-m49-boards-kanban-drag-drop-recovery-target.ts');
+for(const t of ['push:','pull_request:','Resolve M49 milestone state','implementation-complete-pending-certification','active-certified','boards-kanban-drag-drop:verify:candidate','boards-kanban-drag-drop:verify:release','boards-kanban-drag-drop:certify','M49_EXPECTED_SOURCE_COMMIT','Upload certified M49 baseline']) has(y,t);
+for(const k of ['boards-kanban-drag-drop:check','boards-kanban-drag-drop:test','boards-kanban-drag-drop:cdp','boards-kanban-drag-drop:browser','boards-kanban-drag-drop:production-boundary','boards-kanban-drag-drop:workflows','boards-kanban-drag-drop:finalizer:test','boards-kanban-drag-drop:verify:candidate','boards-kanban-drag-drop:verify:release','boards-kanban-drag-drop:certify','boards-kanban-drag-drop:package','boards-kanban-drag-drop:status']){assert.ok(pkg.scripts[k],`missing script ${k}`);checks++}
+assert.match(target,/activationState: '(?:implementation-complete-pending-certification|active-certified)'/);checks++;
+console.log(`Stage G M49 state-aware workflow verification: PASS (${checks} checks)`);

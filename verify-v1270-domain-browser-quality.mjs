@@ -75,7 +75,15 @@ assert.ok(itemController.includes("event.key === 'Escape'") && itemController.in
 
 assert.ok(dragController.includes('new AbortController()'), 'Drag/drop controller lacks disposable event binding');
 assert.ok(dragController.includes("setAttribute('aria-live','polite')") || dragController.includes("setAttribute('aria-live', 'polite')"), 'Drag/drop controller lacks live accessibility feedback');
-assert.ok(dragController.includes('String(groupId) === String(item.group_id)') && dragController.includes('String(status) === String(item.status)'), 'Drag/drop no-op suppression missing');
+const legacyDragNoOpSuppression =
+  dragController.includes('String(groupId) === String(item.group_id)') &&
+  dragController.includes('String(status) === String(item.status)');
+const transactionalDragNoOpSuppression =
+  dragController.includes('const noChange = String(groupId) === String(item.group_id)') &&
+  dragController.includes("String(status ?? '') === String(item.status ?? '')") &&
+  dragController.includes("mode === 'status-only' || position === item.position") &&
+  dragController.includes('if (noChange)');
+assert.ok(legacyDragNoOpSuppression || transactionalDragNoOpSuppression, 'Drag/drop no-op suppression missing');
 assert.ok(itemView.includes('role="dialog"') && itemView.includes('role="tablist"') && itemView.includes('role="tabpanel"'), 'Item Workspace accessibility semantics incomplete');
 
 assert.ok(moduleHost.includes("origin === 'null' ? '*' : origin") && moduleHost.includes('event.origin !== origin') && moduleHost.includes('event.source !== frame.contentWindow'), 'Module-host testability change weakened or omitted origin/source validation');

@@ -200,6 +200,15 @@ export const architectureDefinitionSchema = z.object({
   boardColumnsCellsStatusStatusEditor: nonEmptyStringSchema.optional(),
   boardColumnsCellsStatusBrowser: nonEmptyStringSchema.optional(),
   boardColumnsCellsStatusBackendBoundary: z.literal('retained-m46-m47-no-schema-change-v1').optional(),
+  boardKanbanDragDropRecovery: z.literal('canonical-kanban-drag-drop-recovery-v1').optional(),
+  boardKanbanDragDropTarget: nonEmptyStringSchema.optional(),
+  boardKanbanView: nonEmptyStringSchema.optional(),
+  boardItemDragController: nonEmptyStringSchema.optional(),
+  boardStructureDragController: nonEmptyStringSchema.optional(),
+  boardViewSwitchController: nonEmptyStringSchema.optional(),
+  boardMoveState: nonEmptyStringSchema.optional(),
+  boardKanbanDragDropBrowser: nonEmptyStringSchema.optional(),
+  boardKanbanDragDropBackendBoundary: z.literal('retained-m46-m47-no-schema-change-v1').optional(),
   serverState: nonEmptyStringSchema,
   serverStateLibrary: z.literal('tanstack-query-v5').optional(),
   clientState: nonEmptyStringSchema.optional(),
@@ -370,6 +379,9 @@ export const applicationManifestSchema = z.object({
   }
   if (manifest.architectureVersion >= 56 && (manifest.architecture.boardColumnsCellsStatusRecovery !== 'typed-columns-cells-status-recovery-v1' || manifest.architecture.boardColumnsCellsStatusTarget !== 'config/stage-g-m48-boards-columns-cells-status-recovery-target.ts' || manifest.architecture.boardColumnsCellsStatusColumnWorkflows !== 'assets/js/features/boards/controllers/column-workflows.ts' || manifest.architecture.boardColumnsCellsStatusInlineEditor !== 'assets/js/features/boards/controllers/inline-edit-controller.ts' || manifest.architecture.boardColumnsCellsStatusSelectors !== 'assets/js/features/boards/selectors/board-selectors.ts' || manifest.architecture.boardColumnsCellsStatusStatusEditor !== 'assets/js/features/boards/services/status-label-editor.ts' || manifest.architecture.boardColumnsCellsStatusBrowser !== 'tests/modern/e2e/boards-columns-cells-status-recovery.spec.mjs' || manifest.architecture.boardColumnsCellsStatusBackendBoundary !== 'retained-m46-m47-no-schema-change-v1')) {
     context.addIssue({ code: 'custom', message: 'Architecture v56+ requires governed typed Board column/cell/status recovery with explicit workflow, editor, selector, status-lifecycle, browser, and retained-backend authorities.', path: ['architecture'] });
+  }
+  if (manifest.architectureVersion >= 57 && (manifest.architecture.boardKanbanDragDropRecovery !== 'canonical-kanban-drag-drop-recovery-v1' || manifest.architecture.boardKanbanDragDropTarget !== 'config/stage-g-m49-boards-kanban-drag-drop-recovery-target.ts' || manifest.architecture.boardKanbanView !== 'assets/js/features/boards/views/kanban-view.ts' || manifest.architecture.boardItemDragController !== 'assets/js/features/boards/controllers/drag-drop-controller.ts' || manifest.architecture.boardStructureDragController !== 'assets/js/features/boards/controllers/structure-drag-controller.ts' || manifest.architecture.boardViewSwitchController !== 'assets/js/features/boards/controllers/view-switch-controller.ts' || manifest.architecture.boardMoveState !== 'assets/js/features/boards/services/board-move-state.ts' || manifest.architecture.boardKanbanDragDropBrowser !== 'tests/modern/e2e/boards-kanban-drag-drop-recovery.spec.mjs' || manifest.architecture.boardKanbanDragDropBackendBoundary !== 'retained-m46-m47-no-schema-change-v1')) {
+    context.addIssue({ code: 'custom', message: 'Architecture v57+ requires governed Boards Kanban and drag/drop recovery with canonical movement, serialized view switching, keyboard-accessible movement, browser authority, and retained-backend boundaries.', path: ['architecture'] });
   }
 
   if (manifest.architectureVersion >= 54 && (manifest.architecture.boardBackendDataContractRecovery !== 'catalog-attested-board-contract-v1' || manifest.architecture.boardBackendContract !== 'config/stage-g-m46-board-backend-contract.ts' || manifest.architecture.boardBackendMigration !== 'supabase/migrations/v1.43.2-stage-g-m46-boards-backend-data-contract-recovery.sql' || manifest.architecture.boardBackendSchema !== 'supabase/schema.sql' || manifest.architecture.boardBackendContractAttestation !== 'public.wm_board_contract_attestation' || manifest.architecture.boardBackendCacheOwnership !== 'board-query-prefix-scoped-v1' || manifest.architecture.boardAttachmentDeletion !== 'metadata-first-best-effort-object-cleanup-v1' || manifest.architecture.boardBackendDatabaseTest !== 'supabase/tests/m46/boards_backend_contract_recovery.test.sql' || manifest.architecture.boardBackendProductionVerifier !== 'scripts/verify-stage-g-m46-production-contract.mjs')) {

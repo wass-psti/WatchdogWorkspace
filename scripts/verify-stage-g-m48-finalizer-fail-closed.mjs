@@ -6,6 +6,18 @@ import { spawnSync } from 'node:child_process';
 
 const root=resolve(import.meta.dirname,'..');
 const base='Work-Management-App-v1.43.2-Stage-G-M48-Certified-Baseline';
+function preparePendingCertificationFixture(project){
+  const target=join(project,'config/stage-g-m48-boards-columns-cells-status-recovery-target.ts');
+  const status=join(project,'RELEASE-STATUS-v1.43.2-STAGE-G-M48-BOARDS-COLUMNS-CELLS-STATUS-SYSTEM-RECOVERY.md');
+  let targetSource=readFileSync(target,'utf8'); let statusSource=readFileSync(status,'utf8');
+  targetSource=targetSource.replace("activationState: 'active-certified'", "activationState: 'implementation-complete-pending-certification'");
+  statusSource=statusSource.replace('**State:** active-certified','**State:** implementation-complete-pending-certification');
+  const finalMarker='\n## Final certified baseline —'; const finalIndex=statusSource.indexOf(finalMarker);
+  if(finalIndex>=0) statusSource=`${statusSource.slice(0,finalIndex).trimEnd()}\n`;
+  writeFileSync(target,targetSource); writeFileSync(status,statusSource);
+  assert.match(targetSource,/activationState:\s*'implementation-complete-pending-certification'/);
+  assert.match(statusSource,/\*\*State:\*\* implementation-complete-pending-certification/);
+}
 function prepare(){
   const sandbox=mkdtempSync(join(tmpdir(),'wm-m48-finalizer-')); const project=join(sandbox,'project'); const bin=join(sandbox,'bin');
   for(const d of ['scripts/lib','config','src'])mkdirSync(join(project,d),{recursive:true}); mkdirSync(bin,{recursive:true});
@@ -17,6 +29,7 @@ function prepare(){
     'config/stage-g-m46-board-backend-contract.ts',
     'RELEASE-STATUS-v1.43.2-STAGE-G-M48-BOARDS-COLUMNS-CELLS-STATUS-SYSTEM-RECOVERY.md',
   ]) { const dest=join(project,file); mkdirSync(join(dest,'..'),{recursive:true}); cpSync(join(root,file),dest); }
+  preparePendingCertificationFixture(project);
   for(const [file,body] of [
     ['verify-stage-g-m48-boards-columns-cells-status-system-recovery.mjs','process.exit(0);\n'],
     ['scripts/verify-stage-g-m48-production-boundary.mjs','process.exit(0);\n'],

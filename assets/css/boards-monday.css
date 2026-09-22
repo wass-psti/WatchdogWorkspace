@@ -4522,3 +4522,66 @@ body[data-wm-surface="shell"] .item-file-drop.is-dragging {
 @media (prefers-reduced-motion: reduce) {
   body[data-wm-surface="shell"] .item-file-drop.is-dragging { transition:none!important; }
 }
+
+/* Stage G M49 — Kanban canonical-state and keyboard drag recovery. */
+body[data-wm-surface="shell"] .kanban-card-command-row {
+  min-width:0;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  align-items:start;
+  gap:var(--board-space-tight);
+}
+body[data-wm-surface="shell"] .kanban-drag-handle {
+  width:30px;
+  min-width:30px;
+  height:30px;
+  display:inline-grid;
+  place-items:center;
+  padding:0!important;
+  border:var(--wm-board-border-width) solid transparent!important;
+  border-radius:var(--board-radius-control)!important;
+  background:transparent!important;
+  color:var(--board-muted-readable)!important;
+  box-shadow:none!important;
+  cursor:grab;
+  font-size:14px!important;
+  line-height:1!important;
+}
+body[data-wm-surface="shell"] .kanban-drag-handle:hover,
+body[data-wm-surface="shell"] .kanban-drag-handle:focus-visible {
+  border-color:var(--board-line)!important;
+  background:var(--board-hover)!important;
+  color:var(--board-ink)!important;
+}
+body[data-wm-surface="shell"] .kanban-drag-handle:active { cursor:grabbing; }
+body[data-wm-surface="shell"] .kanban-column.is-inactive-status {
+  border-style:dashed!important;
+  background:color-mix(in srgb,var(--board-surface-2) 56%,transparent)!important;
+}
+body[data-wm-surface="shell"] .kanban-column.is-inactive-status .kanban-lane-head {
+  background:color-mix(in srgb,var(--board-surface) 82%,transparent)!important;
+}
+body[data-wm-surface="shell"] .kanban-lane-state {
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  min-height:22px;
+  padding:0 7px;
+  border:var(--wm-board-border-width) solid var(--board-line)!important;
+  border-radius:var(--wm-board-radius-pill);
+  background:var(--board-surface-2)!important;
+  color:var(--board-muted-readable)!important;
+  font-size:var(--wm-board-font-meta)!important;
+  font-weight:var(--wm-board-weight-semibold)!important;
+  line-height:1!important;
+}
+@media (pointer:coarse) {
+  body[data-wm-surface="shell"] .kanban-drag-handle {
+    width:44px;
+    min-width:44px;
+    height:44px;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  body[data-wm-surface="shell"] :is(.kanban-drag-handle,.kanban-column.is-inactive-status) { transition:none!important; }
+}

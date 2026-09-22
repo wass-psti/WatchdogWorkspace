@@ -34,6 +34,7 @@ import { createItemPanelRenderer } from './features/boards/controllers/item-pane
 import { createBoardOverlayCoordinator } from './features/boards/controllers/overlay-coordinator.ts';
 import { createBoardTableVirtualizationController } from './features/boards/controllers/board-table-virtualization-controller.ts';
 import { createBoardRealtimeController } from './features/boards/controllers/board-realtime-controller.ts';
+import { createBoardViewSwitchController } from './features/boards/controllers/view-switch-controller.ts';
 import { statusConfig } from './features/boards/status-labels.ts';
 import { createBoardPreferencePatchService } from './features/boards/services/board-preferences-service.ts';
 import { createBoardSelectors } from './features/boards/selectors/board-selectors.ts';
@@ -128,6 +129,17 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     patches: preferencePatches,
     onWarning: (message) => toast(message, 'warning'),
   });
+  const viewSwitch = createBoardViewSwitchController({
+    getBoardIdentity: () => {
+      const board = state.board?.board;
+      if (!board?.id) return null;
+      return { id: board.id, view: (board.view_mode ?? board.view ?? 'table') as BoardViewMode };
+    },
+    applyLocalView: (boardId, view) => replaceActiveBoardRecord(String(boardId), (record) => ({ ...record, view_mode: view })),
+    persistView: (boardId, view) => commandService.setView(boardId, view),
+    renderBoard: renderBoardData,
+    toast,
+  });
 
   function boardToolbar() {
     return renderBoardToolbar({ state, icons, escapeHtml: esc });
@@ -149,8 +161,12 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     onBoardChange: renderBoardData,
     onBoardLoaded: () => {
       selection.normalize();
-      const loadedBoardId = state.board?.board?.id;
-      if (loadedBoardId) void realtimeController?.connect(loadedBoardId);
+      const loadedBoard = state.board?.board;
+      const loadedBoardId = loadedBoard?.id;
+      if (loadedBoardId) {
+        viewSwitch.adopt(loadedBoardId, (loadedBoard.view_mode ?? loadedBoard.view ?? 'table') as BoardViewMode);
+        void realtimeController?.connect(loadedBoardId);
+      }
     },
     onLifecycleMismatch: (board) => {
       state.status = board.status;
@@ -177,6 +193,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     releaseBoardEventBinding();
     boardResizeCleanup?.();
     dragDrop?.dispose();
+    viewSwitch.reset();
     structureDrag.dispose();
     columnResize.dispose();
     virtualizationRenderDeferredForEditor = false;
@@ -484,7 +501,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   const activityWorkflows = createActivityWorkflows({ api, state, dialog, toast, escapeHtml: esc, formatDate: fmtDate });
   const inlineEdit = createBoardInlineEditController({ state, api, commands: commandService, toast, canEdit, allColumns, getCellValue, optionList, renderBoardData, history, escapeHtml:esc, overlayCoordinator, reloadBoard:reloadCurrentBoard, preferencePatches, statusLabelsFor, statusLabelForValue, confirmAction:confirmBoardAction, onClose:flushDeferredEditorVirtualization });
   const columnResize = createColumnResizeController({ state, preferencePatches, persistPreferences:persistBoardPrefs, history, renderBoardData });
-  const structureDrag = createBoardStructureDragController({ state, commands: commandService, canEdit, toast, renderBoardData, history });
+  const structureDrag = createBoardStructureDragController({ state, commands: commandService, canEdit, toast, renderBoardData, history, isBlocked: () => Boolean(dragDrop?.pending || viewSwitch.pending) });
 
   function activeBoardEnvelope(): BoardEnvelope | null {
     return state.board?.board ? state.board : null;
@@ -558,7 +575,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       itemMatches,
       canEdit,
       memberMap,
-      statusLabels: boardStatusLabels().filter((label) => label.active !== false),
+      statusLabels: boardStatusLabels(),
       escapeHtml: esc,
       formatDay: day,
     });
@@ -594,12 +611,12 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       boardService: api,
       reloadBoard: (boardId) => loadBoard(boardId, { quiet:true, force:true }),
       reloadItemWorkspace: (itemId) => state.itemPanel.itemId === itemId ? itemWorkspace.load(itemId, { quiet:true }) : Promise.resolve(false),
-      shouldDeferSync: () => Boolean(inlineEdit.activeEditor || dragDrop?.activeItemId || structureDrag.activeDragType),
+      shouldDeferSync: () => Boolean(inlineEdit.activeEditor || dragDrop?.activeItemId || dragDrop?.pending || structureDrag.activeDragType || structureDrag.pending || viewSwitch.pending),
       onSnapshot: (snapshot) => { realtimeSnapshot = snapshot; renderBoardData(); },
       onWarning: (message) => toast(message, 'warning'),
     });
   }
-  dragDrop = createBoardDragDropController({ commands: commandService, state, canEdit, getItems: () => state.board?.items ?? [], toast, renderBoard: renderBoardData, history });
+  dragDrop = createBoardDragDropController({ commands: commandService, state, canEdit, getItems: () => state.board?.items ?? [], toast, renderBoard: renderBoardData, history, isBlocked: () => Boolean(structureDrag.pending || viewSwitch.pending) });
 
   function ensureBoardWorkspaceShell(main: HTMLElement): void {
     if (main.querySelector('[data-board-workspace-shell]')) return;
@@ -815,6 +832,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     listMenuController = null;
     itemWorkspace.reset();
     itemPanelRenderer.reset();
+    viewSwitch.reset();
     resetBoardInteractionState(state);
     tableVirtualization.reset();
     history.reset();
@@ -1410,13 +1428,15 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
 
       if (btn.matches('[data-board-view]')) {
         const view = btn.dataset.boardView;
-        if (!boardId || !board || !isBoardViewMode(view) || board.view_mode === view) return;
+        const currentView = board?.view_mode ?? board?.view ?? 'table';
+        if (!boardId || !board || !isBoardViewMode(view) || currentView === view) return;
+        if (dragDrop?.pending || structureDrag.pending) {
+          toast('Wait for the current Board movement to finish before switching views.', 'warning');
+          return;
+        }
         const region = root.querySelector<HTMLElement>('[data-board-view-host]');
         region?.classList.add('is-view-switching');
-        replaceActiveBoardRecord(boardId, (record) => ({ ...record, view_mode: view }));
-        renderBoardData();
-        requestAnimationFrame(() => region?.classList.remove('is-view-switching'));
-        void commandService.setView(boardId, view).catch((error) => toast(errorMessage(error, 'The Board view could not be changed.'), 'warning'));
+        void viewSwitch.request(view).finally(() => requestAnimationFrame(() => region?.classList.remove('is-view-switching')));
         return;
       }
 

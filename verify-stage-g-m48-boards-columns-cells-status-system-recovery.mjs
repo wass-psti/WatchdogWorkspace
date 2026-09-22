@@ -129,7 +129,8 @@ for (const token of [
 ]) has(target, token, `M48 target locks retained-backend boundary: ${token}`);
 
 // Architecture manifest/type/runtime-schema authority.
-has(manifest, 'architectureVersion: 56', 'application manifest advances to architecture 56');
+const applicationArchitectureVersion = Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0);
+ok(applicationArchitectureVersion >= 56, 'application manifest remains an architecture 56+ descendant for retained M48 authority');
 for (const token of [
   "boardColumnsCellsStatusRecovery: 'typed-columns-cells-status-recovery-v1'",
   "boardColumnsCellsStatusTarget: 'config/stage-g-m48-boards-columns-cells-status-recovery-target.ts'",

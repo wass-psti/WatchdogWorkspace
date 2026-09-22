@@ -1,0 +1,73 @@
+name: Boards Kanban Drag Drop Recovery
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  m49:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://jtlusodorfnyzgyuewkz.supabase.co' }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_CrkvaTRYTYAMVbieywNMyg_a0F7HpB6' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.117.0
+      - run: npm ci --ignore-scripts
+      - run: npm run modern-tests:toolchain:ensure
+      - name: Verify M49 fail-closed certification harnesses
+        run: |
+          npm run boards-kanban-drag-drop:check
+          npm run boards-kanban-drag-drop:workflows
+          npm run boards-kanban-drag-drop:test
+          npm run boards-kanban-drag-drop:browser
+          npm run boards-kanban-drag-drop:finalizer:test
+          npm run boards-kanban-drag-drop:production-boundary
+          npm run boards-kanban-drag-drop:cdp
+      - name: Resolve M49 milestone state
+        id: milestone_state
+        shell: bash
+        run: |
+          if grep -Eq "activationState:[[:space:]]*'active-certified'" config/stage-g-m49-boards-kanban-drag-drop-recovery-target.ts; then
+            echo 'state=active-certified' >> "$GITHUB_OUTPUT"
+          elif grep -Eq "activationState:[[:space:]]*'implementation-complete-pending-certification'" config/stage-g-m49-boards-kanban-drag-drop-recovery-target.ts; then
+            echo 'state=pending' >> "$GITHUB_OUTPUT"
+          elif grep -Eq "activationState:[[:space:]]*'implementation-in-progress'" config/stage-g-m49-boards-kanban-drag-drop-recovery-target.ts; then
+            echo 'state=in-progress' >> "$GITHUB_OUTPUT"
+          else
+            echo 'FAIL: unrecognized M49 milestone state.' >&2
+            exit 1
+          fi
+      - name: Verify M49 candidate without publication
+        if: ${{ github.event_name == 'pull_request' || steps.milestone_state.outputs.state == 'in-progress' }}
+        run: npm run boards-kanban-drag-drop:verify:candidate
+      - name: Verify active-certified M49 regression without publication
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'active-certified' }}
+        run: npm run boards-kanban-drag-drop:verify:release
+      - name: Run fail-closed M49 certification and artifact transaction
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
+        env:
+          M49_SOURCE_COMMIT: ${{ github.sha }}
+        run: npm run boards-kanban-drag-drop:certify
+      - name: Independently verify certified M49 artifact
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
+        env:
+          M49_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+        run: node scripts/verify-stage-g-m49-certified-artifact.mjs
+      - name: Upload certified M49 baseline
+        if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: work-management-v1.43.2-stage-g-m49-certified-${{ github.sha }}
+          path: |
+            m49-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M49-Certified-Baseline.zip
+            m49-certified-artifacts-upload/Work-Management-App-v1.43.2-Stage-G-M49-Certified-Baseline-PASS.txt
+          if-no-files-found: error
+          retention-days: 90

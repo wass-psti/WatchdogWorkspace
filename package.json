@@ -457,7 +457,19 @@
     "boards-columns-cells-status:verify:release": "bash scripts/verify-stage-g-m48-release.sh",
     "boards-columns-cells-status:certify": "bash scripts/finalize-stage-g-m48.sh",
     "boards-columns-cells-status:package": "bash scripts/package-stage-g-m48-certified.sh",
-    "boards-columns-cells-status:status": "node scripts/report-stage-g-m48.mjs"
+    "boards-columns-cells-status:status": "node scripts/report-stage-g-m48.mjs",
+    "boards-kanban-drag-drop:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning verify-stage-g-m49-boards-kanban-drag-drop-recovery.mjs",
+    "boards-kanban-drag-drop:test": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-boards-kanban-drag-drop-recovery-execution.mjs",
+    "boards-kanban-drag-drop:cdp": "node scripts/run-boards-kanban-drag-drop-recovery-cdp.mjs",
+    "boards-kanban-drag-drop:browser": "node scripts/run-boards-kanban-drag-drop-recovery-browser.mjs",
+    "boards-kanban-drag-drop:production-boundary": "node scripts/verify-stage-g-m49-production-boundary.mjs",
+    "boards-kanban-drag-drop:workflows": "node verify-stage-g-m49-state-aware-workflows.mjs",
+    "boards-kanban-drag-drop:finalizer:test": "node scripts/verify-stage-g-m49-finalizer-fail-closed.mjs",
+    "boards-kanban-drag-drop:verify:candidate": "bash scripts/verify-stage-g-m49-candidate.sh",
+    "boards-kanban-drag-drop:verify:release": "bash scripts/verify-stage-g-m49-release.sh",
+    "boards-kanban-drag-drop:certify": "bash scripts/finalize-stage-g-m49.sh",
+    "boards-kanban-drag-drop:package": "bash scripts/package-stage-g-m49-certified.sh",
+    "boards-kanban-drag-drop:status": "node scripts/report-stage-g-m49.mjs"
   },
   "devDependencies": {
     "@types/react": "19.2.18",

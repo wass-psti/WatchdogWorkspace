@@ -30,7 +30,7 @@ const features = freezeList<FeatureDefinition>([
   { id: 'commands', state: 'active', boundary: 'src/app/shared-ui/SharedApplicationUI.tsx', dependencies: ['react-19.2', 'shared-application-ui-runtime', 'command-registry', 'command-feature-adapter', 'global-overlay-runtime', 'overlay-manager', 'modules', 'auth', 'backup'] },
   { id: 'auth', state: 'active', boundary: 'src/app/auth/AuthenticationUI.tsx', dependencies: ['react-19.2', 'core/auth', 'authentication-ui-runtime', 'supabase-client-adapter', 'route-controller'] },
   { id: 'management', state: 'active', boundary: 'src/app/management/AuthenticatedManagementUI.tsx', dependencies: ['react-19.2', 'authenticated-management-ui-runtime', 'core/auth', 'platform', 'backup', 'modules', 'tanstack-query-v5', 'supabase-client-adapter', 'edge-function-client'] },
-  { id: 'boards', state: 'active', boundary: 'src/app/boards/BoardPresentationFacade.tsx', dependencies: ['react-19.2', 'board-presentation-facade-runtime', 'board-presentation-host', 'boards-feature-adapter', 'assets/js/boards-ui.ts', 'boards-controller', 'board-domain-service', 'board-schema', 'board-state', 'board-repository', 'board-contracts', 'column-type-registry', 'board-list-view', 'table-view', 'kanban-view', 'board-workspace-view', 'dialog-controller', 'column-workflows', 'group-workflows', 'item-workflows', 'member-workflows', 'activity-workflows', 'item-workspace-controller', 'item-panel-renderer', 'drag-drop-controller', 'history-controller', 'selection-controller', 'inline-edit-controller', 'column-resize-controller', 'structure-drag-controller', 'board-menu-controller', 'board-table-virtualization-controller', 'board-table-virtualization', 'supabase-realtime-client', 'board-realtime-service', 'board-realtime-controller', 'realtime-platform', 'global-overlay-runtime', 'overlay-manager', 'permissions', 'item-workspace-view', 'core/boards', 'boards-ui'] },
+  { id: 'boards', state: 'active', boundary: 'src/app/boards/BoardPresentationFacade.tsx', dependencies: ['react-19.2', 'board-presentation-facade-runtime', 'board-presentation-host', 'boards-feature-adapter', 'assets/js/boards-ui.ts', 'boards-controller', 'board-domain-service', 'board-schema', 'board-state', 'board-repository', 'board-contracts', 'column-type-registry', 'board-list-view', 'table-view', 'kanban-view', 'board-workspace-view', 'dialog-controller', 'column-workflows', 'group-workflows', 'item-workflows', 'member-workflows', 'activity-workflows', 'item-workspace-controller', 'item-panel-renderer', 'drag-drop-controller', 'board-move-state', 'view-switch-controller', 'history-controller', 'selection-controller', 'inline-edit-controller', 'column-resize-controller', 'structure-drag-controller', 'board-menu-controller', 'board-table-virtualization-controller', 'board-table-virtualization', 'supabase-realtime-client', 'board-realtime-service', 'board-realtime-controller', 'realtime-platform', 'global-overlay-runtime', 'overlay-manager', 'permissions', 'item-workspace-view', 'core/boards', 'boards-ui'] },
   { id: 'modules', state: 'active', boundary: 'assets/js/features/modules/index.ts', dependencies: ['module-bootstrap', 'identity-bridge', 'module-cloud-store', 'normalized-module-data-service', 'realtime-platform'] },
   { id: 'module-host', state: 'active', boundary: 'assets/js/runtime/module-host.ts', dependencies: ['auth', 'modules'] },
 ]);
@@ -39,7 +39,7 @@ export const applicationManifest = Object.freeze({
   id: 'work-management',
   name: 'Work Management',
   version: '1.43.2',
-  architectureVersion: 56,
+  architectureVersion: 57,
   runtime: 'vite-esm',
   architecture: Object.freeze({
     style: 'modular-platform',
@@ -222,6 +222,15 @@ export const applicationManifest = Object.freeze({
     boardColumnsCellsStatusStatusEditor: 'assets/js/features/boards/services/status-label-editor.ts',
     boardColumnsCellsStatusBrowser: 'tests/modern/e2e/boards-columns-cells-status-recovery.spec.mjs',
     boardColumnsCellsStatusBackendBoundary: 'retained-m46-m47-no-schema-change-v1',
+    boardKanbanDragDropRecovery: 'canonical-kanban-drag-drop-recovery-v1',
+    boardKanbanDragDropTarget: 'config/stage-g-m49-boards-kanban-drag-drop-recovery-target.ts',
+    boardKanbanView: 'assets/js/features/boards/views/kanban-view.ts',
+    boardItemDragController: 'assets/js/features/boards/controllers/drag-drop-controller.ts',
+    boardStructureDragController: 'assets/js/features/boards/controllers/structure-drag-controller.ts',
+    boardViewSwitchController: 'assets/js/features/boards/controllers/view-switch-controller.ts',
+    boardMoveState: 'assets/js/features/boards/services/board-move-state.ts',
+    boardKanbanDragDropBrowser: 'tests/modern/e2e/boards-kanban-drag-drop-recovery.spec.mjs',
+    boardKanbanDragDropBackendBoundary: 'retained-m46-m47-no-schema-change-v1',
     serverState: 'assets/js/platform/data/query-client.ts',
     serverStateLibrary: 'tanstack-query-v5',
     clientState: 'assets/js/platform/state/client-state-store.ts',
@@ -406,6 +415,10 @@ export function validateApplicationManifest(manifest: ApplicationManifest = appl
 
   if (manifest.architectureVersion >= 56 && (manifest.architecture.boardColumnsCellsStatusRecovery !== 'typed-columns-cells-status-recovery-v1' || manifest.architecture.boardColumnsCellsStatusTarget !== 'config/stage-g-m48-boards-columns-cells-status-recovery-target.ts' || manifest.architecture.boardColumnsCellsStatusColumnWorkflows !== 'assets/js/features/boards/controllers/column-workflows.ts' || manifest.architecture.boardColumnsCellsStatusInlineEditor !== 'assets/js/features/boards/controllers/inline-edit-controller.ts' || manifest.architecture.boardColumnsCellsStatusSelectors !== 'assets/js/features/boards/selectors/board-selectors.ts' || manifest.architecture.boardColumnsCellsStatusStatusEditor !== 'assets/js/features/boards/services/status-label-editor.ts' || manifest.architecture.boardColumnsCellsStatusBrowser !== 'tests/modern/e2e/boards-columns-cells-status-recovery.spec.mjs' || manifest.architecture.boardColumnsCellsStatusBackendBoundary !== 'retained-m46-m47-no-schema-change-v1')) {
     errors.push('Architecture v56+ requires governed typed Board column/cell/status recovery with explicit workflow, editor, selector, status-lifecycle, browser, and retained-backend authorities.');
+  }
+
+  if (manifest.architectureVersion >= 57 && (manifest.architecture.boardKanbanDragDropRecovery !== 'canonical-kanban-drag-drop-recovery-v1' || manifest.architecture.boardKanbanDragDropTarget !== 'config/stage-g-m49-boards-kanban-drag-drop-recovery-target.ts' || manifest.architecture.boardKanbanView !== 'assets/js/features/boards/views/kanban-view.ts' || manifest.architecture.boardItemDragController !== 'assets/js/features/boards/controllers/drag-drop-controller.ts' || manifest.architecture.boardStructureDragController !== 'assets/js/features/boards/controllers/structure-drag-controller.ts' || manifest.architecture.boardViewSwitchController !== 'assets/js/features/boards/controllers/view-switch-controller.ts' || manifest.architecture.boardMoveState !== 'assets/js/features/boards/services/board-move-state.ts' || manifest.architecture.boardKanbanDragDropBrowser !== 'tests/modern/e2e/boards-kanban-drag-drop-recovery.spec.mjs' || manifest.architecture.boardKanbanDragDropBackendBoundary !== 'retained-m46-m47-no-schema-change-v1')) {
+    errors.push('Architecture v57+ requires governed Boards Kanban and drag/drop recovery with canonical movement, serialized view switching, keyboard-accessible movement, browser authority, and retained-backend boundaries.');
   }
 
   if (manifest.architectureVersion >= 54 && (manifest.architecture.boardBackendDataContractRecovery !== 'catalog-attested-board-contract-v1' || manifest.architecture.boardBackendContract !== 'config/stage-g-m46-board-backend-contract.ts' || manifest.architecture.boardBackendMigration !== 'supabase/migrations/v1.43.2-stage-g-m46-boards-backend-data-contract-recovery.sql' || manifest.architecture.boardBackendSchema !== 'supabase/schema.sql' || manifest.architecture.boardBackendContractAttestation !== 'public.wm_board_contract_attestation' || manifest.architecture.boardBackendCacheOwnership !== 'board-query-prefix-scoped-v1' || manifest.architecture.boardAttachmentDeletion !== 'metadata-first-best-effort-object-cleanup-v1' || manifest.architecture.boardBackendDatabaseTest !== 'supabase/tests/m46/boards_backend_contract_recovery.test.sql' || manifest.architecture.boardBackendProductionVerifier !== 'scripts/verify-stage-g-m46-production-contract.mjs')) {

@@ -1,6 +1,6 @@
 # Work Management App v1.43.2 — Stage G M48 Boards Columns, Cells & Status System Recovery
 
-**State:** implementation-complete-pending-certification
+**State:** active-certified
 **Architecture:** 56
 **Prerequisite:** M47 active-certified
 **Backend boundary:** retained M46/M47 schema, RPC, RLS, and production semantics; no M48 migration
@@ -102,3 +102,7 @@ Checkpoint 07 passed the official M48 Playwright authority at **4/4 scenarios**,
 ## Checkpoint 09 post-promotion verifier lifecycle synchronization — 2026-09-21
 
 Checkpoint 08 passed the M48 release verification and certification-tree parity, then stopped during finalization because the staged certified baseline had correctly promoted the M48 target/release state to `active-certified` while the M48 static verifier still accepted only the pre-certification pending state. Checkpoint 09 makes that verifier lifecycle-aware without changing the fail-closed source requirement: authoritative Git source must still remain `implementation-complete-pending-certification` until certification succeeds, while the staged certified artifact may be verified as `active-certified` with matching release provenance. The finalizer self-test now also promotes a complete isolated project copy and runs the real M48 static verifier in `active-certified` state, preventing recurrence of this mismatch. No runtime, browser, backend, schema, RPC, RLS, grant, migration, timeout, retry, or production-data behavior changes.
+
+## Final certified baseline — 2026-09-21T13:19:31Z
+
+The fail-closed M48 certification passed for source commit `c094bd3cc645e604ba6490a87831709cb9fac84b`. The packaged Boards Columns, Cells & Status System Recovery state is **active-certified**. The retained Board backend contract is `1.43.2-m46-v1` / `2e5db3073f702cad96be3eb1d4a18b33ea039252ad4d0532dc9b6e1b3ca0da1c`; M48 semantic authority is `1.43.2-m48-v1`. Typed editors, column lifecycle, filters/sorts, status lifecycle, retained M46/M47 production invariants, historical regressions, build, and package hygiene passed before promotion.

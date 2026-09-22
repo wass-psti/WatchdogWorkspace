@@ -101,8 +101,16 @@ for (const marker of [
 for (const marker of [
   'async function keyboardReorder',
   "['ArrowUp', 'ArrowDown', 'Home', 'End']",
-  "eventElement(event)?.closest<HTMLElement>('[data-item-drag]')",
 ]) assert.ok(itemDrag.includes(marker), `Milestone 8 keyboard item reordering contract missing ${marker}`);
+
+const legacyInlineKeyboardItemHandle = "eventElement(event)?.closest<HTMLElement>('[data-item-drag]')";
+const delegatedKeyboardItemTarget = 'const target = eventElement(event);';
+const delegatedKeyboardItemHandle = "target?.closest<HTMLElement>('[data-item-drag]')";
+assert.ok(
+  itemDrag.includes(legacyInlineKeyboardItemHandle) ||
+    (itemDrag.includes(delegatedKeyboardItemTarget) && itemDrag.includes(delegatedKeyboardItemHandle)),
+  'Milestone 8 keyboard item reordering contract must resolve [data-item-drag] from eventElement(event), inline or through a local target',
+);
 
 for (const marker of [
   'Board keyboard resize and structural reordering',

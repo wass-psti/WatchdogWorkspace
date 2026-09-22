@@ -4,7 +4,7 @@ export const stageGM48BoardsColumnsCellsStatusRecoveryTarget = Object.freeze({
   milestone: 48,
   stage: 'G',
   name: 'Boards Columns, Cells & Status System Recovery',
-  activationState: 'implementation-complete-pending-certification' as M48ActivationState,
+  activationState: 'active-certified' as M48ActivationState,
   prerequisite: Object.freeze({ milestone: 47, requiredState: 'active-certified' as const }),
   architectureVersion: 56,
   authority: Object.freeze({
