@@ -84,3 +84,11 @@ Checkpoint 05 completed local exact-commit certification and pushed M49 commit `
 
 Checkpoint 06 is a corrective child of published M49 candidate `ddfd0cf4b47442bcad49892d1ca2754f877e5d16`; it must not reset GitHub main to M48 or replay the original M49 publication commit. Hosted certification now requires every push-triggered workflow observed on the published M49 candidate to conclude success before the hosted M49 artifact can close the milestone.
 
+## Checkpoint 07 — Hosted M40 lint escape prevention corrective
+
+Checkpoint 06 completed the full local M49 candidate and exact-commit certification gates and published commit `ece7eec19928d7994fbdf2d1e7c2f6df8eaf88f0`. The subsequent hosted M40 Route Lifecycle Recovery workflow failed only at repository-wide ESLint because one remaining M49 deterministic verifier timer promise still used an expression-bodied executor (`new Promise(resolve=>setTimeout(resolve,0))`). Route lifecycle static verification, deterministic tests, browser validation, and TypeScript had already passed in that hosted workflow.
+
+Checkpoint 07 corrects the remaining executor to a block body and, critically, moves `npm run lint:eslint` into the M49 candidate gate before browser/E2E work. The M49 static verifier now requires that lint gate and requires it to precede the expensive M49 browser authority, preventing this class of defect from escaping local candidate verification and surfacing only after push. No production Board runtime, backend contract, migration, RPC, RLS policy, grant, or application architecture behavior changes in this checkpoint.
+
+After this corrective implementation is locally verified, M49 implementation is complete. The remaining work is certification execution against a direct-child corrective commit of `ece7eec19928d7994fbdf2d1e7c2f6df8eaf88f0`, including the complete hosted workflow set and hosted artifact verification.
+

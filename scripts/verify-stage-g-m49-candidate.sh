@@ -3,6 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 [ "$(node --version)" = 'v22.16.0' ] || { echo "FAIL: M49 candidate verification requires Node v22.16.0; current $(node --version)." >&2; exit 1; }
+npm run lint:eslint
 npm run boards-kanban-drag-drop:check
 npm run boards-kanban-drag-drop:workflows
 npm run boards-kanban-drag-drop:test

@@ -166,7 +166,7 @@ c77fbcb318eb7b0fd9afef949efc4693743711e1e8e52658156721d376e38990  ./M44-MANAGEME
 fed454d0fb7ea7510a5686cd95087a4aa9c71c332e5a7298ba12edcef8bfd08a  ./M46-BOARDS-BACKEND-DATA-CONTRACT-RECOVERY.md
 57f00484d83b42d3804e549181f9475accccce8b965db7e123100cd2cbb70ca0  ./M47-CONTINUATION-STATE.md
 70d36c3f46b053ce3c8bb32c0160be0090b8d3ee3ebee60f4ec8d034c1de7883  ./M48-CONTINUATION-STATE.md
-9187c0a1246367dfb92e76de647451adb490631dfe2b5a17535fc736ed677f66  ./M49-CONTINUATION-STATE.md
+772328a1342ce0ee6109ba57e9dc266c6567cc21ae32cf9ecc926204b559d8ad  ./M49-CONTINUATION-STATE.md
 91df619e971a38ab4767a8b21df24033e3ef190e272f5e62ef9c0bf4fe7feb68  ./M5-ACTIVATION-RUNBOOK.md
 7f145954a3ab537a808a2f6006d257517f2810a596001eee2f2b3e4ba9c472eb  ./M6-ACTIVATION-RUNBOOK.md
 721e0649e315a407ebd38e455c3c2be95abd55d4fa16139aba0077698e1a49c1  ./M6-BROWSER-ESM-HARNESS-HOTFIX.md
@@ -260,7 +260,7 @@ dbee435ec2d4fc7b82d8dadfc46b1fbec673b1bf8eedf8c8449648f22b98636d  ./RELEASE-STAT
 b4aea9c243764dc2beb53b765cdb2880ae39015e6f4db4da89e2a914d7249e46  ./RELEASE-STATUS-v1.43.2-STAGE-G-M46-BOARDS-BACKEND-DATA-CONTRACT-RECOVERY.md
 b692a7d6ba11ff49536ba02532e40e001c3b514d0cce7c19461e8b520b483e8d  ./RELEASE-STATUS-v1.43.2-STAGE-G-M47-BOARDS-TABLE-GROUP-ITEM-RECOVERY.md
 1503de2b4a846d4c2759d958012d9276dae65e571e14619d6551c024ae32c0c0  ./RELEASE-STATUS-v1.43.2-STAGE-G-M48-BOARDS-COLUMNS-CELLS-STATUS-SYSTEM-RECOVERY.md
-33f3aa21956eb56c43e4b4a2da0ca94fc4bb377233c3128190cb7183993b944e  ./RELEASE-STATUS-v1.43.2-STAGE-G-M49-BOARDS-KANBAN-DRAG-DROP-RECOVERY.md
+676fcd4b5440af3988e1057fa70f4ed116b0693b72dea4123846046afa744117  ./RELEASE-STATUS-v1.43.2-STAGE-G-M49-BOARDS-KANBAN-DRAG-DROP-RECOVERY.md
 f5456ced7546bf790b612a3900905bd4a25b45ab21bd9fd0c1d8a616395069a7  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-FINAL.md
 2d3c24a6567659c068f896542d02442d2991c2a2ffc15030e90d5f2018c825ad  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE2.md
 73619f1c62c3b893ec438e0cc77f36c7590c5c2a57677e6e8cf1c42e538f3c05  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE3.md
@@ -805,7 +805,7 @@ c90923247140921c954a6c0dec072338f01a2562c7478b45df10e6a64c26c127  ./scripts/veri
 75c651180a41b2e5b6d8a12fdeb42669e530d64199bd860f160f36718bb37d96  ./scripts/verify-boards-backend-data-contract-recovery-execution.mjs
 e4b1ed29097833677738d5170d98b85aa38b95616c55495c9f3b6b4b8efe859c  ./scripts/verify-boards-collection-route-recovery-execution.mjs
 de2596a6d4a58632050b2527bc223e5da4aa74b009c9e0af5cc944d0b259e22a  ./scripts/verify-boards-columns-cells-status-recovery-execution.mjs
-04cf8a94f7923811f23a76f599a1f59b935f6451324ede1cd1cd0de0efc5d1b1  ./scripts/verify-boards-kanban-drag-drop-recovery-execution.mjs
+cce93c917cd661db1fa26bc7153635f72893329f12b4369b78806075c8f3c17d  ./scripts/verify-boards-kanban-drag-drop-recovery-execution.mjs
 0e9c7c9247ae36b4c758de827a217f8d57aac006e13d2f9dd6f669313bfdf3f1  ./scripts/verify-boards-table-group-item-recovery-execution.mjs
 732e04b0ba8d6b66d9812e6eae9faba352afb9c98fb682ac1f38ca57bbba0930  ./scripts/verify-browser-harness-bundle.mjs
 2b08e660af10ab79fa609af47d5d9626a5be0d27cf42b959b190b9784816720a  ./scripts/verify-client-state-execution.mjs
@@ -873,7 +873,7 @@ cee5264ba83095e43287403dfdea366a662c77ad1506059cab4953b25d4b82b7  ./scripts/veri
 db18131a37a7b25e852fc405077772f5532f546eb0a5fc074f84802a11e01e1b  ./scripts/verify-stage-g-m48-finalizer-fail-closed.mjs
 c895398dadcfaa6eace849e7a7101caf79ac7538d1182eefd1990929143a9031  ./scripts/verify-stage-g-m48-production-boundary.mjs
 1ecc0c7f18e9418e43209b356c17a60a41ddf60bf5f60f1629bf0bd87993f89a  ./scripts/verify-stage-g-m48-release.sh
-eb7ada0699775e4f35db2c40ed280a95135cb8e655175b9b345e656d2b687ac3  ./scripts/verify-stage-g-m49-candidate.sh
+28516c91ae6f34d0e8e75d0c74bddc681525a65c1ec4e67d25175c15afbaea51  ./scripts/verify-stage-g-m49-candidate.sh
 2a473cb7d41adcfd4dfc1b1a30b3562dc42ced492538073c0e77f2c8272ba47c  ./scripts/verify-stage-g-m49-certified-artifact.mjs
 f9b4f6e91aea8fc1d4d6b954e316d322ff4f3021b7e8a7b6eb67f3fdd6885bb4  ./scripts/verify-stage-g-m49-finalizer-fail-closed.mjs
 13dd526eefbd7406b73afc63535d07d5a2b1e85ee7b01d0a399dd37833cd79ee  ./scripts/verify-stage-g-m49-production-boundary.mjs
@@ -1170,7 +1170,7 @@ a460db31e6e19e42fbef95a47a0e96d34cdb308a990d225d217b91f03642f0c0  ./verify-stage
 abb8a67ab959a26b960441c993fe0117734b1f0ba7fdad049d19d37285298fb9  ./verify-stage-g-m47-state-aware-workflows.mjs
 6d829a5c27e43e04c549f2dd8beb8754abb2cfba98b2ab1f79fa1ed86a3b3a1b  ./verify-stage-g-m48-boards-columns-cells-status-system-recovery.mjs
 5b6eb4aecc5c41bef6ef501b0007ab24b4f2e09466218130ab282c1e41214a22  ./verify-stage-g-m48-state-aware-workflows.mjs
-033d5f9e06258a6f120edfcf49d07e752f19a2c66083c34f2818da4c43c6b504  ./verify-stage-g-m49-boards-kanban-drag-drop-recovery.mjs
+0255e3e580c08048e5581ef716a859674b4060b9f9d45d9870438907e97d9d41  ./verify-stage-g-m49-boards-kanban-drag-drop-recovery.mjs
 c70469c046dd9245cf4bf1063e76dae75801d2241d2efedca3dcfdf6264fd8b4  ./verify-stage-g-m49-state-aware-workflows.mjs
 9c3ca048644f0a54f06bd56a46ce957a2e8f0e9f6d99eefd92b93d135da276f7  ./verify-timetracker-runtime.mjs
 e461f73a558d08bda915d6ecee41df158e47cf99b104a75bc91f1517d8d4ff39  ./verify-timetracker-startup.mjs

@@ -130,7 +130,7 @@ const item = (id, group, position, status) => ({ id, board_id: 'b1', group_id: g
   const second=controller.request('table');
   await Promise.resolve();
   deferred[0].reject(new Error('older failure'));
-  await new Promise(resolve=>setTimeout(resolve,0));
+  await new Promise((resolve) => { setTimeout(resolve,0); });
   eq(currentView,'table','older failed request never rolls back a newer optimistic intent');
   deferred[1].resolve();
   await Promise.all([first,second]);
