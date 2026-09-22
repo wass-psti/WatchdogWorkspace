@@ -166,7 +166,7 @@ c77fbcb318eb7b0fd9afef949efc4693743711e1e8e52658156721d376e38990  ./M44-MANAGEME
 fed454d0fb7ea7510a5686cd95087a4aa9c71c332e5a7298ba12edcef8bfd08a  ./M46-BOARDS-BACKEND-DATA-CONTRACT-RECOVERY.md
 57f00484d83b42d3804e549181f9475accccce8b965db7e123100cd2cbb70ca0  ./M47-CONTINUATION-STATE.md
 70d36c3f46b053ce3c8bb32c0160be0090b8d3ee3ebee60f4ec8d034c1de7883  ./M48-CONTINUATION-STATE.md
-d97ac22f1ace12f8ed70faab0910e17b68b17751fbf617dadba11f90fdb0bf0d  ./M49-CONTINUATION-STATE.md
+9187c0a1246367dfb92e76de647451adb490631dfe2b5a17535fc736ed677f66  ./M49-CONTINUATION-STATE.md
 91df619e971a38ab4767a8b21df24033e3ef190e272f5e62ef9c0bf4fe7feb68  ./M5-ACTIVATION-RUNBOOK.md
 7f145954a3ab537a808a2f6006d257517f2810a596001eee2f2b3e4ba9c472eb  ./M6-ACTIVATION-RUNBOOK.md
 721e0649e315a407ebd38e455c3c2be95abd55d4fa16139aba0077698e1a49c1  ./M6-BROWSER-ESM-HARNESS-HOTFIX.md
@@ -260,7 +260,7 @@ dbee435ec2d4fc7b82d8dadfc46b1fbec673b1bf8eedf8c8449648f22b98636d  ./RELEASE-STAT
 b4aea9c243764dc2beb53b765cdb2880ae39015e6f4db4da89e2a914d7249e46  ./RELEASE-STATUS-v1.43.2-STAGE-G-M46-BOARDS-BACKEND-DATA-CONTRACT-RECOVERY.md
 b692a7d6ba11ff49536ba02532e40e001c3b514d0cce7c19461e8b520b483e8d  ./RELEASE-STATUS-v1.43.2-STAGE-G-M47-BOARDS-TABLE-GROUP-ITEM-RECOVERY.md
 1503de2b4a846d4c2759d958012d9276dae65e571e14619d6551c024ae32c0c0  ./RELEASE-STATUS-v1.43.2-STAGE-G-M48-BOARDS-COLUMNS-CELLS-STATUS-SYSTEM-RECOVERY.md
-5715c5c4c7670e5aaac7f0faf19d8d827a55c6fb58e63b5f7171fbe67b2fbf4e  ./RELEASE-STATUS-v1.43.2-STAGE-G-M49-BOARDS-KANBAN-DRAG-DROP-RECOVERY.md
+33f3aa21956eb56c43e4b4a2da0ca94fc4bb377233c3128190cb7183993b944e  ./RELEASE-STATUS-v1.43.2-STAGE-G-M49-BOARDS-KANBAN-DRAG-DROP-RECOVERY.md
 f5456ced7546bf790b612a3900905bd4a25b45ab21bd9fd0c1d8a616395069a7  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-FINAL.md
 2d3c24a6567659c068f896542d02442d2991c2a2ffc15030e90d5f2018c825ad  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE2.md
 73619f1c62c3b893ec438e0cc77f36c7590c5c2a57677e6e8cf1c42e538f3c05  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE3.md
@@ -805,7 +805,7 @@ c90923247140921c954a6c0dec072338f01a2562c7478b45df10e6a64c26c127  ./scripts/veri
 75c651180a41b2e5b6d8a12fdeb42669e530d64199bd860f160f36718bb37d96  ./scripts/verify-boards-backend-data-contract-recovery-execution.mjs
 e4b1ed29097833677738d5170d98b85aa38b95616c55495c9f3b6b4b8efe859c  ./scripts/verify-boards-collection-route-recovery-execution.mjs
 de2596a6d4a58632050b2527bc223e5da4aa74b009c9e0af5cc944d0b259e22a  ./scripts/verify-boards-columns-cells-status-recovery-execution.mjs
-53db9c7f26e6584dd8aa7938aafbe536321d863bf6d94f539931beb4e4eaf0da  ./scripts/verify-boards-kanban-drag-drop-recovery-execution.mjs
+04cf8a94f7923811f23a76f599a1f59b935f6451324ede1cd1cd0de0efc5d1b1  ./scripts/verify-boards-kanban-drag-drop-recovery-execution.mjs
 0e9c7c9247ae36b4c758de827a217f8d57aac006e13d2f9dd6f669313bfdf3f1  ./scripts/verify-boards-table-group-item-recovery-execution.mjs
 732e04b0ba8d6b66d9812e6eae9faba352afb9c98fb682ac1f38ca57bbba0930  ./scripts/verify-browser-harness-bundle.mjs
 2b08e660af10ab79fa609af47d5d9626a5be0d27cf42b959b190b9784816720a  ./scripts/verify-client-state-execution.mjs
@@ -1063,7 +1063,7 @@ d0e391480797ea46ed11b26da55a90d20723a410f98adaf27aa65b9e42f2ba7c  ./tests/browse
 18bef48efdf2fc19f95e1cb0fae30fe7206c0589c3650a1897472c9026a2a7f3  ./tests/browser/run-browser-tests.sh
 ec46da9e0c64cfeeca8c8cdd58028f307d46bc768a13ee380b7755eaf825a45a  ./tests/browser/run-cdp.mjs
 31dc16d2111cdfbbdcff7c4e7988377732bed7c448267aedef688b74de99e7ca  ./tests/browser/runtime-globals-entry.ts
-01cca3d32f803e733ae454f23ff5d717d9a84221d57bafb579358d6f259cb0ac  ./tests/m49-cdp/m49-cdp-browser-fixture.mjs
+c02662d67f169b71a693e82f2ff27767393b49d58cac81e4438b7e0d32479bbb  ./tests/m49-cdp/m49-cdp-browser-fixture.mjs
 576deeb5e090f08bdf94486aeea87d873d2b69484990e18ec0e65a304698c7c4  ./tests/modern/component/button.test.mjs
 0e98ede91966aba4d43a03de72fec4e51e6b69239bea0fa37cee070185a34580  ./tests/modern/e2e/account-functional-recovery.spec.mjs
 c01ba75873cf591653b6573e038ce33679d5876a322ad397dcffb7d75024eac7  ./tests/modern/e2e/application-smoke.spec.mjs
@@ -1072,7 +1072,7 @@ c85ce84cbbd8f28f987df2d722ed1eabeac04777fed8ae4e4661e92d03239472  ./tests/modern
 87af629c2653f816dc3dc512ca147c1e5150d21aef8ea954e337089467f26d5b  ./tests/modern/e2e/boards-backend-data-contract-recovery.spec.mjs
 72510189f2b885cd564ffe0636c77c691590ea8056466779a78fa232f548fe22  ./tests/modern/e2e/boards-collection-route-recovery.spec.mjs
 267ba0b9e19416170368f49932cd9423e02ffb70d9186172761ab01f6dd491b0  ./tests/modern/e2e/boards-columns-cells-status-recovery.spec.mjs
-2d9b22f7ced17ceb37679d5c5189fc3e1fea5123a8953f4daea6aabc062661fe  ./tests/modern/e2e/boards-kanban-drag-drop-recovery.spec.mjs
+77a70546f374fb3d3d572e65cee5579168e8404e6c28500d87f2912ca42e0cb9  ./tests/modern/e2e/boards-kanban-drag-drop-recovery.spec.mjs
 7ac61eecf63955bbc9ff3e5b59bbe54feacbca53529ac6d7b27158e05c12abe0  ./tests/modern/e2e/boards-table-group-item-recovery.spec.mjs
 6a6a0ffb75d20e05ec786a597c9782293c6fdff674b1794a59ed77648a5e117d  ./tests/modern/e2e/functional-regression-baseline.spec.mjs
 dde1347e8fedbe37ba79e4c2388aa5d024a1c0688dfba1ffe7f3f1ad3ee8acae  ./tests/modern/e2e/helpers/m37-regression-probe.mjs
@@ -1081,7 +1081,7 @@ dde1347e8fedbe37ba79e4c2388aa5d024a1c0688dfba1ffe7f3f1ad3ee8acae  ./tests/modern
 7c737443016a2bf1a762415b50b1fc16f2c63ade840785f8879a4649781d9693  ./tests/modern/e2e/helpers/m45-boards-fixture.mjs
 6a32b329b0904f743710d14f3698494c9c4a54088c37c26dfbdc44242fe7251d  ./tests/modern/e2e/helpers/m47-boards-table-fixture.mjs
 97dd13ed36b63a946e136a432e91f73dec5c3f893eaa0fd39220d061beb2c56f  ./tests/modern/e2e/helpers/m48-boards-columns-fixture.mjs
-515a9c4afe68010581dfc9e2af70926882cfb10192932a19f745e2dd1283cdae  ./tests/modern/e2e/helpers/m49-boards-kanban-fixture.mjs
+66717da018324838bb8fb3468bd5ceee6b45b8e2480527098238880dd7d7b53c  ./tests/modern/e2e/helpers/m49-boards-kanban-fixture.mjs
 bae8f5ec8c8cae2074190330b8d7edb7abe3615438eeee1acf920898f37fb94b  ./tests/modern/e2e/management-authority-consolidation.spec.mjs
 3057549b468747754d93fc42241937734d95725da199683d826b9b3570134db0  ./tests/modern/e2e/route-lifecycle-recovery.spec.mjs
 4dcc876b85ee3e8fe505e9267eced230d33cfc783710d82c584c51a940f10509  ./tests/modern/e2e/runtime-backend-preflight.spec.mjs
@@ -1170,7 +1170,7 @@ a460db31e6e19e42fbef95a47a0e96d34cdb308a990d225d217b91f03642f0c0  ./verify-stage
 abb8a67ab959a26b960441c993fe0117734b1f0ba7fdad049d19d37285298fb9  ./verify-stage-g-m47-state-aware-workflows.mjs
 6d829a5c27e43e04c549f2dd8beb8754abb2cfba98b2ab1f79fa1ed86a3b3a1b  ./verify-stage-g-m48-boards-columns-cells-status-system-recovery.mjs
 5b6eb4aecc5c41bef6ef501b0007ab24b4f2e09466218130ab282c1e41214a22  ./verify-stage-g-m48-state-aware-workflows.mjs
-f57519c63c8ec54e40dc62aa5927924008157b7ecadea3be4f91c4efdb7904aa  ./verify-stage-g-m49-boards-kanban-drag-drop-recovery.mjs
+033d5f9e06258a6f120edfcf49d07e752f19a2c66083c34f2818da4c43c6b504  ./verify-stage-g-m49-boards-kanban-drag-drop-recovery.mjs
 c70469c046dd9245cf4bf1063e76dae75801d2241d2efedca3dcfdf6264fd8b4  ./verify-stage-g-m49-state-aware-workflows.mjs
 9c3ca048644f0a54f06bd56a46ce957a2e8f0e9f6d99eefd92b93d135da276f7  ./verify-timetracker-runtime.mjs
 e461f73a558d08bda915d6ecee41df158e47cf99b104a75bc91f1517d8d4ff39  ./verify-timetracker-startup.mjs

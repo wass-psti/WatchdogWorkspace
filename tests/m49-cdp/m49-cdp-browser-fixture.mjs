@@ -5,7 +5,7 @@ import { createBoardViewSwitchController } from '../../assets/js/features/boards
 
 const root=document.querySelector('#root');
 const out=document.querySelector('#result');
-const wait=(ms=0)=>new Promise(r=>setTimeout(r,ms));
+const wait=(ms=0)=>new Promise((resolve)=>{setTimeout(resolve,ms);});
 const assert=(condition,message)=>{if(!condition)throw new Error(message);};
 const esc=(s)=>String(s).replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 

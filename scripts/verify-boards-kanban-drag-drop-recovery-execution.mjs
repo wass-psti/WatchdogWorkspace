@@ -107,7 +107,7 @@ const item = (id, group, position, status) => ({ id, board_id: 'b1', group_id: g
   await Promise.resolve();
   eq(persisted, ['kanban'], 'second rapid view request waits for first persistence transaction');
   pending[0].resolve();
-  await new Promise(resolve => setTimeout(resolve,0));
+  await new Promise((resolve) => { setTimeout(resolve,0); });
   eq(persisted, ['kanban','table'], 'queued view request begins only after first transaction completes');
   pending[1].resolve();
   eq(await Promise.all([first,second]), [true,true], 'both serialized view requests resolve deterministically');
@@ -121,7 +121,7 @@ const item = (id, group, position, status) => ({ id, board_id: 'b1', group_id: g
   const controller=createBoardViewSwitchController({
     getBoardIdentity:()=>({id:'b1',view:currentView}),
     applyLocalView:(_id,view)=>{currentView=view;},
-    persistView:(_id,view)=>new Promise((resolve,reject)=>deferred.push({view,resolve,reject})),
+    persistView:(_id,view)=>new Promise((resolve,reject)=>{ deferred.push({view,resolve,reject}); }),
     renderBoard:()=>undefined,
     toast:()=>undefined,
   });

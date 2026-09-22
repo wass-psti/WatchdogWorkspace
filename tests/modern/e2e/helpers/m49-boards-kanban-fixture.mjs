@@ -4,7 +4,6 @@ export const M49_BOARD_ID = 'board-m49';
 export const M49_ADMIN_ID = '00000000-0000-4000-8000-000000000039';
 const now = () => '2026-09-21T00:00:00.000Z';
 const clone = (value) => JSON.parse(JSON.stringify(value));
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const json = (route, status, body) => route.fulfill({
   status,
   contentType: 'application/json; charset=utf-8',
@@ -51,8 +50,8 @@ export async function installM49BoardsKanbanFixture(page) {
     preferences:{ sort_column_id:null, sort_direction:null, column_filters:{}, wrap_columns:[], column_widths:{}, item_name_width:280, collapsed_groups:[] },
     calls:[],
     failures:{},
-    delays:{},
   };
+  const holds = new Map();
   const record = (name, body) => state.calls.push({ name, body:clone(body ?? {}) });
   const envelope = () => ({ board:clone(state.board), groups:clone(state.groups), items:clone(state.items), columns:clone(state.columns), values:clone(state.values), members:clone(state.members) });
   const normalizeItems = (groupId) => state.items
@@ -62,8 +61,8 @@ export async function installM49BoardsKanbanFixture(page) {
   const normalizeGroups = () => state.groups.forEach((entry,index) => { entry.position=index; });
   const normalizeColumns = () => state.columns.forEach((entry,index) => { entry.position=index; });
   const consumeFault = async (name, route) => {
-    const delay = Number(state.delays[name] || 0);
-    if (delay > 0) { state.delays[name] = 0; await sleep(delay); }
+    const hold = holds.get(name);
+    if (hold) { holds.delete(name); await hold.promise; }
     const fault = state.failures[name];
     if (!fault || fault.count <= 0) return false;
     fault.count -= 1;
@@ -134,6 +133,12 @@ export async function installM49BoardsKanbanFixture(page) {
     calls:(name)=>clone(state.calls.filter((entry)=>!name || entry.name===name)),
     resetCalls:()=>{ state.calls.length=0; },
     failNext:(name,{ count=1, status=500, message=`Forced ${name} failure` }={})=>{ state.failures[name]={ count, status, message }; },
-    delayNext:(name,ms)=>{ state.delays[name]=Math.max(0,Number(ms)||0); },
+    holdNext:(name)=>{
+      if (holds.has(name)) throw new Error(`A held ${name} request is already pending.`);
+      let release=()=>undefined;
+      const promise=new Promise((resolve)=>{ release=resolve; });
+      holds.set(name,{ promise });
+      return ()=>{ release(); };
+    },
   });
 }

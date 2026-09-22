@@ -78,10 +78,13 @@ test('@m49-kanban-render-view-switch Kanban lanes preserve canonical items and s
   expect(cardIds).toEqual(['item-a1','item-a2','item-a3','item-b1']);
   expect(canonicalItems(fixture)).toEqual(before);
 
-  fixture.delayNext('wm_set_board_view',250);
+  const releaseTableView = fixture.holdNext('wm_set_board_view');
   const tableClick = page.getByRole('tab', { name:'Main table', exact:true }).click();
-  await page.waitForTimeout(20);
+  await expect.poll(() => fixture.calls('wm_set_board_view').at(-1)?.body.p_view).toBe('table');
   const kanbanClick = page.getByRole('tab', { name:'Kanban', exact:true }).click();
+  await expect(page.getByRole('tab', { name:'Kanban', exact:true })).toHaveAttribute('aria-selected','true');
+  expect(fixture.calls('wm_set_board_view').slice(-1).map((entry)=>entry.body.p_view)).toEqual(['table']);
+  releaseTableView();
   await Promise.all([tableClick,kanbanClick]);
   await expect.poll(() => fixture.calls('wm_set_board_view').slice(-2).map((entry)=>entry.body.p_view)).toEqual(['table','kanban']);
   await expect(page.getByRole('tab', { name:'Kanban', exact:true })).toHaveAttribute('aria-selected','true');
@@ -172,7 +175,7 @@ test('@m49-pending-rollback unresolved movement blocks overlapping structure/vie
   test.setTimeout(60_000);
   const { fixture } = await setup(page);
 
-  fixture.delayNext('wm_move_board_item',350);
+  const releaseItemMove = fixture.holdNext('wm_move_board_item');
   const alphaHandle = row(page,'Alpha').locator('[data-item-drag="item-a1"]');
   await alphaHandle.focus();
   await page.keyboard.press('ArrowDown');
@@ -185,6 +188,7 @@ test('@m49-pending-rollback unresolved movement blocks overlapping structure/vie
   expect(fixture.calls('wm_move_board_group')).toHaveLength(0);
   expect(fixture.calls('wm_set_board_view')).toHaveLength(0);
   await expect(page.getByRole('tab', { name:'Main table', exact:true })).toHaveAttribute('aria-selected','true');
+  releaseItemMove();
 
   await expect.poll(() => fixture.calls('wm_move_board_item').length).toBe(1);
   await expect.poll(() => page.locator('.board-detail-page').getAttribute('aria-busy')).toBeNull();

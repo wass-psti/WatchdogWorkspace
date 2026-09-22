@@ -77,3 +77,10 @@ The Checkpoint 04 governed Mac transaction passed the M49 Playwright authority 4
 ### Checkpoint 05 proactive v1.31 synchronization
 
 A collect-all historical audit performed after the v1.27 correction exposed one more dependency-independent verifier drift: v1.31 still required the retired `applyLocalMove` helper name even though M49 implements stronger optimistic movement through `applyBoardItemMove`, snapshot/restore rollback state, and immediate board rendering. The v1.31 authority now accepts the historical helper or the canonical transaction while preserving the positional-feedback requirement. M49 static verification explicitly guards this synchronization. No production runtime/backend code changes are introduced.
+
+## Checkpoint 06 — Hosted CI lint and deterministic concurrency corrective
+
+Checkpoint 05 completed local exact-commit certification and pushed M49 commit `ddfd0cf4b47442bcad49892d1ca2754f877e5d16`, but hosted certification remained fail-closed. GitHub CI identified five `no-promise-executor-return` ESLint violations in M49-only test/verifier code. The dedicated hosted M49 workflow also exposed a Linux timing race in the pending-movement concurrency scenario: the fixture released a move after a fixed 350 ms delay, allowing a slower hosted runner to settle the move before the view-switch assertion. Checkpoint 06 removes all time-based RPC delay control from the M49 Playwright fixture and replaces it with explicit held RPCs that are released only after overlap assertions complete. Promise executors are block-bodied so they do not return timer or Array#push values. Production Board runtime/backend behavior is unchanged.
+
+Checkpoint 06 is a corrective child of published M49 candidate `ddfd0cf4b47442bcad49892d1ca2754f877e5d16`; it must not reset GitHub main to M48 or replay the original M49 publication commit. Hosted certification now requires every push-triggered workflow observed on the published M49 candidate to conclude success before the hosted M49 artifact can close the milestone.
+
