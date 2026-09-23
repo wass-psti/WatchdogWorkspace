@@ -1,7 +1,7 @@
 import type { MutableBoardViewState, MutableItemWorkspaceState } from '../../../../src/features/boards/contracts/view-state.ts';
 
 function emptyWorkspaceData(): MutableItemWorkspaceState['data'] {
-  return { updates: [], files: [], activity: [] };
+  return { permissions: { can_edit:false, can_comment:false, can_attach:false, can_manage:false }, updates: [], files: [], activity: [] };
 }
 
 function emptyItemPanel(): MutableItemWorkspaceState {

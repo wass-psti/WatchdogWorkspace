@@ -41,9 +41,10 @@ select is(
      and p.prosecdef
      and p.prorettype<>'trigger'::regtype
      and p.oid <> 'public.wm_board_contract_attestation()'::regprocedure
+     and p.oid <> 'public.wm_item_workspace_recovery_attestation()'::regprocedure
      and has_function_privilege('anon',p.oid,'EXECUTE')),
   0,
-  'anon cannot execute any non-trigger public SECURITY DEFINER function except governed Board contract attestation'
+  'anon cannot execute any non-trigger public SECURITY DEFINER function except governed aggregate Board attestations'
 );
 select ok(has_function_privilege('authenticated','public.is_platform_admin(uuid)','EXECUTE'),'authenticated can execute is_platform_admin for RLS evaluation');
 
@@ -67,14 +68,33 @@ select is(
           'public.wm_board_contract_attestation()'::regprocedure
         ) and not (coalesce(p.proconfig,'{}'::text[]) @> array['search_path=""']::text[]))
        or
+       (p.oid in (
+          'public.wm_get_board_item_workspace(uuid)'::regprocedure,
+          'public.wm_add_board_item_update(uuid,text)'::regprocedure,
+          'public.wm_delete_board_item_update(bigint)'::regprocedure,
+          'public.wm_register_board_item_file(uuid,text,text,text,bigint)'::regprocedure,
+          'public.wm_delete_board_item_file(uuid)'::regprocedure,
+          'public.wm_delete_board_item(uuid)'::regprocedure,
+          'public.wm_delete_board_permanently(uuid)'::regprocedure,
+          'public.wm_item_workspace_recovery_attestation()'::regprocedure
+        ) and not (coalesce(p.proconfig,'{}'::text[]) @> array['search_path=pg_catalog, public']::text[]))
+       or
        (p.oid not in (
           'public.work_board_realtime_topic_access(text)'::regprocedure,
           'public.work_board_realtime_broadcast_change()'::regprocedure,
-          'public.wm_board_contract_attestation()'::regprocedure
+          'public.wm_board_contract_attestation()'::regprocedure,
+          'public.wm_get_board_item_workspace(uuid)'::regprocedure,
+          'public.wm_add_board_item_update(uuid,text)'::regprocedure,
+          'public.wm_delete_board_item_update(bigint)'::regprocedure,
+          'public.wm_register_board_item_file(uuid,text,text,text,bigint)'::regprocedure,
+          'public.wm_delete_board_item_file(uuid)'::regprocedure,
+          'public.wm_delete_board_item(uuid)'::regprocedure,
+          'public.wm_delete_board_permanently(uuid)'::regprocedure,
+          'public.wm_item_workspace_recovery_attestation()'::regprocedure
         ) and not (coalesce(p.proconfig,'{}'::text[]) @> array['search_path=public']::text[]))
      )),
   0,
-  'public SECURITY DEFINER functions pin the governed search_path (Board hardened functions use empty; all others use public)'
+  'public SECURITY DEFINER functions pin the governed search_path (legacy Board helpers use empty; M50 hardened functions use pg_catalog,public; all others use public)'
 );
 select ok(
   not exists(

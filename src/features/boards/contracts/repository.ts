@@ -61,6 +61,7 @@ export interface BoardRepository {
   deleteItemUpdate(updateId: string | number): Promise<void>;
   uploadItemFile(boardId: BoardId, itemId: BoardItemId, file: File): Promise<string>;
   openItemFile(file: ItemWorkspaceFile): Promise<void>;
+  downloadItemFile(file: ItemWorkspaceFile): Promise<void>;
   deleteItemFile(file: ItemWorkspaceFile): Promise<void>;
   invalidate(): void;
   clearCache(): void;

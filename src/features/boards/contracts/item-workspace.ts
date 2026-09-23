@@ -21,5 +21,6 @@ export interface ItemWorkspaceRuntime {
   uploadFiles(files: readonly File[]): Promise<number | null>;
   deleteUpdate(updateId: string | number): Promise<boolean>;
   openFile(fileId: string): Promise<boolean>;
+  downloadFile(fileId: string): Promise<boolean>;
   deleteFile(fileId: string): Promise<boolean>;
 }

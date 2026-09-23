@@ -456,7 +456,7 @@ const testProgram = String.raw`(async () => {
     assert(longForm.querySelector('.inline-save-error')?.textContent.includes('still here'),'failed long-text save exposes persistent inline recovery guidance');
     assert(longForm.dataset.saving==='false'&&!textarea.disabled,'failed long-text save re-enables the editor instead of silently closing');longEditor.reset();anchor.remove();
 
-    const activityState={board:{groups:[{id:'g',title:'Group'}],items:[{id:'activity-item',group_id:'g',title:'Activity item',status:'in_progress'}],columns:[],values:[],members:[]},itemPanel:{itemId:'activity-item',tab:'activity',loading:false,error:'',data:{updates:[],files:[],activity:[
+    const activityState={board:{groups:[{id:'g',title:'Group'}],items:[{id:'activity-item',group_id:'g',title:'Activity item',status:'in_progress'}],columns:[],values:[],members:[]},itemPanel:{itemId:'activity-item',tab:'activity',loading:false,error:'',data:{permissions:{can_edit:true,can_comment:true,can_attach:true,can_manage:true},updates:[],files:[],activity:[
       {id:'e1',event_type:'item.cell_updated',actor_id:'u1',actor_name:'Lex',created_at:'2026-08-28T02:00:30Z',payload:{column_id:'c-long',column_name:'New Long text'}},
       {id:'e2',event_type:'item.cell_updated',actor_id:'u1',actor_name:'Lex',created_at:'2026-08-28T02:00:20Z',payload:{column_id:'c-long',column_name:'New Long text'}},
       {id:'e3',event_type:'item.cell_updated',actor_id:'u1',actor_name:'Lex',created_at:'2026-08-28T02:00:10Z',payload:{column_id:'c-long',column_name:'New Long text'}}
@@ -469,11 +469,11 @@ const testProgram = String.raw`(async () => {
 
   await run('Item Workspace stale-response and upload isolation', async()=>{
     const host=document.querySelector('#itemHost'),a=deferred(),b=deferred(),upload=deferred(),calls=[];
-    const state={board:{board:{id:'board-1'},groups:[{id:'g',title:'Group'}],items:[{id:'a',group_id:'g',title:'A',status:'in_progress'},{id:'b',group_id:'g',title:'B',status:'done'}],columns:[],values:[],members:[]},itemPanel:{itemId:null,tab:'updates',loading:false,error:'',data:{updates:[],files:[],activity:[]},uploading:false}};
-    const api={getItemWorkspace:(id)=>id==='a'?a.promise:b.promise,addItemUpdate:async()=>{},uploadItemFile:async(boardId,itemId,file)=>{calls.push({boardId,itemId,name:file.name});return upload.promise;},deleteItemUpdate:async()=>{},openItemFile:async()=>{},deleteItemFile:async()=>{}};
+    const state={board:{board:{id:'board-1'},groups:[{id:'g',title:'Group'}],items:[{id:'a',group_id:'g',title:'A',status:'in_progress'},{id:'b',group_id:'g',title:'B',status:'done'}],columns:[],values:[],members:[]},itemPanel:{itemId:null,tab:'updates',loading:false,error:'',data:{permissions:{can_edit:true,can_comment:true,can_attach:true,can_manage:true},updates:[],files:[],activity:[]},uploading:false}};
+    const api={getItemWorkspace:(id)=>id==='a'?a.promise:b.promise,addItemUpdate:async()=>{},uploadItemFile:async(boardId,itemId,file)=>{calls.push({boardId,itemId,name:file.name});return upload.promise;},deleteItemUpdate:async()=>{},openItemFile:async()=>{},downloadItemFile:async()=>{},deleteItemFile:async()=>{}};
     const renderPanel=()=>{host.innerHTML=renderItemWorkspace({state,canEdit:()=>true,escapeHtml:(v)=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;'),formatDate:String,formatDay:String});};
     const controller=createItemWorkspaceController({api,state,toast:()=>{},renderBoard:renderPanel,renderPanel,confirmAction:()=>true});
-    controller.open('a');controller.open('b');b.resolve({updates:[{id:'b-update',author_name:'B',created_at:'now',body:'B'}],files:[],activity:[]});await wait();a.resolve({updates:[{id:'a-update',author_name:'A',created_at:'now',body:'A'}],files:[],activity:[]});await wait();
+    controller.open('a');controller.open('b');b.resolve({permissions:{can_edit:true,can_comment:true,can_attach:true,can_manage:true},updates:[{id:'b-update',author_name:'B',created_at:'now',body:'B'}],files:[],activity:[]});await wait();a.resolve({permissions:{can_edit:true,can_comment:true,can_attach:true,can_manage:true},updates:[{id:'a-update',author_name:'A',created_at:'now',body:'A'}],files:[],activity:[]});await wait();
     assert(state.itemPanel.itemId==='b'&&state.itemPanel.data.updates[0].id==='b-update','late Item A response cannot overwrite Item B');
     controller.open('a');await wait();const input=document.createElement('input');input.type='file';input.dataset.itemFileInput='1';const dt=new DataTransfer();dt.items.add(new File(['x'],'proof.txt',{type:'text/plain'}));Object.defineProperty(input,'files',{value:dt.files});host.appendChild(input);
     const uploadPromise=controller.uploadFiles({target:input});controller.open('b');upload.resolve({});await uploadPromise;assert(calls[0]?.itemId==='a','upload remains bound to item selected at upload start');controller.reset();
@@ -572,7 +572,7 @@ const testProgram = String.raw`(async () => {
   await run('Item Workspace action menu overlays drawer chrome', async()=>{
     const style=document.createElement('style');style.dataset.itemMenuLayerTest='1';style.textContent=globalThis.__wmThemeCss.app+'\n'+globalThis.__wmThemeCss.motion;document.head.appendChild(style);
     const root=document.querySelector('#boardRoot');
-    const state={board:{groups:[{id:'g',title:'Main group'}],items:[{id:'menu-item',group_id:'g',title:'Menu item',status:'not_started'}],columns:[],values:[],members:[]},itemPanel:{itemId:'menu-item',tab:'updates',loading:false,error:'',data:{updates:[],files:[],activity:[]},uploading:false}};
+    const state={board:{groups:[{id:'g',title:'Main group'}],items:[{id:'menu-item',group_id:'g',title:'Menu item',status:'not_started'}],columns:[],values:[],members:[]},itemPanel:{itemId:'menu-item',tab:'updates',loading:false,error:'',data:{permissions:{can_edit:true,can_comment:true,can_attach:true,can_manage:true},updates:[],files:[],activity:[]},uploading:false}};
     root.innerHTML=renderItemWorkspace({state,canEdit:()=>true,escapeHtml:String,formatDate:String,formatDay:String});
     const menus=createBoardMenuController({root});const trigger=root.querySelector('[data-board-menu-trigger="item-panel"]');
     assert(trigger,'Item Workspace header uses shared floating-menu trigger');
@@ -619,7 +619,7 @@ const testProgram = String.raw`(async () => {
   });
 
   await run('Item Workspace accessibility semantics', async()=>{
-    const state={board:{groups:[{id:'g',title:'Group'}],items:[{id:'i',group_id:'g',title:'Accessible item',status:'in_progress'}],columns:[],values:[],members:[]},itemPanel:{itemId:'i',tab:'updates',loading:false,error:'',data:{updates:[],files:[],activity:[]},uploading:false}};
+    const state={board:{groups:[{id:'g',title:'Group'}],items:[{id:'i',group_id:'g',title:'Accessible item',status:'in_progress'}],columns:[],values:[],members:[]},itemPanel:{itemId:'i',tab:'updates',loading:false,error:'',data:{permissions:{can_edit:true,can_comment:true,can_attach:true,can_manage:true},updates:[],files:[],activity:[]},uploading:false}};
     const html=renderItemWorkspace({state,canEdit:()=>true,escapeHtml:String,formatDate:String,formatDay:String});const wrap=document.createElement('div');wrap.innerHTML=html;
     assert(wrap.querySelector('[data-item-panel][role="dialog"][aria-modal="true"]'),'Item Workspace has modal dialog semantics');assert(wrap.querySelector('[role="tablist"]')&&wrap.querySelectorAll('[role="tab"]').length===4&&wrap.querySelector('[data-item-panel-tab="overview"]'),'Item Workspace exposes Overview plus the certified Updates/Files/Activity tabs with tab semantics');assert(wrap.querySelector('[role="tabpanel"]'),'Item Workspace exposes a tabpanel');
   });

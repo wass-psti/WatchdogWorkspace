@@ -1,0 +1,46 @@
+export type M50ActivationState = 'implementation-in-progress' | 'implementation-complete-pending-certification' | 'active-certified';
+
+export const stageGM50RichItemWorkspaceFileRecoveryTarget = Object.freeze({
+  milestone: 50,
+  stage: 'G',
+  name: 'Rich Item Workspace & File Recovery',
+  activationState: 'implementation-complete-pending-certification' as M50ActivationState,
+  prerequisite: Object.freeze({
+    milestone: 49,
+    requiredState: 'active-certified' as const,
+    certifiedCommit: '63ab65080b7b6fb33ba276fa169ca2a55b19d06c',
+    certifiedSourceTree: 'd26f3a136f02ff48cd6113ff605f5132cf903ad4c74beefbe29e1b642c5260f4',
+    hostedWorkflowRun: 35687976043,
+    hostedArtifactSha256: '8f903ccaab516c1bbe678308ec042409d0b7a05d73d41b5b4275613183f2245a',
+  }),
+  architectureVersion: 58,
+  semanticsVersion: '1.43.2-m50-v1',
+  authority: Object.freeze({
+    runtime: 'assets/js/features/boards/services/item-workspace-runtime.ts',
+    controller: 'assets/js/features/boards/controllers/item-workspace-controller.ts',
+    view: 'assets/js/features/boards/views/item-workspace-view.ts',
+    repository: 'assets/js/features/boards/data/board-repository.ts',
+    contracts: 'src/features/boards/contracts/item-workspace.ts',
+    migration: 'supabase/migrations/v1.43.2-stage-g-m50-rich-item-workspace-file-recovery.sql',
+    databaseTest: 'supabase/tests/m50/rich_item_workspace_file_recovery.test.sql',
+    browserSpec: 'tests/modern/e2e/rich-item-workspace-file-recovery.spec.mjs',
+    productionVerifier: 'scripts/verify-stage-g-m50-production-invariants.mjs',
+  }),
+  completionCriteria: Object.freeze([
+    'The Item Workspace panel loads Overview, Updates, Files, and Activity from one server-authoritative item workspace envelope and rejects stale responses.',
+    'Properties persist through governed Board commands and reload into the workspace without implicit blur commits.',
+    'Viewer access remains read-only while Board edit access is required for updates, properties, attachment upload, and attachment deletion.',
+    'Private attachment uploads are registered only when the matching Supabase Storage object exists and is owned by the authenticated uploader.',
+    'Attachment registration is retry-safe and reconciles ambiguous RPC results before any rollback can delete a possibly committed object.',
+    'Attachment downloads use short-lived signed URLs and explicit browser download semantics while previews remain separately available.',
+    'Attachment deletion removes the Storage object before metadata finalization so a failed Storage delete cannot create an invisible orphan.',
+    'Permanent item and Board deletion fail closed while attachment metadata or pending unregistered Storage objects remain, protecting private Storage ownership and cleanup invariants.',
+    'Dedicated database, deterministic, browser/E2E, production-attestation, regression, and fail-closed certification authorities pass before active-certified promotion.',
+  ]),
+  knownBoundaries: Object.freeze([
+    'M46 remains the historical Board backend/data-contract authority; its metadata-first attachment token is retained for historical verification while M50 introduces a superseding item-workspace storage lifecycle authority.',
+    'M49 repository source intentionally remains pending-certification by fail-closed design; M50 pins the separately verified certified M49 commit/tree/hosted-artifact evidence instead of rewriting predecessor source state.',
+    'M47-M49 remain authoritative for Board table/group/item, typed cell/status, and Kanban/drag behavior. M50 changes only Rich Item Workspace and file/storage lifecycle behavior.',
+    'The private work-board-files Supabase Storage bucket remains the storage provider; M50 does not introduce an alternate object store.',
+  ]),
+});

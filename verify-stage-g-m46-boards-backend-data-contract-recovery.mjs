@@ -76,8 +76,10 @@ assert(!repo.includes('clearCache: () => queries.clear()'),'Board cache clearing
 const removeStart=repo.indexOf('async function removeItemFile');
 const removeEnd=repo.indexOf('\n  const repository:',removeStart);
 const removeBody=repo.slice(removeStart,removeEnd);
-assert(removeBody.indexOf("rpc('wm_delete_board_item_file'")<removeBody.indexOf("storageDelete('work-board-files'"),'Attachment metadata deletion must precede object cleanup.');
-assert(removeBody.includes('BOARD_FILE_STORAGE_CLEANUP_PENDING')&&removeBody.includes('canonicalPath'),'Attachment cleanup must use the backend-returned canonical path and preserve authoritative metadata deletion on storage cleanup failure.');
+const legacyMetadataFirst=removeBody.indexOf("rpc('wm_delete_board_item_file'")>=0&&removeBody.indexOf("rpc('wm_delete_board_item_file'")<removeBody.indexOf("storageDelete('work-board-files'")&&removeBody.includes('BOARD_FILE_STORAGE_CLEANUP_PENDING');
+const m50StorageFirst=removeBody.indexOf("storageDelete('work-board-files'")>=0&&removeBody.indexOf("storageDelete('work-board-files'")<removeBody.indexOf("rpc('wm_delete_board_item_file'")&&removeBody.includes('BOARD_FILE_METADATA_FINALIZE_PENDING');
+assert(legacyMetadataFirst||m50StorageFirst,'Attachment deletion must use either the certified M46 metadata-first lifecycle or the governed M50 Storage-first successor lifecycle.');
+assert(removeBody.includes('canonicalPath'),'Attachment cleanup must use the backend-returned canonical path.');
 assert(dto.includes("name: requiredString(record, 'name', operation)")&&dto.includes("title: requiredString(record, 'title', 'board.group')")&&dto.includes("title: requiredString(record, 'title', 'board.item')")&&dto.includes("name: requiredString(record, 'name', 'board.column')"),'Required Board DTO labels must fail closed on empty backend values.');
 assert((dto.match(/optionalString\(record, 'author_id'\) \?\? optionalString\(record, 'created_by'\)/g)||[]).length===2,'M46 DTO compatibility must accept created_by only for legacy update/file author identity.');
 assert(preflight.includes('wm_board_contract_attestation')&&preflight.includes('M46_BOARD_CONTRACT_DIGEST')&&preflight.includes('M46_BOARD_CONTRACT_VERSION')&&preflight.includes("contract-compatible:false"),'Runtime Board readiness must enforce the live M46 attestation.');

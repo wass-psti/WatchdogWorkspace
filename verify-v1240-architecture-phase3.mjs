@@ -111,7 +111,7 @@ assert.ok(listMarkup.includes('data-board-id="b1"') && listMarkup.includes('data
 const workspaceMarkup = renderItemWorkspace({
   state: {
     board: { columns: [], groups: [{ id: 'g1', title: 'Main' }], items: [{ id: 'i1', group_id: 'g1', title: 'Task', status: 'working', due_date: '2026-08-28', archived_at: null }] },
-    itemPanel: { itemId: 'i1', tab: 'updates', loading: false, error: '', uploading: false, data: { updates: [], files: [], activity: [] } },
+    itemPanel: { itemId: 'i1', tab: 'updates', loading: false, error: '', uploading: false, data: { permissions: { can_edit: true, can_comment: true, can_attach: true, can_manage: true }, updates: [], files: [], activity: [] } },
   },
   canEdit: () => true,
   escapeHtml: (value) => String(value ?? ''),

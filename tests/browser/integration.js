@@ -130,18 +130,18 @@ await test('item workspace rejects stale item and upload completions', async () 
   const host=document.createElement('div');host.dataset.itemPanelHost='1';document.body.appendChild(host);
   const a=deferred(), b=deferred(), upload=deferred();
   const calls=[];
-  const state={board:{board:{id:'board-1'},groups:[{id:'g',title:'Group'}],items:[{id:'a',group_id:'g',title:'A',status:'working'},{id:'b',group_id:'g',title:'B',status:'done'}],columns:[],values:[],members:[]},itemPanel:{itemId:null,tab:'updates',loading:false,error:'',data:{updates:[],files:[],activity:[]},uploading:false}};
-  const api={getItemWorkspace:(id)=>id==='a'?a.promise:b.promise,addItemUpdate:async()=>{},uploadItemFile:async(boardId,itemId,file)=>{calls.push({boardId,itemId,name:file.name});return upload.promise;},deleteItemUpdate:async()=>{},openItemFile:async()=>{},deleteItemFile:async()=>{}};
+  const state={board:{board:{id:'board-1'},groups:[{id:'g',title:'Group'}],items:[{id:'a',group_id:'g',title:'A',status:'working'},{id:'b',group_id:'g',title:'B',status:'done'}],columns:[],values:[],members:[]},itemPanel:{itemId:null,tab:'updates',loading:false,error:'',data:{permissions:{can_edit:true,can_comment:true,can_attach:true,can_manage:true},updates:[],files:[],activity:[]},uploading:false}};
+  const api={getItemWorkspace:(id)=>id==='a'?a.promise:b.promise,addItemUpdate:async()=>{},uploadItemFile:async(boardId,itemId,file)=>{calls.push({boardId,itemId,name:file.name});return upload.promise;},deleteItemUpdate:async()=>{},openItemFile:async()=>{},downloadItemFile:async()=>{},deleteItemFile:async()=>{}};
   const renderPanel=()=>{host.innerHTML=renderItemWorkspace({state,canEdit:()=>true,escapeHtml:(v)=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;'),formatDate:String,formatDay:String});};
   const renderBoard=renderPanel;
   const controller=createItemWorkspaceController({api,state,toast:()=>{},renderBoard,renderPanel,confirmAction:()=>true});
   controller.open('a');
   controller.open('b');
-  b.resolve({updates:[{id:'b-update',author_name:'B',created_at:'now',body:'B data'}],files:[],activity:[]});await wait();
-  a.resolve({updates:[{id:'a-update',author_name:'A',created_at:'now',body:'A data'}],files:[],activity:[]});await wait();
+  b.resolve({permissions:{can_edit:true,can_comment:true,can_attach:true,can_manage:true},updates:[{id:'b-update',author_name:'B',created_at:'now',body:'B data'}],files:[],activity:[]});await wait();
+  a.resolve({permissions:{can_edit:true,can_comment:true,can_attach:true,can_manage:true},updates:[{id:'a-update',author_name:'A',created_at:'now',body:'A data'}],files:[],activity:[]});await wait();
   assert(state.itemPanel.itemId==='b' && state.itemPanel.data.updates[0].id==='b-update','late Item A response cannot overwrite Item B workspace');
   // Upload selected while A is active must remain targeted at A even if the user switches to B before completion.
-  controller.open('a');a.resolve?.({updates:[],files:[],activity:[]});
+  controller.open('a');a.resolve?.({permissions:{can_edit:true,can_comment:true,can_attach:true,can_manage:true},updates:[],files:[],activity:[]});
   const input=document.createElement('input');input.type='file';input.dataset.itemFileInput='1';
   const dt=new DataTransfer();dt.items.add(new File(['x'],'proof.txt',{type:'text/plain'}));Object.defineProperty(input,'files',{value:dt.files});host.appendChild(input);
   const change={target:input};const uploadPromise=controller.uploadFiles(change);controller.open('b');upload.resolve({});await uploadPromise;
@@ -150,7 +150,7 @@ await test('item workspace rejects stale item and upload completions', async () 
 });
 
 await test('item workspace exposes modal/tab semantics', async () => {
-  const state={board:{groups:[{id:'g',title:'Group'}],items:[{id:'i',group_id:'g',title:'Accessible item',status:'working'}],columns:[],values:[],members:[]},itemPanel:{itemId:'i',tab:'updates',loading:false,error:'',data:{updates:[],files:[],activity:[]},uploading:false}};
+  const state={board:{groups:[{id:'g',title:'Group'}],items:[{id:'i',group_id:'g',title:'Accessible item',status:'working'}],columns:[],values:[],members:[]},itemPanel:{itemId:'i',tab:'updates',loading:false,error:'',data:{permissions:{can_edit:true,can_comment:true,can_attach:true,can_manage:true},updates:[],files:[],activity:[]},uploading:false}};
   const html=renderItemWorkspace({state,canEdit:()=>true,escapeHtml:(x)=>String(x),formatDate:String,formatDay:String});
   const wrap=document.createElement('div');wrap.innerHTML=html;
   assert(wrap.querySelector('[data-item-panel][role="dialog"][aria-modal="true"]'),'Item Workspace is exposed as an accessible modal dialog');
@@ -171,7 +171,7 @@ await test('M21 Rich Item Workspace exposes typed overview, resilient drafts and
       values:[{item_id:'i-rich',column_id:'c-rich',value:'WM-21'}],
       members:[{user_id:'u1',role:'editor',display_name:'Alex Morgan',email:'alex@example.test'}],
     },
-    itemPanel:{itemId:'i-rich',tab:'overview',loading:false,error:'',data:{updates:[],files:[],activity:[]},uploading:false,updateDraft:'Decision: preserve this draft'},
+    itemPanel:{itemId:'i-rich',tab:'overview',loading:false,error:'',data:{permissions:{can_edit:true,can_comment:true,can_attach:true,can_manage:true},updates:[],files:[],activity:[]},uploading:false,updateDraft:'Decision: preserve this draft'},
   };
   const esc=(value)=>String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
   const render=()=>{host.innerHTML=renderItemWorkspace({state,canEdit:()=>true,escapeHtml:esc,formatDate:String,formatDay:String});};
@@ -188,7 +188,7 @@ await test('M21 Rich Item Workspace exposes typed overview, resilient drafts and
 
   updatesState.tab='overview';render();
   const calls=[];
-  const api={getItemWorkspace:async()=>state.itemPanel.data,addItemUpdate:async()=>{},uploadItemFile:async()=>{},deleteItemUpdate:async()=>{},openItemFile:async()=>{},deleteItemFile:async()=>{}};
+  const api={getItemWorkspace:async()=>state.itemPanel.data,addItemUpdate:async()=>{},uploadItemFile:async()=>{},deleteItemUpdate:async()=>{},openItemFile:async()=>{},downloadItemFile:async()=>{},deleteItemFile:async()=>{}};
   const commands={updateItem:async(command)=>{calls.push({kind:'core',command});},setCell:async(command)=>{calls.push({kind:'cell',command});}};
   const controller=createItemWorkspaceController({api,commands,state,toast:()=>{},renderBoard:render,renderPanel:render,reloadBoard:async()=>true,confirmAction:()=>true});
   const titleForm=host.querySelector('[data-item-property-form][data-item-property-field="title"]');

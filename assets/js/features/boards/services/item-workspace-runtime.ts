@@ -58,7 +58,7 @@ export function createItemWorkspaceRuntime({
       tab: 'updates',
       loading: true,
       error: '',
-      data: { updates: [], files: [], activity: [] },
+      data: { permissions: { can_edit:false, can_comment:false, can_attach:false, can_manage:false }, updates: [], files: [], activity: [] },
       uploading: false,
       updateDraft: '',
     };
@@ -100,6 +100,7 @@ export function createItemWorkspaceRuntime({
   const postUpdate = async (body: unknown): Promise<boolean> => {
     const text = String(body ?? '').trim();
     if (!text) return false;
+    if (!state.itemPanel.data.permissions.can_comment) throw new WorkManagementError('You need Board edit access to post updates.', { code:'WM_BOARD_EDIT_REQUIRED', category:'authorization' });
     if (text.length > 5000) throw new WorkManagementError('Update is limited to 5000 characters.', { code: 'WM_VALIDATION', category: 'validation' });
     const itemId = activeItemId();
     if (!itemId) return false;
@@ -117,6 +118,7 @@ export function createItemWorkspaceRuntime({
 
   const uploadFiles = async (files: readonly File[]): Promise<number | null> => {
     if (!files.length) return 0;
+    if (!state.itemPanel.data.permissions.can_attach) throw new WorkManagementError('You need Board edit access to attach files.', { code:'WM_BOARD_EDIT_REQUIRED', category:'authorization' });
     const boardId = state.board?.board?.id as BoardId | undefined;
     const itemId = activeItemId();
     if (!boardId || !itemId) return null;
@@ -160,7 +162,7 @@ export function createItemWorkspaceRuntime({
   };
 
   const openFile = async (fileId: string): Promise<boolean> => {
-    const file = state.itemPanel.data.files.find((entry) => entry.id === fileId);
+    const file = state.itemPanel.data.files.find((entry) => String(entry.id) === String(fileId));
     if (!file) return false;
     try {
       await service.openItemFile(file);
@@ -170,8 +172,19 @@ export function createItemWorkspaceRuntime({
     }
   };
 
+  const downloadFile = async (fileId: string): Promise<boolean> => {
+    const file = state.itemPanel.data.files.find((entry) => String(entry.id) === String(fileId));
+    if (!file) return false;
+    try {
+      await service.downloadItemFile(file);
+      return true;
+    } catch (error) {
+      throw normalizeAppError(error, { operation: 'boards.item-workspace.download-file' });
+    }
+  };
+
   const deleteFile = async (fileId: string): Promise<boolean> => {
-    const file = state.itemPanel.data.files.find((entry) => entry.id === fileId);
+    const file = state.itemPanel.data.files.find((entry) => String(entry.id) === String(fileId));
     const itemId = activeItemId();
     if (!file || !itemId) return false;
     const ticket = epoch;
@@ -199,6 +212,7 @@ export function createItemWorkspaceRuntime({
     uploadFiles,
     deleteUpdate,
     openFile,
+    downloadFile,
     deleteFile,
   });
 }

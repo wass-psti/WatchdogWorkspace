@@ -50,6 +50,24 @@ export function createItemWorkspaceController({
   });
 
   const panel = (): HTMLElement | null => document.querySelector<HTMLElement>('[data-item-panel]');
+  const confirmWorkspaceAction = async (message: string): Promise<boolean> => {
+    const parentModal = panel();
+    const priorAriaModal = parentModal?.getAttribute('aria-modal') ?? null;
+    const priorInert = parentModal?.inert ?? false;
+    if (parentModal) {
+      parentModal.setAttribute('aria-modal', 'false');
+      parentModal.inert = true;
+    }
+    try {
+      return await confirmAction(message);
+    } finally {
+      if (parentModal?.isConnected) {
+        if (priorAriaModal === null) parentModal.removeAttribute('aria-modal');
+        else parentModal.setAttribute('aria-modal', priorAriaModal);
+        parentModal.inert = priorInert;
+      }
+    }
+  };
   const focusables = (): HTMLElement[] => [...(panel()?.querySelectorAll<HTMLElement>('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])') || [])];
 
   function focusPanel({ preferTab = false }: Readonly<{ preferTab?: boolean }> = {}): void {
@@ -196,12 +214,13 @@ export function createItemWorkspaceController({
     const itemId = state.itemPanel.itemId;
     const item = state.board?.items.find((entry) => String(entry.id) === String(itemId));
     if (!itemId || !item) return true;
+    if (!state.itemPanel.data.permissions.can_edit) { toast('You need Board edit access to change item properties.', 'warning'); return true; }
     const submit = event.submitter instanceof HTMLButtonElement ? event.submitter : form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const data = new FormData(form);
     const controls = [...form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLButtonElement>('input,textarea,select,button')];
     controls.forEach((control) => { control.disabled = true; });
     form.setAttribute('aria-busy', 'true');
     try {
-      const data = new FormData(form);
       if (form.dataset.itemPropertyKind === 'core') {
         const field = form.dataset.itemPropertyField;
         const raw = String(data.get('value') ?? '');
@@ -220,6 +239,13 @@ export function createItemWorkspaceController({
         else if (field === 'notes') next.notes = raw;
         else throw new Error('Unsupported Item Workspace field.');
         await commands.updateItem(next);
+        if (state.board) {
+          state.board = {
+            ...state.board,
+            items: state.board.items.map((entry) => String(entry.id) === String(item.id) ? { ...entry, title: next.title, status: next.status, assignee_id: next.assigneeId, due_date: next.dueDate, notes: next.notes } : entry),
+          };
+          renderBoard();
+        }
       } else if (form.dataset.itemPropertyKind === 'cell') {
         const columnId = form.dataset.columnId;
         const column = state.board?.columns.find((entry) => String(entry.id) === String(columnId));
@@ -229,6 +255,16 @@ export function createItemWorkspaceController({
           : data.get('value');
         const value = normalizeBoardCellValue(column.data_type, raw);
         await commands.setCell({ itemId: item.id, columnId: column.id, value });
+        if (state.board) {
+          const existing = state.board.values.some((entry) => String(entry.item_id) === String(item.id) && String(entry.column_id) === String(column.id));
+          state.board = {
+            ...state.board,
+            values: existing
+              ? state.board.values.map((entry) => String(entry.item_id) === String(item.id) && String(entry.column_id) === String(column.id) ? { ...entry, value } : entry)
+              : [...state.board.values, { item_id: item.id, column_id: column.id, value }],
+          };
+          renderBoard();
+        }
       } else {
         throw new Error('Unsupported Item Workspace property operation.');
       }
@@ -362,7 +398,7 @@ export function createItemWorkspaceController({
     }
 
     if (button.matches('[data-delete-item-update]')) {
-      if (!await confirmAction('Delete this update permanently? This cannot be undone.')) return true;
+      if (!await confirmWorkspaceAction('Delete this update permanently? This cannot be undone.')) return true;
       const updateId = button.dataset.deleteItemUpdate;
       if (!updateId) return true;
       try {
@@ -379,13 +415,22 @@ export function createItemWorkspaceController({
       return true;
     }
 
+    if (button.matches('[data-download-item-file]')) {
+      const fileId = button.dataset.downloadItemFile;
+      if (!fileId) return true;
+      try { await runtime.downloadFile(fileId); }
+      catch (error) { toast(errorMessage(error), 'warning'); }
+      return true;
+    }
+
     if (button.matches('[data-delete-item-file]')) {
       const fileId = button.dataset.deleteItemFile;
-      const file = state.itemPanel.data.files.find((entry) => entry.id === fileId);
+      if (!fileId) return true;
+      const file = state.itemPanel.data.files.find((entry) => String(entry.id) === String(fileId));
       const fileName = String(file?.file_name || 'this attachment');
-      if (!file || !await confirmAction(`Remove “${fileName}” from this item? This cannot be undone.`)) return true;
+      if (!await confirmWorkspaceAction(`Remove “${fileName}” from this item? This cannot be undone.`)) return true;
       try {
-        if (await runtime.deleteFile(file.id)) toast('Attachment removed.');
+        if (await runtime.deleteFile(fileId)) toast('Attachment removed.');
       } catch (error) { toast(errorMessage(error), 'warning'); }
       return true;
     }

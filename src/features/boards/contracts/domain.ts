@@ -214,6 +214,7 @@ export interface ItemWorkspaceFile {
   readonly item_id: BoardItemId;
   readonly storage_path: string;
   readonly file_name?: string | null;
+  readonly mime_type?: string | null;
   readonly size_bytes?: number | null;
   readonly author_name?: string | null;
   readonly author_id?: UserId | null;
@@ -234,7 +235,15 @@ export interface ItemActivityEvent {
   readonly [key: string]: unknown;
 }
 
+export interface ItemWorkspacePermissions {
+  readonly can_edit: boolean;
+  readonly can_comment: boolean;
+  readonly can_attach: boolean;
+  readonly can_manage: boolean;
+}
+
 export interface ItemWorkspaceEnvelope {
+  readonly permissions: ItemWorkspacePermissions;
   readonly updates: readonly ItemWorkspaceUpdate[];
   readonly files: readonly ItemWorkspaceFile[];
   readonly activity: readonly ItemActivityEvent[];

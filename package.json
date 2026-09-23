@@ -469,7 +469,19 @@
     "boards-kanban-drag-drop:verify:release": "bash scripts/verify-stage-g-m49-release.sh",
     "boards-kanban-drag-drop:certify": "bash scripts/finalize-stage-g-m49.sh",
     "boards-kanban-drag-drop:package": "bash scripts/package-stage-g-m49-certified.sh",
-    "boards-kanban-drag-drop:status": "node scripts/report-stage-g-m49.mjs"
+    "boards-kanban-drag-drop:status": "node scripts/report-stage-g-m49.mjs",
+    "rich-item-workspace-recovery:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning verify-stage-g-m50-rich-item-workspace-file-recovery.mjs",
+    "rich-item-workspace-recovery:test": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-rich-item-workspace-file-recovery-execution.mjs",
+    "rich-item-workspace-recovery:browser": "node scripts/run-rich-item-workspace-file-recovery-browser.mjs",
+    "rich-item-workspace-recovery:database": "node scripts/run-stage-g-m50-database-tests.mjs",
+    "rich-item-workspace-recovery:production": "node scripts/verify-stage-g-m50-production-invariants.mjs",
+    "rich-item-workspace-recovery:verify:candidate": "bash scripts/verify-stage-g-m50-candidate.sh",
+    "rich-item-workspace-recovery:verify:release": "bash scripts/verify-stage-g-m50-release.sh",
+    "rich-item-workspace-recovery:deploy:production": "bash scripts/deploy-stage-g-m50-production-recovery.sh",
+    "rich-item-workspace-recovery:certify": "bash scripts/finalize-stage-g-m50.sh",
+    "rich-item-workspace-recovery:artifact": "node scripts/verify-stage-g-m50-certified-artifact.mjs",
+    "rich-item-workspace-recovery:workflows": "node verify-stage-g-m50-state-aware-workflows.mjs",
+    "rich-item-workspace-recovery:finalizer:test": "node scripts/verify-stage-g-m50-finalizer-fail-closed.mjs"
   },
   "devDependencies": {
     "@types/react": "19.2.18",

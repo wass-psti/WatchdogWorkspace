@@ -9,6 +9,7 @@ import type {
   BoardLifecycleStatus,
   BoardPreferences,
   BoardViewMode,
+  ItemWorkspaceEnvelope,
   ItemWorkspaceFile,
   StatusLabel,
 } from '../../../../../src/features/boards/contracts/domain.ts';
@@ -137,27 +138,32 @@ export function createBoardRepository(auth: AuthTransportPort, options: BoardRep
   }
 
   async function removeItemFile(file: ItemWorkspaceFile): Promise<void> {
-    const deletedPath = boardScalar(await rpc('wm_delete_board_item_file', { p_file_id: file.id }));
-    const canonicalPath = typeof deletedPath === 'string' ? deletedPath.trim() : '';
+    const itemId = String(file.item_id || '') as BoardItemId;
+    const authoritative = await repository.getItemWorkspace(itemId, { force: true });
+    const current = authoritative.files.find((entry) => entry.id === file.id);
+    if (!current) return;
+    const canonicalPath = String(current.storage_path || '').trim();
     if (!canonicalPath) {
-      throw new WorkManagementError('The server did not return the deleted attachment path.', {
+      throw new WorkManagementError('The server returned an invalid attachment path.', {
         code: 'WM_BOARD_FILE_DELETE_CONTRACT_INVALID',
         category: 'internal',
         retryable: true,
         operation: 'boards.file.delete',
-        cause: deletedPath,
       });
     }
+    await backend.storageDelete('work-board-files', canonicalPath, { ignoreMissing: true });
     try {
-      await backend.storageDelete('work-board-files', canonicalPath, { ignoreMissing: true });
+      await rpc('wm_delete_board_item_file', { p_file_id: current.id });
     } catch (error: unknown) {
-      diagnostics?.warn('BOARD_FILE_STORAGE_CLEANUP_PENDING', 'Board attachment metadata was deleted but private-object cleanup did not complete.', {
-        fileId: file.id,
+      diagnostics?.warn('BOARD_FILE_METADATA_FINALIZE_PENDING', 'Private Storage object was deleted but attachment metadata finalization did not complete; retry remains safe.', {
+        fileId: current.id,
         storagePath: canonicalPath,
         error: error instanceof Error ? error.message : String(error ?? ''),
       });
+      throw error;
+    } finally {
+      queries.invalidateQueries(key('item-workspace', itemId));
     }
-    queries.invalidateQueries(key('item-workspace', String(file.item_id || '')));
   }
 
   const repository: BoardRepository = {
@@ -376,18 +382,41 @@ export function createBoardRepository(auth: AuthTransportPort, options: BoardRep
       const storagePath = `${boardId}/${itemId}/${unique}-${safeName}`;
       return mutate('boards.file.upload', async () => {
         await backend.storageUpload('work-board-files', storagePath, file, { contentType: file.type || 'application/octet-stream', upsert: false });
-        try {
-          return scalarId<string>(await rpc('wm_register_board_item_file', {
-            p_item_id: itemId,
-            p_storage_path: storagePath,
-            p_file_name: file.name || safeName,
-            p_mime_type: file.type || 'application/octet-stream',
-            p_size_bytes: file.size,
-          }), 'boards.file.upload');
-        } catch (error: unknown) {
-          try { await backend.storageDelete('work-board-files', storagePath, { ignoreMissing: true }); } catch { /* best-effort rollback */ }
-          throw error;
+        const register = async (): Promise<string> => scalarId<string>(await rpc('wm_register_board_item_file', {
+          p_item_id: itemId,
+          p_storage_path: storagePath,
+          p_file_name: file.name || safeName,
+          p_mime_type: file.type || 'application/octet-stream',
+          p_size_bytes: file.size,
+        }), 'boards.file.upload');
+        let registrationError: unknown = null;
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          try { return await register(); }
+          catch (error: unknown) { registrationError = error; }
         }
+        let authoritative: ItemWorkspaceEnvelope;
+        try {
+          authoritative = await repository.getItemWorkspace(itemId, { force: true });
+        } catch (reconciliationError: unknown) {
+          diagnostics?.warn('BOARD_FILE_REGISTRATION_RECONCILIATION_PENDING', 'Attachment registration could not be conclusively reconciled; the private Storage object is retained to avoid deleting a possibly committed attachment.', {
+            itemId, storagePath,
+            registrationError: registrationError instanceof Error ? registrationError.message : String(registrationError ?? ''),
+            reconciliationError: reconciliationError instanceof Error ? reconciliationError.message : String(reconciliationError ?? ''),
+          });
+          throw registrationError ?? reconciliationError;
+        }
+        const committed = authoritative.files.find((entry) => entry.storage_path === storagePath);
+        if (committed) return committed.id;
+        try {
+          await backend.storageDelete('work-board-files', storagePath, { ignoreMissing: true });
+        } catch (cleanupError: unknown) {
+          diagnostics?.warn('BOARD_FILE_ROLLBACK_PENDING', 'Attachment metadata registration is absent but the uploaded Storage object could not be rolled back; retry cleanup is required.', {
+            itemId, storagePath,
+            registrationError: registrationError instanceof Error ? registrationError.message : String(registrationError ?? ''),
+            cleanupError: cleanupError instanceof Error ? cleanupError.message : String(cleanupError ?? ''),
+          });
+        }
+        throw registrationError ?? new WorkManagementError('The attachment metadata could not be registered.', { code: 'WM_FILE_REGISTER', category: 'storage', retryable: true });
       });
     },
     async openItemFile(file: ItemWorkspaceFile) {
@@ -396,6 +425,28 @@ export function createBoardRepository(auth: AuthTransportPort, options: BoardRep
       if (!signed) throw new WorkManagementError('This attachment could not be opened securely. Try again.', { code: 'WM_FILE_SIGN', category: 'storage', retryable: true });
       const url = auth.supabase.resolveStorageSignedUrl(signed);
       window.open(url, '_blank', 'noopener,noreferrer');
+    },
+    async downloadItemFile(file: ItemWorkspaceFile) {
+      const data = recordOf(await backend.storageSign('work-board-files', file.storage_path, 120));
+      const signed = typeof data?.signedURL === 'string' ? data.signedURL : typeof data?.signedUrl === 'string' ? data.signedUrl : '';
+      if (!signed) throw new WorkManagementError('This attachment could not be downloaded securely. Try again.', { code: 'WM_FILE_SIGN', category: 'storage', retryable: true });
+      const url = auth.supabase.resolveStorageSignedUrl(signed);
+      const response = await fetch(url, { method: 'GET', credentials: 'omit', signal: AbortSignal.timeout(30_000) });
+      if (!response.ok) throw new WorkManagementError('The attachment download failed. Try again.', { code: 'WM_FILE_DOWNLOAD', category: 'storage', retryable: true, detail: `HTTP ${response.status}` });
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      try {
+        const anchor = document.createElement('a');
+        anchor.href = objectUrl;
+        anchor.download = String(file.file_name || 'attachment');
+        anchor.rel = 'noopener noreferrer';
+        anchor.style.display = 'none';
+        document.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+      }
     },
     async deleteItemFile(file: ItemWorkspaceFile) {
       await mutateVoid('boards.file.delete', () => removeItemFile(file));

@@ -82,7 +82,7 @@ export async function installM47BoardsTableFixture(page, { large = false } = {})
     if (name === 'wm_get_board_item_workspace') {
       const current=state.items.find((entry)=>entry.id===String(body.p_item_id));
       if (!current) return error(route,404,'M47_ITEM_NOT_FOUND','Item not found');
-      return json(route,200,{ item:clone(current), updates:[], files:[], activity:[] });
+      return json(route,200,{ item:clone(current), permissions:{ can_edit:true, can_comment:true, can_attach:true, can_manage:true }, updates:[], files:[], activity:[] });
     }
     if (name === 'wm_add_board_group') {
       const id=`group-${state.nextGroup++}`;

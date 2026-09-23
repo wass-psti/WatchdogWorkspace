@@ -1340,6 +1340,17 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       renderBoardData();
     }, { signal });
 
+    const itemWorkspaceDestructiveButtonSelector = '[data-delete-item-update],[data-delete-item-file]';
+    root.addEventListener('click', (event: MouseEvent) => {
+      const target = eventElement(event);
+      if (!target) return;
+      const button = target.closest<HTMLButtonElement>('button');
+      if (!button?.closest('[data-item-panel]') || !button.matches(itemWorkspaceDestructiveButtonSelector)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      void itemWorkspace.handleButton(button);
+    }, { capture: true, signal });
+
     root.addEventListener('click', async (event: MouseEvent) => {
       const target = eventElement(event);
       if (!(target instanceof HTMLElement)) return;

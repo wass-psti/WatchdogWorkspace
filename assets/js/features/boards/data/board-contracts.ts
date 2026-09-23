@@ -412,6 +412,7 @@ function mapWorkspaceFile(value: unknown, itemId: BoardItemId): ItemWorkspaceFil
     item_id: itemId,
     storage_path: requiredString(record, 'storage_path', 'item.file'),
     file_name: optionalString(record, 'file_name'),
+    mime_type: optionalString(record, 'mime_type'),
     size_bytes: size,
     author_name: optionalString(record, 'author_name'),
     author_id: (optionalString(record, 'author_id') ?? optionalString(record, 'created_by')) as UserId | null,
@@ -442,7 +443,14 @@ export function assertWorkspaceEnvelope(value: unknown, itemId: BoardItemId): It
   for (const key of ['updates', 'files', 'activity'] as const) {
     if (record[key] != null && !Array.isArray(record[key])) throw new TypeError(`Invalid item workspace ${key} collection response.`);
   }
+  const permissions = recordOf(record.permissions);
   return {
+    permissions: Object.freeze({
+      can_edit: permissions?.can_edit === true,
+      can_comment: permissions?.can_comment === true,
+      can_attach: permissions?.can_attach === true,
+      can_manage: permissions?.can_manage === true,
+    }),
     updates: Object.freeze(boardArray(record.updates).map((entry) => mapWorkspaceUpdate(entry, itemId))),
     files: Object.freeze(boardArray(record.files).map((entry) => mapWorkspaceFile(entry, itemId))),
     activity: Object.freeze(boardArray(record.activity).map((entry) => mapWorkspaceActivity(entry, itemId))),

@@ -209,6 +209,17 @@ export const architectureDefinitionSchema = z.object({
   boardMoveState: nonEmptyStringSchema.optional(),
   boardKanbanDragDropBrowser: nonEmptyStringSchema.optional(),
   boardKanbanDragDropBackendBoundary: z.literal('retained-m46-m47-no-schema-change-v1').optional(),
+  boardRichItemWorkspaceFileRecovery: z.literal('supabase-storage-authoritative-item-workspace-recovery-v1').optional(),
+  boardRichItemWorkspaceTarget: nonEmptyStringSchema.optional(),
+  boardRichItemWorkspaceRuntime: nonEmptyStringSchema.optional(),
+  boardRichItemWorkspaceView: nonEmptyStringSchema.optional(),
+  boardRichItemWorkspaceRepository: nonEmptyStringSchema.optional(),
+  boardRichItemWorkspaceMigration: nonEmptyStringSchema.optional(),
+  boardRichItemWorkspaceDatabaseTest: nonEmptyStringSchema.optional(),
+  boardRichItemWorkspaceBrowser: nonEmptyStringSchema.optional(),
+  boardRichItemWorkspaceStorageLifecycle: z.literal('storage-first-retryable-metadata-finalize-v1').optional(),
+  boardRichItemWorkspaceAuthorization: z.literal('edit-mutates-view-reads-v1').optional(),
+  boardRichItemWorkspaceProductionVerifier: nonEmptyStringSchema.optional(),
   serverState: nonEmptyStringSchema,
   serverStateLibrary: z.literal('tanstack-query-v5').optional(),
   clientState: nonEmptyStringSchema.optional(),
@@ -382,6 +393,10 @@ export const applicationManifestSchema = z.object({
   }
   if (manifest.architectureVersion >= 57 && (manifest.architecture.boardKanbanDragDropRecovery !== 'canonical-kanban-drag-drop-recovery-v1' || manifest.architecture.boardKanbanDragDropTarget !== 'config/stage-g-m49-boards-kanban-drag-drop-recovery-target.ts' || manifest.architecture.boardKanbanView !== 'assets/js/features/boards/views/kanban-view.ts' || manifest.architecture.boardItemDragController !== 'assets/js/features/boards/controllers/drag-drop-controller.ts' || manifest.architecture.boardStructureDragController !== 'assets/js/features/boards/controllers/structure-drag-controller.ts' || manifest.architecture.boardViewSwitchController !== 'assets/js/features/boards/controllers/view-switch-controller.ts' || manifest.architecture.boardMoveState !== 'assets/js/features/boards/services/board-move-state.ts' || manifest.architecture.boardKanbanDragDropBrowser !== 'tests/modern/e2e/boards-kanban-drag-drop-recovery.spec.mjs' || manifest.architecture.boardKanbanDragDropBackendBoundary !== 'retained-m46-m47-no-schema-change-v1')) {
     context.addIssue({ code: 'custom', message: 'Architecture v57+ requires governed Boards Kanban and drag/drop recovery with canonical movement, serialized view switching, keyboard-accessible movement, browser authority, and retained-backend boundaries.', path: ['architecture'] });
+  }
+
+  if (manifest.architectureVersion >= 58 && (manifest.architecture.boardRichItemWorkspaceFileRecovery !== 'supabase-storage-authoritative-item-workspace-recovery-v1' || manifest.architecture.boardRichItemWorkspaceTarget !== 'config/stage-g-m50-rich-item-workspace-file-recovery-target.ts' || manifest.architecture.boardRichItemWorkspaceRuntime !== 'assets/js/features/boards/services/item-workspace-runtime.ts' || manifest.architecture.boardRichItemWorkspaceView !== 'assets/js/features/boards/views/item-workspace-view.ts' || manifest.architecture.boardRichItemWorkspaceRepository !== 'assets/js/features/boards/data/board-repository.ts' || manifest.architecture.boardRichItemWorkspaceMigration !== 'supabase/migrations/v1.43.2-stage-g-m50-rich-item-workspace-file-recovery.sql' || manifest.architecture.boardRichItemWorkspaceDatabaseTest !== 'supabase/tests/m50/rich_item_workspace_file_recovery.test.sql' || manifest.architecture.boardRichItemWorkspaceBrowser !== 'tests/modern/e2e/rich-item-workspace-file-recovery.spec.mjs' || manifest.architecture.boardRichItemWorkspaceStorageLifecycle !== 'storage-first-retryable-metadata-finalize-v1' || manifest.architecture.boardRichItemWorkspaceAuthorization !== 'edit-mutates-view-reads-v1' || manifest.architecture.boardRichItemWorkspaceProductionVerifier !== 'scripts/verify-stage-g-m50-production-invariants.mjs')) {
+    context.addIssue({ code: 'custom', message: 'Architecture v58+ requires governed Rich Item Workspace and Supabase Storage recovery with edit-authorized mutation, explicit download, recoverable storage-first deletion, database authority, browser authority, and production attestation.', path: ['architecture'] });
   }
 
   if (manifest.architectureVersion >= 54 && (manifest.architecture.boardBackendDataContractRecovery !== 'catalog-attested-board-contract-v1' || manifest.architecture.boardBackendContract !== 'config/stage-g-m46-board-backend-contract.ts' || manifest.architecture.boardBackendMigration !== 'supabase/migrations/v1.43.2-stage-g-m46-boards-backend-data-contract-recovery.sql' || manifest.architecture.boardBackendSchema !== 'supabase/schema.sql' || manifest.architecture.boardBackendContractAttestation !== 'public.wm_board_contract_attestation' || manifest.architecture.boardBackendCacheOwnership !== 'board-query-prefix-scoped-v1' || manifest.architecture.boardAttachmentDeletion !== 'metadata-first-best-effort-object-cleanup-v1' || manifest.architecture.boardBackendDatabaseTest !== 'supabase/tests/m46/boards_backend_contract_recovery.test.sql' || manifest.architecture.boardBackendProductionVerifier !== 'scripts/verify-stage-g-m46-production-contract.mjs')) {

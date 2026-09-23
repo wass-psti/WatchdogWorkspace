@@ -13,7 +13,7 @@ let loads = 0;
 const runtime = createItemWorkspaceRuntime({
   state,
   service: {
-    getItemWorkspace: async () => { loads += 1; return { updates: [], files: [], activity: [] }; },
+    getItemWorkspace: async () => { loads += 1; return { permissions: { can_edit: true, can_comment: true, can_attach: true, can_manage: true }, updates: [], files: [], activity: [] }; },
   },
 });
 runtime.open('item-1');

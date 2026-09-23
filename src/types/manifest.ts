@@ -213,6 +213,17 @@ export interface ArchitectureDefinition {
   readonly boardMoveState?: string;
   readonly boardKanbanDragDropBrowser?: string;
   readonly boardKanbanDragDropBackendBoundary?: 'retained-m46-m47-no-schema-change-v1';
+  readonly boardRichItemWorkspaceFileRecovery?: 'supabase-storage-authoritative-item-workspace-recovery-v1';
+  readonly boardRichItemWorkspaceTarget?: string;
+  readonly boardRichItemWorkspaceRuntime?: string;
+  readonly boardRichItemWorkspaceView?: string;
+  readonly boardRichItemWorkspaceRepository?: string;
+  readonly boardRichItemWorkspaceMigration?: string;
+  readonly boardRichItemWorkspaceDatabaseTest?: string;
+  readonly boardRichItemWorkspaceBrowser?: string;
+  readonly boardRichItemWorkspaceStorageLifecycle?: 'storage-first-retryable-metadata-finalize-v1';
+  readonly boardRichItemWorkspaceAuthorization?: 'edit-mutates-view-reads-v1';
+  readonly boardRichItemWorkspaceProductionVerifier?: string;
   readonly serverState: string;
   readonly serverStateLibrary?: 'tanstack-query-v5';
   readonly clientState?: string;
