@@ -22,7 +22,7 @@ de07936b46199c04d1a419dd1f23b31ff52fde5cc6e2f479fd7c4c184c6c21ab  ./.github/work
 b69380fa77aa9fa26bcc668296d08a5e69b47e0b9626f799f6639cc4d44d5e01  ./.github/workflows/observability.yml
 de0fb5675951c3075bc25c9a72da2d78de29cf23075f70293a36d9c3a6a66989  ./.github/workflows/performance.yml
 24844fabb67dad12058f7dab37773ad90ae70eccb0d1ff694a34e8e801863f17  ./.github/workflows/production-cutover.yml
-a1ecc9376ea78fdbbcb0dfa0e07976125cf3dba48d0b0ea2895aed43b3c5e8df  ./.github/workflows/rich-item-workspace-file-recovery.yml
+7e2f370ab6dbe4925c52a1940f1043e3136d66a15c4db37e39485d891a252b08  ./.github/workflows/rich-item-workspace-file-recovery.yml
 12b3a574052ee54fe1ceaadca17e0735439b52ec15671691c8273b923f6c520c  ./.github/workflows/route-lifecycle-recovery.yml
 190f1967fe22b3f8fce532706fe5c244a5004481f12cae5349abcc41459c985d  ./.github/workflows/service-worker-updates.yml
 e3bf6c6f42dbb3bc04fed16e1fac14e075bd2e072da58e9c87d803391751e292  ./.github/workflows/settings-functional-recovery.yml
@@ -169,7 +169,7 @@ fed454d0fb7ea7510a5686cd95087a4aa9c71c332e5a7298ba12edcef8bfd08a  ./M46-BOARDS-B
 70d36c3f46b053ce3c8bb32c0160be0090b8d3ee3ebee60f4ec8d034c1de7883  ./M48-CONTINUATION-STATE.md
 772328a1342ce0ee6109ba57e9dc266c6567cc21ae32cf9ecc926204b559d8ad  ./M49-CONTINUATION-STATE.md
 91df619e971a38ab4767a8b21df24033e3ef190e272f5e62ef9c0bf4fe7feb68  ./M5-ACTIVATION-RUNBOOK.md
-ad40c0263cf14678feef12485fe560bba29702f8ab1030e0ab7302538376e9f5  ./M50-CONTINUATION-STATE.md
+335b7684ce00a60cedb5a91342d6a67f3092f151c7b8e04b3a5b790aa2887934  ./M50-CONTINUATION-STATE.md
 7f145954a3ab537a808a2f6006d257517f2810a596001eee2f2b3e4ba9c472eb  ./M6-ACTIVATION-RUNBOOK.md
 721e0649e315a407ebd38e455c3c2be95abd55d4fa16139aba0077698e1a49c1  ./M6-BROWSER-ESM-HARNESS-HOTFIX.md
 cc7a61d678587cb2936de99d880d26d472de2379a3995d9dc8d3f50bd0c996b9  ./M6-BROWSER-HARNESS-TOOLCHAIN-DISPATCH-HOTFIX.md
@@ -263,7 +263,7 @@ b4aea9c243764dc2beb53b765cdb2880ae39015e6f4db4da89e2a914d7249e46  ./RELEASE-STAT
 b692a7d6ba11ff49536ba02532e40e001c3b514d0cce7c19461e8b520b483e8d  ./RELEASE-STATUS-v1.43.2-STAGE-G-M47-BOARDS-TABLE-GROUP-ITEM-RECOVERY.md
 1503de2b4a846d4c2759d958012d9276dae65e571e14619d6551c024ae32c0c0  ./RELEASE-STATUS-v1.43.2-STAGE-G-M48-BOARDS-COLUMNS-CELLS-STATUS-SYSTEM-RECOVERY.md
 676fcd4b5440af3988e1057fa70f4ed116b0693b72dea4123846046afa744117  ./RELEASE-STATUS-v1.43.2-STAGE-G-M49-BOARDS-KANBAN-DRAG-DROP-RECOVERY.md
-2caba615a1024314d763ab70f07ab394c7806296ddfda188e71ab9cb7353efcb  ./RELEASE-STATUS-v1.43.2-STAGE-G-M50-RICH-ITEM-WORKSPACE-FILE-RECOVERY.md
+075211e02ec06e13fa06045556aa99237d5edd24d30595f791930a95ce9c7857  ./RELEASE-STATUS-v1.43.2-STAGE-G-M50-RICH-ITEM-WORKSPACE-FILE-RECOVERY.md
 f5456ced7546bf790b612a3900905bd4a25b45ab21bd9fd0c1d8a616395069a7  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-FINAL.md
 2d3c24a6567659c068f896542d02442d2991c2a2ffc15030e90d5f2018c825ad  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE2.md
 73619f1c62c3b893ec438e0cc77f36c7590c5c2a57677e6e8cf1c42e538f3c05  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE3.md
@@ -699,7 +699,7 @@ bc12acd7886f3ca32e0ca41229bdf7a804b7035391f847e92b44c1a4aa6064dc  ./scripts/fina
 bdf6fae696b7f9e4d8003043851e9b233e55635b7a8e6e20245cccbcad506361  ./scripts/finalize-stage-g-m46.sh
 d322a5176084a39500eca48dbefe5a135b1ce91411b8a5c64816195849e179eb  ./scripts/finalize-stage-g-m47.sh
 5d9fd471a5a26ed189c9142608cfeca25393eb7e4bb11a6c76f0cb853eb5f632  ./scripts/finalize-stage-g-m48.sh
-5f75b7a2c5c38e05afa8306185aea7eaf172617f33da7493f531f0f67f30e723  ./scripts/finalize-stage-g-m49.sh
+ba2b930fe389b13e7dd693e6ba81bc485d2abdb727e409c129b31c23d75390cd  ./scripts/finalize-stage-g-m49.sh
 084660828164ca3cb72476566082bf8ba831d3efece2652698be52214f73308b  ./scripts/finalize-stage-g-m50.sh
 4191b1ce8c4ffa30a595ba03f650475ed5dea210d1216ccadf22ea8a8ebf58d1  ./scripts/generate-functional-regression-evidence.mjs
 ef49e97b37d4f51535895bf71045b7076f1df18bc41995ff07cadf45fbb7db39  ./scripts/generate-production-cutover-evidence.mjs
@@ -888,9 +888,10 @@ c895398dadcfaa6eace849e7a7101caf79ac7538d1182eefd1990929143a9031  ./scripts/veri
 f9b4f6e91aea8fc1d4d6b954e316d322ff4f3021b7e8a7b6eb67f3fdd6885bb4  ./scripts/verify-stage-g-m49-finalizer-fail-closed.mjs
 13dd526eefbd7406b73afc63535d07d5a2b1e85ee7b01d0a399dd37833cd79ee  ./scripts/verify-stage-g-m49-production-boundary.mjs
 9fb40f99fffaf086dcdca0d8303958be051b4ab56a7bf18bc6051c77f4b575ea  ./scripts/verify-stage-g-m49-release.sh
-565a89b9630e1b33c68cc553c0b9de5de6278cf83a0e5aab740d3538bd34ef12  ./scripts/verify-stage-g-m50-candidate.sh
+199c83a3ee37bc2c6b0df694d25a0c92db3593bd52b0ccec1c22acdf1f549511  ./scripts/verify-stage-g-m50-candidate.sh
 ce9364c7049b7256bac8741689108a9a914df0fb0bee8354c588942d6be8f17e  ./scripts/verify-stage-g-m50-certified-artifact.mjs
 56a9c770fa99ba5291fe45eca1f23163134d374bd35379e5f3954440a26ed7d6  ./scripts/verify-stage-g-m50-finalizer-fail-closed.mjs
+7917102bfdb3187428c0777f135ea51d1ec8ce51fc50e27e07144f852f680793  ./scripts/verify-stage-g-m50-m49-certified-context.mjs
 606f3e769f64b2790b69a6e10577a0847b08e3bbb6947532d8845099f8cbd27a  ./scripts/verify-stage-g-m50-production-invariants.mjs
 6cc307a13673f2225462ee7d3880a7cb799981bd87bd76654ebd9f22d147850c  ./scripts/verify-stage-g-m50-release.sh
 c7735800203768ff14daf9518ff92f43775286161a558370f6338bbf36c21977  ./scripts/verify-supabase-client-adapter-execution.mjs
@@ -1192,7 +1193,7 @@ abb8a67ab959a26b960441c993fe0117734b1f0ba7fdad049d19d37285298fb9  ./verify-stage
 5b6eb4aecc5c41bef6ef501b0007ab24b4f2e09466218130ab282c1e41214a22  ./verify-stage-g-m48-state-aware-workflows.mjs
 0255e3e580c08048e5581ef716a859674b4060b9f9d45d9870438907e97d9d41  ./verify-stage-g-m49-boards-kanban-drag-drop-recovery.mjs
 c70469c046dd9245cf4bf1063e76dae75801d2241d2efedca3dcfdf6264fd8b4  ./verify-stage-g-m49-state-aware-workflows.mjs
-cc2e49176ccd5ee1ab6e5a1c66181c4c75ce82b1a062e47a9285358ae10c109b  ./verify-stage-g-m50-rich-item-workspace-file-recovery.mjs
+5d5bdd3669631cc1bb3c639c57d61300b4ae0260b3f5c915436ef515e8de0c1d  ./verify-stage-g-m50-rich-item-workspace-file-recovery.mjs
 55dcfbb07418f92af32f06f07e40eb5b08f87be0490596e78ebe0eeff1a715c3  ./verify-stage-g-m50-state-aware-workflows.mjs
 9c3ca048644f0a54f06bd56a46ce957a2e8f0e9f6d99eefd92b93d135da276f7  ./verify-timetracker-runtime.mjs
 e461f73a558d08bda915d6ecee41df158e47cf99b104a75bc91f1517d8d4ff39  ./verify-timetracker-startup.mjs

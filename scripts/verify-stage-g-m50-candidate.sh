@@ -7,6 +7,7 @@ npm run dependencies:ensure
 npm run modern-tests:toolchain:ensure
 npm run lint:eslint
 npm run typecheck
+node scripts/verify-stage-g-m50-m49-certified-context.mjs
 node verify-stage-g-m42-users-rbac-functional-recovery.mjs
 node --experimental-strip-types --disable-warning=ExperimentalWarning verify-v1240-architecture-phase3.mjs
 bash tests/browser/run-browser-tests.sh

@@ -38,6 +38,7 @@ jobs:
         run: |
           npm run lint:eslint
           npm run rich-item-workspace-recovery:check
+          node scripts/verify-stage-g-m50-m49-certified-context.mjs
           npm run rich-item-workspace-recovery:workflows
           npm run rich-item-workspace-recovery:test
       - name: Verify M50 disposable database and Storage policy authority
