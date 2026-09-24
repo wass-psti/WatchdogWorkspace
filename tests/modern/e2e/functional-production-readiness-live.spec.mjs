@@ -23,10 +23,21 @@ test('@m54-live authenticated production administrator can traverse certified ho
   await expect(page.getByRole('heading',{name:'Boards',level:1})).toBeVisible();
   for(const moduleId of ['time-tracker','fueltrack-plus','tradelink']){
     await go(page,`app/${moduleId}`);
-    await expect(page.locator('#moduleFrame')).toBeVisible({timeout:15000});
+    const frame=page.locator('#moduleFrame');
+    await expect(frame).toBeVisible({timeout:15000});
     await page.waitForFunction((id)=>globalThis.WorkManagementRuntime?.getContext?.()?.moduleId===id,moduleId);
-    const context=await page.evaluate(()=>globalThis.WorkManagementRuntime?.getContext?.());
-    expect(context?.identity?.module?.enabled).toBe(true);
-    expect(context?.identity?.module?.role).toBeTruthy();
+    const hostContext=await page.evaluate(()=>globalThis.WorkManagementRuntime?.getContext?.());
+    expect(hostContext?.moduleId).toBe(moduleId);
+    expect(hostContext?.authenticated).toBe(true);
+    const moduleFrame=page.frames().find((candidate)=>candidate.parentFrame()===page.mainFrame()&&candidate.url().includes(`/apps/${moduleId}/`));
+    expect(moduleFrame).toBeTruthy();
+    await moduleFrame.waitForFunction((id)=>globalThis.WM_IDENTITY_CONTEXT?.moduleId===id&&globalThis.WM_MODULE_ACCESS?.moduleId===id,moduleId);
+    const identity=await moduleFrame.evaluate(()=>globalThis.WM_IDENTITY_CONTEXT);
+    const access=await moduleFrame.evaluate(()=>globalThis.WM_MODULE_ACCESS);
+    expect(identity?.accountStatus).toBe('active');
+    expect(identity?.module?.enabled).toBe(true);
+    expect(identity?.module?.role).toBeTruthy();
+    expect(access?.allowed).toBe(true);
+    expect(access?.role).toBe(identity?.module?.role);
   }
 });

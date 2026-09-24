@@ -50,3 +50,11 @@ Live production diagnosis proved `public.wm_runtime_capabilities()` is missing. 
 - Historical migrations remain unchanged.
 - M54 verifier now fails closed unless the production corrective contains both definitions, authenticated grants, and PostgREST schema reload.
 - State: implementation complete pending Candidate 08 local and production verification.
+
+
+## Candidate 10 — live embedded identity boundary corrective (2026-09-24)
+
+- Hosted run `36014341214` bound to commit `d15b2ff9b1c4a24676a65ad7db15f66506c4b6e9` passed `certify-build` and `deploy`, then failed only in `post-deploy-certify`.
+- The failure advanced to embedded module traversal: `WorkManagementRuntime.getContext()` correctly exposed the active `moduleId`, while the live spec incorrectly expected embedded identity under `context.identity.module`.
+- Candidate 10 synchronizes the live E2E harness with the established iframe identity bridge (`WM_IDENTITY_CONTEXT` + `WM_MODULE_ACCESS`) and adds a fail-closed verifier guard against regression.
+- No production runtime or database semantic change is introduced by this candidate.

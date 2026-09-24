@@ -186,7 +186,8 @@ b7599861a1a3c96c97297385117100d2b1fec345170ffcefd78fe955b6526ba1  ./M53-RESPONSI
 d40dbb6ccf8610c8d41456f043da6681df27f6cdabf5378f427682533f0577c4  ./M53-TIMETRACKER-CLOCK-MOBILE-CONTAINMENT-CORRECTIVE-2026-09-24.md
 7da5e3b4efcbd5f00c230aec60dbca5e4dd41ac3b8258d7c37877f54e369c5be  ./M53-TIMETRACKER-MOBILE-SHELL-TRACK-CORRECTIVE-2026-09-24.md
 e16650a33d23cc2814ad974d5e1629840814f98708b513f38c08921687632855  ./M54-BROWSER-INTEGRATION-INTRINSIC-TITLE-FIXTURE-SYNCHRONIZATION-CORRECTIVE-2026-09-24.md
-df88cd388092c13f000a78aa41ced55f7725b105cda261450250abff0c8d62f4  ./M54-CONTINUATION-STATE.md
+ac03495bbfd43110a13b76d5834b9f92e578dce39b76a04e2bf87db651ea72d9  ./M54-CONTINUATION-STATE.md
+f2406cb63bb348fc5e294bd90ce44f5b3eec5fbcc2a636e72a4411560b3489e5  ./M54-LIVE-EMBEDDED-IDENTITY-BOUNDARY-CORRECTIVE-2026-09-24.md
 26520c1ff641e852ef7e0cbc136435d64b7a29792cf7b034b6bee0759d23dc63  ./M54-M40-BACKEND-PREFLIGHT-READINESS-CORRECTIVE-2026-09-24.md
 2155e13dd046a9a41f3e1bf06c2dbdc4918de405f0dc6917038f1d4995294587  ./M54-M40-BOARD-CAPABILITY-FIXTURE-SYNCHRONIZATION-CORRECTIVE-2026-09-24.md
 86f0ff1c84e10dea5dbea40e08c845421ffbe99d553c5e25fe0ffe77829010cf  ./M54-M50-HISTORICAL-ARCHITECTURE-SYNCHRONIZATION-CORRECTIVE-2026-09-24.md
@@ -1157,7 +1158,7 @@ c85ce84cbbd8f28f987df2d722ed1eabeac04777fed8ae4e4661e92d03239472  ./tests/modern
 77a70546f374fb3d3d572e65cee5579168e8404e6c28500d87f2912ca42e0cb9  ./tests/modern/e2e/boards-kanban-drag-drop-recovery.spec.mjs
 7ac61eecf63955bbc9ff3e5b59bbe54feacbca53529ac6d7b27158e05c12abe0  ./tests/modern/e2e/boards-table-group-item-recovery.spec.mjs
 4e13385985c96d356e3234ca304bfae6967d0fb1915305885df244e26874bf19  ./tests/modern/e2e/cross-module-rbac-authenticated-certification.spec.mjs
-36a20e248e9bcd2b4bd2110c16f2872ff82a606e621b9942db60a02f31b99f24  ./tests/modern/e2e/functional-production-readiness-live.spec.mjs
+f7e3da83264af0ddd13e79cb1bb8cc1c96bca460557c0bc25a5e9c455c051afb  ./tests/modern/e2e/functional-production-readiness-live.spec.mjs
 6a6a0ffb75d20e05ec786a597c9782293c6fdff674b1794a59ed77648a5e117d  ./tests/modern/e2e/functional-regression-baseline.spec.mjs
 dde1347e8fedbe37ba79e4c2388aa5d024a1c0688dfba1ffe7f3f1ad3ee8acae  ./tests/modern/e2e/helpers/m37-regression-probe.mjs
 413c493783b6782455ffd1e9db9e34f6eac762d31678c69eb8aa033aeb01aa15  ./tests/modern/e2e/helpers/m37-supabase-fixture.mjs
@@ -1266,7 +1267,7 @@ c70469c046dd9245cf4bf1063e76dae75801d2241d2efedca3dcfdf6264fd8b4  ./verify-stage
 3c279b0f5883cd9ca12bbc0951842e0dfea20a719ce8b1bea4c7bf91a449d89f  ./verify-stage-g-m51-boards-realtime-concurrency-stabilization.mjs
 63b4e6c607d59a0bb2454e405346e2a2f7ac9c3659f6470b798d80d7b3e933e4  ./verify-stage-g-m52-cross-module-rbac-authenticated-e2e-certification.mjs
 25ce6c7bcb480ec4b16beb03deb6d9191a054f44d9cbf8ebc02e8b667bcad46e  ./verify-stage-g-m53-recovery-update-accessibility-quality-hardening.mjs
-c65c43b99186644b845c46daa9d8312e526ca810d5255fa22e28295fb261c8ab  ./verify-stage-g-m54-functional-production-readiness-certification.mjs
+340223934b9fe7c4e06cd8c893a8d8aff4186788d7e523cc6adf07611a11951c  ./verify-stage-g-m54-functional-production-readiness-certification.mjs
 9c3ca048644f0a54f06bd56a46ce957a2e8f0e9f6d99eefd92b93d135da276f7  ./verify-timetracker-runtime.mjs
 e461f73a558d08bda915d6ecee41df158e47cf99b104a75bc91f1517d8d4ff39  ./verify-timetracker-startup.mjs
 4fc939b5b39fd072246c3a359c6b7bf35c400e222ef98401cd1d3eb3f4a4bc1b  ./verify-timetracker-v2-pass1.mjs
