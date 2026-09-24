@@ -1,6 +1,6 @@
 # Work Management App v1.43.2 — Stage G M50 Rich Item Workspace & File Recovery
 
-State: implementation-complete-pending-certification
+State: active-certified
 
 M50 restores the Rich Item Workspace as a server-authoritative Supabase-integrated surface. The implementation recovers item properties, updates, activity, private attachments, secure preview/download, file upload/registration, recoverable deletion, Storage authorization, and object ownership. Viewer access is explicitly read-only and mutation authority is aligned to Board edit rights.
 
@@ -97,3 +97,7 @@ Checkpoint 21 fixes every remaining occurrence of that same execution-mode defec
 Checkpoint 21 completed local exact-commit M50 certification and pushed source commit `045d502759e135c0e3a12ef73a95b48dc9c1a1a7`. Hosted certification then stopped fail-closed in M49 workflow run `35807926170` / job `107012766949`. M49's finalizer correctly converts only its temporary staged payload to `active-certified` and executes the aggregate project verifier there; the M50 static authority incorrectly treated every invocation as repository-source context and therefore rejected that legitimate historical certified artifact.
 
 Checkpoint 22 introduces an explicit fail-closed provenance context. Repository source remains the default and requires M49 pending state. Only M49's staged certified-artifact aggregate verification supplies `WM_M50_PROVENANCE_CONTEXT=m49-certified-artifact`, which requires M49 active-certified state plus an exact-commit final baseline marker while simultaneously requiring M50 to remain pending. A dedicated regression proves source/artifact/unknown/mixed modes are mutually exclusive and is ordered before expensive M50 database/browser gates. No product runtime, backend schema, migration, Storage, RLS, or production-data behavior changes.
+
+## Final certified baseline — 2026-09-23T03:07:11Z
+
+M50 fail-closed certification passed for source commit `8ff0896bfecf95d17f14978642eb6c1b7c8fe5aa`. The packaged Rich Item Workspace & File Recovery state is **active-certified** with semantic authority `1.43.2-m50-v1`.

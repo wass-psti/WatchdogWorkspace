@@ -136,6 +136,10 @@ export interface ArchitectureDefinition {
   readonly productionCutoverVerifier?: string;
   readonly productionCutoverArtifactVerifier?: string;
   readonly productionCutoverDeployment?: 'github-pages-dist-only-live-smoke-v1';
+  readonly functionalProductionReadiness?: 'clean-install-live-pages-certification-v1';
+  readonly functionalProductionReadinessTarget?: string;
+  readonly functionalProductionReadinessPolicy?: string;
+  readonly functionalProductionReadinessWorkflow?: string;
   readonly functionalRegressionBaseline?: 'instrumented-characterization-evidence-v1';
   readonly functionalRegressionPolicy?: string;
   readonly functionalRegressionInventory?: string;

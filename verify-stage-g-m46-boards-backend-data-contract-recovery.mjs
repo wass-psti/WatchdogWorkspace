@@ -52,7 +52,7 @@ assert(migration.includes("'realtime_function_count',realtime_function_count")&&
 assert(migration.includes("grant execute on function public.wm_board_contract_attestation() to anon, authenticated"),'Safe production attestation must be callable with public runtime credentials.');
 assert(migration.includes("'author_id',u.created_by")&&migration.includes("'author_id',f.created_by")&&migration.includes("'actor_id',e.actor_id"),'M46 item-workspace SQL must emit canonical identity fields.');
 
-assert.equal(contract.rpcs.length,40,'M46 must govern all 40 Board RPCs.');
+assert.equal(contract.rpcs.length,40,'M46 must retain its certified 40-RPC predecessor contract.');
 assert.equal(contract.tables.length,9,'M46 must govern all nine Board tables.');
 assert(contract.tables.every((table)=>Array.isArray(table.policies)&&table.policies.length===0),'All Board tables must bind the RPC-only deny-by-default RLS policy model.');
 assert.equal(contract.realtime.functions.length,2,'M46 must govern both private Board Realtime helper functions.');
@@ -61,7 +61,13 @@ assert.equal(contract.realtime.triggers.length,8,'M46 must govern all eight Boar
 assert.equal(contract.capabilities.private_board_realtime,true,'M46 capability contract must require recovered private Board Realtime.');
 const contractNames=new Set(contract.rpcs.map((rpc)=>rpc.name));
 const frontendRpcNames=new Set([...repo.matchAll(/\brpc\('([^']+)'/g)].map((match)=>match[1]));
-for(const name of frontendRpcNames) assert(contractNames.has(name),`Frontend Board RPC ${name} is missing from the M46 contract.`);
+const m51SuccessorRpcs=new Set(['wm_set_board_cell_if_current']);
+const m51Migration=read('supabase/migrations/v1.43.2-stage-g-m51-boards-realtime-concurrency-stabilization.sql');
+for(const name of frontendRpcNames){
+  if(contractNames.has(name)) continue;
+  assert(m51SuccessorRpcs.has(name),`Frontend Board RPC ${name} is missing from the M46 contract and is not a governed successor RPC.`);
+  assert(m51Migration.includes(`function public.${name}`)&&m51Migration.includes(`grant execute on function public.${name}`),`M51 successor RPC ${name} must be migration-defined and authenticated-executable.`);
+}
 assert(!frontendRpcNames.has('wm_create_board'),'Unsafe legacy wm_create_board fallback must remain absent from the frontend repository.');
 for(const rpc of contract.rpcs){
   assert(schema.includes(`function public.${rpc.name}(`),`Authoritative schema is missing ${rpc.name}.`);

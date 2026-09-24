@@ -44,7 +44,7 @@ if(provenanceContext==='repository-source'){
 for(const token of ["certifiedCommit: '63ab65080b7b6fb33ba276fa169ca2a55b19d06c'","certifiedSourceTree: 'd26f3a136f02ff48cd6113ff605f5132cf903ad4c74beefbe29e1b642c5260f4'",'hostedWorkflowRun: 35687976043',"hostedArtifactSha256: '8f903ccaab516c1bbe678308ec042409d0b7a05d73d41b5b4275613183f2245a'"]) ok(target.includes(token),`M50 prerequisite evidence missing ${token}`);
 ok(target.includes("architectureVersion: 58"),'M50 architecture target must be 58.');
 ok(target.includes("semanticsVersion: '1.43.2-m50-v1'"),'M50 semantics version missing.');
-ok(manifest.includes('architectureVersion: 58'),'Application manifest must advance to architecture 58.');
+const currentArchitecture=Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1]??0); ok(currentArchitecture>=58,'Application manifest must retain architecture 58+ after M50.');
 for(const token of ['supabase-storage-authoritative-item-workspace-recovery-v1','storage-first-retryable-metadata-finalize-v1','edit-mutates-view-reads-v1','stage-g-m50-rich-item-workspace-file-recovery-target.ts','rich_item_workspace_file_recovery.test.sql']) ok(manifest.includes(token),`Manifest missing ${token}`);
 ok(manifest.includes("boardAttachmentDeletion: 'metadata-first-best-effort-object-cleanup-v1'"),'M46 historical attachment contract token must remain intact.');
 for(const token of ['ItemWorkspacePermissions','permissions: ItemWorkspacePermissions','downloadItemFile','downloadFile']) ok(contracts.includes(token),`M50 contract missing ${token}`);
@@ -144,7 +144,9 @@ const finalizerScript=read('scripts/finalize-stage-g-m50.sh');
 ok(finalizerScript.includes("node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-stage-g-m46-production-contract.mjs"),'M50 exact-commit finalizer must execute retained M46 production verification with Node TypeScript strip support.');
 ok(!/node scripts\/verify-stage-g-m46-production-contract\.mjs/.test(finalizerScript),'M50 exact-commit finalizer must not invoke the TypeScript-importing M46 verifier with plain Node.');
 
-ok(schema.trimEnd().endsWith(migration.trimEnd()),'Consolidated schema must end with the exact authoritative M50 migration.');
+ok(schema.includes(migration.trimEnd()),'Consolidated schema must retain the exact authoritative M50 migration before successor migrations.');
+const m51Migration=read('supabase/migrations/v1.43.2-stage-g-m51-boards-realtime-concurrency-stabilization.sql');
+ok(schema.indexOf(migration.trimEnd())<schema.indexOf(m51Migration.trimEnd()),'Consolidated schema must preserve M50 before the governed M51 successor migration.');
 const oldM21=read('scripts/verify-rich-item-workspace-execution.mjs');
 ok(oldM21.includes('permissions: { can_edit: true, can_comment: true, can_attach: true, can_manage: true }'),'Historical M21 execution fixture must be synchronized to explicit permissions.');
 for(const f of ['tests/browser/integration.js','tests/browser/run-cdp.mjs','tests/modern/e2e/helpers/m47-boards-table-fixture.mjs','tests/modern/e2e/helpers/m49-boards-kanban-fixture.mjs']) ok(read(f).includes('can_attach:true')||read(f).includes('can_attach: true'),`Historical workspace fixture must publish explicit M50 permissions: ${f}`);

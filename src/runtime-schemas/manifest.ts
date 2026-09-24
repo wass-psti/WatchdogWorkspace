@@ -132,6 +132,10 @@ export const architectureDefinitionSchema = z.object({
   productionCutoverVerifier: nonEmptyStringSchema.optional(),
   productionCutoverArtifactVerifier: nonEmptyStringSchema.optional(),
   productionCutoverDeployment: z.literal('github-pages-dist-only-live-smoke-v1').optional(),
+  functionalProductionReadiness: z.literal('clean-install-live-pages-certification-v1').optional(),
+  functionalProductionReadinessTarget: nonEmptyStringSchema.optional(),
+  functionalProductionReadinessPolicy: nonEmptyStringSchema.optional(),
+  functionalProductionReadinessWorkflow: nonEmptyStringSchema.optional(),
   functionalRegressionBaseline: z.literal('instrumented-characterization-evidence-v1').optional(),
   functionalRegressionPolicy: nonEmptyStringSchema.optional(),
   functionalRegressionInventory: nonEmptyStringSchema.optional(),
@@ -397,6 +401,10 @@ export const applicationManifestSchema = z.object({
 
   if (manifest.architectureVersion >= 58 && (manifest.architecture.boardRichItemWorkspaceFileRecovery !== 'supabase-storage-authoritative-item-workspace-recovery-v1' || manifest.architecture.boardRichItemWorkspaceTarget !== 'config/stage-g-m50-rich-item-workspace-file-recovery-target.ts' || manifest.architecture.boardRichItemWorkspaceRuntime !== 'assets/js/features/boards/services/item-workspace-runtime.ts' || manifest.architecture.boardRichItemWorkspaceView !== 'assets/js/features/boards/views/item-workspace-view.ts' || manifest.architecture.boardRichItemWorkspaceRepository !== 'assets/js/features/boards/data/board-repository.ts' || manifest.architecture.boardRichItemWorkspaceMigration !== 'supabase/migrations/v1.43.2-stage-g-m50-rich-item-workspace-file-recovery.sql' || manifest.architecture.boardRichItemWorkspaceDatabaseTest !== 'supabase/tests/m50/rich_item_workspace_file_recovery.test.sql' || manifest.architecture.boardRichItemWorkspaceBrowser !== 'tests/modern/e2e/rich-item-workspace-file-recovery.spec.mjs' || manifest.architecture.boardRichItemWorkspaceStorageLifecycle !== 'storage-first-retryable-metadata-finalize-v1' || manifest.architecture.boardRichItemWorkspaceAuthorization !== 'edit-mutates-view-reads-v1' || manifest.architecture.boardRichItemWorkspaceProductionVerifier !== 'scripts/verify-stage-g-m50-production-invariants.mjs')) {
     context.addIssue({ code: 'custom', message: 'Architecture v58+ requires governed Rich Item Workspace and Supabase Storage recovery with edit-authorized mutation, explicit download, recoverable storage-first deletion, database authority, browser authority, and production attestation.', path: ['architecture'] });
+  }
+
+  if (manifest.architectureVersion >= 59 && (manifest.architecture.functionalProductionReadiness !== 'clean-install-live-pages-certification-v1' || manifest.architecture.functionalProductionReadinessTarget !== 'config/stage-g-m54-functional-production-readiness-certification-target.ts' || manifest.architecture.functionalProductionReadinessPolicy !== 'config/functional-production-readiness-policy.json' || manifest.architecture.functionalProductionReadinessWorkflow !== '.github/workflows/m54-functional-production-readiness.yml')) {
+    context.addIssue({ code: 'custom', message: 'Architecture v59+ requires fail-closed Functional Production Readiness certification with explicit target, policy, and GitHub Pages workflow authorities.', path: ['architecture'] });
   }
 
   if (manifest.architectureVersion >= 54 && (manifest.architecture.boardBackendDataContractRecovery !== 'catalog-attested-board-contract-v1' || manifest.architecture.boardBackendContract !== 'config/stage-g-m46-board-backend-contract.ts' || manifest.architecture.boardBackendMigration !== 'supabase/migrations/v1.43.2-stage-g-m46-boards-backend-data-contract-recovery.sql' || manifest.architecture.boardBackendSchema !== 'supabase/schema.sql' || manifest.architecture.boardBackendContractAttestation !== 'public.wm_board_contract_attestation' || manifest.architecture.boardBackendCacheOwnership !== 'board-query-prefix-scoped-v1' || manifest.architecture.boardAttachmentDeletion !== 'metadata-first-best-effort-object-cleanup-v1' || manifest.architecture.boardBackendDatabaseTest !== 'supabase/tests/m46/boards_backend_contract_recovery.test.sql' || manifest.architecture.boardBackendProductionVerifier !== 'scripts/verify-stage-g-m46-production-contract.mjs')) {

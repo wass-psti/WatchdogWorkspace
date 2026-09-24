@@ -51,7 +51,8 @@ export interface BoardRepository {
   setStatusLabels(columnId: BoardColumnId, labels?: readonly StatusLabel[], defaultLabelId?: StatusLabelId | null): Promise<void>;
   moveColumn(columnId: BoardColumnId, position: number): Promise<void>;
   deleteColumn(columnId: BoardColumnId): Promise<void>;
-  setCell(itemId: BoardItemId, columnId: BoardColumnId, value: BoardCellValue): Promise<void>;
+  setCell(itemId: BoardItemId, columnId: BoardColumnId, value: BoardCellValue, expectedValue?: BoardCellValue): Promise<void>;
+  setItemTitle(itemId: BoardItemId, value: string, expectedValue: string): Promise<void>;
   getPreferences(boardId: BoardId, options?: Readonly<{ force?: boolean }>): Promise<BoardPreferences>;
   setPreferences(boardId: BoardId, preferences?: BoardPreferences): Promise<BoardPreferences>;
   duplicateColumn(columnId: BoardColumnId, withValues?: boolean): Promise<BoardColumnId>;

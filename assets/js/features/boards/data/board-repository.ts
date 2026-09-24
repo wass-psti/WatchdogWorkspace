@@ -324,8 +324,19 @@ export function createBoardRepository(auth: AuthTransportPort, options: BoardRep
     async deleteColumn(columnId: BoardColumnId) {
       await mutateVoid('boards.column.delete', () => rpc('wm_delete_board_column', { p_column_id: columnId }));
     },
-    async setCell(itemId: BoardItemId, columnId: BoardColumnId, value: BoardCellValue) {
-      await mutateVoid('boards.cell.update', () => rpc('wm_set_board_cell', { p_item_id: itemId, p_column_id: columnId, p_value: value }));
+    async setCell(itemId: BoardItemId, columnId: BoardColumnId, value: BoardCellValue, expectedValue?: BoardCellValue) {
+      const hasExpected = arguments.length >= 4;
+      await mutateVoid('boards.cell.update', () => hasExpected
+        ? rpc('wm_set_board_cell_if_current', { p_item_id: itemId, p_column_id: columnId, p_value: value, p_expected_value: expectedValue ?? null })
+        : rpc('wm_set_board_cell', { p_item_id: itemId, p_column_id: columnId, p_value: value }));
+    },
+    async setItemTitle(itemId: BoardItemId, value: string, expectedValue: string) {
+      await mutateVoid('boards.item.title.update', () => rpc('wm_set_board_cell_if_current', {
+        p_item_id: itemId,
+        p_column_id: null,
+        p_value: value,
+        p_expected_value: expectedValue,
+      }));
     },
     async getPreferences(boardId: BoardId, { force = false } = {}) {
       return queries.fetchQuery({

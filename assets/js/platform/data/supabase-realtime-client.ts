@@ -144,10 +144,16 @@ export function createSupabaseRealtimeClient(projectInput: SupabaseProjectIdenti
       if (reconnectTimer !== null) clearTimeoutFn(reconnectTimer);
       reconnectTimer = null;
     };
+    const clearPresence = (): void => {
+      if (presence.length === 0) return;
+      presence = Object.freeze([]);
+      publishPresence();
+    };
     const scheduleReconnect = (): void => {
       if (disposed || reconnectTimer !== null) return;
       clearHeartbeat();
       joined = false;
+      clearPresence();
       const delay = RECONNECT_DELAYS[Math.min(reconnectAttempt, RECONNECT_DELAYS.length - 1)] ?? 10_000;
       reconnectAttempt += 1;
       setState(typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'reconnecting');
@@ -202,6 +208,7 @@ export function createSupabaseRealtimeClient(projectInput: SupabaseProjectIdenti
         if (ref === joinRef && stringOf(reply?.status) === 'ok') {
           joined = true;
           reconnectAttempt = 0;
+          clearReconnect();
           setState('live', null);
           trackPresence();
         } else if (stringOf(reply?.status) === 'error') {
@@ -241,6 +248,7 @@ export function createSupabaseRealtimeClient(projectInput: SupabaseProjectIdenti
         if (stringOf(system?.status).toLowerCase() === 'error') {
           lastError = stringOf(system?.message) || 'Realtime channel reported an error.';
           setState('error', lastError);
+          scheduleReconnect();
         }
         return;
       }

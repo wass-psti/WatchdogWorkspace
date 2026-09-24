@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs'; import crypto from 'node:crypto'; import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'..'); const read=(f)=>fs.readFileSync(path.join(root,f),'utf8');
+const policy=JSON.parse(read('config/functional-production-readiness-policy.json'));
+const rollback=fs.readFileSync(path.join(root,policy.rollbackArtifact.path)); const sha=crypto.createHash('sha256').update(rollback).digest('hex');
+assert.equal(policy.milestone,54); assert.equal(policy.failClosed,true); assert.equal(policy.deploymentTarget,'github-pages-dist-only'); assert.equal(policy.requiredGates.length,9); assert.equal(sha,policy.rollbackArtifact.sha256,'M54 rollback source archive checksum drift'); assert.ok(policy.requiredLiveAttestation.includes('authenticatedWorkflowPass'));
+const workflow=read('.github/workflows/m54-functional-production-readiness.yml');
+for(const token of ['test ! -d node_modules','npm ci','npm run release:check','npm run database-rls:test:local','npm run cross-module-rbac-e2e:database','npm run cross-module-rbac-e2e:browser','npm run recovery-quality:browser','npm run verify:dist','npm run verify:preview','actions/deploy-pages@v4','production-readiness:live','production-readiness:certify']) assert.ok(workflow.includes(token),`M54 workflow missing ${token}`);
+const live=read('scripts/run-stage-g-m54-live-production-e2e.mjs');
+for(const token of ['WM_M54_PRODUCTION_URL','WM_M54_E2E_ADMIN_EMAIL','WM_M54_E2E_ADMIN_PASSWORD','functional-production-readiness-live.spec.mjs']) assert.ok(live.includes(token),`M54 live runner missing ${token}`);
+const spec=read('tests/modern/e2e/functional-production-readiness-live.spec.mjs');
+for(const token of ['data-auth-form=\"login\"','data-wm-management-view=\"account\"','data-wm-management-view=\"settings\"','data-wm-management-view=\"users\"','moduleFrame']) assert.ok(spec.includes(token),`M54 live spec missing ${token}`);
+console.log('Stage G M54 execution vectors: PASS (rollback-integrity + workflow fail-closed + live-auth contract)');

@@ -4,7 +4,7 @@ export const stageGM50RichItemWorkspaceFileRecoveryTarget = Object.freeze({
   milestone: 50,
   stage: 'G',
   name: 'Rich Item Workspace & File Recovery',
-  activationState: 'implementation-complete-pending-certification' as M50ActivationState,
+  activationState: 'active-certified' as M50ActivationState,
   prerequisite: Object.freeze({
     milestone: 49,
     requiredState: 'active-certified' as const,

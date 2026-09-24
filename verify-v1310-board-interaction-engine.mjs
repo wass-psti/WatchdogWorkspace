@@ -43,7 +43,7 @@ must(table.includes('data-drop-group="${group.id}"'), 'groups remain valid item 
 must(columns.includes('column-quick-picker') && columns.includes('Search column types') && columns.includes('commands.createColumn'), 'column + action uses a searchable anchored direct-add picker');
 must(!columns.includes('cannot be hidden or deleted'), 'legacy permanent-column language is removed');
 
-must(inline.indexOf('applyLocal(item, column, next);') >= 0 && inline.indexOf('applyLocal(item, column, next);') < inline.indexOf('await persistValue(item, column, next);') && inline.includes('applyLocal(item, column, previous);'), 'typed-cell controller performs optimistic local updates and rollback around persistence');
+must(inline.indexOf('applyLocal(item, column, next);') >= 0 && inline.indexOf('applyLocal(item, column, next);') < inline.indexOf('await persistValue(item, column, next, previous);') && inline.includes('applyLocal(item, column, previous);') && inline.includes('expectedValue'), 'typed-cell controller performs optimistic local updates with CAS persistence and rollback on rejection');
 must(inline.includes("case 'checkbox':") && inline.includes("case 'people':") && inline.includes("case 'timeline':"), 'typed-cell engine includes checkbox, people and timeline specialized editors');
 must(columnRegistry.includes('Enter a valid email address.') && columnRegistry.includes('Enter a valid web address starting with http:// or https://.') && inline.includes('End date cannot be before start date.'), 'typed-cell client validation covers specialized values');
 must(selectionRuntime.includes('range = false') && selectionRuntime.includes('selectionAnchor'), 'selection service supports range selection');

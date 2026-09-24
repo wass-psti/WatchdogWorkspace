@@ -68,7 +68,8 @@ export interface ChangeColumnTypeCommand {
 }
 export interface MoveColumnCommand { readonly columnId: BoardColumnId; readonly position: number; }
 export interface SetStatusLabelsCommand { readonly columnId: BoardColumnId; readonly labels: readonly StatusLabel[]; readonly defaultLabelId?: StatusLabelId | null; }
-export interface SetCellCommand { readonly itemId: BoardItemId; readonly columnId: BoardColumnId; readonly value: BoardCellValue; }
+export interface SetCellCommand { readonly itemId: BoardItemId; readonly columnId: BoardColumnId; readonly value: BoardCellValue; readonly expectedValue?: BoardCellValue; }
+export interface SetItemTitleCommand { readonly itemId: BoardItemId; readonly value: string; readonly expectedValue: string; }
 
 export interface AddBoardMemberCommand { readonly boardId: BoardId; readonly email: string; readonly role?: Exclude<BoardRole, 'owner'>; }
 export interface RemoveBoardMemberCommand { readonly boardId: BoardId; readonly userId: UserId; }
@@ -100,6 +101,7 @@ export interface BoardCommandService {
   deleteColumn(columnId: BoardColumnId): Promise<void>;
   setStatusLabels(command: SetStatusLabelsCommand): Promise<void>;
   setCell(command: SetCellCommand): Promise<void>;
+  setItemTitle(command: SetItemTitleCommand): Promise<void>;
   addMember(command: AddBoardMemberCommand): Promise<void>;
   removeMember(command: RemoveBoardMemberCommand): Promise<void>;
   savePreferences(boardId: BoardId, preferences: BoardPreferences): Promise<BoardPreferences>;

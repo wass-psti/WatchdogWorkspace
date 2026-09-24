@@ -204,7 +204,9 @@ has(selection, 'reloadBoard', 'bulk selection failure can reconcile authoritativ
 has(commands, 'WM_BOARD_ITEM_CREATE_ROLLBACK_FAILED', 'item create compensation reports rollback failure explicitly');
 has(commands, 'await service.deleteItem(itemId)', 'item create compensation removes partial insert after enrichment failure');
 has(itemWorkflows, 'moveItem', 'item edit flow coordinates cross-group movement');
-has(itemWorkflows, 'groupId: item.group_id', 'item edit flow retains original group for compensation');
+has(itemWorkflows, 'originalGroupId = item.group_id', 'item edit flow retains original group for compensation');
+has(itemWorkflows, 'appliedEdits', 'item edit flow tracks applied field edits for compensation');
+has(itemWorkflows, 'commands.setItemTitle', 'item edit flow uses intrinsic title CAS instead of requiring a title column');
 has(dnd, 'archived_at', 'drag/drop contains an archived-item guard');
 has(tableView, 'aria-disabled="true" data-readonly-cell="true"', 'read-only cells stay keyboard focusable');
 has(tableView, 'canReorder', 'table row presentation gates reorder affordances');

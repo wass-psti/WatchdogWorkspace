@@ -14,6 +14,7 @@ import type {
   RenameGroupCommand,
   SetBoardLifecycleCommand,
   SetCellCommand,
+  SetItemTitleCommand,
   SetStatusLabelsCommand,
   SetGroupAccentCommand,
   UpdateBoardCommand,
@@ -143,7 +144,12 @@ export function createBoardCommandService({ service }: BoardCommandServiceDepend
     service.setStatusLabels(command.columnId, command.labels, command.defaultLabelId ?? null));
 
   const setCell = (command: SetCellCommand): Promise<void> => run('boards.command.set-cell', () =>
-    service.setCell(command.itemId, command.columnId, command.value));
+    Object.prototype.hasOwnProperty.call(command, 'expectedValue')
+      ? service.setCell(command.itemId, command.columnId, command.value, command.expectedValue)
+      : service.setCell(command.itemId, command.columnId, command.value));
+
+  const setItemTitle = (command: SetItemTitleCommand): Promise<void> => run('boards.command.set-item-title', () =>
+    service.setItemTitle(command.itemId, requiredText(command.value, 'Item name', 240), command.expectedValue));
 
   const addMember = (command: AddBoardMemberCommand): Promise<void> => {
     const email = requiredText(command.email, 'Account email', 320).toLowerCase();
@@ -184,6 +190,7 @@ export function createBoardCommandService({ service }: BoardCommandServiceDepend
     deleteColumn,
     setStatusLabels,
     setCell,
+    setItemTitle,
     addMember,
     removeMember,
     savePreferences,

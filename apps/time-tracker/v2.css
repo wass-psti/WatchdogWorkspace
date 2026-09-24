@@ -1065,7 +1065,7 @@ body[data-tt-version='2'] .role-card {
 
 @media (max-width: 960px) {
   body[data-wm-surface='time-tracker'][data-tt-version='2'] .app-shell.tt-v2-shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: var(--tt-v2-topbar) auto minmax(0, 1fr) auto;
     grid-template-areas:
       'header'
@@ -1075,8 +1075,18 @@ body[data-tt-version='2'] .role-card {
     overflow: visible;
   }
 
+  body[data-wm-surface='time-tracker'][data-tt-version='2'] .topbar,
+  body[data-wm-surface='time-tracker'][data-tt-version='2'] .tt-v2-rail,
+  body[data-wm-surface='time-tracker'][data-tt-version='2'] main[data-time-main],
+  body[data-wm-surface='time-tracker'][data-tt-version='2'] footer {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .tt-v2-rail {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     height: auto;
     min-height: 66px;
     padding: 8px clamp(18px, 3vw, 28px);
@@ -1091,6 +1101,10 @@ body[data-tt-version='2'] .role-card {
   .tt-v2-rail-meta { display: none; }
 
   .tt-v2-rail .nav-tabs {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
     flex-direction: row;
     gap: 6px;
     overflow-x: auto;
@@ -1115,7 +1129,16 @@ body[data-tt-version='2'] .role-card {
   body[data-wm-surface='time-tracker'][data-tt-version='2'] .topbar { top: 0; }
   body[data-tt-version='2'] .overview-control-dock { top: calc(var(--tt-v2-topbar) + 66px + 10px); }
 
-  body[data-tt-version='2'] .clock-layout { grid-template-columns: 1fr; }
+  body[data-tt-version='2'] .clock-layout {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  body[data-tt-version='2'] .clock-layout > * {
+    min-width: 0;
+    max-width: 100%;
+  }
   body[data-tt-version='2'] .side-panel { position: relative; top: auto; }
   body[data-tt-version='2'] .clock-card {
     grid-template-columns: minmax(0, 1fr) minmax(240px, .72fr);
@@ -1161,18 +1184,44 @@ body[data-tt-version='2'] .role-card {
 
   body[data-tt-version='2'] .date-stack { max-width: 280px; }
 
+  body[data-tt-version='2'] .clock-layout,
+  body[data-tt-version='2'] .clock-card,
+  body[data-tt-version='2'] .side-panel {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
   body[data-tt-version='2'] .clock-card {
     display: block;
+    grid-template-columns: none;
     padding: 18px;
     border-radius: 22px;
   }
 
-  .tt-v2-clock-state { margin: 0 0 20px; }
+  body[data-tt-version='2'] .clock-card > *,
+  body[data-tt-version='2'] .clock-card .selector-grid,
+  body[data-tt-version='2'] .clock-card .gps-panel,
+  body[data-tt-version='2'] .clock-card .clock-face-wrap,
+  body[data-tt-version='2'] .clock-card .clock-actions,
+  body[data-tt-version='2'] .clock-card .active-context {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .tt-v2-clock-state {
+    max-width: 100%;
+    min-width: 0;
+    margin: 0 0 20px;
+    flex-wrap: wrap;
+  }
   body[data-tt-version='2'] .clock-card > * + * { margin-top: 16px; }
   body[data-tt-version='2'] .clock-card .selector-grid { margin-top: 16px; }
   body[data-tt-version='2'] .clock-face-wrap { min-height: 280px; }
-  body[data-tt-version='2'] .clock-face { width: 220px; height: 220px; }
-  body[data-tt-version='2'] .clock-actions { grid-template-columns: 1fr; }
+  body[data-tt-version='2'] .clock-face { width: 220px; height: 220px; min-width: 0; max-width: 100%; }
+  body[data-tt-version='2'] .clock-actions { grid-template-columns: minmax(0, 1fr); }
+  body[data-tt-version='2'] .gps-panel-head { flex-wrap: wrap; }
 
   .tt-v2-shift-focus {
     grid-template-columns: 1fr;

@@ -224,25 +224,27 @@ export function createItemWorkspaceController({
       if (form.dataset.itemPropertyKind === 'core') {
         const field = form.dataset.itemPropertyField;
         const raw = String(data.get('value') ?? '');
-        const next = {
-          itemId: item.id,
-          title: item.title,
-          status: item.status,
-          assigneeId: item.assignee_id ?? null,
-          dueDate: item.due_date ?? null,
-          notes: item.notes ?? '',
-        };
-        if (field === 'title') next.title = raw.trim();
-        else if (field === 'status') next.status = (raw || null) as StatusLabelId | null;
-        else if (field === 'assignee') next.assigneeId = (raw || null) as UserId | null;
-        else if (field === 'due_date') next.dueDate = (raw || null) as ISODate | null;
-        else if (field === 'notes') next.notes = raw;
+        const systemKey = field === 'assignee' ? 'assignee' : field;
+        const column = state.board?.columns.find((entry) => entry.system_key === systemKey);
+        if (!column) throw new Error('This Board property is no longer available.');
+        let previousValue: string | null;
+        let nextValue: string | null;
+        if (field === 'title') { previousValue = item.title; nextValue = raw.trim(); }
+        else if (field === 'status') { previousValue = item.status; nextValue = (raw || null) as StatusLabelId | null; }
+        else if (field === 'assignee') { previousValue = item.assignee_id ?? null; nextValue = (raw || null) as UserId | null; }
+        else if (field === 'due_date') { previousValue = item.due_date ?? null; nextValue = (raw || null) as ISODate | null; }
+        else if (field === 'notes') { previousValue = item.notes ?? ''; nextValue = raw; }
         else throw new Error('Unsupported Item Workspace field.');
-        await commands.updateItem(next);
+        await commands.setCell({ itemId: item.id, columnId: column.id, value: nextValue, expectedValue: previousValue });
         if (state.board) {
+          const patch = field === 'title' ? { title: nextValue as string }
+            : field === 'status' ? { status: nextValue as StatusLabelId | null }
+            : field === 'assignee' ? { assignee_id: nextValue as UserId | null }
+            : field === 'due_date' ? { due_date: nextValue as ISODate | null }
+            : { notes: nextValue ?? '' };
           state.board = {
             ...state.board,
-            items: state.board.items.map((entry) => String(entry.id) === String(item.id) ? { ...entry, title: next.title, status: next.status, assignee_id: next.assigneeId, due_date: next.dueDate, notes: next.notes } : entry),
+            items: state.board.items.map((entry) => String(entry.id) === String(item.id) ? { ...entry, ...patch } : entry),
           };
           renderBoard();
         }
@@ -254,7 +256,8 @@ export function createItemWorkspaceController({
           ? { start: String(data.get('start') ?? ''), end: String(data.get('end') ?? '') }
           : data.get('value');
         const value = normalizeBoardCellValue(column.data_type, raw);
-        await commands.setCell({ itemId: item.id, columnId: column.id, value });
+        const currentValue = state.board?.values.find((entry) => String(entry.item_id) === String(item.id) && String(entry.column_id) === String(column.id))?.value ?? null;
+        await commands.setCell({ itemId: item.id, columnId: column.id, value, expectedValue: currentValue });
         if (state.board) {
           const existing = state.board.values.some((entry) => String(entry.item_id) === String(item.id) && String(entry.column_id) === String(column.id));
           state.board = {

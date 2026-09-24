@@ -131,7 +131,7 @@ export function createBoardInlineEditController({
     }
   }
 
-  const persistValue = (item: BoardItem, column: BoardColumn, value: BoardCellValue): Promise<void> => commands.setCell({ itemId: item.id, columnId: column.id, value });
+  const persistValue = (item: BoardItem, column: BoardColumn, value: BoardCellValue, expectedValue?: BoardCellValue): Promise<void> => commands.setCell({ itemId: item.id, columnId: column.id, value, ...(expectedValue === undefined ? {} : { expectedValue }) });
 
   async function commitCell(item: BoardItem, column: BoardColumn, next: BoardCellValue, { label = `${column.name} changed`, deferRender = false }: CommitOptions = {}): Promise<boolean> {
     if (!canEdit()) return false;
@@ -140,11 +140,11 @@ export function createBoardInlineEditController({
     applyLocal(item, column, next);
     if (!deferRender) renderBoardData();
     try {
-      await persistValue(item, column, next);
+      await persistValue(item, column, next, previous);
       history?.push({
         label,
-        undo: async () => { applyLocal(item, column, previous); renderBoardData(); await persistValue(item, column, previous); },
-        redo: async () => { applyLocal(item, column, next); renderBoardData(); await persistValue(item, column, next); },
+        undo: async () => { await persistValue(item, column, previous, next); applyLocal(item, column, previous); renderBoardData(); },
+        redo: async () => { await persistValue(item, column, next, previous); applyLocal(item, column, next); renderBoardData(); },
       });
       return true;
     } catch (error) {
@@ -161,15 +161,19 @@ export function createBoardInlineEditController({
     if (title.length > 240) { toast('Item names can be up to 240 characters.', 'warning'); return false; }
     const previous = item.title;
     if (previous === title) return true;
-    const save = (value: string): Promise<void> => commands.updateItem({ itemId: item.id, title: value, status: item.status, assigneeId: item.assignee_id || null, dueDate: item.due_date || null, notes: item.notes || '' });
+    // Item title is intrinsic Board state and must remain editable even when the
+    // flexible Board schema intentionally contains no system title column.
+    // Persist it through the guarded intrinsic-title CAS path so only the title
+    // field participates in conflict detection and unrelated collaborator edits survive.
+    const save = (value: string, expectedValue: string): Promise<void> => commands.setItemTitle({ itemId: item.id, value, expectedValue });
     Object.assign(item, { title });
     if (!deferRender) renderBoardData();
     try {
-      await save(title);
+      await save(title, previous);
       history?.push({
         label: 'item name change',
-        undo: async () => { Object.assign(item, { title: previous }); renderBoardData(); await save(previous); },
-        redo: async () => { Object.assign(item, { title }); renderBoardData(); await save(title); },
+        undo: async () => { await save(previous, title); Object.assign(item, { title: previous }); renderBoardData(); },
+        redo: async () => { await save(title, previous); Object.assign(item, { title }); renderBoardData(); },
       });
       return true;
     } catch (error) {

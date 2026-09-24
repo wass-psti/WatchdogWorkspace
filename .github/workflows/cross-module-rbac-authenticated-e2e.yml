@@ -1,0 +1,17 @@
+name: Cross-Module RBAC Authenticated E2E
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  m52:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run cross-module-rbac-e2e:check
+      - run: npm run cross-module-rbac-e2e:test
+      - run: npm run cross-module-rbac-e2e:browser

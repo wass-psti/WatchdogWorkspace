@@ -1,0 +1,40 @@
+export type M51ActivationState = 'implementation-in-progress' | 'implementation-complete-pending-certification' | 'active-certified';
+
+export const stageGM51BoardsRealtimeConcurrencyStabilizationTarget = Object.freeze({
+  milestone: 51,
+  stage: 'G',
+  name: 'Boards Realtime & Concurrency Stabilization',
+  activationState: 'active-certified' as M51ActivationState,
+  prerequisite: Object.freeze({ milestone: 50, requiredState: 'active-certified' as const, semanticsVersion: '1.43.2-m50-v1' }),
+  architectureVersion: 58,
+  semanticsVersion: '1.43.2-m51-v1',
+  authority: Object.freeze({
+    transport: 'assets/js/platform/data/supabase-realtime-client.ts',
+    platform: 'assets/js/platform/realtime/realtime-platform.ts',
+    service: 'assets/js/features/boards/services/board-realtime-service.ts',
+    controller: 'assets/js/features/boards/controllers/board-realtime-controller.ts',
+    repository: 'assets/js/features/boards/data/board-repository.ts',
+    inlineEdit: 'assets/js/features/boards/controllers/inline-edit-controller.ts',
+    itemWorkflows: 'assets/js/features/boards/controllers/item-workflows.ts',
+    itemWorkspace: 'assets/js/features/boards/controllers/item-workspace-controller.ts',
+    migration: 'supabase/migrations/v1.43.2-stage-g-m51-boards-realtime-concurrency-stabilization.sql',
+    databaseTest: 'supabase/tests/m51/boards_realtime_concurrency_stabilization.test.sql',
+    deterministicTest: 'scripts/verify-stage-g-m51-execution.mjs',
+  }),
+  completionCriteria: Object.freeze([
+    'Presence is cleared on transport loss and reconstructed only from authoritative presence state/diffs after recovery.',
+    'Broadcast-driven remote mutation reconciliation never discards failed canonical reload work and retries with bounded backoff.',
+    'Reconnect from a degraded state triggers authoritative catch-up so missed Broadcast events cannot leave a session divergent.',
+    'Fallback synchronization defers while local editing/dragging/view mutations are active and resumes after the interaction completes.',
+    'Interactive Board edits persist field-scoped values and reject stale same-field writes with serialized compare-and-set semantics.',
+    'Non-overlapping concurrent edits converge without whole-item stale snapshot overwrites.',
+    'Realtime access-token refresh remains owned by the shared platform authority and updates active private channels.',
+    'Static, deterministic, browser/E2E, disposable database, production-equivalent, historical regression, package-integrity, and final artifact gates pass before active-certified promotion.',
+  ]),
+  knownBoundaries: Object.freeze([
+    'Canonical Board state remains Supabase RPC/RLS owned; Realtime is an invalidation/collaboration transport, not a second source of truth.',
+    'The Stage F M27 realtime platform remains the single token-refresh/private-channel lifecycle authority.',
+    'The legacy all-fields wm_update_board_item RPC remains for compatible non-interactive command paths; corrected interactive edit surfaces use field-scoped persistence.',
+    'Production-equivalent authenticated two-session verification requires external Supabase credentials and cannot be replaced by deterministic fixture tests.',
+  ]),
+});

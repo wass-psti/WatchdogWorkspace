@@ -1,0 +1,31 @@
+export const STAGE_G_M52_TARGET = Object.freeze({
+  milestone: 52,
+  name: 'Cross-Module RBAC & Authenticated E2E Certification',
+  semanticsVersion: '1.43.2-m52-v1',
+  activationState: 'active-certified',
+  controlledBackend: true,
+  platformRoles: Object.freeze(['admin_general_manager', 'hr', 'supervisor', 'employee'] as const),
+  accountStatuses: Object.freeze(['active', 'disabled'] as const),
+  hostRoutes: Object.freeze({
+    boards: 'all-active-authenticated',
+    users: 'admin_general_manager-only',
+    settings: 'all-active-authenticated',
+    account: 'all-active-authenticated',
+  }),
+  boardAuthorization: Object.freeze({
+    authority: 'board-membership-role',
+    roles: Object.freeze(['owner', 'editor', 'viewer'] as const),
+    invariant: 'platform-role-does-not-imply-board-role',
+  }),
+  embeddedModuleRoleMatrix: Object.freeze({
+    admin_general_manager: Object.freeze({ 'time-tracker': 'System Admin', 'fueltrack-plus': 'Admin', tradelink: 'General Manager' }),
+    hr: Object.freeze({ 'time-tracker': 'HR', 'fueltrack-plus': 'User', tradelink: 'User' }),
+    supervisor: Object.freeze({ 'time-tracker': 'Supervisor', 'fueltrack-plus': 'User', tradelink: 'Sales Supervisor' }),
+    employee: Object.freeze({ 'time-tracker': 'Employee', 'fueltrack-plus': 'User', tradelink: 'User' }),
+  }),
+  embeddedModules: Object.freeze(['time-tracker', 'fueltrack-plus', 'tradelink'] as const),
+  disabledAccountInvariant: 'disabled-account-has-no-authenticated-route-or-module-authority',
+  browserEngine: 'playwright-chromium',
+  backendAuthority: 'controlled-supabase-compatible-http-fixture',
+  failClosed: true,
+});

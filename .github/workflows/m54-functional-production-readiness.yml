@@ -1,0 +1,92 @@
+name: M54 Functional Production Readiness Certification
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: m54-production-readiness
+  cancel-in-progress: false
+jobs:
+  certify-build:
+    runs-on: ubuntu-latest
+    env:
+      VITE_RUNTIME_ENV: production
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_BASE_PATH: ./
+      VITE_BUILD_SOURCEMAP: 'false'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Assert clean-install starting state
+        run: test ! -d node_modules
+      - name: Install exact lockfile dependencies
+        run: npm ci
+      - run: npm run dependencies:ensure
+      - run: npm run production-readiness:check
+      - run: npm run production-readiness:test
+      - name: Clean-install release gate
+        run: npm run release:check
+      - name: Database and RLS verification
+        run: npm run database-rls:test:local && npm run cross-module-rbac-e2e:database
+      - name: Authenticated pre-deployment E2E
+        run: npm run cross-module-rbac-e2e:browser && npm run recovery-quality:browser
+      - name: Production build
+        run: npm run build
+      - run: npm run verify:dist
+      - run: npm run verify:preview
+      - name: Freeze rollback-source checksum
+        run: echo '34fde2a39bc3b3a68c0cea300977813e868b96ebf78774d96d3944b9e417b0af  release-artifacts/m54/rollback-source/Work-Management-App-v1.43.2-Stage-G-M53-Certified-Baseline.zip' | sha256sum -c -
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./dist
+  deploy:
+    needs: certify-build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages artifact
+        id: deployment
+        uses: actions/deploy-pages@v4
+  post-deploy-certify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    env:
+      WM_M54_PRODUCTION_URL: ${{ needs.deploy.outputs.page_url }}
+      WM_M54_E2E_ADMIN_EMAIL: ${{ secrets.M54_E2E_ADMIN_EMAIL }}
+      WM_M54_E2E_ADMIN_PASSWORD: ${{ secrets.M54_E2E_ADMIN_PASSWORD }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run dependencies:ensure
+      - name: Require dedicated production E2E credentials
+        shell: bash
+        run: test -n "$WM_M54_E2E_ADMIN_EMAIL" && test -n "$WM_M54_E2E_ADMIN_PASSWORD" && test -n "$WM_M54_PRODUCTION_URL"
+      - name: Live authenticated functional workflow certification
+        run: npm run production-readiness:live
+      - name: Write live deployment attestation
+        run: node scripts/write-stage-g-m54-live-attestation.mjs
+      - name: Freeze production and rollback baselines
+        run: npm run production-readiness:certify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m54-certified-production-baselines-${{ github.sha }}
+          path: m54-certified-artifacts-upload
+          if-no-files-found: error
+          retention-days: 90

@@ -1,0 +1,43 @@
+export const STAGE_G_M53_TARGET = Object.freeze({
+  milestone: 53,
+  name: 'Recovery, Update, Accessibility & Quality Hardening',
+  semanticsVersion: '1.43.2-m53-v1',
+  activationState: 'active-certified',
+  prerequisite: Object.freeze({ milestone: 52, requiredState: 'active-certified' as const }),
+  recovery: Object.freeze({
+    packageSchema: 'wm-recovery-package-v1',
+    backupVersion: 4,
+    supportedUpgradeOrigins: Object.freeze([1, 2, 3, 4] as const),
+    transactionalRestoreRpc: 'wm_restore_workspace_backup_v4',
+    guardedCheckpointRequired: true,
+    reloadPersistenceRequired: true,
+  }),
+  update: Object.freeze({
+    activationMessage: 'WM_ACTIVATE_UPDATE',
+    controllerTransition: 'reload-existing-controlled-client',
+    staleCacheCleanup: true,
+    embeddedModulesNetworkAuthoritative: true,
+  }),
+  responsive: Object.freeze({
+    mobileViewport: Object.freeze({ width: 390, height: 844 }),
+    desktopViewport: Object.freeze({ width: 1440, height: 900 }),
+    hostRoutes: Object.freeze(['boards', 'users', 'settings', 'account'] as const),
+    embeddedModules: Object.freeze(['time-tracker', 'fueltrack-plus', 'tradelink'] as const),
+    horizontalOverflowTolerancePx: 2,
+  }),
+  accessibility: Object.freeze({
+    standard: 'WCAG-2.2-AA-interaction-critical-subset',
+    keyboardOnlyRequired: true,
+    mobileNavigationFocusTrapRequired: true,
+    focusRestoreRequired: true,
+    routeMainFocusRequired: true,
+    accessibleControlNamesRequired: true,
+  }),
+  stabilityTransitions: Object.freeze(['reload', 'application-update', 'backup-restore', 'role-change', 'responsive-viewport-change', 'keyboard-only'] as const),
+  performance: Object.freeze({
+    inheritM31Budgets: true,
+    controlledRouteReadyMaxMs: 5000,
+    repairedSurfaces: Object.freeze(['boards', 'users', 'settings', 'account', 'time-tracker', 'fueltrack-plus', 'tradelink'] as const),
+  }),
+  failClosed: true,
+});

@@ -29,7 +29,7 @@ assert.ok(boards.includes('data-wm-motion-static="true"')&&motion.includes('data
 assert.ok(css.includes('body.board-item-panel-open .board-detail-page{padding-right:0!important}'),'Item Workspace still shifts Board layout');
 assert.ok(css.includes('min-height:max(560px,calc(100dvh - 320px))'),'Kanban full-height workspace missing');
 assert.ok(kanban.includes('data-kanban-add-status')&&kanban.includes('kanban-lane-head'),'Kanban lane quick-add/sticky-head presentation missing');
-assert.ok(items.includes('defaults.status')&&items.includes('commands.createItem')&&items.includes('commands.updateItem'),'Add Item workflow does not persist configured metadata');
+assert.ok(items.includes('defaults.status')&&items.includes('commands.createItem')&&items.includes('status: selectedStatus')&&items.includes('assigneeId')&&items.includes('dueDate')&&items.includes('notes'),'Add Item workflow does not persist configured metadata through the governed createItem command');
 assert.ok(workspace.includes('board-controls-primary')&&workspace.includes('board-controls-query')&&workspace.includes('board-controls-secondary'),'Board toolbar composition was not overhauled');
 assert.ok(runtimeAssets.includes('board-menu-controller.ts'),'new menu controller is not in runtime asset manifest');
 for(const token of ['Board three-dot trigger opens a floating menu','Board menu is outside scroll clipping geometry','dynamic Board workspace opts out of repeated reveal motion']) assert.ok(browser.includes(token),`Chromium Board overhaul coverage missing ${token}`);

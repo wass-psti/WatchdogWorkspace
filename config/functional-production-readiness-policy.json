@@ -1,0 +1,30 @@
+{
+  "milestone": 54,
+  "semanticsVersion": "1.43.2-m54-v1",
+  "architectureVersion": 59,
+  "failClosed": true,
+  "deploymentTarget": "github-pages-dist-only",
+  "requiredGates": [
+    "clean-install-release",
+    "authenticated-end-to-end",
+    "database-rls",
+    "production-build",
+    "github-pages-live-deployment",
+    "post-deployment-functional-workflows",
+    "rollback-artifact-freeze",
+    "historical-regression",
+    "package-hygiene"
+  ],
+  "requiredLiveAttestation": [
+    "repository",
+    "commitSha",
+    "workflowRunId",
+    "productionUrl",
+    "authenticatedWorkflowPass",
+    "deployedAt"
+  ],
+  "rollbackArtifact": {
+    "path": "release-artifacts/m54/rollback-source/Work-Management-App-v1.43.2-Stage-G-M53-Certified-Baseline.zip",
+    "sha256": "34fde2a39bc3b3a68c0cea300977813e868b96ebf78774d96d3944b9e417b0af"
+  }
+}

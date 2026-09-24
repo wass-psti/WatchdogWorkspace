@@ -463,7 +463,7 @@ export function createColumnWorkflows({
       submitLabel: 'Save field value',
       onSubmit: async (formData) => {
         const next = normalizeCellForm(column, formData);
-        await commands.setCell({ itemId: item.id, columnId: column.id, value: next });
+        await commands.setCell({ itemId: item.id, columnId: column.id, value: next, expectedValue: value });
         toast(`“${column.name}” updated for this item.`);
         await loadBoard(activeBoardId, { quiet: true });
       },

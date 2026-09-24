@@ -43,6 +43,7 @@ export function createItemWorkflows({
     const members: readonly BoardMember[] = board.members;
     const groups: readonly BoardGroup[] = board.groups;
     const labels = getStatusLabels();
+    const systemColumn = (key: string) => board.columns.find((column) => column.system_key === key);
     const hasStatusDefault = Object.prototype.hasOwnProperty.call(defaults, 'status');
     const initialStatus = hasStatusDefault ? defaults.status : (getDefaultStatus() || 'not_started');
     const value = item || {
@@ -77,24 +78,50 @@ export function createItemWorkflows({
         const dueDate = asIsoDate(fd.get('due'));
         const notes = String(fd.get('notes') || '');
         if (item) {
-          const groupChanged = String(selectedGroup) !== String(item.group_id);
-          if (groupChanged) {
-            await commands.moveItem({ itemId: item.id, groupId: selectedGroup, position: 9999, status: selectedStatus });
-            try {
-              await commands.updateItem({ itemId: item.id, title, status: selectedStatus, assigneeId, dueDate, notes });
-            } catch (updateError) {
-              try {
-                await commands.moveItem({ itemId: item.id, groupId: item.group_id, position: item.position, status: item.status });
-              } catch (rollbackError) {
-                await reloadBoard();
-                const message = rollbackError instanceof Error ? rollbackError.message : 'rollback failed';
-                throw new Error(`The item update failed after it moved, and the original position could not be restored (${message}). The board was reloaded to reconcile the authoritative state.`);
+          const edits = [
+            { key: 'title', previous: item.title, next: title },
+            { key: 'status', previous: item.status, next: selectedStatus },
+            { key: 'assignee', previous: item.assignee_id ?? null, next: assigneeId },
+            { key: 'due_date', previous: item.due_date ?? null, next: dueDate },
+            { key: 'notes', previous: item.notes ?? '', next: notes },
+          ].filter((edit) => JSON.stringify(edit.previous) !== JSON.stringify(edit.next));
+          const originalGroupId = item.group_id;
+          const appliedEdits: typeof edits = [];
+          try {
+            for (const edit of edits) {
+              if (edit.key === 'title') {
+                await commands.setItemTitle({ itemId: item.id, value: String(edit.next), expectedValue: String(edit.previous) });
+              } else {
+                const column = systemColumn(edit.key);
+                if (!column) throw new Error(`The ${edit.key} Board property is unavailable. Reload the board and try again.`);
+                await commands.setCell({ itemId: item.id, columnId: column.id, value: edit.next, expectedValue: edit.previous });
               }
-              await reloadBoard();
-              throw updateError;
+              appliedEdits.push(edit);
             }
-          } else {
-            await commands.updateItem({ itemId: item.id, title, status: selectedStatus, assigneeId, dueDate, notes });
+            if (String(selectedGroup) !== String(originalGroupId)) {
+              // Group movement is field-scoped. Do not pass status here; status is
+              // handled by compare-and-set above so a concurrent status change
+              // cannot be overwritten by a stale dialog submission.
+              await commands.moveItem({ itemId: item.id, groupId: selectedGroup, position: 9999 });
+            }
+          } catch (updateError) {
+            let compensationFailed = false;
+            for (const edit of [...appliedEdits].reverse()) {
+              try {
+                if (edit.key === 'title') {
+                  await commands.setItemTitle({ itemId: item.id, value: String(edit.previous), expectedValue: String(edit.next) });
+                } else {
+                  const column = systemColumn(edit.key);
+                  if (!column) { compensationFailed = true; continue; }
+                  await commands.setCell({ itemId: item.id, columnId: column.id, value: edit.previous, expectedValue: edit.next });
+                }
+              } catch {
+                compensationFailed = true;
+              }
+            }
+            await reloadBoard();
+            if (compensationFailed) throw new Error('The item update failed and one or more applied field changes could not be automatically rolled back. The board was reloaded to show the authoritative state.');
+            throw updateError;
           }
           toast(`“${title}” updated.`);
         } else {
