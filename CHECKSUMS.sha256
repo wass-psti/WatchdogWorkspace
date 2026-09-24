@@ -186,10 +186,12 @@ b7599861a1a3c96c97297385117100d2b1fec345170ffcefd78fe955b6526ba1  ./M53-RESPONSI
 d40dbb6ccf8610c8d41456f043da6681df27f6cdabf5378f427682533f0577c4  ./M53-TIMETRACKER-CLOCK-MOBILE-CONTAINMENT-CORRECTIVE-2026-09-24.md
 7da5e3b4efcbd5f00c230aec60dbca5e4dd41ac3b8258d7c37877f54e369c5be  ./M53-TIMETRACKER-MOBILE-SHELL-TRACK-CORRECTIVE-2026-09-24.md
 e16650a33d23cc2814ad974d5e1629840814f98708b513f38c08921687632855  ./M54-BROWSER-INTEGRATION-INTRINSIC-TITLE-FIXTURE-SYNCHRONIZATION-CORRECTIVE-2026-09-24.md
-0791ecf051a12deb7855f11dae873ffae52cd155c01dab7933a06abbad374fab  ./M54-CONTINUATION-STATE.md
+df88cd388092c13f000a78aa41ced55f7725b105cda261450250abff0c8d62f4  ./M54-CONTINUATION-STATE.md
 26520c1ff641e852ef7e0cbc136435d64b7a29792cf7b034b6bee0759d23dc63  ./M54-M40-BACKEND-PREFLIGHT-READINESS-CORRECTIVE-2026-09-24.md
 2155e13dd046a9a41f3e1bf06c2dbdc4918de405f0dc6917038f1d4995294587  ./M54-M40-BOARD-CAPABILITY-FIXTURE-SYNCHRONIZATION-CORRECTIVE-2026-09-24.md
 86f0ff1c84e10dea5dbea40e08c845421ffbe99d553c5e25fe0ffe77829010cf  ./M54-M50-HISTORICAL-ARCHITECTURE-SYNCHRONIZATION-CORRECTIVE-2026-09-24.md
+e3deffa00c2da5ba275aa47c285f55743f7b660168ca9cfdb42074d0b37c7d6f  ./M54-PRODUCTION-M38-M51-CAPABILITY-PARITY-CORRECTIVE-2026-09-24.md
+ef5c4ad6a7871a47407957d527aa597210706d7ad99e7651d4a8e6da0d6fc074  ./M54-PRODUCTION-REQUIRED-RPC-PARITY-CORRECTIVE-2026-09-24.md
 f85213492eee6809ef335b426e32d9426ea5617d6a5435e0ff55ccb9f658ec37  ./M54-RUNTIME-SCHEMA-AUTHORITY-CORRECTIVE-2026-09-24.md
 7f145954a3ab537a808a2f6006d257517f2810a596001eee2f2b3e4ba9c472eb  ./M6-ACTIVATION-RUNBOOK.md
 721e0649e315a407ebd38e455c3c2be95abd55d4fa16139aba0077698e1a49c1  ./M6-BROWSER-ESM-HARNESS-HOTFIX.md
@@ -1123,7 +1125,9 @@ bf11929a6efcb77b21e6f938561a634ad238dd16cd069a514a0eef28150f3750  ./supabase/mig
 aff4feaa9c1f1467f67b1e52649b96aef9a5c1790f56cf0b1f9d8e65034796ca  ./supabase/migrations/v1.43.2-stage-g-m47-boards-table-group-item-recovery.sql
 f76bfd5a413e9337ac54ff7edc8ea5a374a936cf03f04378771901c01c2cc187  ./supabase/migrations/v1.43.2-stage-g-m50-rich-item-workspace-file-recovery.sql
 f7d0f34e8a6d26f86ec4b865688aac95fcacdcd9c7ce09f2e08ee4a22fb35f01  ./supabase/migrations/v1.43.2-stage-g-m51-boards-realtime-concurrency-stabilization.sql
-f8fa17647914f8e2b219a84617b88e69f66fdeea6cf45cde5744a63da1a29a78  ./supabase/schema.sql
+847c1cb27a7fc99d8323db45e3dcc034ef6368dd1e339990a46bc5d9aca8ae15  ./supabase/migrations/v1.43.2-stage-g-m54-production-required-rpc-parity-corrective.sql
+868cbab9bfcefbc928d707cdd67bce3686f38904734e1c14c7d17d7f3701a67b  ./supabase/migrations/v1.43.2-stage-g-m54-runtime-capability-m51-parity-corrective.sql
+8bec52b7392236f59ce2f28b371214621c16f8de34a0e3e30f512127a583bde6  ./supabase/schema.sql
 825337f8c5eda2df8d09bc10837004871017867056d0d42dbb3e30ae60c987a1  ./supabase/tests/database/00_rls_structure.test.sql
 a639c2422bb272ffc615eea70fdb44ada05fa93451d17764a8c9649698304461  ./supabase/tests/database/10_account_rbac.test.sql
 c16eb111b60c784caf548af8fc5666955c7cc0658408b6ab231a86557df8bf68  ./supabase/tests/database/20_module_state_authorization.test.sql
@@ -1262,7 +1266,7 @@ c70469c046dd9245cf4bf1063e76dae75801d2241d2efedca3dcfdf6264fd8b4  ./verify-stage
 3c279b0f5883cd9ca12bbc0951842e0dfea20a719ce8b1bea4c7bf91a449d89f  ./verify-stage-g-m51-boards-realtime-concurrency-stabilization.mjs
 63b4e6c607d59a0bb2454e405346e2a2f7ac9c3659f6470b798d80d7b3e933e4  ./verify-stage-g-m52-cross-module-rbac-authenticated-e2e-certification.mjs
 25ce6c7bcb480ec4b16beb03deb6d9191a054f44d9cbf8ebc02e8b667bcad46e  ./verify-stage-g-m53-recovery-update-accessibility-quality-hardening.mjs
-2b58b33e36a2bedc6309378d3dd81c78d93bd64f932b6fb20a944d4cb13cae26  ./verify-stage-g-m54-functional-production-readiness-certification.mjs
+c65c43b99186644b845c46daa9d8312e526ca810d5255fa22e28295fb261c8ab  ./verify-stage-g-m54-functional-production-readiness-certification.mjs
 9c3ca048644f0a54f06bd56a46ce957a2e8f0e9f6d99eefd92b93d135da276f7  ./verify-timetracker-runtime.mjs
 e461f73a558d08bda915d6ecee41df158e47cf99b104a75bc91f1517d8d4ff39  ./verify-timetracker-startup.mjs
 4fc939b5b39fd072246c3a359c6b7bf35c400e222ef98401cd1d3eb3f4a4bc1b  ./verify-timetracker-v2-pass1.mjs
