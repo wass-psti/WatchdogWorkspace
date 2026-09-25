@@ -31,15 +31,21 @@ const provenanceContext=(process.env.WM_M50_PROVENANCE_CONTEXT||'repository-sour
 for(const f of ['M50-CONTINUATION-STATE.md','RELEASE-STATUS-v1.43.2-STAGE-G-M50-RICH-ITEM-WORKSPACE-FILE-RECOVERY.md','supabase/tests/m50/rich_item_workspace_file_recovery.test.sql','scripts/verify-rich-item-workspace-file-recovery-execution.mjs','scripts/run-rich-item-workspace-file-recovery-browser.mjs','tests/modern/e2e/rich-item-workspace-file-recovery.spec.mjs','scripts/verify-stage-g-m50-production-invariants.mjs','scripts/verify-stage-g-m50-finalizer-fail-closed.mjs','scripts/verify-stage-g-m50-m49-certified-context.mjs']) ok(exists(f),`Missing M50 authority: ${f}`);
 ok(/activationState:\s*'(?:implementation-complete-pending-certification|active-certified)'/.test(target),'M50 source state must be pending certification or active-certified.');
 ok(target.includes("requiredState: 'active-certified'"),'M50 requires M49 certified prerequisite.');
-ok(provenanceContext==='repository-source'||provenanceContext==='m49-certified-artifact','M50 provenance context must be repository-source or m49-certified-artifact.');
+ok(['repository-source','m49-certified-artifact','m49-certified-artifact-current-source'].includes(provenanceContext),'M50 provenance context must be repository-source, m49-certified-artifact, or m49-certified-artifact-current-source.');
 if(provenanceContext==='repository-source'){
   ok(m49.includes("activationState: 'implementation-complete-pending-certification'"),'M49 repository source must retain its fail-closed pending-certification state.');
   ok(m49Status.includes('**State:** implementation-complete-pending-certification'),'M49 repository release status must retain its fail-closed pending-certification state.');
 }else{
   ok(m49.includes("activationState: 'active-certified'"),'M49 certified-artifact context requires the staged M49 target to be active-certified.');
   ok(m49Status.includes('**State:** active-certified'),'M49 certified-artifact context requires the staged M49 release status to be active-certified.');
-  ok(target.includes("activationState: 'implementation-complete-pending-certification'"),'M49 certified-artifact context must not promote M50 while verifying historical M49 certification.');
   ok(/## Final certified baseline — [^\n]+\n\nThe fail-closed M49 certification passed for source commit `[a-f0-9]{40}`\./.test(m49Status),'M49 certified-artifact context requires an exact-commit final certified baseline marker.');
+  if(provenanceContext==='m49-certified-artifact'){
+    ok(target.includes("activationState: 'implementation-complete-pending-certification'"),'Historical M49 certified-artifact context must keep M50 pending.');
+  }else{
+    ok(target.includes("activationState: 'active-certified'"),'Current-source M49 certification context must preserve the already-certified M50 state.');
+    const m50Status=read('RELEASE-STATUS-v1.43.2-STAGE-G-M50-RICH-ITEM-WORKSPACE-FILE-RECOVERY.md');
+    ok(m50Status.includes('State: active-certified'),'Current-source M49 certification context requires the M50 release status to remain active-certified.');
+  }
 }
 for(const token of ["certifiedCommit: '63ab65080b7b6fb33ba276fa169ca2a55b19d06c'","certifiedSourceTree: 'd26f3a136f02ff48cd6113ff605f5132cf903ad4c74beefbe29e1b642c5260f4'",'hostedWorkflowRun: 35687976043',"hostedArtifactSha256: '8f903ccaab516c1bbe678308ec042409d0b7a05d73d41b5b4275613183f2245a'"]) ok(target.includes(token),`M50 prerequisite evidence missing ${token}`);
 ok(target.includes("architectureVersion: 58"),'M50 architecture target must be 58.');
@@ -73,9 +79,9 @@ ok(candidate.includes('npm run typecheck') && candidate.indexOf('npm run typeche
 const provenanceContextVerifier=read('scripts/verify-stage-g-m50-m49-certified-context.mjs');
 ok(candidate.includes('node scripts/verify-stage-g-m50-m49-certified-context.mjs') && candidate.indexOf('verify-stage-g-m50-m49-certified-context.mjs')<candidate.indexOf('rich-item-workspace-recovery:database'),'M50 candidate must front-load the historical M49 certified-artifact provenance-context regression before Database/Storage and browser gates.');
 ok(hostedWorkflow.includes('node scripts/verify-stage-g-m50-m49-certified-context.mjs') && hostedWorkflow.indexOf('verify-stage-g-m50-m49-certified-context.mjs')<hostedWorkflow.indexOf('Verify M50 disposable database and Storage policy authority'),'Hosted M50 workflow must front-load the historical M49 certified-artifact provenance-context regression before database/browser gates.');
-ok(m49Finalizer.includes("WM_M50_PROVENANCE_CONTEXT='m49-certified-artifact' NODE_OPTIONS='--experimental-strip-types --disable-warning=ExperimentalWarning' bash verify-project.sh"),'M49 finalizer must scope the M50 predecessor override only to staged active-certified aggregate verification.');
+ok(m49Finalizer.includes("WM_M50_PROVENANCE_CONTEXT='m49-certified-artifact-current-source' NODE_OPTIONS='--experimental-strip-types --disable-warning=ExperimentalWarning' bash verify-project.sh"),'M49 finalizer must scope the current-source M50 provenance context only to staged active-certified aggregate verification.');
 ok(!m49Finalizer.includes('export WM_M50_PROVENANCE_CONTEXT'),'M49 finalizer must not globally export the M50 predecessor provenance override.');
-for(const token of ["repository-source","m49-certified-artifact","unknown-context","active-certified","implementation-complete-pending-certification"]) ok(provenanceContextVerifier.includes(token),`M50 predecessor provenance regression missing ${token}`);
+for(const token of ["repository-source","m49-certified-artifact","m49-certified-artifact-current-source","unknown-context","active-certified","implementation-complete-pending-certification"]) ok(provenanceContextVerifier.includes(token),`M50 predecessor provenance regression missing ${token}`);
 ok(candidate.includes('node verify-stage-g-m42-users-rbac-functional-recovery.mjs') && candidate.indexOf('verify-stage-g-m42-users-rbac-functional-recovery.mjs')<candidate.indexOf('rich-item-workspace-recovery:database'),'M50 candidate must front-load the M42 historical verifier before Database/Storage and browser certification gates.');
 ok(!read('verify-stage-g-m42-users-rbac-functional-recovery.mjs').includes('!schema.includes(\"set search_path=pg_catalog,public\")'),'M42 verifier must scope wm_runtime_capabilities search_path validation to that function instead of rejecting unrelated hardened schema functions.');
 const v124Verifier=read('verify-v1240-architecture-phase3.mjs');

@@ -86,7 +86,7 @@ trap 'cleanup_stage_runtime; rm -rf "$STAGE_ROOT"' EXIT
   node --experimental-strip-types --disable-warning=ExperimentalWarning verify-stage-g-m48-boards-columns-cells-status-system-recovery.mjs
   NODE_OPTIONS='--experimental-strip-types --disable-warning=ExperimentalWarning' node scripts/verify-stage-g-m47-production-invariants.mjs
   NODE_OPTIONS='--experimental-strip-types --disable-warning=ExperimentalWarning' node scripts/verify-stage-g-m46-production-contract.mjs
-  WM_M50_PROVENANCE_CONTEXT='m49-certified-artifact' NODE_OPTIONS='--experimental-strip-types --disable-warning=ExperimentalWarning' bash verify-project.sh
+  WM_M50_PROVENANCE_CONTEXT='m49-certified-artifact-current-source' NODE_OPTIONS='--experimental-strip-types --disable-warning=ExperimentalWarning' bash verify-project.sh
   "$ROOT/node_modules/.bin/vite" build
 )
 cleanup_stage_runtime

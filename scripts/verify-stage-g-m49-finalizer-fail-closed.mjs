@@ -75,4 +75,9 @@ function assertNoNewPass(c){const out=join(c.project,'m49-certified-artifacts-up
 {
   const c=prepare();try{const alias=join(c.sandbox,'project-alias');fsSymlink(c.project,alias,'dir');const script=join('scripts/lib/stage-g-m49-certification-tree.mjs');const direct=spawnSync(process.execPath,[join(c.project,script),c.project],{encoding:'utf8'});const aliased=spawnSync(process.execPath,[join(alias,script),alias],{encoding:'utf8'});assert.equal(direct.status,0);assert.equal(aliased.status,0);assert.match(direct.stdout.trim(),/^[a-f0-9]{64}$/i);assert.equal(aliased.stdout.trim(),direct.stdout.trim());}finally{rmSync(c.sandbox,{recursive:true,force:true});}
 }
-console.log('Stage G M49 finalizer fail-closed verification: PASS (invalid binding, gate failure, prior-artifact preservation, source-drift rejection, deterministic staging parity, active-certified staged static verifier, realpath-stable tree CLI)');
+
+{
+  const finalizer=readFileSync(join(root,'scripts/finalize-stage-g-m49.sh'),'utf8');
+  assert.match(finalizer,/WM_M50_PROVENANCE_CONTEXT='m49-certified-artifact-current-source'/,'M49 finalizer must distinguish a current-source historical certification transaction from a reconstructed historical M49-only artifact.');
+}
+console.log('Stage G M49 finalizer fail-closed verification: PASS (invalid binding, gate failure, prior-artifact preservation, source-drift rejection, deterministic staging parity, active-certified staged static verifier, explicit current-source M50 provenance, realpath-stable tree CLI)');
