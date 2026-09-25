@@ -58,3 +58,11 @@ Live production diagnosis proved `public.wm_runtime_capabilities()` is missing. 
 - The failure advanced to embedded module traversal: `WorkManagementRuntime.getContext()` correctly exposed the active `moduleId`, while the live spec incorrectly expected embedded identity under `context.identity.module`.
 - Candidate 10 synchronizes the live E2E harness with the established iframe identity bridge (`WM_IDENTITY_CONTEXT` + `WM_MODULE_ACCESS`) and adds a fail-closed verifier guard against regression.
 - No production runtime or database semantic change is introduced by this candidate.
+
+## Candidate 11 — deterministic live iframe resolution corrective (2026-09-25)
+
+- Hosted run `36073960901` bound to Candidate 10 commit `a47b2e9c5b60df29e3934f0c1f12e2e8dd508980` passed `certify-build` and GitHub Pages `deploy`, then failed only in `post-deploy-certify`.
+- Candidate 10 correctly moved module authorization assertions to `WM_IDENTITY_CONTEXT` / `WM_MODULE_ACCESS`, but the live harness still attempted to discover the child frame by scanning `page.frames()` for a URL substring and received `undefined`.
+- Candidate 11 resolves the already-visible authoritative `#moduleFrame` element through `elementHandle().contentFrame()` and runs the existing identity/access assertions inside that exact frame.
+- M54 static governance now rejects URL-scanning frame discovery and requires DOM-backed frame resolution.
+- No production application, RBAC, Supabase, route, or embedded-module semantic change is introduced.

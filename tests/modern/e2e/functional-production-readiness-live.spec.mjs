@@ -29,7 +29,9 @@ test('@m54-live authenticated production administrator can traverse certified ho
     const hostContext=await page.evaluate(()=>globalThis.WorkManagementRuntime?.getContext?.());
     expect(hostContext?.moduleId).toBe(moduleId);
     expect(hostContext?.authenticated).toBe(true);
-    const moduleFrame=page.frames().find((candidate)=>candidate.parentFrame()===page.mainFrame()&&candidate.url().includes(`/apps/${moduleId}/`));
+    const frameHandle=await frame.elementHandle();
+    expect(frameHandle).toBeTruthy();
+    const moduleFrame=await frameHandle.contentFrame();
     expect(moduleFrame).toBeTruthy();
     await moduleFrame.waitForFunction((id)=>globalThis.WM_IDENTITY_CONTEXT?.moduleId===id&&globalThis.WM_MODULE_ACCESS?.moduleId===id,moduleId);
     const identity=await moduleFrame.evaluate(()=>globalThis.WM_IDENTITY_CONTEXT);
