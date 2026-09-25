@@ -104,3 +104,7 @@ Implementation synchronizes release-tag workflow governance and historical M46â€
 - Candidate 06 replaces the synchronous focus sample with a bounded `expect.poll` wait and hardens M53 static/deterministic governance against reintroducing the race.
 - Production application behavior is unchanged.
 - State: implementation complete pending Candidate 06 full fail-closed local and hosted verification.
+
+## Candidate 07 â€” hosted CI harness synchronization
+
+Candidate 07 retains the complete Candidate 06 corrective state and synchronizes the M45 duplicate-board, M49 keyboard structure-move, and M50 historical finalizer verification harnesses with their asynchronous/current certification contracts. The original `v1.43.2-m54` tag remains immutable at `c1a3811783ab9f44260171297d2c797d559ec90d`. Candidate 07 must be certified and published on top of Candidate 06 corrective commit `0fd2d74e24e79b72464898fdf6838723be1aa846`.

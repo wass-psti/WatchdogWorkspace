@@ -16,6 +16,10 @@ function prepare(){
     'config/stage-g-m49-boards-kanban-drag-drop-recovery-target.ts',
     'RELEASE-STATUS-v1.43.2-STAGE-G-M50-RICH-ITEM-WORKSPACE-FILE-RECOVERY.md',
   ]) { const dest=join(project,file); mkdirSync(join(dest,'..'),{recursive:true}); cpSync(join(root,file),dest); }
+  const historicalTarget=join(project,'config/stage-g-m50-rich-item-workspace-file-recovery-target.ts');
+  const historicalStatus=join(project,'RELEASE-STATUS-v1.43.2-STAGE-G-M50-RICH-ITEM-WORKSPACE-FILE-RECOVERY.md');
+  writeFileSync(historicalTarget,readFileSync(historicalTarget,'utf8').replace("activationState: 'active-certified'","activationState: 'implementation-complete-pending-certification'"));
+  writeFileSync(historicalStatus,readFileSync(historicalStatus,'utf8').replace('State: active-certified','State: implementation-complete-pending-certification').replace(/\n## Final certified baseline[\s\S]*$/,'\n'));
   for(const [file,body] of [
     ['verify-stage-g-m50-rich-item-workspace-file-recovery.mjs','process.exit(0);\n'],
     ['scripts/verify-stage-g-m50-production-invariants.mjs','process.exit(0);\n'],

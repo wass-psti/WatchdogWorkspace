@@ -148,6 +148,9 @@ ok(!deployScript.includes('--include-all'),'M50 isolated production deploy must 
 ok(deployScript.includes("node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-stage-g-m46-production-contract.mjs"),'M50 production deploy must execute retained M46 live attestation with Node TypeScript strip support.');
 ok(deployScript.includes("M50 production recovery is already live; M50/M46 live attestations PASS; migration replay skipped."),'M50 production deploy resume path must attest M50 and retained M46 before skipping migration replay.');
 ok(!/node scripts\/verify-stage-g-m46-production-contract\.mjs/.test(deployScript),'M50 production deploy must not invoke the TypeScript-importing M46 production verifier with plain Node.');
+const finalizerSelfTest=read('scripts/verify-stage-g-m50-finalizer-fail-closed.mjs');
+ok(finalizerSelfTest.includes("replace(\"activationState: 'active-certified'\",\"activationState: 'implementation-complete-pending-certification'\")"),'M50 finalizer self-test must reconstruct historical pending target state before exercising certification failure paths.');
+ok(finalizerSelfTest.includes("replace('State: active-certified','State: implementation-complete-pending-certification')"),'M50 finalizer self-test must reconstruct historical pending release-status state before exercising certification failure paths.');
 const finalizerScript=read('scripts/finalize-stage-g-m50.sh');
 ok(finalizerScript.includes("node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-stage-g-m46-production-contract.mjs"),'M50 exact-commit finalizer must execute retained M46 production verification with Node TypeScript strip support.');
 ok(!/node scripts\/verify-stage-g-m46-production-contract\.mjs/.test(finalizerScript),'M50 exact-commit finalizer must not invoke the TypeScript-importing M46 verifier with plain Node.');

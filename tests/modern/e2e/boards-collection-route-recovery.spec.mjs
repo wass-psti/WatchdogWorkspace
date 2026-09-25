@@ -124,7 +124,7 @@ test('@m45-collection-create-open-duplicate Active collection search/create/open
 
   await openCardMenu(page, 'M45 Created Board');
   await page.getByRole('menuitem', { name:'Duplicate board' }).click();
-  expect(fixture.calls('wm_duplicate_board')).toHaveLength(1);
+  await expect.poll(() => fixture.calls('wm_duplicate_board').length, { message:'duplicate-board action should reach the authoritative RPC', timeout:10_000 }).toBe(1);
   await expect(page).toHaveURL(/#\/boards\/board-duplicate-\d+$/);
   const duplicateId = page.url().split('/').at(-1);
   expect(duplicateId).toMatch(/^board-duplicate-\d+$/);

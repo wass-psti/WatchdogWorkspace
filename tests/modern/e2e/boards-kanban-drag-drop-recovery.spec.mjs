@@ -151,8 +151,9 @@ test('@m49-structure-drag-drop group/column native and keyboard movement are tra
   fixture.failNext('wm_move_board_group',{ message:'Simulated group move failure' });
   const planningAfter = group(page,'Planning').locator('[data-group-drag="group-a"]');
   await planningAfter.focus();
-  await page.keyboard.press('Home');
-  await expect.poll(() => fixture.calls('wm_move_board_group').length).toBeGreaterThanOrEqual(2);
+  await expect(planningAfter).toBeFocused();
+  await planningAfter.press('Home');
+  await expect.poll(() => fixture.calls('wm_move_board_group').length, { message:'keyboard group move should reach the authoritative RPC after focus settles', timeout:10_000 }).toBeGreaterThanOrEqual(2);
   await expect(page.locator('.board-group').first().locator('.group-title-inline')).toContainText('Delivery');
   expect(fixture.snapshot().groups.slice().sort((a,b)=>a.position-b.position).map((entry)=>entry.id)).toEqual(['group-b','group-a']);
 
@@ -166,8 +167,9 @@ test('@m49-structure-drag-drop group/column native and keyboard movement are tra
   fixture.failNext('wm_move_board_column',{ message:'Simulated column move failure' });
   const field1 = group(page,'Planning').getByRole('table').locator('[data-column-drag="col-text-1"]');
   await field1.focus();
-  await page.keyboard.press('Home');
-  await expect.poll(() => fixture.calls('wm_move_board_column').length).toBeGreaterThanOrEqual(2);
+  await expect(field1).toBeFocused();
+  await field1.press('Home');
+  await expect.poll(() => fixture.calls('wm_move_board_column').length, { message:'keyboard column move should reach the authoritative RPC after focus settles', timeout:10_000 }).toBeGreaterThanOrEqual(2);
   expect(fixture.snapshot().columns.slice().sort((a,b)=>a.position-b.position).map((entry)=>entry.id)).toEqual(['col-text-2','col-status','col-text-1']);
 });
 
