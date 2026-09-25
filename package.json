@@ -499,11 +499,13 @@
     "recovery-quality:test": "node scripts/verify-stage-g-m53-execution.mjs && npm run backup-dr:test && npm run service-worker-update:test && npm run performance:bench",
     "recovery-quality:browser": "node scripts/run-recovery-update-accessibility-quality-hardening-browser.mjs",
     "recovery-quality:certify": "bash scripts/finalize-stage-g-m53.sh",
-    "production-readiness:check": "node verify-stage-g-m54-functional-production-readiness-certification.mjs",
+    "production-readiness:check": "node scripts/verify-stage-g-m54-workflow-trigger-governance.mjs && node verify-stage-g-m54-functional-production-readiness-certification.mjs",
     "production-readiness:test": "node scripts/verify-stage-g-m54-execution.mjs",
     "production-readiness:live": "node scripts/run-stage-g-m54-live-production-e2e.mjs",
     "production-readiness:certify": "bash scripts/finalize-stage-g-m54.sh",
-    "production-readiness:predeploy": "bash scripts/verify-stage-g-m54-predeploy.sh"
+    "production-readiness:predeploy": "bash scripts/verify-stage-g-m54-predeploy.sh",
+    "production-readiness:workflow-governance": "node scripts/verify-stage-g-m54-workflow-trigger-governance.mjs",
+    "production-readiness:ci-corrective:certify": "bash scripts/certify-stage-g-m54-post-release-ci-corrective.sh"
   },
   "devDependencies": {
     "@types/react": "19.2.18",

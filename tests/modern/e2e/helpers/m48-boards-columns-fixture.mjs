@@ -121,7 +121,7 @@ export async function installM48BoardsColumnsFixture(page) {
     const handled = new Set([
       'wm_list_boards','wm_get_board','wm_get_board_preferences','wm_set_board_preferences','wm_list_board_events','wm_set_board_view',
       'wm_add_board_column','wm_add_board_column_at','wm_update_board_column','wm_move_board_column','wm_delete_board_column',
-      'wm_duplicate_board_column','wm_change_board_column_type','wm_set_board_status_labels','wm_set_board_cell',
+      'wm_duplicate_board_column','wm_change_board_column_type','wm_set_board_status_labels','wm_set_board_cell','wm_set_board_cell_if_current',
     ]);
     if (!handled.has(name)) return route.fallback();
     record(name, body);
@@ -208,10 +208,20 @@ export async function installM48BoardsColumnsFixture(page) {
       current.updated_at=now();
       return json(route,200,clone(config));
     }
-    if (name === 'wm_set_board_cell') {
+    if (name === 'wm_set_board_cell' || name === 'wm_set_board_cell_if_current') {
       const current=findItem(body.p_item_id);
       const currentColumn=findColumn(body.p_column_id);
       if (!current || !currentColumn) return error(route,404,'M48_CELL_NOT_FOUND','Item or column not found');
+      const index=customValueIndex(current.id,currentColumn.id);
+      const currentValue=currentColumn.system_key === 'title' ? current.title
+        : currentColumn.system_key === 'status' ? current.status
+        : currentColumn.system_key === 'assignee' ? current.assignee_id
+        : currentColumn.system_key === 'due_date' ? current.due_date
+        : currentColumn.system_key === 'notes' ? current.notes
+        : index >= 0 ? state.values[index].value : null;
+      if (name === 'wm_set_board_cell_if_current' && JSON.stringify(currentValue ?? null) !== JSON.stringify(body.p_expected_value ?? null)) {
+        return error(route,409,'WM_BOARD_CELL_CONFLICT','Cell changed since it was loaded');
+      }
       const next=body.p_value === '' ? null : clone(body.p_value);
       if (currentColumn.system_key === 'title') current.title=String(next || '');
       else if (currentColumn.system_key === 'status') current.status=next == null ? null : String(next);
@@ -219,7 +229,6 @@ export async function installM48BoardsColumnsFixture(page) {
       else if (currentColumn.system_key === 'due_date') current.due_date=next == null ? null : String(next);
       else if (currentColumn.system_key === 'notes') current.notes=next == null ? '' : String(next);
       else {
-        const index=customValueIndex(current.id,currentColumn.id);
         if (next == null) { if (index >= 0) state.values.splice(index,1); }
         else if (index >= 0) state.values[index]={ ...state.values[index], value:next, updated_at:now() };
         else state.values.push(value(current.id,currentColumn.id,next));

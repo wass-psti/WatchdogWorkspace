@@ -205,7 +205,7 @@ const pass = (condition, message) => { assert.ok(condition, message); checks += 
   checks += 4;
 }
 
-// Cross-group edits move first and compensate the move if field persistence fails.
+// Cross-group edits persist field-scoped CAS changes before movement; a failed title CAS must prevent the move and reconcile authoritative state.
 {
   const state = createBoardViewState();
   const original = item('i1', 'g1', 0, { title: 'Before' });
@@ -215,8 +215,12 @@ const pass = (condition, message) => { assert.ok(condition, message); checks += 
   let reloads = 0;
   const workflows = createItemWorkflows({
     commands: {
+      setItemTitle: async (command) => {
+        calls.push(`title:${command.expectedValue}->${command.value}`);
+        throw new Error('update failed');
+      },
+      setCell: async () => { calls.push('cell'); },
       moveItem: async (command) => { calls.push(`move:${command.groupId}:${command.position}`); },
-      updateItem: async () => { calls.push('update'); throw new Error('update failed'); },
     },
     state,
     dialog: (options) => { submitted = options.onSubmit; return { wrap: {}, close() {} }; },
@@ -230,7 +234,7 @@ const pass = (condition, message) => { assert.ok(condition, message); checks += 
   const form = new FormData();
   form.set('title', 'After'); form.set('group', 'g2'); form.set('status', 'not_started'); form.set('assignee', ''); form.set('due', ''); form.set('notes', '');
   await assert.rejects(() => submitted(form), /update failed/);
-  assert.deepEqual(calls, ['move:g2:9999', 'update', 'move:g1:0']);
+  assert.deepEqual(calls, ['title:Before->After']);
   assert.equal(reloads, 1);
   checks += 3;
 }

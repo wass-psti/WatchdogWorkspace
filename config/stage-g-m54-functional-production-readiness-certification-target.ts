@@ -2,7 +2,7 @@ export const STAGE_G_M54_FUNCTIONAL_PRODUCTION_READINESS_CERTIFICATION_TARGET = 
   milestone: 54,
   name: 'Functional Production Readiness Certification',
   semanticsVersion: '1.43.2-m54-v1',
-  activationState: 'implementation-complete-pending-certification' as const,
+  activationState: 'active-certified' as const,
   prerequisite: Object.freeze({ milestone: 53, requiredState: 'active-certified' as const }),
   architectureVersion: 59,
   failClosed: true,

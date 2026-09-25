@@ -64,14 +64,14 @@ test('@m48-typed-cells Text Number Date Dropdown Person Status editors preserve 
   await textInput.press('Escape');
   await expect(textCell).toContainText('Alpha note');
   await expect(textCell).toBeFocused();
-  expect(fixture.calls('wm_set_board_cell')).toHaveLength(0);
+  expect(fixture.calls('wm_set_board_cell_if_current')).toHaveLength(0);
 
   await textCell.click();
   await page.getByRole('textbox', { name:'Edit Notes' }).fill('Alpha note updated');
   await page.getByRole('textbox', { name:'Edit Notes' }).press('Enter');
   await expect(cellButton(page,'Alpha','col-text')).toContainText('Alpha note updated');
 
-  const numberBefore = fixture.calls('wm_set_board_cell').length;
+  const numberBefore = fixture.calls('wm_set_board_cell_if_current').length;
   const numberCell = cellButton(page,'Alpha','col-number');
   await numberCell.click();
   let numberInput = page.locator('input[aria-label="Edit Estimate"]');
@@ -79,14 +79,14 @@ test('@m48-typed-cells Text Number Date Dropdown Person Status editors preserve 
   await numberInput.press('Escape');
   await expect(numberCell).toContainText('10');
   await expect(numberCell).toBeFocused();
-  expect(fixture.calls('wm_set_board_cell')).toHaveLength(numberBefore);
+  expect(fixture.calls('wm_set_board_cell_if_current')).toHaveLength(numberBefore);
   await numberCell.click();
   numberInput = page.locator('input[aria-label="Edit Estimate"]');
   await numberInput.fill('42.5');
   await numberInput.press('Enter');
   await expect(cellButton(page,'Alpha','col-number')).toContainText('42.5');
 
-  const dateBefore = fixture.calls('wm_set_board_cell').length;
+  const dateBefore = fixture.calls('wm_set_board_cell_if_current').length;
   const dateCell = cellButton(page,'Bravo','col-date');
   await dateCell.click();
   let dateInput = page.locator('input[aria-label="Edit Target date"]');
@@ -94,42 +94,42 @@ test('@m48-typed-cells Text Number Date Dropdown Person Status editors preserve 
   await dateInput.press('Escape');
   await expect(dateCell).toContainText(/Sep|2026|30/);
   await expect(dateCell).toBeFocused();
-  expect(fixture.calls('wm_set_board_cell')).toHaveLength(dateBefore);
+  expect(fixture.calls('wm_set_board_cell_if_current')).toHaveLength(dateBefore);
   await dateCell.click();
   dateInput = page.locator('input[aria-label="Edit Target date"]');
   await dateInput.fill('2026-12-31');
   await dateInput.press('Enter');
   await expect(cellButton(page,'Bravo','col-date')).toContainText(/Dec|2026|31/);
 
-  const dropdownBefore = fixture.calls('wm_set_board_cell').length;
+  const dropdownBefore = fixture.calls('wm_set_board_cell_if_current').length;
   await cellButton(page,'Alpha','col-dropdown').click();
   await expect(page.getByRole('listbox', { name:'Choose Priority' })).toBeVisible();
   await page.keyboard.press('Escape');
-  expect(fixture.calls('wm_set_board_cell')).toHaveLength(dropdownBefore);
+  expect(fixture.calls('wm_set_board_cell_if_current')).toHaveLength(dropdownBefore);
   await cellButton(page,'Alpha','col-dropdown').click();
   await page.locator('[data-inline-choice="High"]').click();
   await expect(cellButton(page,'Alpha','col-dropdown')).toContainText('High');
 
-  const personBefore = fixture.calls('wm_set_board_cell').length;
+  const personBefore = fixture.calls('wm_set_board_cell_if_current').length;
   const personCell = cellButton(page,'Alpha','col-person');
   await personCell.click();
   await expect(page.getByRole('listbox', { name:'Board members' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(personCell).toContainText('Alex Operator');
   await expect(personCell).toBeFocused();
-  expect(fixture.calls('wm_set_board_cell')).toHaveLength(personBefore);
+  expect(fixture.calls('wm_set_board_cell_if_current')).toHaveLength(personBefore);
   await personCell.click();
   await page.locator(`[data-inline-person="${M48_ADMIN_ID}"]`).click();
   await expect(cellButton(page,'Alpha','col-person')).toContainText('M48 Admin');
 
-  const statusBefore = fixture.calls('wm_set_board_cell').length;
+  const statusBefore = fixture.calls('wm_set_board_cell_if_current').length;
   const statusCell = cellButton(page,'Alpha','col-status');
   await statusCell.click();
   await expect(page.locator('.board-status-picker')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(statusCell).toContainText('To do');
   await expect(statusCell).toBeFocused();
-  expect(fixture.calls('wm_set_board_cell')).toHaveLength(statusBefore);
+  expect(fixture.calls('wm_set_board_cell_if_current')).toHaveLength(statusBefore);
   await statusCell.click();
   await page.locator('[data-status-choice="doing"]').click();
   await expect(cellButton(page,'Alpha','col-status')).toContainText('Doing');

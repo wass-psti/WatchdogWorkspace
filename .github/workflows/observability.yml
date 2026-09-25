@@ -1,5 +1,8 @@
 name: Observability
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
 jobs:
   observability:
     runs-on: ubuntu-latest

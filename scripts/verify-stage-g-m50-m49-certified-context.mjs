@@ -22,6 +22,19 @@ const expectPass=(cwd,context,label)=>{
   const result=run(cwd,context);
   if(result.status!==0) fail(`${label} must pass`,result);
 };
+
+const forceActivationState=(file,state)=>{
+  const source=fs.readFileSync(file,'utf8');
+  const next=source.replace(/activationState:\s*'[^']+'/m,`activationState: '${state}'`);
+  if(next===source&&!source.includes(`activationState: '${state}'`)) fail(`could not force activation state ${state} in ${file}`);
+  fs.writeFileSync(file,next);
+};
+const forceReleaseState=(file,state)=>{
+  const source=fs.readFileSync(file,'utf8');
+  const next=source.replace(/\*\*State:\*\*\s*[^\n]+/m,`**State:** ${state}`);
+  if(next===source&&!source.includes(`**State:** ${state}`)) fail(`could not force release state ${state} in ${file}`);
+  fs.writeFileSync(file,next);
+};
 const expectFail=(cwd,context,label,expected)=>{
   const result=run(cwd,context);
   if(result.status===0) fail(`${label} must fail closed`,result);
@@ -47,14 +60,18 @@ try{
   });
   const m49Target=path.join(staged,'config/stage-g-m49-boards-kanban-drag-drop-recovery-target.ts');
   const m49Status=path.join(staged,'RELEASE-STATUS-v1.43.2-STAGE-G-M49-BOARDS-KANBAN-DRAG-DROP-RECOVERY.md');
-  fs.writeFileSync(m49Target,fs.readFileSync(m49Target,'utf8').replace("activationState: 'implementation-complete-pending-certification'","activationState: 'active-certified'"));
-  fs.writeFileSync(m49Status,`${fs.readFileSync(m49Status,'utf8').replace('**State:** implementation-complete-pending-certification','**State:** active-certified')}\n\n## Final certified baseline — 2026-09-23T00:00:00Z\n\nThe fail-closed M49 certification passed for source commit \`aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\`. The packaged Boards Kanban & Drag/Drop Recovery state is **active-certified**.\n`);
+  const m50Target=path.join(staged,'config/stage-g-m50-rich-item-workspace-file-recovery-target.ts');
+
+  // Historical M49 artifact context must be constructed explicitly, regardless of today's certified source states.
+  forceActivationState(m49Target,'active-certified');
+  forceReleaseState(m49Status,'active-certified');
+  forceActivationState(m50Target,'implementation-complete-pending-certification');
+  fs.appendFileSync(m49Status,'\n\n## Final certified baseline — 2026-09-23T00:00:00Z\n\nThe fail-closed M49 certification passed for source commit `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`. The packaged Boards Kanban & Drag/Drop Recovery state is **active-certified**.\n');
 
   expectFail(staged,'repository-source','repository context against active-certified staged M49 artifact','M49 repository source must retain its fail-closed pending-certification state.');
   expectPass(staged,'m49-certified-artifact','explicit M49 certified-artifact context');
 
-  const m50Target=path.join(staged,'config/stage-g-m50-rich-item-workspace-file-recovery-target.ts');
-  fs.writeFileSync(m50Target,fs.readFileSync(m50Target,'utf8').replace("activationState: 'implementation-complete-pending-certification'","activationState: 'active-certified'"));
+  forceActivationState(m50Target,'active-certified');
   expectFail(staged,'m49-certified-artifact','M49 artifact context with improperly promoted M50','M49 certified-artifact context must not promote M50 while verifying historical M49 certification.');
 }finally{
   fs.rmSync(temp,{recursive:true,force:true});

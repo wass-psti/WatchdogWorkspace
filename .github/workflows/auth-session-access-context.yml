@@ -1,6 +1,7 @@
 name: Stage G M39 Auth Session Access Context
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 jobs:

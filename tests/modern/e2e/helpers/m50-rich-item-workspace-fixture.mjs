@@ -15,6 +15,28 @@ export async function installM50RichItemWorkspaceFixture(page, { role = 'owner' 
   board.board.member_role = role;
   board.members = board.members.map((member) => ({ ...member, role }));
 
+  const systemColumnStamp = String(board.board.updated_at || board.board.created_at || '2026-09-21T00:00:00.000Z');
+  const requiredSystemColumns = [
+    { id:'col-title', column_key:'title', name:'Item', data_type:'text', system_key:'title', visible:true },
+    { id:'col-status', column_key:'status', name:'Status', data_type:'status', system_key:'status', visible:true },
+    { id:'col-assignee', column_key:'assignee', name:'Assignee', data_type:'people', system_key:'assignee', visible:true },
+    { id:'col-due-date', column_key:'due_date', name:'Due date', data_type:'date', system_key:'due_date', visible:true },
+    { id:'col-notes', column_key:'notes', name:'Notes', data_type:'text', system_key:'notes', visible:true },
+  ];
+  for (const definition of requiredSystemColumns) {
+    if (board.columns.some((entry) => entry.system_key === definition.system_key)) continue;
+    board.columns.push({
+      ...definition,
+      board_id: M49_BOARD_ID,
+      position: board.columns.length,
+      required: false,
+      config: {},
+      created_at: systemColumnStamp,
+      updated_at: systemColumnStamp,
+    });
+  }
+  board.columns.forEach((entry, position) => { entry.position = position; });
+
   const updates = [];
   const files = [];
   const activity = [];
@@ -61,26 +83,43 @@ export async function installM50RichItemWorkspaceFixture(page, { role = 'owner' 
       return json(route, 200, workspace(String(body.p_item_id)));
     }
 
-    if (url.pathname === '/rest/v1/rpc/wm_update_board_item') {
+    if (url.pathname === '/rest/v1/rpc/wm_set_board_cell' || url.pathname === '/rest/v1/rpc/wm_set_board_cell_if_current') {
       if (!canEdit()) return json(route, 403, { code: '42501', message: 'Board edit access denied' });
+      const name = url.pathname.split('/').pop();
       const item = board.items.find((entry) => entry.id === String(body.p_item_id));
-      if (item) {
-        item.title = String(body.p_title);
-        item.status = body.p_status ?? null;
-        item.assignee_id = body.p_assignee_id ?? null;
-        item.due_date = body.p_due_date ?? null;
-        item.notes = String(body.p_notes ?? '');
-        activity.unshift({
-          id: String(activity.length + 1),
-          item_id: item.id,
-          event_type: 'item.updated',
-          message: 'Item updated',
-          payload: {},
-          created_at: new Date().toISOString(),
-          actor_name: 'M50 User',
-        });
+      if (!item) return json(route, 404, { code: 'M50_ITEM_NOT_FOUND', message: 'Board item not found' });
+      const columnId = body.p_column_id == null ? null : String(body.p_column_id);
+      const column = columnId == null ? null : board.columns.find((entry) => entry.id === columnId);
+      if (columnId != null && !column) return json(route, 404, { code: 'M50_COLUMN_NOT_FOUND', message: 'Board column not found' });
+      const existing = columnId == null || column?.system_key ? null : board.values.find((entry) => String(entry.item_id) === String(item.id) && String(entry.column_id) === columnId);
+      const currentValue = columnId == null ? item.title
+        : column?.system_key === 'title' ? item.title
+        : column?.system_key === 'status' ? item.status
+        : column?.system_key === 'assignee' ? item.assignee_id
+        : column?.system_key === 'due_date' ? item.due_date
+        : column?.system_key === 'notes' ? item.notes
+        : existing?.value ?? null;
+      if (name === 'wm_set_board_cell_if_current' && JSON.stringify(currentValue ?? null) !== JSON.stringify(body.p_expected_value ?? null)) {
+        return json(route, 409, { code: 'WM_BOARD_CELL_CONFLICT', message: 'Cell changed since it was loaded' });
       }
-      calls.push({ name: 'wm_update_board_item', body: clone(body) });
+      const next = body.p_value ?? null;
+      if (columnId == null || column?.system_key === 'title') item.title = String(next ?? '');
+      else if (column?.system_key === 'status') item.status = next == null ? null : String(next);
+      else if (column?.system_key === 'assignee') item.assignee_id = next == null ? null : String(next);
+      else if (column?.system_key === 'due_date') item.due_date = next == null ? null : String(next);
+      else if (column?.system_key === 'notes') item.notes = next == null ? '' : String(next);
+      else if (existing) existing.value = next;
+      else if (next != null) board.values.push({ item_id: item.id, column_id: columnId, value: next, updated_at: new Date().toISOString() });
+      activity.unshift({
+        id: String(activity.length + 1),
+        item_id: item.id,
+        event_type: 'item.updated',
+        message: 'Item updated',
+        payload: { column_id: columnId },
+        created_at: new Date().toISOString(),
+        actor_name: 'M50 User',
+      });
+      calls.push({ name, body: clone(body) });
       return json(route, 200, null);
     }
 

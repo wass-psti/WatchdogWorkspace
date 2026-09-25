@@ -55,7 +55,9 @@ test('@m50-properties-updates item properties and updates persist through author
   await page.locator('[data-item-update-input]').fill('Decision: storage authority recovered');
   await page.locator('[data-item-update-submit]').click();
   await expect(page.locator('.item-update')).toContainText('storage authority recovered');
-  expect(fixture.calls('wm_update_board_item')).toHaveLength(1);
+  expect(fixture.calls('wm_set_board_cell_if_current')).toHaveLength(1);
+  expect(fixture.calls('wm_set_board_cell_if_current')[0]?.body).toMatchObject({ p_item_id:'item-a1', p_value:'Alpha recovered', p_expected_value:'Alpha' });
+  expect(fixture.calls('wm_update_board_item')).toHaveLength(0);
   expect(fixture.calls('wm_add_board_item_update')).toHaveLength(1);
 
   await page.getByRole('tab', { name: 'Activity' }).click();

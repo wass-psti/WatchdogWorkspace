@@ -70,8 +70,10 @@ test('@m53-mobile-keyboard mobile navigation traps keyboard focus, Escape restor
   await page.keyboard.press('Enter');
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await expect(page.locator('#primarySidebar')).toBeVisible();
-  const activeInside = await page.evaluate(() => document.querySelector('#primarySidebar')?.contains(document.activeElement));
-  expect(activeInside).toBe(true);
+  await expect.poll(
+    () => page.evaluate(() => document.querySelector('#primarySidebar')?.contains(document.activeElement) === true),
+    { message: 'opened mobile navigation should transfer focus into the sidebar after its scheduled animation frame', timeout: 2000 },
+  ).toBe(true);
   await page.keyboard.press('Escape');
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await expect(trigger).toBeFocused();

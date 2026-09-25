@@ -322,6 +322,13 @@ has(browserSpec, '@m47-selection-visible-order', 'browser suite covers rendered-
 has(browserSpec, '@m47-preference-flush', 'browser suite covers immediate preference flush and reload persistence');
 has(browserSpec, '@m47-virtualized-keyboard', 'browser suite covers virtualized keyboard navigation');
 has(browserSpec, "toMatch(/^item-new-/)", 'browser CRUD gate waits for authoritative item identity before opening its menu');
+has(browserFixture, "currentColumn?.system_key === 'status' ? current.status", 'M47 browser fixture resolves system Status CAS against authoritative item state rather than custom-cell storage');
+has(browserFixture, "currentColumn?.system_key === 'assignee' ? current.assignee_id", 'M47 browser fixture resolves system Assignee CAS against authoritative item state');
+has(browserFixture, "currentColumn?.system_key === 'due_date' ? current.due_date", 'M47 browser fixture resolves system Due Date CAS against authoritative item state');
+has(browserFixture, "currentColumn?.system_key === 'notes' ? current.notes", 'M47 browser fixture resolves system Notes CAS against authoritative item state');
+has(browserFixture, "else if(currentColumn?.system_key === 'status') current.status", 'M47 browser fixture persists system Status CAS back to authoritative item state');
+has(browserSpec, "fixture.calls('wm_update_board_item')).toHaveLength(0)", 'M47 browser CRUD authority rejects the retired whole-item update path');
+has(browserSpec, "entry.body.p_column_id === 'col-status'", 'M47 browser CRUD authority proves Status persistence uses field-scoped CAS');
 has(browserSpec, "getByRole('button', { name:'Echo Updated', exact:true })", 'browser CRUD gate identifies the moved item-title control by exact accessible name');
 notHas(browserSpec, "getByRole('button', { name:'Echo Updated', exact:false })", 'browser CRUD gate does not use an ambiguous substring locator for the moved item');
 has(browserSpec, ".selection-count span", 'browser selection gate asserts numeric count independently of presentation whitespace');

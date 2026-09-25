@@ -68,7 +68,7 @@ export async function installM47BoardsTableFixture(page, { large = false } = {})
       'wm_list_boards','wm_get_board','wm_get_board_preferences','wm_set_board_preferences','wm_list_board_events',
       'wm_add_board_group','wm_update_board_group','wm_move_board_group','wm_delete_board_group','wm_set_board_group_accent',
       'wm_add_board_item','wm_update_board_item','wm_move_board_item','wm_duplicate_board_item','wm_delete_board_item','wm_set_board_item_archived',
-      'wm_get_board_item_workspace','wm_set_board_view','wm_set_board_cell',
+      'wm_get_board_item_workspace','wm_set_board_view','wm_set_board_cell','wm_set_board_cell_if_current',
     ]);
     if (!handled.has(name)) return route.fallback();
     record(name, body);
@@ -121,7 +121,31 @@ export async function installM47BoardsTableFixture(page, { large = false } = {})
       const current=state.items.find((entry)=>entry.id===String(body.p_item_id)); if(!current)return error(route,404,'M47_ITEM_NOT_FOUND','Item not found'); const archive=Boolean(body.p_archived);
       if(archive&&!current.archived_at){current.archived_at=now(); normalize(current.group_id);} else if(!archive&&current.archived_at){current.archived_at=null; current.position=state.items.filter((entry)=>entry.group_id===current.group_id&&!entry.archived_at&&entry!==current).length; normalize(current.group_id);} return json(route,200,null);
     }
-    if (name === 'wm_set_board_cell') { const itemId=String(body.p_item_id), columnId=String(body.p_column_id); const existing=state.values.find((entry)=>entry.item_id===itemId&&entry.column_id===columnId); if(existing)existing.value=clone(body.p_value); else state.values.push({ item_id:itemId,column_id:columnId,value:clone(body.p_value),updated_at:now() }); return json(route,200,null); }
+    if (name === 'wm_set_board_cell' || name === 'wm_set_board_cell_if_current') {
+      const itemId=String(body.p_item_id); const current=state.items.find((entry)=>entry.id===itemId);
+      if(!current)return error(route,404,'M47_ITEM_NOT_FOUND','Item not found');
+      const columnId=body.p_column_id == null ? null : String(body.p_column_id);
+      const currentColumn=columnId == null ? null : state.columns.find((entry)=>entry.id===columnId);
+      if(columnId != null && !currentColumn)return error(route,404,'M47_COLUMN_NOT_FOUND','Column not found');
+      const existing=columnId == null || currentColumn?.system_key ? null : state.values.find((entry)=>entry.item_id===itemId&&entry.column_id===columnId);
+      const currentValue=columnId == null ? current.title
+        : currentColumn?.system_key === 'status' ? current.status
+        : currentColumn?.system_key === 'assignee' ? current.assignee_id
+        : currentColumn?.system_key === 'due_date' ? current.due_date
+        : currentColumn?.system_key === 'notes' ? current.notes
+        : existing?.value ?? null;
+      if(name === 'wm_set_board_cell_if_current' && JSON.stringify(currentValue ?? null) !== JSON.stringify(body.p_expected_value ?? null)) return error(route,409,'WM_BOARD_CELL_CONFLICT','Cell changed since it was loaded');
+      const next=body.p_value === '' ? null : clone(body.p_value);
+      if(columnId == null) current.title=String(next ?? '');
+      else if(currentColumn?.system_key === 'status') current.status=next == null ? null : String(next);
+      else if(currentColumn?.system_key === 'assignee') current.assignee_id=next == null ? null : String(next);
+      else if(currentColumn?.system_key === 'due_date') current.due_date=next == null ? null : String(next);
+      else if(currentColumn?.system_key === 'notes') current.notes=next == null ? '' : String(next);
+      else if(next == null && existing) state.values=state.values.filter((entry)=>entry!==existing);
+      else if(existing) existing.value=next;
+      else if(next != null) state.values.push({ item_id:itemId,column_id:columnId,value:next,updated_at:now() });
+      return json(route,200,null);
+    }
     return route.fallback();
   });
 

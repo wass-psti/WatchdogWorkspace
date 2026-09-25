@@ -1,6 +1,7 @@
 name: Boards Backend Data Contract Recovery
 on:
   push:
+    branches: [main]
   pull_request:
 permissions:
   contents: read

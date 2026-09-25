@@ -1,6 +1,7 @@
 name: Settings Functional Recovery
 on:
   push:
+    branches: [main]
   pull_request:
 permissions:
   contents: read

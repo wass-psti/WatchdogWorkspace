@@ -126,7 +126,10 @@ test('@m47-group-item-crud group/item create-edit-move-duplicate-archive-restore
   await expect(group(page,'Quality')).toHaveCount(0);
 
   expect(fixture.calls('wm_add_board_item')).toHaveLength(1);
-  expect(fixture.calls('wm_update_board_item').length).toBeGreaterThanOrEqual(1);
+  const casCalls = fixture.calls('wm_set_board_cell_if_current');
+  expect(casCalls.some((entry)=>entry.body.p_column_id == null && entry.body.p_value === 'Echo Updated' && entry.body.p_expected_value === 'Echo')).toBe(true);
+  expect(casCalls.some((entry)=>entry.body.p_column_id === 'col-status' && entry.body.p_value === 'done_custom' && entry.body.p_expected_value === 'todo')).toBe(true);
+  expect(fixture.calls('wm_update_board_item')).toHaveLength(0);
   expect(fixture.calls('wm_move_board_item').length).toBeGreaterThanOrEqual(1);
   expect(fixture.calls('wm_duplicate_board_item')).toHaveLength(1);
   expect(fixture.calls('wm_set_board_item_archived').map((entry)=>entry.body.p_archived)).toEqual([true,false]);

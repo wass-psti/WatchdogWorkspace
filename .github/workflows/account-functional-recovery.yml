@@ -1,5 +1,8 @@
 name: Stage G M41 Account Functional Recovery
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
 jobs:
   verify:
     runs-on: ubuntu-latest

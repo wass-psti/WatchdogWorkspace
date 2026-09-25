@@ -201,11 +201,11 @@ for (const token of ['Keep at least one active status label.', "labels.filter((e
 
 // Typed editor contracts and authoritative RPCs remain present.
 for (const token of ['normalizeBoardCellValue', 'explicitSave', 'explicitCancel', 'cancelOnEscape', 'commitOnBlur']) has(registry, token, `column type registry retains editor contract token: ${token}`);
-for (const rpc of ['wm_add_board_column','wm_add_board_column_at','wm_update_board_column','wm_move_board_column','wm_delete_board_column','wm_duplicate_board_column','wm_change_board_column_type','wm_set_board_status_labels','wm_set_board_cell']) has(repository, rpc, `repository retains Board RPC ${rpc}`);
+for (const rpc of ['wm_add_board_column','wm_add_board_column_at','wm_update_board_column','wm_move_board_column','wm_delete_board_column','wm_duplicate_board_column','wm_change_board_column_type','wm_set_board_status_labels','wm_set_board_cell','wm_set_board_cell_if_current']) has(repository, rpc, `repository retains Board RPC ${rpc}`);
 for (const token of ['createColumn', 'updateColumn', 'moveColumn', 'deleteColumn', 'duplicateColumn', 'changeColumnType', 'setStatusLabels', 'setCell']) has(commands, token, `command service retains ${token}`);
 
 // Deterministic fixture and execution authority.
-for (const rpc of ['wm_add_board_column','wm_add_board_column_at','wm_update_board_column','wm_move_board_column','wm_delete_board_column','wm_duplicate_board_column','wm_change_board_column_type','wm_set_board_status_labels','wm_set_board_cell','wm_get_board_preferences','wm_set_board_preferences']) has(fixture, rpc, `M48 fixture models ${rpc}`);
+for (const rpc of ['wm_add_board_column','wm_add_board_column_at','wm_update_board_column','wm_move_board_column','wm_delete_board_column','wm_duplicate_board_column','wm_change_board_column_type','wm_set_board_status_labels','wm_set_board_cell','wm_set_board_cell_if_current','wm_get_board_preferences','wm_set_board_preferences']) has(fixture, rpc, `M48 fixture models ${rpc}`);
 for (const token of ['state.values=state.values.filter((entry)=>entry.column_id !== id)', 'delete widths[id]', 'delete filters[id]', 'Boolean(body.p_with_values)', 'Boolean(body.p_clear_values)', 'default_label_id', 'state.items.forEach', 'snapshot:()=>clone(state)', 'calls:(name)=>']) has(fixture, token, `M48 fixture preserves persistence semantic: ${token}`);
 for (const token of [
   "getBoardCellEditorContract(type)",
@@ -231,7 +231,7 @@ for (const token of [
 for (const token of ['@m48-typed-cells','@m48-filter-sort','@m48-column-lifecycle','@m48-status-lifecycle']) has(browser, token, `M48 browser contains ${token}`);
 for (const token of [
   "name:'Edit Notes'", 'Edit Estimate', 'Edit Target date', "name:'Choose Priority'", "name:'Board members'", '.board-status-picker',
-  "press('Escape')", 'toBeFocused()', "calls('wm_set_board_cell')", 'page.reload()',
+  "press('Escape')", 'toBeFocused()', "calls('wm_set_board_cell_if_current')", 'page.reload()',
   "selectOption('Low')", "selectOption('todo')", "aria-sort','descending'", "['Bravo','Alpha','Charlie']",
   "expect(createCall?.p_name).toBe('New Text')", "name:`Rename ${createCall.p_name} column`",
   "name:'Duplicate column'", 'p_with_values', "name:'Change column type'", 'p_clear_values', "toEqual(['Option 1','Option 2'])",

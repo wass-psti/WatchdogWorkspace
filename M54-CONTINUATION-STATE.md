@@ -1,6 +1,6 @@
 # M54 Continuation State
 
-State: IMPLEMENTATION COMPLETE — LOCAL/LIVE VERIFICATION AND CERTIFICATION REMAIN
+State: FULLY COMPLETE — IMPLEMENTATION AND REQUIRED VERIFICATION COMPLETE
 
 Canonical prerequisite: M53 active-certified repository state.
 
@@ -66,3 +66,41 @@ Live production diagnosis proved `public.wm_runtime_capabilities()` is missing. 
 - Candidate 11 resolves the already-visible authoritative `#moduleFrame` element through `elementHandle().contentFrame()` and runs the existing identity/access assertions inside that exact frame.
 - M54 static governance now rejects URL-scanning frame discovery and requires DOM-backed frame resolution.
 - No production application, RBAC, Supabase, route, or embedded-module semantic change is introduced.
+
+
+## Post-release CI / historical harness synchronization corrective — 2026-09-25
+
+Implementation synchronizes release-tag workflow governance and historical M46–M50 verification harnesses with the current M51/M54 CAS and certification state contracts. Production runtime/database artifacts remain unchanged. This checkpoint remains fail-closed until targeted historical gates, complete regression, package hygiene, and hosted main-branch workflow verification pass.
+
+## Post-release CI Candidate 02 — M47 system-cell CAS browser-fixture corrective (2026-09-25)
+
+- Candidate 01 passed artifact, dependency, static, deterministic, and M46 browser gates on macOS.
+- M47 browser CRUD failed because its historical fixture compared system Status CAS against custom-cell storage instead of authoritative `item.status`.
+- Candidate 02 synchronizes M47 system-field CAS fixture semantics and updates browser/static authority to the current field-scoped edit contract.
+- Production runtime/database behavior remains unchanged.
+- State remains fail-closed pending complete local and hosted corrective certification.
+
+
+## Post-release CI Candidate 03 — M50 intrinsic-title CAS browser-fixture corrective (2026-09-25)
+
+- Candidate 02 passed clean install, static/deterministic gates, and M46–M49 browser verification on macOS.
+- M50 browser property persistence failed because its historical fixture still handled title edits through retired `wm_update_board_item` semantics while the current controller uses field-scoped CAS.
+- Candidate 03 synchronizes the M50 fixture and browser/static authority with `wm_set_board_cell_if_current`, authoritative intrinsic/system-field expected values, and stale-write conflict behavior.
+- Production runtime/database behavior and the frozen M54 release remain unchanged.
+- State remains fail-closed pending complete Candidate 03 local and hosted corrective certification.
+
+## Post-release CI Candidate 04 — M50 system-column fixture authority corrective (2026-09-25)
+
+- Candidate 03 passed clean install, static/deterministic verification, and the complete M46–M49 browser/CDP chain on macOS, but the M50 Item Workspace title-save scenario still reloaded `Alpha`.
+- Root cause: the inherited M49 fixture publishes only Status plus custom columns, while the current Item Workspace controller resolves every core-property save through its matching system column before issuing `wm_set_board_cell_if_current`. The title CAS handler added in Candidate 03 was therefore unreachable because no `system_key='title'` column existed in the M50 fixture.
+- Candidate 04 backfills the complete current M50 system-column authority (`title`, `status`, `assignee`, `due_date`, `notes`) without duplicating inherited columns, and hardens M50 static governance against future fixture drift.
+- Production runtime/database behavior and the frozen `v1.43.2-m54` release remain unchanged.
+- State remains fail-closed pending complete Candidate 04 local and hosted corrective certification.
+
+## Candidate 06 — M53 mobile focus RAF certification-race corrective (2026-09-25)
+
+- Candidate 05 passed artifact, dependency, static, deterministic, browser/E2E, M46-M50 corrective certification, local Database/RLS, and M52 RBAC gates before failing the M53 mobile-keyboard browser scenario.
+- Root cause: the M53 test sampled `document.activeElement` immediately after `aria-expanded=true`, while the production shell intentionally transfers focus into the sidebar on the next `requestAnimationFrame`.
+- Candidate 06 replaces the synchronous focus sample with a bounded `expect.poll` wait and hardens M53 static/deterministic governance against reintroducing the race.
+- Production application behavior is unchanged.
+- State: implementation complete pending Candidate 06 full fail-closed local and hosted verification.

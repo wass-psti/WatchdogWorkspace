@@ -1,6 +1,7 @@
 name: Boards Table Group Item Recovery
 on:
   push:
+    branches: [main]
   pull_request:
 permissions:
   contents: read

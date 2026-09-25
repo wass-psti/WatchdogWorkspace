@@ -1,6 +1,7 @@
 name: Users RBAC Functional Recovery
 on:
   push:
+    branches: [main]
   pull_request:
 jobs:
   m42:
