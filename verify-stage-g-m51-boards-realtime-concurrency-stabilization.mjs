@@ -14,6 +14,7 @@ const migration=read('./supabase/migrations/v1.43.2-stage-g-m51-boards-realtime-
 const schema=read('./supabase/schema.sql');
 const target=read('./config/stage-g-m51-boards-realtime-concurrency-stabilization-target.ts');
 const databaseTest=read('./supabase/tests/m51/boards_realtime_concurrency_stabilization.test.sql');
+const databaseRunner=read('./scripts/run-stage-g-m51-database-tests.mjs');
 const candidate=read('./scripts/verify-stage-g-m51-candidate.sh');
 const release=read('./scripts/verify-stage-g-m51-release.sh');
 const finalizer=read('./scripts/finalize-stage-g-m51.sh');
@@ -54,6 +55,11 @@ assert.match(databaseTest,/wm_add_board_column\([^\n]*'Concurrent note','text'/,
 assert.doesNotMatch(databaseTest,/notes_col/,'M51 database fixture must not depend on a legacy notes system column');
 assert.match(databaseTest,/40001/,'M51 database suite must verify stale same-field conflict rejection');
 assert.match(databaseTest,/non-overlapping concurrent field update/,'M51 database suite must verify non-overlapping merge semantics');
+assert.match(databaseRunner,/const work=mkdtempSync\(join\(tmpdir\(\),'wm-m51-supabase-'\)\)/,'M51 must create a neutral disposable workdir before Supabase CLI probing');
+assert.match(databaseRunner,/quiet\('supabase',\['--version'\],\{cwd:work\}\)/,'M51 Supabase version probe must run from the disposable workdir');
+assert.match(databaseRunner,/quiet\('npx',\['--yes',pinned,'--version'\],\{cwd:work\}\)/,'M51 pinned Supabase probe must remain cwd-isolated');
+assert.match(databaseRunner,/args=\(items\)=>\[\.\.\.prefix,'--workdir',work,\.\.\.items\]/,'M51 project commands must bind the disposable --workdir');
+assert.match(databaseRunner,/stdio:'ignore',shell:false,cwd:work/,'M51 stop lifecycle must remain process-cwd isolated');
 assert.match(capabilityManifest,/wm_set_board_cell_if_current/,'M38 backend capability manifest must govern the M51 successor CAS RPC');
 assert.match(m46Verifier,/m51SuccessorRpcs/,'M46 historical contract verifier must explicitly govern M51 successor RPCs without mutating the certified predecessor contract');
 assert.match(m47Verifier,/applied field edits for compensation/,'M47 historical verifier must retain edit-compensation coverage after M51 CAS refactoring');

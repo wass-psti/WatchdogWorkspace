@@ -1,6 +1,6 @@
 # M77 Certification Handoff
 
-Canonical input: the M77 continuation candidate generated from active-certified M76.
+Canonical input: the current M77 hosted-CI corrective continuation candidate, derived monotonically from the previously certified M77 baseline and returned to pending-certification state after the M49 CDP portability correction.
 
 Required fail-closed order: environment → artifact/source validation → dependency materialization → M77 static → M77 deterministic → exact Playwright browser provisioning → Chromium/Firefox/WebKit × device matrix → complete release gate → dedicated M77 certification → post-certification artifact verification → historical regression → package hygiene → final checkpoint.
 

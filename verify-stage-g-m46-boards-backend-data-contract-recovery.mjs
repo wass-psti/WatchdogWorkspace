@@ -101,6 +101,11 @@ assert(m46Browser.includes('@m46-contract-ready')&&m46Browser.includes('@m46-con
 assert(m37Fixture.includes("/rest/v1/rpc/wm_board_contract_attestation")&&m39Fixture.includes("/rest/v1/rpc/wm_board_contract_attestation"),'Shared browser fixtures must expose the M46 attestation RPC.');
 assert(m38Execution.includes("/rest/v1/rpc/wm_board_contract_attestation")&&m38Execution.includes('M46_BOARD_CONTRACT_DIGEST')&&m38Execution.includes('M46_BOARD_CONTRACT_VERSION')&&m38Execution.includes('board-contract-digest-mismatch')&&m38Execution.includes('board-contract-incompatible'),'Retained M38 deterministic preflight fixture must model exact M46 Board attestation success and mismatch states.');
 assert(dbRunner.includes("LOCAL_PROJECT_ID='work-management-m46-contract-tests'")&&dbRunner.includes("supabase/tests/m46")&&dbRunner.includes('pgTAP=14'),'M46 must own an isolated local Supabase/pgTAP runner with evidence bound to the 14-test suite.');
+assert(dbRunner.includes("const workdir=mkdtempSync(join(tmpdir(),'wm-m46-supabase-'))"),'M46 must create its disposable workdir before any Supabase CLI probe.');
+assert(dbRunner.includes("quiet('supabase',['--version'],{cwd:workdir})")&&dbRunner.includes("quiet('npx',['--yes',pinned,'--version'],{cwd:workdir})"),'M46 Supabase CLI version probes must run from the disposable workdir.');
+assert(dbRunner.includes("run(supabaseCommand,args(['--workdir',workdir,...list]),label,{cwd:workdir})"),'M46 project-bound Supabase commands must bind both --workdir and process cwd.');
+assert((dbRunner.match(/args\(\['--workdir',workdir,'stop'/g)||[]).length===2,'M46 pre-start and cleanup stop commands must both be scoped to the disposable workdir.');
+assert((dbRunner.match(/cwd:workdir/g)||[]).length>=6,'M46 Supabase/Docker subprocesses must remain cwd-isolated from the repository.');
 const m46Workflow=read('.github/workflows/boards-backend-data-contract-recovery.yml');
 const m46Finalizer=read('scripts/finalize-stage-g-m46.sh');
 const m46Tree=read('scripts/lib/stage-g-m46-certification-tree.mjs');
@@ -121,5 +126,5 @@ assert(!m46ArtifactVerifier.includes('STAGE-G-M46-BOARDS-COLLECTION-ROUTE-RECOVE
 assert(m46Deploy.includes('WM_M46_ALLOW_PRODUCTION_MIGRATION')&&m46Deploy.includes('SUPABASE_PROJECT_REF')&&m46Deploy.includes('supabase projects list')&&m46Deploy.includes('db push --linked --include-all')&&m46Deploy.includes('--dry-run'),'M46 production deployment must be explicit, authenticated, project-bound, isolated, and dry-run before apply.');
 assert(!m46Deploy.includes('PASSWORD_ARGS=()')&&!m46Deploy.includes('${PASSWORD_ARGS[@]}')&&m46Deploy.includes('if [ -n "${SUPABASE_DB_PASSWORD:-}" ]; then'),'M46 production deployment must remain macOS Bash 3.2 safe under set -u by branching password/no-password commands without empty arrays.');
 for(const script of ['board-backend-contract:check','board-backend-contract:test','board-backend-contract:browser','board-backend-contract:database','board-backend-contract:production','board-backend-contract:workflows','board-backend-contract:finalizer:test','board-backend-contract:deployment-guard:test','board-backend-contract:verify:release','board-backend-contract:certify','board-backend-contract:package']) assert(pkg.scripts?.[script],`package.json is missing ${script}.`);
-const checks=103;
+const checks=108;
 console.log(`Stage G M46 Boards Backend & Data Contract Recovery static verification: PASS (architecture=${target.architectureVersion}; state=${target.activationState}; rpcs=${contract.rpcs.length}; tables=${contract.tables.length}; checks=${checks}; browserScenarios=3)`);

@@ -7,6 +7,7 @@ const system=read('./src/design-system/final-ui-production-certification-system.
 const config=read('./playwright.m77.config.mjs');
 const spec=read('./tests/modern/e2e/final-ui-production-certification.spec.mjs');
 const runner=read('./scripts/run-stage-h-m77-browser-matrix.mjs');
+const helper=read('./tests/modern/e2e/helpers/m53-hardening-fixture.mjs');
 const pkg=JSON.parse(read('./package.json'));
 const m76=read('./config/stage-h-m76-tradelink-ui-harmonization-target.ts');
 required(m76.includes("activationState: 'active-certified'"),'M77 requires active-certified M76.');
@@ -17,6 +18,9 @@ for(const token of ['mobile','tablet','laptop','desktop']) required(spec.include
 for(const moduleId of ['time-tracker','fueltrack-plus','tradelink']) required(spec.includes(moduleId),`M77 browser spec missing ${moduleId}`);
 for(const tag of ['@m77-host-','@m77-modules-','@m77-accessibility','@m77-reduced-motion']) required(spec.includes(tag),`M77 browser spec missing ${tag}`);
 required(runner.includes('ensure-stage-h-m77-browser-matrix.mjs')&&runner.includes('playwright.m77.config.mjs'),'M77 runner must provision and use governed browser matrix.');
+required(helper.includes('if (!root || !body) return null;'),'M77 embedded overflow helper must tolerate transient iframe document replacement.');
+required(helper.includes('if (!result) {')&&helper.includes('stableSamples = 0;')&&helper.includes('continue;'),'M77 embedded overflow helper must retry transient unavailable iframe samples instead of failing immediately.');
+required(helper.includes('Embedded module document remained unavailable for responsive verification after'),'M77 embedded overflow helper must remain fail-closed when iframe document availability never stabilizes.');
 for(const script of ['final-ui:check','final-ui:test','final-ui:browsers:ensure','final-ui:browser','final-ui:certify','final-ui:post-certification','final-ui:package-hygiene','final-ui:final-checkpoint']) required(pkg.scripts?.[script],`package.json missing ${script}`);
 required(pkg.scripts['release:check'].includes('final-ui:check')&&pkg.scripts['release:check'].includes('final-ui:test'),'release:check must include M77 static/deterministic gates.');
 console.log('M77 final UI production certification architecture verification: PASS');

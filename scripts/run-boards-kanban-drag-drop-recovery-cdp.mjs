@@ -7,6 +7,11 @@ import { findBrowserBinary, captureBrowserDom } from './lib/browser-cdp-smoke.mj
 const root=resolve(import.meta.dirname,'..');
 const modules=[
   {
+    key:'uiPrimitives',
+    file:'assets/js/platform/ui/primitives.ts',
+    exports:['buttonClass','iconButtonClass'],
+  },
+  {
     key:'boardMove',
     file:'assets/js/features/boards/services/board-move-state.ts',
     exports:['snapshotBoardItemMoveState','restoreBoardItemMoveState','applyBoardItemMove','assertUniqueCanonicalItemIds'],
@@ -20,6 +25,7 @@ const modules=[
     key:'kanban',
     file:'assets/js/features/boards/views/kanban-view.ts',
     exports:['buildBoardKanbanLanes','renderBoardKanbanView'],
+    prelude:'const { buttonClass, iconButtonClass } = globalThis.__m49.uiPrimitives;',
   },
   {
     key:'drag',
@@ -49,8 +55,12 @@ for(const module of modules){
 let fixture=await readFile(resolve(root,'tests/m49-cdp/m49-cdp-browser-fixture.mjs'),'utf8');
 fixture=fixture.replace(/^import[^;]+;\s*$/gm,'');
 const fixturePrelude=`const { renderBoardKanbanView, buildBoardKanbanLanes } = globalThis.__m49.kanban;\nconst { createBoardDragDropController } = globalThis.__m49.drag;\nconst { createBoardStructureDragController } = globalThis.__m49.structure;\nconst { createBoardViewSwitchController } = globalThis.__m49.viewSwitch;`;
-const js=`${moduleParts.join('\n\n')}\n\n${fixturePrelude}\n${fixture}`.replace(/<\/script/gi,'<\\/script');
-const html=`<!doctype html><html><head><meta charset="utf-8"><title>M49 CDP</title></head><body><main id="root"></main><output id="result" data-state="running">running</output><script type="module">${js}</script></body></html>`;
+const fixtureProgram=`${moduleParts.join('\n\n')}\n\n${fixturePrelude}\n${fixture}`;
+const js=('void (async () => {\n'+fixtureProgram+'\n})().catch((error) => {\n' +
+  "  const out = document.querySelector('#result');\n" +
+  "  if (out) { out.dataset.state = 'fail'; out.textContent = 'FAIL ' + (error?.stack || error); }\n" +
+  '});').replace(/<\/script/gi,'<\\/script');
+const html=`<!doctype html><html><head><meta charset="utf-8"><title>M49 CDP</title></head><body><main id="root"></main><output id="result" data-state="running">running</output><script>${js}</script></body></html>`;
 const browser=await findBrowserBinary();
 const result=await captureBrowserDom(browser,'about:blank',{
   documentHtml:html,

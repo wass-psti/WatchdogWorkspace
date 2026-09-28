@@ -47,6 +47,7 @@ export async function assertFrameNoHorizontalOverflow(page, moduleId, tolerance 
       if (!doc) return null;
       const root = doc.documentElement;
       const body = doc.body;
+      if (!root || !body) return null;
       const width = root.clientWidth;
       const rootScrollWidth = root.scrollWidth;
       const bodyScrollWidth = body?.scrollWidth ?? 0;
@@ -60,7 +61,10 @@ export async function assertFrameNoHorizontalOverflow(page, moduleId, tolerance 
       return { width, rootScrollWidth, bodyScrollWidth, scrollWidth: Math.max(rootScrollWidth, bodyScrollWidth), widest };
     });
 
-    if (!result) throw new Error(`Embedded module document was unavailable for responsive verification: module=${moduleId}.`);
+    if (!result) {
+      stableSamples = 0;
+      continue;
+    }
     last = result;
 
     if (result.scrollWidth <= result.width + tolerance) {
@@ -71,7 +75,8 @@ export async function assertFrameNoHorizontalOverflow(page, moduleId, tolerance 
     }
   }
 
-  throw new Error(`Embedded horizontal overflow persisted after responsive settlement: module=${moduleId}, viewport=${last?.width ?? 'unknown'}, scrollWidth=${last?.scrollWidth ?? 'unknown'}, rootScrollWidth=${last?.rootScrollWidth ?? 'unknown'}, bodyScrollWidth=${last?.bodyScrollWidth ?? 'unknown'}, widest=${last?.widest?.selector ?? '<unknown>'}, widestExtent=${last?.widest?.extent ?? 'unknown'}`);
+  if (!last) throw new Error(`Embedded module document remained unavailable for responsive verification after ${timeoutMs}ms: module=${moduleId}.`);
+  throw new Error(`Embedded horizontal overflow persisted after responsive settlement: module=${moduleId}, viewport=${last.width}, scrollWidth=${last.scrollWidth}, rootScrollWidth=${last.rootScrollWidth}, bodyScrollWidth=${last.bodyScrollWidth}, widest=${last.widest?.selector ?? '<unknown>'}, widestExtent=${last.widest?.extent ?? 'unknown'}`);
 }
 
 export async function timedRoute(page, route, ready) {

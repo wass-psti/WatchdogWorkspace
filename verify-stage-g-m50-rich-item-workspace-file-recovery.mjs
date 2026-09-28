@@ -141,6 +141,7 @@ ok(migration.includes('M50 compatibility extension for retained M46/M47 contract
   'M50 must preserve historical M46/M47 attestation compatibility while accepting only the hardened pg_catalog,public successor search path.');
 ok(migration.includes("raise exception 'Delete Storage object before finalizing metadata'")&&migration.includes('metadata_finalize_guard_ok'),'Metadata finalization RPC and production attestation must fail closed while the private Storage object still exists.');
 const m50DbAuthority=read('supabase/tests/m50/rich_item_workspace_file_recovery.test.sql');
+const m50DbRunner=read('scripts/run-stage-g-m50-database-tests.mjs');
 ok(!/delete\s+from\s+storage\.objects/i.test(m50DbAuthority),'M50 pgTAP must treat Supabase Storage metadata as read-only for destructive operations and never issue SQL DELETE against storage.objects.');
 ok(m50DbAuthority.includes('metadata finalization fails closed while the Storage object still exists')&&m50DbAuthority.includes('owner can finalize metadata after Storage object absence is authoritative'),'M50 pgTAP must prove both sides of the storage-first metadata-finalization invariant.');
 ok(m50DbAuthority.includes('item deletion succeeds when no Storage object or file metadata exists'),'M50 pgTAP must verify clean item deletion without mutating Storage metadata directly.');
@@ -174,6 +175,11 @@ ok(browserCdp.includes("a.resolve({permissions:{can_edit:true,can_comment:true,c
 const browserIntegration=read('tests/browser/integration.js');
 ok(!browserCdp.includes('data:{updates:')&&!browserIntegration.includes('data:{updates:'),'Legacy browser Item Workspace fixtures must not bypass the required M50 permission envelope.');
 ok(m50DbAuthority.includes('select plan(33)'),'M50 database authority must retain the complete 33-assertion lifecycle plan.');
+ok(m50DbRunner.includes("const workdir=mkdtempSync(join(tmpdir(),'wm-m50-supabase-'))"),'M50 must create its disposable workdir before Supabase CLI probing.');
+ok(m50DbRunner.includes("quiet('supabase',['--version'],{cwd:workdir})")&&m50DbRunner.includes("quiet('npx',['--yes',pinned,'--version'],{cwd:workdir})"),'M50 Supabase CLI version probes must be cwd-isolated.');
+ok(m50DbRunner.includes("run(supabaseCommand,args(['--workdir',workdir,...list]),label,{cwd:workdir})"),'M50 project-bound Supabase commands must bind --workdir plus process cwd.');
+ok((m50DbRunner.match(/args\(\['--workdir',workdir,'stop'/g)||[]).length===2,'M50 pre-start and cleanup stop commands must both target the disposable workdir.');
+ok((m50DbRunner.match(/cwd:workdir/g)||[]).length>=6,'M50 Supabase/Docker subprocesses must remain cwd-isolated from the repository.');
 ok(candidate.includes('rich-item-workspace-recovery:finalizer:test'),'M50 candidate must exercise the fail-closed finalizer before predecessor regression.');
 ok(candidate.indexOf('rich-item-workspace-recovery:finalizer:test')<candidate.indexOf('boards-kanban-drag-drop:verify:candidate'),'M50 finalizer self-test must run before the inherited M49 regression chain.');
 ok(candidate.includes('boards-kanban-drag-drop:verify:candidate'),'M50 candidate reuses the complete M49 predecessor regression authority.');

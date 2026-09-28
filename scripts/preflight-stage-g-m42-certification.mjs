@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { findBrowserBinary } from './lib/browser-cdp-smoke.mjs';
 import { verifyInstalledLockfileTree } from './lib/lockfile-install-verifier.mjs';
@@ -132,7 +133,7 @@ const docker = run('docker', ['version', '--format', '{{.Server.Version}}'], { t
 if (!docker.error && docker.status === 0 && docker.stdout.trim()) pass('Docker-compatible runtime', `server ${docker.stdout.trim()}`);
 else fail('Docker-compatible runtime', docker.error?.code === 'ENOENT' ? 'docker command not found' : output(docker) || docker.error?.message || 'Docker daemon is not running');
 
-const globalSupabase = run('supabase', ['--version'], { timeout: 5000 });
+const globalSupabase = run('supabase', ['--version'], { timeout: 5000, cwd: os.tmpdir() });
 const globalSupabaseVersion = globalSupabase.error || globalSupabase.status !== 0 ? '' : output(globalSupabase).replace(/^v/, '');
 if (globalSupabaseVersion === EXPECTED_SUPABASE) {
   pass('Supabase CLI', `global ${EXPECTED_SUPABASE}`);

@@ -10,6 +10,7 @@ const projectRoot = process.cwd();
 const schemaPath = resolve(projectRoot, 'supabase/schema.sql');
 const testsPath = resolve(projectRoot, 'supabase/tests/database');
 const keepStack = process.env.WM_M29_KEEP_LOCAL_STACK === '1';
+const workdir = mkdtempSync(join(tmpdir(), 'wm-m29-supabase-'));
 
 const run = (command, args, label, options = {}) => {
   console.log(`\n================ ${label} ================`);
@@ -29,12 +30,13 @@ const run = (command, args, label, options = {}) => {
   }
 };
 
-const runQuiet = (command, args) => spawnSync(command, args, {
+const runQuiet = (command, args, options = {}) => spawnSync(command, args, {
   encoding: 'utf8',
   shell: false,
+  ...options,
 });
 
-const globalVersion = runQuiet('supabase', ['--version']);
+const globalVersion = runQuiet('supabase', ['--version'], { cwd: workdir });
 const globalActual = globalVersion.error
   ? ''
   : (globalVersion.stdout || globalVersion.stderr || '').trim().replace(/^v/, '');
@@ -43,7 +45,7 @@ let supabaseCommand = 'supabase';
 let supabasePrefix = [];
 if (globalActual !== CERTIFIED_SUPABASE_CLI) {
   const pinnedPackage = `supabase@${CERTIFIED_SUPABASE_CLI}`;
-  const pinnedVersion = runQuiet('npx', ['--yes', pinnedPackage, '--version']);
+  const pinnedVersion = runQuiet('npx', ['--yes', pinnedPackage, '--version'], { cwd: workdir });
   if (pinnedVersion.error || pinnedVersion.status !== 0) {
     throw new Error(`M29 requires Supabase CLI ${CERTIFIED_SUPABASE_CLI}. Install it globally or allow npx to resolve ${pinnedPackage}.`);
   }
@@ -59,14 +61,13 @@ const supabaseArgs = (args) => [...supabasePrefix, ...args];
 const supabaseRaw = (args, label, options = {}) =>
   run(supabaseCommand, supabaseArgs(args), label, options);
 const supabase = (workdir, args, label, options = {}) =>
-  supabaseRaw(['--workdir', workdir, ...args], label, options);
+  supabaseRaw(['--workdir', workdir, ...args], label, { cwd: workdir, ...options });
 
-const dockerVersion = runQuiet('docker', ['version', '--format', '{{.Server.Version}}']);
+const dockerVersion = runQuiet('docker', ['version', '--format', '{{.Server.Version}}'], { cwd: workdir });
 if (dockerVersion.error || dockerVersion.status !== 0) {
   throw new Error('A running Docker-compatible container runtime is required for the disposable M29 Supabase test stack.');
 }
 
-const workdir = mkdtempSync(join(tmpdir(), 'wm-m29-supabase-'));
 const localSupabaseDir = join(workdir, 'supabase');
 mkdirSync(localSupabaseDir, { recursive: true });
 writeFileSync(join(localSupabaseDir, 'config.toml'), `project_id = "${LOCAL_PROJECT_ID}"\n\n[db.migrations]\nenabled = false\nschema_paths = []\n\n[db.seed]\nenabled = false\nsql_paths = []\n`, 'utf8');
@@ -76,9 +77,10 @@ writeFileSync(join(localSupabaseDir, 'config.toml'), `project_id = "${LOCAL_PROJ
 // disposable local stack is bootstrapped from the authoritative schema snapshot.
 const cleanup = () => {
   if (!keepStack) {
-    spawnSync(supabaseCommand, supabaseArgs(['stop', '--project-id', LOCAL_PROJECT_ID, '--no-backup']), {
+    spawnSync(supabaseCommand, supabaseArgs(['--workdir', workdir, 'stop', '--project-id', LOCAL_PROJECT_ID, '--no-backup']), {
       stdio: 'inherit',
       shell: false,
+      cwd: workdir,
     });
     rmSync(workdir, { recursive: true, force: true });
   } else {
@@ -88,9 +90,10 @@ const cleanup = () => {
 
 try {
   // Remove only M29's own prior disposable stack. Never use --all and never use --linked.
-  spawnSync(supabaseCommand, supabaseArgs(['stop', '--project-id', LOCAL_PROJECT_ID, '--no-backup']), {
+  spawnSync(supabaseCommand, supabaseArgs(['--workdir', workdir, 'stop', '--project-id', LOCAL_PROJECT_ID, '--no-backup']), {
     stdio: 'ignore',
     shell: false,
+    cwd: workdir,
   });
 
   supabase(workdir, ['start'], 'Start disposable local Supabase stack with migration replay disabled');

@@ -10,6 +10,7 @@ const rolesSql = read('supabase/migrations/v1.14.2-rbac-reconciliation.sql');
 const routePolicy = read('assets/js/runtime/services/route-policy.ts');
 const moduleBridge = read('assets/js/core/module-identity-bridge.ts');
 const dbTest = read('supabase/tests/m52/cross_module_rbac_authenticated_e2e_certification.test.sql');
+const dbRunner = read('scripts/run-stage-g-m52-database-tests.mjs');
 const m51Verifier = read('verify-stage-g-m51-boards-realtime-concurrency-stabilization.mjs');
 const required = (condition, message) => { if (!condition) throw new Error(message); };
 required(target.includes("activationState: 'implementation-complete-pending-certification'") || target.includes("activationState: 'active-certified'"), 'M52 target activation state must be pending certification or active-certified.');
@@ -23,6 +24,10 @@ required(spec.includes('data-wm-management-view=\\"users\\"') || spec.includes('
 required(spec.includes("for (const assignment of expected.assignments)"), 'M52 suite must iterate all embedded module assignments.');
 required(m51Verifier.includes('pending certification or active-certified'), 'M51 historical verifier must be successor-aware after M51 certification.');
 required(dbTest.includes('select plan(19)') && dbTest.includes('Administrator access required'), 'M52 database suite must validate authoritative role mapping and admin-only directory access.');
+required(dbRunner.includes("const work=mkdtempSync(join(tmpdir(),'wm-m52-supabase-'))"), 'M52 must create a neutral disposable workdir before Supabase CLI probing.');
+required(dbRunner.includes("quiet('supabase',['--version'],{cwd:work})") && dbRunner.includes("quiet('npx',['--yes',pinned,'--version'],{cwd:work})"), 'M52 Supabase CLI probes must be cwd-isolated.');
+required(dbRunner.includes("const args=(items)=>[...prefix,'--workdir',work,...items]"), 'M52 project-bound Supabase commands must bind the disposable workdir.');
+required(dbRunner.includes("{stdio:'ignore',shell:false,cwd:work}"), 'M52 stop lifecycle must be process-cwd isolated.');
 required(fixture.includes("wm_set_board_cell_if_current"), 'M52 controlled backend must advertise the current M51 CAS RPC.');
 required(fixture.includes("member_role: 'owner'") && fixture.includes("member_role: 'editor'") && fixture.includes("member_role: 'viewer'"), 'M52 Board fixture must prove platform role does not imply elevated Board role.');
 required(permissions.includes("admin_general_manager: Object.freeze([CAPABILITIES.PLATFORM_ADMIN, CAPABILITIES.ROLE_MANAGE, CAPABILITIES.MODULE_ACCESS_ALL])"), 'Current platform-admin capability contract changed unexpectedly.');

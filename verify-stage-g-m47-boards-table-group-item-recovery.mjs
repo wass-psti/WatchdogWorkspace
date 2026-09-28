@@ -277,6 +277,18 @@ for (const fragment of [
 has(dbTest, 'select plan(34);', 'M47 pgTAP suite declares the governed assertion count');
 has(dbRunner, 'pgTAP=34', 'M47 database runner PASS evidence matches the governed 34-assertion suite');
 notHas(dbRunner, 'pgTAP=28', 'M47 database runner rejects the stale 28-assertion evidence marker');
+has(dbRunner, "args(['--workdir',workdir,'stop','--project-id',LOCAL_PROJECT_ID,'--no-backup'])", 'M47 disposable Supabase stop commands remain scoped to the temporary workdir and cannot write runtime metadata into the repository');
+ok((dbRunner.match(/args\(\['--workdir',workdir,'stop','--project-id',LOCAL_PROJECT_ID,'--no-backup'\]\)/g) ?? []).length === 2, 'M47 database runner scopes both pre-start and cleanup stop operations to the disposable temporary workdir');
+has(dbRunner, "const supabase=(workdir,list,label)=>run(supabaseCommand,args(['--workdir',workdir,...list]),label,{cwd:workdir});", 'M47 Supabase command wrapper executes from the disposable workdir as well as passing --workdir');
+ok((dbRunner.match(/cwd:workdir/g) ?? []).length >= 3, 'M47 database runner pins start/test and both stop lifecycle subprocesses to the disposable workdir current directory');
+notHas(dbRunner, "{stdio:'inherit',shell:false});rmSync(workdir", 'M47 cleanup stop cannot execute from the repository current directory');
+notHas(dbRunner, "{stdio:'ignore',shell:false});", 'M47 pre-start stop cannot execute from the repository current directory');
+notHas(dbRunner, "args(['stop','--project-id',LOCAL_PROJECT_ID,'--no-backup'])", 'M47 database runner rejects repository-cwd Supabase stop operations that can mutate supabase/.temp');
+has(dbRunner, "const globalVersion=quiet('supabase',['--version'],{cwd:workdir});", 'M47 Supabase CLI version probe executes from the disposable workdir and cannot materialize update metadata under repository supabase/.temp');
+has(dbRunner, "const resolved=quiet('npx',['--yes',pinned,'--version'],{cwd:workdir});", 'M47 pinned Supabase CLI resolution probe executes from the disposable workdir');
+has(dbRunner, "const docker=quiet('docker',['version','--format','{{.Server.Version}}'],{cwd:workdir});", 'M47 Docker readiness probe also executes outside the repository current directory');
+ok(dbRunner.indexOf("const workdir=mkdtempSync(join(tmpdir(),'wm-m47-supabase-'));") < dbRunner.indexOf("const globalVersion=quiet('supabase'"), 'M47 disposable workdir is created before any Supabase CLI invocation');
+notHas(dbRunner, "const globalVersion=quiet('supabase',['--version']);", 'M47 rejects repository-cwd Supabase version probes that can write CLI update metadata into source state');
 ok((dbTest.match(/^select\s+(?:is|ok|throws_ok|lives_ok)\b/gm) ?? []).length === 34, 'M47 pgTAP suite contains exactly 34 assertions');
 has(dbTest, 'The authenticated role is used only for', 'M47 pgTAP documents the authenticated-RPC / owner-inspection role boundary');
 ok((dbTest.match(/^set local role authenticated;$/gm) ?? []).length === 15, 'M47 pgTAP enters authenticated role exactly for the governed RPC mutation blocks');

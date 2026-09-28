@@ -9,8 +9,9 @@ const root=process.cwd();
 const schemaPath=resolve(root,'supabase/schema.sql');
 const testsPath=resolve(root,'supabase/tests/m46');
 const keep=process.env.WM_M46_KEEP_LOCAL_STACK==='1';
+const workdir=mkdtempSync(join(tmpdir(),'wm-m46-supabase-'));
 
-const quiet=(command,args)=>spawnSync(command,args,{encoding:'utf8',shell:false});
+const quiet=(command,args,options={})=>spawnSync(command,args,{encoding:'utf8',shell:false,...options});
 const run=(command,args,label,options={})=>{
   console.log(`\n================ ${label} ================`);
   const result=spawnSync(command,args,{stdio:'inherit',shell:false,...options});
@@ -18,36 +19,35 @@ const run=(command,args,label,options={})=>{
   if(result.status!==0)throw new Error(`${label} failed with exit code ${result.status??'unknown'}.`);
 };
 
-const globalVersion=quiet('supabase',['--version']);
+const globalVersion=quiet('supabase',['--version'],{cwd:workdir});
 const globalActual=globalVersion.error?'':(globalVersion.stdout||globalVersion.stderr||'').trim().replace(/^v/,'');
 let supabaseCommand='supabase';
 let supabasePrefix=[];
 if(globalActual!==CERTIFIED_SUPABASE_CLI){
   const pinned=`supabase@${CERTIFIED_SUPABASE_CLI}`;
-  const resolved=quiet('npx',['--yes',pinned,'--version']);
+  const resolved=quiet('npx',['--yes',pinned,'--version'],{cwd:workdir});
   if(resolved.error||resolved.status!==0)throw new Error(`M46 requires Supabase CLI ${CERTIFIED_SUPABASE_CLI}. Install it globally or allow npx to resolve ${pinned}.`);
   const actual=(resolved.stdout||resolved.stderr||'').trim().replace(/^v/,'');
   if(actual!==CERTIFIED_SUPABASE_CLI)throw new Error(`Pinned Supabase CLI resolution failed: expected ${CERTIFIED_SUPABASE_CLI}, received ${actual||'unknown'}.`);
   supabaseCommand='npx';supabasePrefix=['--yes',pinned];
 }
 const args=(list)=>[...supabasePrefix,...list];
-const supabase=(workdir,list,label)=>run(supabaseCommand,args(['--workdir',workdir,...list]),label);
-const docker=quiet('docker',['version','--format','{{.Server.Version}}']);
+const supabase=(workdir,list,label)=>run(supabaseCommand,args(['--workdir',workdir,...list]),label,{cwd:workdir});
+const docker=quiet('docker',['version','--format','{{.Server.Version}}'],{cwd:workdir});
 if(docker.error||docker.status!==0)throw new Error('A running Docker-compatible container runtime is required for the disposable M46 Supabase contract stack.');
 
-const workdir=mkdtempSync(join(tmpdir(),'wm-m46-supabase-'));
 const supabaseDir=join(workdir,'supabase');
 mkdirSync(supabaseDir,{recursive:true});
 writeFileSync(join(supabaseDir,'config.toml'),`project_id = "${LOCAL_PROJECT_ID}"\n\n[db.migrations]\nenabled = false\nschema_paths = []\n\n[db.seed]\nenabled = false\nsql_paths = []\n`,'utf8');
 const cleanup=()=>{
   if(!keep){
-    spawnSync(supabaseCommand,args(['stop','--project-id',LOCAL_PROJECT_ID,'--no-backup']),{stdio:'inherit',shell:false});
+    spawnSync(supabaseCommand,args(['--workdir',workdir,'stop','--project-id',LOCAL_PROJECT_ID,'--no-backup']),{stdio:'inherit',shell:false,cwd:workdir});
     rmSync(workdir,{recursive:true,force:true});
   }else console.log(`\nM46 local stack retained for diagnostics: ${workdir}`);
 };
 
 try{
-  spawnSync(supabaseCommand,args(['stop','--project-id',LOCAL_PROJECT_ID,'--no-backup']),{stdio:'ignore',shell:false});
+  spawnSync(supabaseCommand,args(['--workdir',workdir,'stop','--project-id',LOCAL_PROJECT_ID,'--no-backup']),{stdio:'ignore',shell:false,cwd:workdir});
   supabase(workdir,['start'],'Start disposable M46 Supabase contract stack');
   const container=`supabase_db_${LOCAL_PROJECT_ID}`;
   const schemaSql=readFileSync(schemaPath,'utf8');
