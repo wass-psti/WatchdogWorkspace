@@ -1,0 +1,65 @@
+/*
+ * Stage H M58 — Design Token Architecture Consolidation.
+ *
+ * This file introduces canonical semantic aliases without changing concrete
+ * visual values. Every alias resolves through the pre-existing certified
+ * foundation/theme authorities. Existing consumers remain valid during the
+ * controlled migration window; successor milestones may adopt these aliases.
+ */
+:root {
+  /* Typography intent — concrete scale ownership remains M59. */
+  --wm-semantic-font-family-body: var(--wm-font-family);
+  --wm-semantic-font-family-code: var(--wm-font-mono);
+  --wm-semantic-text-caption: var(--wm-text-xs);
+  --wm-semantic-text-body: var(--wm-text-md);
+  --wm-semantic-text-control: var(--wm-text-sm);
+  --wm-semantic-text-heading: var(--wm-text-xl);
+  --wm-semantic-weight-regular: var(--wm-font-weight-regular);
+  --wm-semantic-weight-medium: var(--wm-font-weight-medium);
+  --wm-semantic-weight-strong: var(--wm-font-weight-semibold);
+  --wm-semantic-line-body: var(--wm-line-height-normal);
+  --wm-semantic-line-heading: var(--wm-line-height-tight);
+
+  /* Spatial intent — exact spatial system ownership remains M61. */
+  --wm-semantic-space-cluster: var(--wm-space-100);
+  --wm-semantic-space-control: var(--wm-space-150);
+  --wm-semantic-space-section: var(--wm-space-300);
+  --wm-semantic-space-separation: var(--wm-space-400);
+  --wm-semantic-space-containment: var(--wm-space-200);
+
+  /* Control and touch geometry. */
+  --wm-semantic-control-compact: var(--wm-control-sm);
+  --wm-semantic-control-default: var(--wm-control-md);
+  --wm-semantic-control-comfortable: var(--wm-control-lg);
+  --wm-semantic-hit-target: var(--wm-hit-target);
+
+  /* Surface shape / boundary / elevation. */
+  --wm-semantic-radius-control: var(--wm-radius-100);
+  --wm-semantic-radius-surface: var(--wm-radius-200);
+  --wm-semantic-radius-prominent: var(--wm-radius-300);
+  --wm-semantic-radius-round: var(--wm-radius-round);
+  --wm-semantic-border-default: var(--wm-border-width);
+  --wm-semantic-focus-width: var(--wm-focus-width);
+  --wm-semantic-shadow-rest: var(--wm-shadow-sm);
+  --wm-semantic-shadow-raised: var(--wm-shadow-md);
+  --wm-semantic-shadow-prominent: var(--wm-shadow-lg);
+  --wm-semantic-shadow-overlay: var(--wm-shadow-overlay);
+
+  /* Motion intent — choreography ownership remains M71. */
+  --wm-semantic-motion-instant: var(--wm-motion-instant);
+  --wm-semantic-motion-fast: var(--wm-motion-fast);
+  --wm-semantic-motion-standard: var(--wm-motion-normal);
+  --wm-semantic-motion-deliberate: var(--wm-motion-slow);
+  --wm-semantic-ease-standard: var(--wm-motion-ease);
+  --wm-semantic-ease-enter: var(--wm-motion-ease-enter);
+  --wm-semantic-ease-exit: var(--wm-motion-ease-exit);
+
+  /* Layer intent. */
+  --wm-semantic-z-base: var(--wm-z-base);
+  --wm-semantic-z-sticky: var(--wm-z-sticky);
+  --wm-semantic-z-floating: var(--wm-z-popover);
+  --wm-semantic-z-drawer: var(--wm-z-drawer);
+  --wm-semantic-z-modal: var(--wm-z-modal);
+  --wm-semantic-z-command: var(--wm-z-command);
+  --wm-semantic-z-toast: var(--wm-z-toast);
+}

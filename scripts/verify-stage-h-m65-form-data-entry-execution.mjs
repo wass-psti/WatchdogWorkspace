@@ -1,0 +1,15 @@
+import crypto from 'node:crypto'; import fs from 'node:fs'; import path from 'node:path'; import process from 'node:process';
+const root=process.cwd(), failures=[]; const ok=(c,m)=>{if(!c)failures.push(m)}; const read=p=>fs.readFileSync(path.join(root,p),'utf8'); const sha=p=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,p))).digest('hex'); const snap=JSON.parse(read('regression-baseline/m65-form-data-entry.json'));
+for(const [rel,expected] of Object.entries(snap.certifiedAuthorityHashes)){ok(fs.existsSync(path.join(root,rel)),`M65 certified M64 authority missing: ${rel}`);ok(sha(rel)===expected,`M65 certified M64 authority drift: ${rel}`)}
+const publicSurface=[read('src/design-system/index.ts'),read('src/design-system/forms/index.ts')].join('\n'); for(const name of snap.canonicalFormComponents)ok(publicSurface.includes(name),`M65 canonical form component missing from public API: ${name}`);
+const field=read('src/design-system/forms/field.tsx');
+ok(field.includes('<label className="wm-field-label" htmlFor={existing.id ?? resolvedControlId}>'),'M65 label/control association drift');
+ok(field.includes("const ariaDescribedBy = joinIds(existing['aria-describedby'], descriptionId, messageId)")&&field.includes("controlProps['aria-describedby'] = ariaDescribedBy"),'M65 aria-describedby composition drift');
+ok(field.includes("const ariaInvalid = existing['aria-invalid'] ?? (invalid ? true : undefined)")&&field.includes("controlProps['aria-invalid'] = ariaInvalid"),'M65 aria-invalid semantics drift');
+ok(field.includes("const ariaErrorMessage = existing['aria-errormessage'] ?? (invalid && messageId ? messageId : undefined)")&&field.includes("controlProps['aria-errormessage'] = ariaErrorMessage"),'M65 aria-errormessage semantics drift');
+ok(field.includes('required: existing.required ?? required')&&field.includes('disabled: existing.disabled ?? disabled'),'M65 native required/disabled semantics drift');
+ok(!field.includes('role="alert"')&&!field.includes('aria-live='),'M65 messages must remain non-live by default');
+ok(field.includes('<input {...props}')&&field.includes('<textarea {...props}')&&field.includes('<select {...props}'),'M65 must retain native input/textarea/select elements');
+ok(!field.includes('role="combobox"')&&!field.includes('role="listbox"'),'M65 must not pre-empt M66 custom select/combobox ownership');
+const system=read('src/design-system/form-system.ts'); ok(system.includes('noFormStateLibraryIntroduced: true')&&system.includes('noSubmissionOrPersistenceOwnership: true'),'M65 state/submission ownership boundary drift'); ok(snap.consumerRewriteRequired===false,'M65 consumer rewrite policy drift');
+if(failures.length){console.error('M65 form/data-entry deterministic verification FAILED');failures.forEach(x=>console.error(` - ${x}`));process.exit(1)} console.log('M65 form/data-entry deterministic verification: PASS'); console.log(`Validated ${snap.canonicalFormComponents.length} canonical form components, certified M64 authority preservation, native control semantics, accessible field associations, and deferred M66/M67/M72–M76 ownership.`);

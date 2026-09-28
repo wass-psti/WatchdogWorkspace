@@ -1,0 +1,62 @@
+export const workManagementShellNavigation = Object.freeze({
+  milestone: 68,
+  stage: 'H',
+  semanticsVersion: '1.43.2-m68-v1',
+  authorities: Object.freeze({
+    reactShell: 'src/app/shell/WorkManagementShell.tsx',
+    shellRuntimeBridge: 'src/app/shell/shell-runtime-bridge.ts',
+    navigationMarkup: 'assets/js/app.ts',
+    navigationPresentation: 'assets/css/shell-navigation.css',
+    clientState: 'assets/js/platform/state/client-state-store.ts',
+    clientStateContract: 'src/platform/contracts/client-state.ts',
+    globalOverlayHost: 'src/app/overlays/GlobalOverlayHost.tsx',
+  }),
+  informationArchitecture: Object.freeze({
+    primaryDestinations: Object.freeze(['Applications', 'Boards', 'Search', 'Users', 'Settings', 'Account']),
+    resourceSections: Object.freeze(['Favorites', 'Applications', 'Boards']),
+    resourceSearchScope: 'applications-and-boards',
+    activeDestinationUsesAriaCurrentPage: true,
+    sectionExpansionUsesAriaExpandedAndControls: true,
+    authorizationFiltersUnavailableDestinations: true,
+    restrictedResourcesRemainNonNavigable: true,
+  }),
+  navigationModes: Object.freeze({
+    desktop: Object.freeze(['expanded', 'compact']),
+    desktopUnpinnedPeekIsTransient: true,
+    mobileNavigationIsModal: true,
+    mobileWorkspaceBecomesInert: true,
+    widthIsPersistentPreference: true,
+    pinIsPersistentPreference: true,
+    sectionExpansionIsPersistentPreference: true,
+    mobileOpenPeekAndResizeAreTransient: true,
+  }),
+  accessibility: Object.freeze({
+    skipLinkTargetsMain: true,
+    primaryNavigationLandmarkIsNamed: true,
+    mobileTriggerOwnsExpandedState: true,
+    resizeSeparatorIsKeyboardOperable: true,
+    navigationStateAnnouncementsArePolite: true,
+    focusRestorationRemainsRuntimeOwned: true,
+  }),
+  policies: Object.freeze({
+    routeOwnershipRemainsM40Authority: true,
+    accountMenuRemainsM11M14M66OverlayAuthority: true,
+    shellClientStateRemainsNonDomainState: true,
+    noRouteSemanticsRewriteInM68: true,
+    noConsumerMigrationInM68: true,
+    preserveShellM1ThroughM8RuntimeBehavior: true,
+  }),
+  successorBoundaries: Object.freeze({
+    dataPresentation: 69,
+    dashboardPresentation: 70,
+    motionContinuity: 71,
+    hostUiMigration: 72,
+    boardsMigration: 73,
+    timeTrackerMigration: 74,
+    fuelTrackMigration: 75,
+    tradeLinkMigration: 76,
+  }),
+} as const);
+
+export type WorkManagementPrimaryDestination = typeof workManagementShellNavigation.informationArchitecture.primaryDestinations[number];
+export type WorkManagementShellResourceSection = typeof workManagementShellNavigation.informationArchitecture.resourceSections[number];

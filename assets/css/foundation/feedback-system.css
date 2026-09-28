@@ -1,0 +1,53 @@
+/* Stage H M67 — system feedback presentation authority.
+   Persistent state is visible in context; announcement urgency is owned by the typed semantic layer. */
+:root {
+  --wm-feedback-gap: var(--wm-space-100);
+  --wm-feedback-action-gap: var(--wm-space-075);
+  --wm-feedback-icon-size: var(--wm-control-sm);
+}
+
+:where(.wm-status-message) {
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  align-items:start;
+  gap:var(--wm-feedback-gap);
+  padding:var(--wm-space-100) var(--wm-space-125);
+  border:1px solid var(--wm-color-border-primary);
+  border-radius:var(--wm-radius-150);
+  background:var(--wm-color-surface-secondary);
+  color:var(--wm-color-text-primary);
+}
+:where(.wm-status-message[data-tone="success"]) { background:var(--wm-color-positive-soft); }
+:where(.wm-status-message[data-tone="warning"]) { background:var(--wm-color-warning-soft); }
+:where(.wm-status-message[data-tone="danger"]) { background:var(--wm-color-negative-soft); border-color:color-mix(in srgb,var(--wm-color-negative) 25%,var(--wm-color-border-primary)); }
+:where(.wm-status-message[data-tone="info"]) { background:var(--wm-color-info-soft); }
+
+:where(.wm-feedback-state[data-tone="danger"],.wm-error-state) { color:var(--wm-color-text-primary); }
+:where(.wm-feedback-state-icon,.wm-status-message-icon) {
+  inline-size:var(--wm-feedback-icon-size);
+  block-size:var(--wm-feedback-icon-size);
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  color:currentColor;
+}
+:where(.wm-feedback-state-copy,.wm-status-message-copy) { min-width:0; }
+:where(.wm-feedback-state-copy > :first-child,.wm-status-message-copy > :first-child) { margin-block-start:0; }
+:where(.wm-feedback-state-copy > :last-child,.wm-status-message-copy > :last-child) { margin-block-end:0; }
+:where(.wm-feedback-actions) { display:flex; flex-wrap:wrap; justify-content:center; gap:var(--wm-feedback-action-gap); margin-block-start:var(--wm-space-075); }
+:where(.wm-status-message .wm-feedback-actions) { justify-content:flex-start; }
+
+:where(.wm-feedback-spinner) {
+  inline-size:1em;
+  block-size:1em;
+  border:2px solid color-mix(in srgb,currentColor 24%,transparent);
+  border-block-start-color:currentColor;
+  border-radius:var(--wm-radius-round);
+  animation:wm-feedback-spin var(--wm-motion-duration-standard) linear infinite;
+}
+@keyframes wm-feedback-spin { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { :where(.wm-feedback-spinner) { animation:none; } }
+@media (forced-colors: active) {
+  :where(.wm-status-message) { border-color:CanvasText; forced-color-adjust:auto; }
+  :where(.wm-feedback-spinner) { border-color:GrayText; border-block-start-color:CanvasText; }
+}

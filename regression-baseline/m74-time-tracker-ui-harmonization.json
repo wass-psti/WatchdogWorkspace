@@ -1,0 +1,50 @@
+{
+  "baseline": "Work-Management-App-v1.43.2-Stage-H-M73-Certified-Baseline.zip",
+  "milestone": 74,
+  "certifiedAuthorityHashes": {
+    "apps/time-tracker/domain-config.js": "7c378a04e2e5fffe3d1be3a21cc7cf3d66050db7cc94b5738ad9bfe96f97a0f7",
+    "apps/time-tracker/stability-runtime.js": "67354bf430fb2983a88ce467977e92f93520d8cde5ce429d4bf347b566b5bf74",
+    "apps/time-tracker/v2-motion.js": "7386e7098c816e56c59df8a85a2c76df8ec7c35d58fb171b4caa6e09573dd65b",
+    "assets/js/runtime/module-bootstrap.ts": "fe9d4b66d6e36a9bee15cfbfa93f0302a7d990d09aa4e1562e4b131e1d0aea46",
+    "assets/js/runtime/motion-orchestrator.ts": "991a86d32296731466df2c7b739b3c3b1dbc90213fa7f2c4416ff29c9ea83f38",
+    "src/platform/contracts/motion.ts": "33d6d64b20ed6bf1b35ac07699f3654eabb77637fc83d904b5d6a85c7c0400da",
+    "src/design-system/boards-migration-system.ts": "33b4a214e5753cd39ca8d7af78fbc3c681e92ef98292279bc6a0eb9e168c5743"
+  },
+  "migratedTimeTrackerSurfaces": [
+    "navigation-and-shell-status",
+    "attendance-clock",
+    "overview-and-metrics",
+    "logs-and-data-regions",
+    "reports-and-calendar",
+    "ot-and-roles",
+    "dialogs-and-feedback"
+  ],
+  "requiredSharedConsumers": [
+    "wm-tabs",
+    "wm-tab",
+    "wm-field",
+    "wm-field-control",
+    "wm-action-row",
+    "wm-table",
+    "wm-data-region",
+    "wm-scroll-region",
+    "wm-feedback-state",
+    "wm-empty-state",
+    "wm-status-message",
+    "wm-status-pill",
+    "wm-button",
+    "wm-icon-button",
+    "wm-overlay-surface",
+    "wm-dialog",
+    "wm-metric-card"
+  ],
+  "fuelTrackMigrationMilestone": 75,
+  "tradeLinkMigrationMilestone": 76,
+  "finalUiCertificationMilestone": 77,
+  "domainPolicyChanged": false,
+  "attendanceLifecycleChanged": false,
+  "gpsLifecycleChanged": false,
+  "otWorkflowChanged": false,
+  "rolePolicyChanged": false,
+  "cloudIdentityOwnershipChanged": false
+}

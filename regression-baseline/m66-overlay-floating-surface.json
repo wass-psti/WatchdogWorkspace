@@ -1,0 +1,38 @@
+{
+  "milestone": 66,
+  "certifiedBaseline": "M65",
+  "certifiedAuthorityHashes": {
+    "assets/css/foundation/components.css": "29c6d7f58a90d490e29afe341d664b2b1943ee949c29e4bee9e1860a5eb7ac37",
+    "assets/css/foundation/interactions.css": "d49856303bfc4445b50dea34afa02f5a06928ba35ea66ca7f01c72e99b475b0a",
+    "assets/css/foundation/accessibility-system.css": "940a608a720066358a7ba5506c972e81c9c30f86dad1ac19454f3b4964c7b965",
+    "src/design-system/interactions/dialog.tsx": "db4cac01b8acf489449c4089b39964642aaf3a3d9bcc804c44f1eb33c2e433a0",
+    "src/design-system/interactions/menu.tsx": "5088c371fd6c194a3be555d3ec7e140cb1fb98681944640a7d41092fc11ff43e",
+    "src/design-system/interactions/popover.tsx": "bdb9052a00a2616813548c96d06321903be298a4b48c74522fb431285a7306d5",
+    "src/design-system/interactions/tooltip.tsx": "d4a0f58ed7c49f68d6fc761e191ad1db20ad792095259db1ef8c72a0c62ebba6",
+    "src/design-system/interactions/floating.ts": "e086ac3a164fb96bed756cc6cd54ac8723f61a50f6aeaa75dc2df31fee55f347",
+    "assets/js/platform/ui/global-overlay-runtime.ts": "9f608808f45a498fde6f48fbb5ed980d854a3186354a47104ae3c5a905668d1b",
+    "assets/js/platform/ui/overlay-manager.ts": "65118afe68e37a22c7d290fa0f2f3855ce7321f199921e516f5c37f1ce9460a1",
+    "src/app/overlays/GlobalOverlayHost.tsx": "dbcbdac6d7124d0d8362867005b5a409e7d41a03b02c468125196c538190c461",
+    "src/design-system/form-system.ts": "1f8cae50077507e56ecb5ae5f919bf29e0a99f8ef19162adffeb9c2380d56b90",
+    "src/design-system/forms/field.tsx": "23f2233af65d91fc9a34d39f0ad5ccc66a387cc15c10434a3d4646b2a127037c"
+  },
+  "canonicalOverlayComponents": [
+    "WMDialog",
+    "WMMenu",
+    "WMPopover",
+    "WMTooltip",
+    "WMFloatingSurface",
+    "useWMFloatingLayer"
+  ],
+  "semanticContracts": [
+    "pageLifetimeInteractivePortalRoot",
+    "exclusiveRootBranches",
+    "explicitNestedBranches",
+    "topmostEscapeDismissal",
+    "ownerControlledOutsideDismissal",
+    "modalFocusLifecycle",
+    "viewportContainedAnchoredGeometry",
+    "m67FeedbackBoundary"
+  ],
+  "consumerRewriteRequired": false
+}

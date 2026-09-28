@@ -1,0 +1,53 @@
+export const colorThemeContrastArchitecture = Object.freeze({
+  milestone: 60,
+  stage: 'H',
+  themeModes: Object.freeze(['system', 'light', 'dark'] as const),
+  semanticColorAuthority: 'assets/css/foundation/themes.css',
+  themePreferenceAuthority: 'assets/js/core/platform.ts',
+  settingsPresentationAuthority: 'src/app/management/authenticated-management-ui-runtime.ts',
+  designSystemContract: 'src/design-system/theme-contract.ts',
+  contrastPolicy: Object.freeze({
+    normalTextMinimum: 4.5,
+    largeTextMinimum: 3,
+    nonTextFocusMinimum: 3,
+    disabledTextExemptFromMinimum: true,
+    meaningMustNotDependOnColorAlone: true,
+    systemModeTracksOperatingSystemPreference: true,
+    forcedColorsRemainBrowserAuthoritative: true,
+  }),
+  requiredTextPairs: Object.freeze([
+    Object.freeze({ foreground: '--wm-color-text-primary', background: '--wm-color-surface-primary', minimum: 4.5 }),
+    Object.freeze({ foreground: '--wm-color-text-secondary', background: '--wm-color-surface-primary', minimum: 4.5 }),
+    Object.freeze({ foreground: '--wm-color-text-tertiary', background: '--wm-color-surface-primary', minimum: 4.5 }),
+    Object.freeze({ foreground: '--wm-color-accent-contrast', background: '--wm-color-accent', minimum: 4.5 }),
+    Object.freeze({ foreground: '--wm-color-positive', background: '--wm-color-surface-primary', minimum: 4.5 }),
+    Object.freeze({ foreground: '--wm-color-negative', background: '--wm-color-surface-primary', minimum: 4.5 }),
+    Object.freeze({ foreground: '--wm-color-warning', background: '--wm-color-surface-primary', minimum: 4.5 }),
+    Object.freeze({ foreground: '--wm-color-info', background: '--wm-color-surface-primary', minimum: 4.5 }),
+    Object.freeze({ foreground: '--wm-color-navigation-text', background: '--wm-color-navigation', minimum: 4.5 }),
+    Object.freeze({ foreground: '--wm-color-navigation-muted', background: '--wm-color-navigation', minimum: 4.5 }),
+    Object.freeze({ foreground: '--wm-board-text', background: '--wm-board-surface', minimum: 4.5 }),
+    Object.freeze({ foreground: '--wm-board-muted', background: '--wm-board-surface', minimum: 4.5 }),
+    Object.freeze({ foreground: '--wm-board-primary-contrast', background: '--wm-board-primary', minimum: 4.5 }),
+  ]),
+  requiredFocusPairs: Object.freeze([
+    Object.freeze({ foreground: '--wm-color-focus', background: '--wm-color-surface-primary', minimum: 3 }),
+    Object.freeze({ foreground: '--wm-board-focus', background: '--wm-board-surface', minimum: 3 }),
+  ]),
+  successorBoundaries: Object.freeze({
+    layoutAndSpatialSystem: 61,
+    responsiveArchitecture: 62,
+    accessibilityFoundation: 63,
+    componentConsolidation: 64,
+  }),
+  invariants: Object.freeze({
+    themePreferenceContractUnchanged: true,
+    persistedPreferenceKeyUnchanged: true,
+    noLayoutChangesInM60: true,
+    noTypographyScaleChangesInM60: true,
+    noComponentApiChangesInM60: true,
+    systemDarkMustMatchExplicitDarkSemanticPalette: true,
+  }),
+});
+
+export type WorkManagementThemeMode = typeof colorThemeContrastArchitecture.themeModes[number];

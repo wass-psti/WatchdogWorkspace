@@ -1544,12 +1544,27 @@ function render({ animate = true } = {}) {
 }
 
 function enhanceScreenPresentation(root = document) {
+  document.body.dataset.wmTimeTrackerHarmonized = 'm74';
   root.querySelectorAll('.filter-panel label,.selector-grid label,.note-field,.overview-control-dock label,.tt-v2-overlay-surface form label').forEach((label) => label.classList.add('wm-field'));
   root.querySelectorAll('.filter-panel input,.filter-panel select,.selector-grid input,.selector-grid select,.note-field input,.overview-control-dock input,.overview-control-dock select,.tt-v2-overlay-surface input,.tt-v2-overlay-surface select,.tt-v2-overlay-surface textarea').forEach((control) => control.classList.add('wm-field-control','wm-control--md'));
   root.querySelectorAll('.filter-panel label > span,.selector-grid label > span,.note-field > span,.tt-v2-overlay-surface label > span').forEach((label) => label.classList.add('wm-field-label'));
-  root.querySelectorAll('.filter-footer-actions,.filter-actions,.export-actions,.section-actions,.calendar-nav,.modal-actions').forEach((row) => row.classList.add('wm-action-row'));
-  root.querySelectorAll('.log-table,.attendance-table,.documents-table,.rbac-table').forEach((table) => table.classList.add('wm-table'));
+  root.querySelectorAll('.filter-footer-actions,.filter-actions,.export-actions,.section-actions,.calendar-nav,.modal-actions,.clock-actions,.record-actions,.ot-actions').forEach((row) => row.classList.add('wm-action-row'));
+  root.querySelectorAll('.log-table,.attendance-table,.documents-table,.rbac-table,.overview-table').forEach((table) => table.classList.add('wm-table'));
+  root.querySelectorAll('.overview-table-wrap,.log-list,.tt-v2-log-timeline,.calendar-grid,.role-cards,.ot-list').forEach((region) => region.classList.add('wm-data-region'));
+  root.querySelectorAll('.overview-table-wrap,.tt-v2-log-timeline,.calendar-grid').forEach((region) => region.classList.add('wm-scroll-region'));
+  root.querySelectorAll('.empty-state,.tt-v2-empty,.record-empty,.ot-empty,.empty-stack').forEach((empty) => empty.classList.add('wm-feedback-state','wm-empty-state'));
+  root.querySelectorAll('.form-notice').forEach((notice) => notice.classList.add('wm-status-message'));
+  root.querySelectorAll('.status-pill,.record-status,.ot-status,.overview-status').forEach((status) => status.classList.add('wm-status-pill'));
+  root.querySelectorAll('.primary-action').forEach((button) => button.classList.add('wm-button','wm-button--primary','wm-control--md'));
+  root.querySelectorAll('.secondary-action').forEach((button) => button.classList.add('wm-button','wm-button--secondary','wm-control--md'));
+  root.querySelectorAll('.text-button').forEach((button) => button.classList.add('wm-button','wm-button--ghost','wm-control--sm'));
+  root.querySelectorAll('.modal-close').forEach((button) => button.classList.add('wm-icon-button','wm-icon-button--ghost'));
+  root.querySelectorAll('.tt-v2-overlay-surface').forEach((surface) => surface.classList.add('wm-overlay-surface','wm-dialog'));
+  root.querySelectorAll('.tt-v2-overlay-surface .modal-head').forEach((header) => header.classList.add('wm-dialog-header'));
+  root.querySelectorAll('.tt-v2-overlay-surface .modal-actions').forEach((footer) => footer.classList.add('wm-dialog-footer'));
+  root.querySelectorAll('.report-kpi,.overview-stat').forEach((metric) => metric.classList.add('wm-metric-card'));
   root.querySelectorAll('[data-tt-v2-screen] .wm-panel,[data-tt-v2-screen] .log-record,[data-tt-v2-screen] .ot-card,[data-tt-v2-screen] .role-card').forEach((surface) => surface.classList.add('tt-v2-surface'));
+  root.querySelectorAll('[data-tt-v2-screen]').forEach((screen) => screen.setAttribute('data-wm-time-tracker-harmonized','true'));
   globalThis.TimeTrackerV2Motion?.enhance?.(root);
 }
 

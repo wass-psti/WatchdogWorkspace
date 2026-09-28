@@ -1,0 +1,40 @@
+{
+  "milestone": 68,
+  "certifiedAuthorityHashes": {
+    "assets/js/app.ts": "08b3f39a3e4f43bc01a837e2936b412c8b69167cd8b05b5689d9701ac72c8d5e",
+    "assets/css/shell-navigation.css": "1285b7b01423a9f129dbba33a57827e6cc20128f13aaf273804e84832fee7404",
+    "src/app/shell/WorkManagementShell.tsx": "2077e50ca539c77bf46f5e75b179457edaa22058c9546de23b1635df024c5111",
+    "src/app/shell/shell-runtime-bridge.ts": "89147d0dc166291b2c1ee526aba0126f742650c51fa7522d9c04558ae01c39ba",
+    "assets/js/platform/state/client-state-store.ts": "def486b0843ce5596319ad680193646ec615c51b951cad6963e3e7731d5c3f1b",
+    "src/platform/contracts/client-state.ts": "ddde501497de2a910248120c48f0ac8f4a5a810eca8756c68d4ca98a473974fc",
+    "src/app/shared-ui/SharedApplicationUI.tsx": "4ee0138a4e1832f274a5cf5e4dc0996545c4882a2aed776d4ba43e81bc651795",
+    "src/app/overlays/GlobalOverlayHost.tsx": "dbcbdac6d7124d0d8362867005b5a409e7d41a03b02c468125196c538190c461",
+    "src/design-system/overlay-system.ts": "349264a67174e4e143689f1d3e43df6b4e2c16b5d5fe1847d39a56cb480f0b4b",
+    "src/design-system/feedback-system.ts": "de06f9b7553f449c6a97c019c4d186734ab6d246b3447ccb308ff5065f7c0903"
+  },
+  "primaryDestinations": [
+    "Applications",
+    "Boards",
+    "Search",
+    "Users",
+    "Settings",
+    "Account"
+  ],
+  "resourceSections": [
+    "Favorites",
+    "Applications",
+    "Boards"
+  ],
+  "navigationModes": [
+    "expanded",
+    "compact",
+    "mobile-modal"
+  ],
+  "consumerRewriteRequired": false,
+  "hostMigrationMilestone": 72,
+  "successorMigratableAuthorities": [
+    "src/app/shell/WorkManagementShell.tsx",
+    "src/app/shared-ui/SharedApplicationUI.tsx"
+  ],
+  "successorMigrationPolicy": "hash-frozen-through-m71-semantic-invariants-from-m72"
+}

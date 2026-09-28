@@ -1,0 +1,31 @@
+{
+  "baseline": "Work-Management-App-v1.43.2-Stage-H-M70-Certified-Baseline.zip",
+  "milestone": 71,
+  "certifiedAuthorityHashes": {
+    "assets/js/runtime/motion-orchestrator.ts": "991a86d32296731466df2c7b739b3c3b1dbc90213fa7f2c4416ff29c9ea83f38",
+    "assets/js/runtime/motion-design.ts": "c7a0bd0b3e2ecbf6b2e9d37ff3b367c43434685144330db719d72b206d5fb827",
+    "assets/css/motion-design.css": "6d33598fcb05d48fce3a80872a72bb7dee148c7cb89d42ed1c25f542a33962e2",
+    "src/platform/contracts/motion.ts": "33d6d64b20ed6bf1b35ac07699f3654eabb77637fc83d904b5d6a85c7c0400da",
+    "apps/time-tracker/v2-motion.js": "7386e7098c816e56c59df8a85a2c76df8ec7c35d58fb171b4caa6e09573dd65b",
+    "assets/js/app.ts": "08b3f39a3e4f43bc01a837e2936b412c8b69167cd8b05b5689d9701ac72c8d5e",
+    "src/app/shell/application-shell-navigation-system.ts": "126306b84fc2b0169489a5baea8c1e5d5cada05103c8b262b5150524a3e70e43",
+    "src/design-system/analytics-presentation-system.ts": "5d2001899218682a837f6732bc15a9a7f2a3d2a94d87e1be3bd5d32baa950265",
+    "assets/css/foundation/analytics-system.css": "24c42556cc60e7f9ce325f46180484d4ae358bb95ccc3ce8ca45cf17a7947b08"
+  },
+  "continuityKinds": [
+    "route",
+    "state",
+    "overlay",
+    "feedback",
+    "decorative",
+    "static"
+  ],
+  "consumerRewriteRequired": false,
+  "existingMotionRuntimeOwnedByV130": true,
+  "documentWideViewTransitionsAllowed": false,
+  "hostMigrationMilestone": 72,
+  "boardsMigrationMilestone": 73,
+  "timeTrackerMigrationMilestone": 74,
+  "fuelTrackMigrationMilestone": 75,
+  "tradeLinkMigrationMilestone": 76
+}

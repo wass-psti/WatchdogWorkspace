@@ -1,0 +1,42 @@
+{
+  "baseline": "Work-Management-App-v1.43.2-Stage-H-M69-Certified-Baseline.zip",
+  "milestone": 70,
+  "certifiedAuthorityHashes": {
+    "assets/js/runtime/fueltrack-analytics.ts": "d2c6b178146d43cd50eedffc6e2e49ba342ceb9ea0fae2b557113a52e8ad11a3",
+    "apps/fueltrack-plus/styles.v3.17.0-wm6.css": "74e37b62399d067a7d7ee5a51c84046c209e81f2d3fee93a2020d47fbfa29ffe",
+    "src/design-system/data-presentation-system.ts": "67dec63295516f03b5ca51bfd53d669274163ba0840d821507a33dd1f4a03eb2",
+    "src/design-system/data/data-presentation.tsx": "40d1f59f3dd43472b3e2081f8311d9d96d0adf1724514768cb54ea3cf22cb3a8",
+    "assets/css/foundation/dense-data-system.css": "7dc22149e66c4806e5158b7f5a5357d292b390cf4a8c5639b265f0a6a4e445e6",
+    "src/app/shell/application-shell-navigation-system.ts": "126306b84fc2b0169489a5baea8c1e5d5cada05103c8b262b5150524a3e70e43"
+  },
+  "canonicalComponents": [
+    "WMDashboardGrid",
+    "WMMetricCard",
+    "WMMetricValue",
+    "WMTrendIndicator",
+    "WMChartPanel",
+    "WMAnalyticsContext"
+  ],
+  "densities": [
+    "comfortable",
+    "compact"
+  ],
+  "trendDirections": [
+    "up",
+    "down",
+    "flat"
+  ],
+  "metricTones": [
+    "neutral",
+    "info",
+    "success",
+    "warning",
+    "danger"
+  ],
+  "consumerRewriteRequired": false,
+  "analyticsComputationOwnedByFeatures": true,
+  "chartRendererOwnedByFeatures": true,
+  "motionContinuityMilestone": 71,
+  "hostMigrationMilestone": 72,
+  "fuelTrackMigrationMilestone": 75
+}

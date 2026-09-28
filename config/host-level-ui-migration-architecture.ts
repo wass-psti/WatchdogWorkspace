@@ -1,0 +1,33 @@
+export const hostLevelUiMigrationArchitecture = Object.freeze({
+  milestone: 72,
+  stage: 'H',
+  scope: 'host-level-ui-migration-and-visual-consolidation',
+  baseline: 'Work-Management-App-v1.43.2-Stage-H-M71-Certified-Baseline.zip',
+  migratedOwners: Object.freeze([
+    'react-shell',
+    'react-authentication-ui',
+    'react-management',
+    'react-shared-application-ui',
+  ] as const),
+  designSystemAuthorities: Object.freeze([
+    'forms',
+    'feedback',
+    'interactions',
+    'overlays',
+    'accessibility',
+    'motion-continuity',
+  ] as const),
+  invariants: Object.freeze({
+    hostOnly: true,
+    noBoardsMigration: true,
+    noEmbeddedModuleMigration: true,
+    routeOwnershipUnchanged: true,
+    authenticationStateOwnershipUnchanged: true,
+    managementStateOwnershipUnchanged: true,
+    sharedUiStateOwnershipUnchanged: true,
+    supabaseAndPersistenceBehaviorUnchanged: true,
+    legacySelectorsAndDataHooksRetainedWhereRuntimeOwned: true,
+    certifiedPrimitiveConsumptionPreferredOverNewParallelComponents: true,
+  }),
+  successors: Object.freeze({ boards: 73, timeTracker: 74, fuelTrackPlus: 75, tradeLink: 76, finalUiCertification: 77 }),
+});

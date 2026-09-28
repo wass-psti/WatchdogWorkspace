@@ -1,0 +1,47 @@
+{
+  "milestone": 77,
+  "stage": "H",
+  "release": "1.43.2",
+  "semanticsVersion": "1.43.2-m77-v1",
+  "baseline": "M76-active-certified",
+  "protectedAuthorities": {
+    "src/design-system/tradelink-harmonization-system.ts": "24b97b2f6c5c7f68fe0d5a85f66e0b00613955cf13c9bace82b480bf8d8d709d",
+    "src/design-system/fueltrack-plus-harmonization-system.ts": "203b937bde4cd46db05021bd138a3e2897f13f3487d8660980c5293c3f826993",
+    "src/design-system/time-tracker-harmonization-system.ts": "3023149966b3f79a7ede41e51c5440f2ca38eeb008503a26dd1f6444b3d5cabb",
+    "src/design-system/boards-migration-system.ts": "33b4a214e5753cd39ca8d7af78fbc3c681e92ef98292279bc6a0eb9e168c5743",
+    "apps/tradelink/app.v1.42.0-wm1.js": "4b1ac7cab5401bfaa3d9f9bb5afffe2dd3a9087bc220c35e3fc37de4fbfe549b",
+    "apps/fueltrack-plus/app.v3.17.0-wm6.js": "4d81fdc69c42c222b7213f7bc9c1204738aa22ed237f9d5bc566d19a58c38647",
+    "apps/time-tracker/app.js": "1ccb65a25602e8b8759e91b60ac2aa47c30c58ae4d0004c1281af15322b6d682",
+    "apps/tradelink/m76-harmonization.css": "7a7d89d1457f4d09620fb9d0168a72c26af9a7945b6a8861e1b845fcbf2b4f0c",
+    "apps/fueltrack-plus/m75-harmonization.css": "9a148f5bb33f5892a8c9cb03b09c71b181b04a26e54f737de6e1480edf45fbb6",
+    "apps/time-tracker/m74-harmonization.css": "4907b4beaff27423267b1a47e408bd4ef6ae120c105eeea79e9b52c0c2814110"
+  },
+  "browserEngines": [
+    "chromium",
+    "firefox",
+    "webkit"
+  ],
+  "viewports": [
+    {
+      "id": "mobile",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "tablet",
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "id": "laptop",
+      "width": 1366,
+      "height": 768
+    },
+    {
+      "id": "desktop",
+      "width": 1440,
+      "height": 900
+    }
+  ],
+  "productSourceChangesAllowed": false
+}

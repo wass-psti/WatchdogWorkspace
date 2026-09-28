@@ -49,7 +49,7 @@ export function renderBoardCard(board: BoardListRecord, { escapeHtml, formatDate
   const interactive = board.status === 'active';
   const cardA11y = interactive ? ` role="link" tabindex="0" aria-label="Open board: ${esc(board.name)}"` : '';
   const menu = actions ? `<span class="board-menu-host" data-board-menu-host><button type="button" class="${iconButtonClass({ tone: 'ghost', size: 'sm' }, 'board-card-more-trigger')}" data-board-menu-trigger="board-card" aria-label="More actions for ${esc(board.name)}" aria-haspopup="menu" aria-expanded="false">•••</button><template data-board-menu-template>${actions}</template></span>` : '';
-  return `<article class="board-card${interactive ? ' is-openable' : ' is-inactive'}" data-board-id="${board.id}" data-board-lifecycle="${board.status}"${cardA11y}>
+  return `<article class="wm-card board-card${interactive ? ' is-openable' : ' is-inactive'}" data-board-id="${board.id}" data-board-lifecycle="${board.status}"${cardA11y}>
     <div class="board-card-icon" aria-hidden="true">▦</div><div class="board-card-main"><div class="board-card-meta"><span>${esc(role)}</span><span>${count} item${count === 1 ? '' : 's'}</span></div>
     <h3 title="${esc(board.name)}">${esc(board.name)}</h3><p>${esc(board.description || 'No description yet.')}</p><small>Updated ${esc(formatDate(board.updated_at))}</small></div>
     ${menu}
@@ -58,14 +58,14 @@ export function renderBoardCard(board: BoardListRecord, { escapeHtml, formatDate
 
 export function renderBoardListState({ state, escapeHtml, formatDate }: BoardListStateRenderOptions): string {
   const esc = escapeHtml;
-  if (state.loading) return '<div class="boards-state"><span class="button-spinner"></span><h3>Loading boards</h3><p>Getting the boards available to your account…</p></div>';
-  if (state.error) return `<div class="boards-state error"><h3>Boards couldn’t load</h3><p>${esc(state.error)}</p><button class="${buttonClass({ tone: 'secondary' }, 'secondary-btn')}" data-board-retry>Try again</button></div>`;
+  if (state.loading) return '<div class="wm-feedback-state wm-loading-state boards-state" role="status" data-wm-boards-migrated="collection-loading"><span class="wm-feedback-spinner button-spinner" aria-hidden="true"></span><div class="wm-feedback-state-copy"><h3>Loading boards</h3><p>Getting the boards available to your account…</p></div></div>';
+  if (state.error) return `<div class="wm-feedback-state wm-error-state boards-state error" role="alert" data-wm-boards-migrated="collection-error"><div class="wm-feedback-state-copy"><h3>Boards couldn’t load</h3><p>${esc(state.error)}</p></div><div class="wm-feedback-actions"><button class="${buttonClass({ tone: 'secondary' }, 'secondary-btn')}" data-board-retry>Try again</button></div></div>`;
   const q = state.search.trim().toLowerCase();
   const list = state.boards.filter((board) => !q || `${board.name} ${board.description}`.toLowerCase().includes(q));
   if (!list.length) {
     const title = q ? 'No boards match your search' : state.status === 'active' ? 'Create your first board' : state.status === 'archived' ? 'No archived boards' : 'Trash is empty';
     const body = q ? 'Try a different board name or clear the search.' : state.status === 'active' ? 'Start with an empty board or choose the columns your workflow needs.' : state.status === 'archived' ? 'Boards you archive will appear here until you restore or move them to trash.' : 'Boards moved to trash will stay here until you restore or permanently delete them.';
-    return `<div class="boards-state"><div class="empty-glyph" aria-hidden="true">▦</div><h3>${title}</h3><p>${body}</p>${state.status === 'active' && !q ? `<button class="${buttonClass({ tone: 'primary' }, 'primary-btn')}" data-board-create>+ Create board</button>` : ''}</div>`;
+    return `<div class="wm-feedback-state wm-empty-state boards-state" data-wm-boards-migrated="collection-empty"><div class="wm-feedback-state-icon empty-glyph" aria-hidden="true">▦</div><div class="wm-feedback-state-copy"><h3>${title}</h3><p>${body}</p></div>${state.status === 'active' && !q ? `<button class="${buttonClass({ tone: 'primary' }, 'primary-btn')}" data-board-create>+ Create board</button>` : ''}</div>`;
   }
-  return `<div class="board-grid">${list.map((board) => renderBoardCard(board as BoardListRecord, { escapeHtml, formatDate })).join('')}</div>`;
+  return `<div class="wm-grid board-grid" data-wm-boards-migrated="collection-grid">${list.map((board) => renderBoardCard(board as BoardListRecord, { escapeHtml, formatDate })).join('')}</div>`;
 }

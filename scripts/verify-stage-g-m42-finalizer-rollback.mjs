@@ -215,6 +215,7 @@ exec "${process.execPath}" "${'$'}@"
   writeFileSync(join(success.project, 'apps', 'nested', '.env.staging'), 'NESTED_OVERRIDE=do-not-package\n');
   writeFileSync(join(success.project, '.env.example'), 'PUBLIC_TEMPLATE=placeholder\n');
   writeFileSync(join(success.project, 'npm-debug.log'), 'debug log\n');
+  writeFileSync(join(success.project, '._appledouble-sentinel'), 'macOS AppleDouble metadata\n');
   for (const generated of ['node_modules', '.vitest', 'm37-evidence', 'dist', 'coverage', 'test-results', 'playwright-report', '.vite']) {
     mkdirSync(join(success.project, generated), { recursive: true });
     writeFileSync(join(success.project, generated, 'sentinel.txt'), 'generated/private\n');
@@ -235,7 +236,7 @@ ${result.stderr}`);
   const publishedStatus = readFileSync(join(publishedDir, 'RELEASE-STATUS-v1.43.2-STAGE-G-M42-USERS-RBAC-FUNCTIONAL-RECOVERY.md'), 'utf8');
   assert.match(publishedStatus, /- \*\*State:\*\* active-certified/, 'published baseline release status must agree with the certified target');
   assert.match(publishedStatus, /Final certified baseline/, 'published baseline must record the final certification transaction');
-  for (const forbidden of ['.git', '.env', '.env.local', '.env.ci.local', '.env.production', 'npm-debug.log', 'node_modules', '.vitest', 'm37-evidence', 'dist', 'coverage', 'test-results', 'playwright-report', '.vite']) {
+  for (const forbidden of ['.git', '.env', '.env.local', '.env.ci.local', '.env.production', 'npm-debug.log', '._appledouble-sentinel', 'node_modules', '.vitest', 'm37-evidence', 'dist', 'coverage', 'test-results', 'playwright-report', '.vite']) {
     assert.equal(existsSync(join(publishedDir, forbidden)), false, `certified baseline must exclude ${forbidden}`);
   }
   assert.equal(existsSync(join(publishedDir, 'apps', 'nested', '.env.staging')), false, 'certified baseline must exclude nested concrete environment files');

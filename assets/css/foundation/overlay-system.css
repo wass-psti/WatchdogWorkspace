@@ -1,0 +1,31 @@
+/* Stage H M66 — Overlay, Dialog, Menu & Floating-Surface Architecture.
+   Additive authority: existing certified interaction implementations remain unchanged. */
+:root {
+  --wm-overlay-z-anchored: var(--wm-z-popover);
+  --wm-overlay-z-modal: var(--wm-z-modal);
+  --wm-overlay-gutter: var(--wm-space-100);
+  --wm-overlay-viewport-padding: var(--wm-space-150);
+  --wm-overlay-surface-radius: var(--wm-radius-150);
+  --wm-overlay-surface-shadow: var(--wm-shadow-overlay);
+}
+
+.wm-overlay-surface {
+  min-width: 0;
+  max-width: min(32rem, calc(100vw - (2 * var(--wm-overlay-viewport-padding))));
+  max-height: calc(100dvh - (2 * var(--wm-overlay-viewport-padding)));
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--wm-color-border-primary);
+  border-radius: var(--wm-overlay-surface-radius);
+  background: var(--wm-color-surface-elevated);
+  color: var(--wm-color-text-primary);
+  box-shadow: var(--wm-overlay-surface-shadow);
+}
+
+.wm-overlay-surface[data-wm-overlay-width="reference"] { min-width: var(--wm-overlay-reference-width, auto); }
+.wm-overlay-surface[data-wm-overlay-width="content"] { width: max-content; }
+.wm-overlay-surface[data-wm-overlay-width="bounded"] { width: min(24rem, calc(100vw - (2 * var(--wm-overlay-viewport-padding)))); }
+
+@media (forced-colors: active) {
+  .wm-overlay-surface { border: 1px solid CanvasText; box-shadow: none; }
+}

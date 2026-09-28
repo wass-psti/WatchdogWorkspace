@@ -1,0 +1,50 @@
+{
+  "baseline": "Work-Management-App-v1.43.2-Stage-H-M72-Certified-Baseline.zip",
+  "milestone": 73,
+  "certifiedAuthorityHashes": {
+    "assets/js/features/boards/board-state.ts": "7216664270a1502bdbf89a25353c0fa2705bee18eadd1f191487e644a318bc6d",
+    "assets/js/features/boards/data/board-repository.ts": "e09222917f56fd5d6aee6ec1c197f3301c55e2f5dfb449ddc5e243ff9cbced03",
+    "assets/js/features/boards/services/board-domain-service.ts": "b4f1b24b6aba264ff9c8a4d8e6a08eb6c01aebed4f254d5403c24fda3083c028",
+    "assets/js/features/boards/services/board-realtime-service.ts": "dfec5d6aed0ca62cdaa64f3918526bc22998966ec6c8acb392bbdb3a7925f93f",
+    "assets/js/features/boards/services/board-selection-service.ts": "ecfc710fe2005d654ca9842a10338c1c81c5c821d2350af0cf830efd4f278e10",
+    "assets/js/features/boards/controllers/drag-drop-controller.ts": "97cec0a90bac6883eb295bb76d3b4f27b9dd82eafb5d972b6668a550ecb27cc1",
+    "assets/js/features/boards/controllers/history-controller.ts": "eada459cb50255f5c2630107a81b7d2f85c059773ca50ff88a993413c1186cf6",
+    "assets/js/features/boards/controllers/inline-edit-controller.ts": "bcda337e804999d7004a66d2664ae3756ef8f13994762bf0d3df50783a69ba83",
+    "assets/js/features/boards/controllers/selection-controller.ts": "ef31e43faaad4971d8839dcf1fba8662b899a789fe87658a4c799fc9e71289fe",
+    "assets/js/features/boards/controllers/item-workspace-controller.ts": "9c6c44bf36b8d39db17675d381b0b003f0f85037c5b17212143a538bf0abdec1",
+    "src/app/boards/BoardPresentationFacade.tsx": "391ff69a9dcbf88dfcd3814eda0f6b55c9fc5705e24db3b2a7d88990d1e127b0",
+    "src/app/boards/components/BoardPresentationSurface.tsx": "70c52d7c9da52b71805e21078e9d13992f00f0162febee7b3c38a45b77983cd4",
+    "src/design-system/host-migration-system.ts": "ab5e8a8590871707bba7a8d6757d58beb5f8fbad2a3430812a39c79ca220961c"
+  },
+  "migratedBoardSurfaces": [
+    "boards-collection",
+    "board-workspace-chrome",
+    "board-table",
+    "board-kanban",
+    "item-workspace",
+    "board-dialogs"
+  ],
+  "timeTrackerMigrationMilestone": 74,
+  "fuelTrackMigrationMilestone": 75,
+  "tradeLinkMigrationMilestone": 76,
+  "finalUiCertificationMilestone": 77,
+  "boardRuntimeOwnershipChanged": false,
+  "boardBackendChanged": false,
+  "boardPersistenceChanged": false,
+  "reactRewriteRequired": false,
+  "requiredSharedConsumers": [
+    "buttonClass",
+    "fieldControlClass",
+    "iconButtonClass",
+    "toolbarClass",
+    "tabClass",
+    "wm-feedback-state",
+    "wm-empty-state",
+    "wm-panel",
+    "wm-data-region",
+    "wm-table",
+    "wm-scroll-region",
+    "wm-tabs",
+    "wm-overlay-surface"
+  ]
+}

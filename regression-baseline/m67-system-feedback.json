@@ -1,0 +1,41 @@
+{
+  "milestone": 67,
+  "semanticsVersion": "1.43.2-m67-v1",
+  "certifiedAuthorityHashes": {
+    "assets/css/foundation/components.css": "29c6d7f58a90d490e29afe341d664b2b1943ee949c29e4bee9e1860a5eb7ac37",
+    "assets/css/foundation/accessibility-system.css": "940a608a720066358a7ba5506c972e81c9c30f86dad1ac19454f3b4964c7b965",
+    "assets/css/foundation/overlay-system.css": "c6d6b7c60b854fbce95c257b38c8279421f4d6279b6fa9083fc858aab4ab4bf2",
+    "src/design-system/accessibility-system.tsx": "6c564a8dafc276fe2e1de587dd88c72826def3de0f8604da069e7c33664fe2a2",
+    "src/design-system/overlay-system.ts": "349264a67174e4e143689f1d3e43df6b4e2c16b5d5fe1847d39a56cb480f0b4b",
+    "src/design-system/form-system.ts": "1f8cae50077507e56ecb5ae5f919bf29e0a99f8ef19162adffeb9c2380d56b90",
+    "src/design-system/core-component-system.ts": "558e5eb14dd465854919da63bb0bdd1242a67b486e3d9309e7949d85def54788",
+    "src/app/shared-ui/shared-application-ui-runtime.ts": "ae49d108086fe7687d6d34a6d451ae2064f6f1878835fb1666367a3a62a7c1a5",
+    "src/app/shared-ui/SharedApplicationUI.tsx": "4ee0138a4e1832f274a5cf5e4dc0996545c4882a2aed776d4ba43e81bc651795",
+    "src/app/overlays/GlobalOverlayHost.tsx": "dbcbdac6d7124d0d8362867005b5a409e7d41a03b02c468125196c538190c461",
+    "assets/js/platform/ui/global-overlay-runtime.ts": "9f608808f45a498fde6f48fbb5ed980d854a3186354a47104ae3c5a905668d1b",
+    "assets/js/platform/ui/overlay-manager.ts": "65118afe68e37a22c7d290fa0f2f3855ce7321f199921e516f5c37f1ce9460a1"
+  },
+  "canonicalFeedbackComponents": [
+    "WMFeedbackState",
+    "WMEmptyState",
+    "WMErrorState",
+    "WMStatusMessage",
+    "WMLoadingState",
+    "WMFeedbackAnnouncement"
+  ],
+  "globalToastAuthority": "src/app/shared-ui/shared-application-ui-runtime.ts",
+  "toastPortalRoot": "#toastRoot",
+  "consumerRewriteRequired": false,
+  "successorBoundaries": {
+    "applicationShellAndNavigation": 68,
+    "hostMigration": 72,
+    "boardsMigration": 73,
+    "timeTrackerMigration": 74,
+    "fuelTrackMigration": 75,
+    "tradeLinkMigration": 76
+  },
+  "successorMigratableAuthorities": [
+    "src/app/shared-ui/SharedApplicationUI.tsx"
+  ],
+  "successorMigrationPolicy": "hash-frozen-through-m71-semantic-invariants-from-m72"
+}

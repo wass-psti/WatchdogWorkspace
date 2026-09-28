@@ -110,7 +110,7 @@ for (const marker of [
   '@media (forced-colors:active)',
 ]) assert.ok(shellCss.includes(marker), `Shell foundation CSS missing contract: ${marker}`);
 
-assert.match(entry, /foundation\/application-migration\.css';\nimport '\.\.\/assets\/css\/motion-design\.css';\nimport '\.\.\/assets\/css\/shell-navigation\.css';\n(?:import '\.\.\/assets\/css\/shell-overlays\.css';\n)?(?:import '\.\.\/assets\/css\/shared-application-ui\.css';\n)?(?:import '\.\.\/assets\/css\/shell-account-menu\.css';\n)?(?:import '\.\.\/assets\/css\/shell-accessibility\.css';\n)?import '\.\.\/assets\/css\/boards-monday\.css';/, 'Shell foundation stylesheet must load after the legacy motion layer and before the Board layer, while permitting later shared application UI layers');
+assert.match(entry, /foundation\/application-migration\.css';\nimport '\.\.\/assets\/css\/motion-design\.css';\nimport '\.\.\/assets\/css\/shell-navigation\.css';\n(?:import '\.\.\/assets\/css\/shell-overlays\.css';\n)?(?:import '\.\.\/assets\/css\/shared-application-ui\.css';\n)?(?:import '\.\.\/assets\/css\/shell-account-menu\.css';\n)?(?:import '\.\.\/assets\/css\/shell-accessibility\.css';\n)?(?:import '\.\.\/assets\/css\/foundation\/host-ui-migration\.css';\n)?import '\.\.\/assets\/css\/boards-monday\.css';/, 'Shell foundation stylesheet must load after the legacy motion layer and before the Board layer, while permitting later shared application UI and M72 host migration layers');
 assert.ok(browser.includes("await fs.readFile('assets/css/shell-navigation.css', 'utf8')"), 'Browser integration must load the Shell M1 stylesheet in production CSS order');
 for (const marker of [
   'Shell navigation foundation uses the semantic 256px desktop width',

@@ -1,0 +1,16 @@
+export const STAGE_H_M55_FULL_STACK_FOLDER_STRUCTURE_TARGET = Object.freeze({
+  milestone: 55,
+  stage: 'H',
+  release: '1.43.2',
+  semanticsVersion: '1.43.2-m55-v1',
+  scope: 'full-stack-application-folder-structure',
+  activationState: 'active-certified',
+  failClosed: true,
+  canonicalStructureManifest: 'config/full-stack-folder-structure.ts',
+  requiredStaticGate: 'full-stack-structure:check',
+  requiredDeterministicGate: 'full-stack-structure:test',
+  requiredBrowserGate: 'full-stack-structure:browser',
+  requiredHistoricalGate: 'verify:historical-all',
+  certifiedArtifactDirectory: 'm55-certified-artifacts-upload',
+  certifiedBaseline: 'Work-Management-App-v1.43.2-Stage-H-M55-Certified-Baseline.zip',
+} as const);

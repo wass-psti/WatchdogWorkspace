@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "milestone": 57,
+  "sourceBaseline": "Work-Management-App-v1.43.2-Stage-H-M56-Certified-Baseline.zip",
+  "semanticsVersion": "1.43.2-m57-v1",
+  "vocabulary": {
+    "principles": 8,
+    "hierarchy": ["primary", "secondary", "tertiary", "supporting"],
+    "contentPriority": ["critical", "primary", "secondary", "metadata"],
+    "interactionPriority": ["primary", "secondary", "tertiary", "destructive", "quiet"],
+    "surfaceRoles": ["canvas", "base", "raised", "overlay", "inset"],
+    "density": ["comfortable", "compact", "dense"],
+    "spatialIntent": ["cluster", "section", "separation", "containment"],
+    "emphasis": ["default", "subtle", "strong", "critical"],
+    "alignment": ["start", "center", "end", "baseline", "numeric-end"]
+  },
+  "protectedSuccessorOwnership": {
+    "tokens": 58,
+    "typography": 59,
+    "themeContrast": 60,
+    "layoutSpatial": 61,
+    "responsive": 62,
+    "accessibility": 63
+  },
+  "visualRuntimeMutationAllowed": false
+}

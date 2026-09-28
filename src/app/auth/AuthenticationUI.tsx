@@ -4,6 +4,7 @@ import { navigate } from '../../../assets/js/core/router.ts';
 import { authenticationUiRuntime } from './authentication-ui-runtime.ts';
 import { useAuthenticationUiRuntime } from './useAuthenticationUiRuntime.ts';
 import { presentationReadinessRuntime } from '../composition/presentation-readiness-runtime.ts';
+import { WMButton, WMErrorState, WMField, WMInput, WMLoadingState, WMStatusMessage } from '../../design-system/index.ts';
 
 type BusyAction = 'login' | 'register' | 'resend' | 'verify' | 'verify-resend' | 'signout' | 'recover' | null;
 
@@ -23,7 +24,7 @@ function Brand() {
 
 function AuthenticationShell({ kicker, title, children }: { readonly kicker: string; readonly title: string; readonly children: ReactNode }) {
   return (
-    <div className="auth-shell" data-wm-authentication-ui-host="" data-wm-composition-owner="react-authentication-ui">
+    <div className="auth-shell" data-wm-authentication-ui-host="" data-wm-composition-owner="react-authentication-ui" data-wm-host-migrated="authentication">
       <main id="main" className="auth-panel" data-wm-authentication-ui-view={authenticationUiRuntime.getSnapshot().view} aria-labelledby="wm-authentication-title">
         <Brand />
         <span className="auth-kicker">{kicker}</span>
@@ -36,7 +37,7 @@ function AuthenticationShell({ kicker, title, children }: { readonly kicker: str
 
 function Feedback({ message, tone }: { readonly message: string; readonly tone: 'success' | 'warning' }) {
   if (!message) return null;
-  return <div className={`auth-message ${tone}`} role={tone === 'warning' ? 'alert' : 'status'}>{message}</div>;
+  return <WMStatusMessage className={`auth-message ${tone}`} tone={tone} title={message} announcement={tone === 'warning' ? 'assertive' : 'polite'} />;
 }
 
 function BootView() {
@@ -227,13 +228,13 @@ export function AuthenticationUI() {
     const setup = !auth.isConfigured;
     return (
       <AuthenticationShell kicker="SECURE ACCESS" title="Sign in to your workspace">
-        {setup ? <div className="auth-message warning" role="alert"><strong>Account backend is not configured.</strong><span>Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> in your Vite environment. Never place a secret or service-role key in client configuration.</span></div> : null}
+        {setup ? <WMStatusMessage className="auth-message warning" tone="warning" title="Account backend is not configured." description={<span>Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> in your Vite environment. Never place a secret or service-role key in client configuration.</span>} announcement="assertive" /> : null}
         <Feedback message={runtime.feedbackMessage} tone={runtime.feedbackTone} />
         {runtime.needsConfirmation ? <div className="auth-confirmation-help"><strong>Email confirmation is still required.</strong><span>Confirm the address from the Supabase email, or request a new message after the cooldown. Repeated requests are intentionally blocked to avoid unnecessary email API calls.</span><button type="button" className="secondary-btn" data-resend-confirmation onClick={() => void resendConfirmation()} disabled={Boolean(busy) || !auth.isConfigured || resendRemaining > 0}>{busy === 'resend' ? 'Requesting…' : cooldownLabel(resendRemaining, 'Resend confirmation email')}</button></div> : null}
         <form className="auth-form" data-auth-form="login" data-wm-authentication-ui-form="login" onSubmit={(event) => void submitLogin(event)}>
-          <label>Email<input name="email" type="email" autoComplete="email" value={runtime.pendingConfirmationEmail} onChange={(event) => authenticationUiRuntime.setPendingConfirmationEmail(event.currentTarget.value)} required /></label>
-          <label>Password<input name="password" type="password" autoComplete="current-password" minLength={8} required /></label>
-          <button className="primary-btn" type="submit" disabled={Boolean(busy) || !auth.isConfigured} aria-busy={busy === 'login'}>{busy === 'login' ? 'Signing in…' : 'Sign in'}</button>
+          <WMField label="Email" required><WMInput name="email" type="email" autoComplete="email" value={runtime.pendingConfirmationEmail} onChange={(event) => authenticationUiRuntime.setPendingConfirmationEmail(event.currentTarget.value)} required /></WMField>
+          <WMField label="Password" required><WMInput name="password" type="password" autoComplete="current-password" minLength={8} required /></WMField>
+          <WMButton className="primary-btn" variant="solid" type="submit" disabled={Boolean(busy) || !auth.isConfigured} loading={busy === 'login'}>{busy === 'login' ? 'Signing in…' : 'Sign in'}</WMButton>
         </form>
         {auth.backend.allowRegistration ? <p className="auth-switch">Need an account? <button type="button" data-auth-ui-nav="register" onClick={() => go('register')}>Register</button></p> : null}
         <p className="auth-security">Sessions use Supabase Auth. This client contains only public configuration; privileged keys remain server-side.</p>
@@ -246,11 +247,11 @@ export function AuthenticationUI() {
       <AuthenticationShell kicker="ACCOUNT CREATION" title="Register for Work Management">
         <Feedback message={runtime.feedbackMessage} tone={runtime.feedbackTone} />
         <form className="auth-form" data-auth-form="register" data-wm-authentication-ui-form="register" onSubmit={(event) => void submitRegister(event)}>
-          <label>Display name<input name="displayName" type="text" autoComplete="name" maxLength={80} value={runtime.registrationDraft.displayName} onChange={(event) => authenticationUiRuntime.setRegistrationDraft({ ...runtime.registrationDraft, displayName: event.currentTarget.value })} required /></label>
-          <label>Email<input name="email" type="email" autoComplete="email" value={runtime.registrationDraft.email} onChange={(event) => authenticationUiRuntime.setRegistrationDraft({ ...runtime.registrationDraft, email: event.currentTarget.value })} required /></label>
-          <label>Password<input name="password" type="password" autoComplete="new-password" minLength={10} required /></label>
-          <label>Confirm password<input name="confirmPassword" type="password" autoComplete="new-password" minLength={10} required /></label>
-          <button className="primary-btn" type="submit" disabled={Boolean(busy) || !auth.isConfigured || signupRemaining > 0} aria-busy={busy === 'register'}>{busy === 'register' ? 'Creating account…' : cooldownLabel(signupRemaining, 'Create account')}</button>
+          <WMField label="Display name" required><WMInput name="displayName" type="text" autoComplete="name" maxLength={80} value={runtime.registrationDraft.displayName} onChange={(event) => authenticationUiRuntime.setRegistrationDraft({ ...runtime.registrationDraft, displayName: event.currentTarget.value })} required /></WMField>
+          <WMField label="Email" required><WMInput name="email" type="email" autoComplete="email" value={runtime.registrationDraft.email} onChange={(event) => authenticationUiRuntime.setRegistrationDraft({ ...runtime.registrationDraft, email: event.currentTarget.value })} required /></WMField>
+          <WMField label="Password" required><WMInput name="password" type="password" autoComplete="new-password" minLength={10} required /></WMField>
+          <WMField label="Confirm password" required><WMInput name="confirmPassword" type="password" autoComplete="new-password" minLength={10} required /></WMField>
+          <WMButton className="primary-btn" variant="solid" type="submit" disabled={Boolean(busy) || !auth.isConfigured || signupRemaining > 0} loading={busy === 'register'}>{busy === 'register' ? 'Creating account…' : cooldownLabel(signupRemaining, 'Create account')}</WMButton>
         </form>
         <p className="auth-switch">Already registered? <button type="button" data-auth-ui-nav="login" onClick={() => go('login')}>Sign in</button></p>
         <div className="auth-rate-note"><strong>Email delivery protection</strong><span>Registration is single-submit and cooldown protected. Supabase&apos;s built-in email service is low-volume; production deployments should configure Custom SMTP rather than repeatedly retrying a rate-limited request.</span></div>
@@ -263,7 +264,7 @@ export function AuthenticationUI() {
     return (
       <AuthenticationShell kicker="SESSION RECOVERY" title="Access validation is temporarily unavailable">
         <Feedback message={runtime.feedbackMessage || auth.state.error || ''} tone="warning" />
-        <div className="auth-message warning" role="alert"><strong>Your saved session has been preserved.</strong><span>Work Management could not validate the current profile and authorization context. Protected routes remain locked until validation succeeds.</span></div>
+        <WMStatusMessage className="auth-message warning" tone="warning" title="Your saved session has been preserved." description="Work Management could not validate the current profile and authorization context. Protected routes remain locked until validation succeeds." announcement="assertive" />
         <button type="button" className="primary-btn auth-full-button" data-wm-authentication-ui-action="retry-session" disabled={busy === 'recover'} aria-busy={busy === 'recover'} onClick={() => void retrySessionRecovery()}>{busy === 'recover' ? 'Retrying…' : 'Retry access validation'}</button>
         <button type="button" className="secondary-btn auth-full-button" data-wm-authentication-ui-action="signout" disabled={Boolean(busy)} onClick={() => void signOutDisabledAccount()}>Sign out this browser</button>
       </AuthenticationShell>
@@ -274,7 +275,7 @@ export function AuthenticationUI() {
     return (
       <AuthenticationShell kicker="ACCOUNT RESTRICTED" title="This account is disabled">
         <Feedback message={runtime.feedbackMessage} tone={runtime.feedbackTone} />
-        <div className="auth-message warning" role="alert"><strong>Access has been suspended.</strong><span>Contact a platform administrator to restore the account. No application modules can be opened while the account is disabled.</span></div>
+        <WMStatusMessage className="auth-message warning" tone="warning" title="Access has been suspended." description="Contact a platform administrator to restore the account. No application modules can be opened while the account is disabled." announcement="assertive" />
         <button type="button" className="primary-btn auth-full-button" data-wm-authentication-ui-action="signout" disabled={busy === 'signout'} aria-busy={busy === 'signout'} onClick={() => void signOutDisabledAccount()}>{busy === 'signout' ? 'Signing out…' : 'Sign out'}</button>
       </AuthenticationShell>
     );
@@ -288,7 +289,7 @@ export function AuthenticationUI() {
   if (status === 'processing') {
     return (
       <AuthenticationShell kicker="EMAIL VERIFICATION" title="Confirming your account">
-        <div className="verification-state processing" role="status" aria-live="polite"><span className="verification-spinner" aria-hidden="true" /><strong>Verifying email address…</strong><p>Please keep this tab open while Work Management validates the one-time confirmation token with Supabase.</p></div>
+        <WMLoadingState className="verification-state processing" title="Verifying email address…" description="Please keep this tab open while Work Management validates the one-time confirmation token with Supabase." announcement="polite" />
       </AuthenticationShell>
     );
   }
@@ -312,10 +313,10 @@ export function AuthenticationUI() {
 
   return (
     <AuthenticationShell kicker="VERIFICATION RECOVERY" title="Confirm your email">
-      <div className="verification-state error" role="alert"><strong>Verification could not be completed.</strong><p>{message}</p></div>
+      <WMErrorState className="verification-state error" title="Verification could not be completed." description={message} announcement="assertive" />
       <Feedback message={runtime.feedbackMessage && runtime.feedbackMessage !== message ? runtime.feedbackMessage : ''} tone={runtime.feedbackTone} />
       <form className="auth-form compact" data-auth-form="verify-resend" data-wm-authentication-ui-form="verify-resend" onSubmit={(event) => void submitVerificationResend(event)}>
-        <label>Email<input name="email" type="email" autoComplete="email" value={emailValue} onChange={(event) => authenticationUiRuntime.setPendingConfirmationEmail(event.currentTarget.value)} required /></label>
+        <WMField label="Email" required><WMInput name="email" type="email" autoComplete="email" value={emailValue} onChange={(event) => authenticationUiRuntime.setPendingConfirmationEmail(event.currentTarget.value)} required /></WMField>
         <button className="secondary-btn" type="submit" disabled={busy === 'verify-resend'} aria-busy={busy === 'verify-resend'}>{busy === 'verify-resend' ? 'Requesting…' : 'Send a new confirmation email'}</button>
       </form>
       <p className="auth-switch">Already confirmed? <button type="button" data-auth-ui-nav="login" onClick={() => go('login')}>Sign in</button></p>

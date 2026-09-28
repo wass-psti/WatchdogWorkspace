@@ -1,0 +1,38 @@
+/* Stage H M63 — Accessibility Foundation & Interaction Semantics.
+   Shared policy only; feature/module migration remains staged for M64/M72–M76. */
+:root {
+  --wm-a11y-focus-width: var(--wm-focus-width);
+  --wm-a11y-focus-color: var(--wm-color-focus);
+  --wm-a11y-focus-offset: 2px;
+  --wm-a11y-target-min: 44px;
+}
+
+:where(.wm-a11y-focus-ring):focus-visible {
+  outline: var(--wm-a11y-focus-width) solid var(--wm-a11y-focus-color);
+  outline-offset: var(--wm-a11y-focus-offset);
+}
+
+:where(.wm-a11y-target) {
+  min-inline-size: var(--wm-a11y-target-min);
+  min-block-size: var(--wm-a11y-target-min);
+}
+
+:where(.wm-a11y-live-region[aria-live]) {
+  pointer-events: none;
+}
+
+:where(.wm-a11y-inert[aria-hidden="true"]) {
+  pointer-events: none;
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.wm-a11y-reduce-motion) { scroll-behavior: auto; }
+}
+
+@media (forced-colors: active) {
+  :where(.wm-a11y-focus-ring):focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}

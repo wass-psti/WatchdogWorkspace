@@ -463,6 +463,7 @@
   });
 
   function initialize() {
+    document.body.dataset.wmFuelTrackHarmonized = "m75";
     bindGlobalEvents();
     routeTo("dashboard", false);
     updateAutoRefreshStatus("starting");
@@ -590,6 +591,7 @@
 
   function enhanceFuelTrackPresentation(route = state.route) {
     els.content.dataset.uiScreen = route;
+    els.content.dataset.wmFuelTrackHarmonized = "m75";
     els.content.classList.add("wm-screen-host");
     els.content.querySelectorAll(".page-head").forEach((node)=>node.classList.add("wm-page-header"));
     els.content.querySelectorAll(".page-actions,.filter-actions,.table-actions,.form-actions,.modal-actions,.activity-actions").forEach((node)=>node.classList.add("wm-action-row"));
@@ -600,9 +602,17 @@
     });
     els.content.querySelectorAll("input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),select,textarea").forEach((control)=>control.classList.add("wm-field-control","wm-control--md"));
     els.content.querySelectorAll('input[type="checkbox"]').forEach((control)=>control.classList.add("wm-checkbox"));
-    els.content.querySelectorAll("table").forEach((table)=>table.classList.add("wm-table"));
-    els.content.querySelectorAll(".empty-state,.empty").forEach((node)=>node.classList.add("wm-empty-state"));
-    els.content.querySelectorAll(".data-banner").forEach((node)=>{ node.classList.add("wm-alert"); if(node.classList.contains("error")) node.dataset.tone="danger"; });
+    els.content.querySelectorAll("table").forEach((table)=>{
+      table.classList.add("wm-table");
+      table.closest(".table-wrap,.table-shell,.table-container,.table-panel")?.classList.add("wm-data-region","wm-scroll-region");
+    });
+    els.content.querySelectorAll(".empty-state,.empty").forEach((node)=>node.classList.add("wm-feedback-state","wm-empty-state"));
+    els.content.querySelectorAll(".data-banner").forEach((node)=>{
+      node.classList.add("wm-status-message");
+      node.dataset.tone = node.classList.contains("error") ? "danger" : "info";
+    });
+    els.content.querySelectorAll(".status-pill,.nav-badge,.activity-sync-status").forEach((node)=>node.classList.add("wm-status-pill"));
+    els.content.querySelectorAll(".kpi-card,.primary-metric-card,.approval-kpi-card,.lightfuels-kpi-card").forEach((node)=>node.classList.add("wm-metric-card"));
     els.content.querySelectorAll("button.button,button.primary-action").forEach((button)=>{
       const primary=button.classList.contains("primary")||button.classList.contains("primary-action");
       const danger=button.classList.contains("danger");
@@ -3790,7 +3800,7 @@
   function escapeAttr(v){return escapeHtml(v).replaceAll("`","&#096;");}
 
   function toast(title,message,type="success"){
-    const node=document.createElement("div");node.className=`toast ${type}`;
+    const node=document.createElement("div");node.className=`toast ${type} wm-status-message`;node.dataset.tone=type==="error"?"danger":type==="success"?"success":"info";
     node.innerHTML=`<div class="toast-title">${escapeHtml(title)}</div><div class="toast-message">${escapeHtml(message)}</div>`;
     els.toastRegion.appendChild(node);
     setTimeout(()=>{node.style.opacity="0";node.style.translate="16px 0";setTimeout(()=>node.remove(),180);},3200);

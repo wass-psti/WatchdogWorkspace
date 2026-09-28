@@ -58,7 +58,7 @@ export function WorkManagementShell() {
   }, [mobileOpen, shell.navigation.resizing, shellActive]);
 
   return (
-    <div data-wm-react-shell-root="" data-wm-react-shell-mode={runtime.mode}>
+    <div data-wm-react-shell-root="" data-wm-react-shell-mode={runtime.mode} data-wm-host-migrated="shell">
       <div
         className={shellActive ? 'shell' : undefined}
         data-wm-react-shell-layout=""

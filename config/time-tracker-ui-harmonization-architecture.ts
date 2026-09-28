@@ -1,0 +1,20 @@
+export const timeTrackerUiHarmonizationArchitecture = Object.freeze({
+  milestone: 74,
+  stage: 'H',
+  scope: 'time-tracker-ui-harmonization',
+  baseline: 'Work-Management-App-v1.43.2-Stage-H-M73-Certified-Baseline.zip',
+  presentationOwner: 'apps/time-tracker',
+  runtimeModel: 'embedded-module-with-application-scoped-role-authority',
+  invariants: Object.freeze({
+    presentationOnly: true,
+    noTimeTrackerSchemaOrMigrationChange: true,
+    noTimeTrackerBackendApiChange: true,
+    noAttendanceLifecycleChange: true,
+    noGpsLifecycleChange: true,
+    noOtWorkflowChange: true,
+    noRolePolicyChange: true,
+    noCloudIdentityOwnershipChange: true,
+    preserveLegacySelectorsAndEventHooks: true,
+  }),
+  successors: Object.freeze({ fuelTrackPlus:75, tradeLink:76, finalUiCertification:77 }),
+});

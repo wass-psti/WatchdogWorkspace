@@ -1,0 +1,26 @@
+/* Stage H M71 — shared interaction, motion and continuity architecture. */
+:root{
+  --wm-continuity-duration-instant:var(--wm-semantic-motion-instant,var(--wm-motion-instant));
+  --wm-continuity-duration-fast:var(--wm-semantic-motion-fast,var(--wm-motion-fast));
+  --wm-continuity-duration-standard:var(--wm-semantic-motion-standard,var(--wm-motion-normal));
+  --wm-continuity-duration-deliberate:var(--wm-semantic-motion-deliberate,var(--wm-motion-slow));
+  --wm-continuity-ease-standard:var(--wm-semantic-ease-standard,var(--wm-motion-ease));
+  --wm-continuity-ease-enter:var(--wm-semantic-ease-enter,var(--wm-motion-ease-enter));
+  --wm-continuity-ease-exit:var(--wm-semantic-ease-exit,var(--wm-motion-ease-exit));
+}
+[data-wm-continuity-kind="state"]{--wm-continuity-active-duration:var(--wm-continuity-duration-fast)}
+[data-wm-continuity-kind="route"]{--wm-continuity-active-duration:var(--wm-continuity-duration-standard)}
+[data-wm-continuity-kind="overlay"]{--wm-continuity-active-duration:var(--wm-continuity-duration-fast)}
+[data-wm-continuity-kind="feedback"]{--wm-continuity-active-duration:var(--wm-continuity-duration-fast)}
+[data-wm-continuity-kind="decorative"]{--wm-continuity-active-duration:var(--wm-continuity-duration-deliberate)}
+[data-wm-continuity-kind="static"]{--wm-continuity-active-duration:0ms}
+
+/* Opt-in utility for composited, bounded transitions only. */
+.wm-continuity-transform{transition:transform var(--wm-continuity-active-duration,var(--wm-continuity-duration-fast)) var(--wm-continuity-ease-standard)}
+.wm-continuity-opacity{transition:opacity var(--wm-continuity-active-duration,var(--wm-continuity-duration-fast)) var(--wm-continuity-ease-standard)}
+
+@media (prefers-reduced-motion:reduce){
+  :root{--wm-continuity-duration-instant:0ms;--wm-continuity-duration-fast:0ms;--wm-continuity-duration-standard:0ms;--wm-continuity-duration-deliberate:0ms}
+  .wm-continuity-transform,.wm-continuity-opacity{transition-duration:0ms!important;animation:none!important}
+  [data-wm-continuity-kind="decorative"]{animation:none!important;transform:none!important}
+}

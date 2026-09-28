@@ -1,0 +1,33 @@
+/*
+ * Stage H M61 — Layout, Grid & Spatial System.
+ *
+ * Canonical spatial aliases compose the certified M58 spacing scale into
+ * layout intent without changing concrete values. M62 owns breakpoint-driven
+ * adaptation; M61 owns only static spatial semantics and primitive geometry.
+ */
+:root {
+  --wm-layout-gap-tight: var(--wm-space-050);
+  --wm-layout-gap-compact: var(--wm-space-100);
+  --wm-layout-gap-control: var(--wm-space-150);
+  --wm-layout-gap-standard: var(--wm-space-200);
+  --wm-layout-gap-section: var(--wm-space-300);
+  --wm-layout-gap-major: var(--wm-space-400);
+
+  --wm-layout-inset-compact: var(--wm-space-100);
+  --wm-layout-inset-control: var(--wm-space-150);
+  --wm-layout-inset-standard: var(--wm-space-200);
+  --wm-layout-inset-section: var(--wm-space-300);
+  --wm-layout-inset-major: var(--wm-space-400);
+
+  --wm-layout-page-max: var(--wm-content-max);
+  --wm-layout-reading-max: var(--wm-reading-max);
+  --wm-layout-page-padding-start: var(--wm-space-300);
+  --wm-layout-page-padding-inline: var(--wm-space-400);
+  --wm-layout-page-padding-end: var(--wm-space-600);
+  --wm-layout-section-gap: var(--wm-space-150);
+
+  --wm-layout-stack-gap: var(--wm-space-200);
+  --wm-layout-cluster-gap: var(--wm-space-100);
+  --wm-layout-grid-gap: var(--wm-space-200);
+  --wm-layout-min-inline-gutter: var(--wm-space-200);
+}

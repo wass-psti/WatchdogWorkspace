@@ -1,0 +1,52 @@
+{
+  "milestone": 61,
+  "sourceMilestone": 60,
+  "semanticSpatialAliasCount": 21,
+  "spatialRoles": [
+    "tight",
+    "compact",
+    "control",
+    "standard",
+    "section",
+    "major"
+  ],
+  "contentWidths": [
+    "content",
+    "reading",
+    "full"
+  ],
+  "gridColumns": [
+    1,
+    2,
+    3
+  ],
+  "certifiedAuthorities": {
+    "tokensCss": {
+      "path": "assets/css/foundation/tokens.css",
+      "sha256": "bb57be981b061589b992b19bb149cec0513d6872c032006d72486be9f4ac2891"
+    },
+    "tokenArchitectureCss": {
+      "path": "assets/css/foundation/token-architecture.css",
+      "sha256": "0b54b31d483c92f7664f301ac40b7f6e6b6146845f0c52c93ae7fb5b06574ec3"
+    },
+    "typographySystemCss": {
+      "path": "assets/css/foundation/typography-system.css",
+      "sha256": "9664fd35aefbfe55d0f899684f87e21cd30a05fcf7f26fedd16d05e45635dedb"
+    },
+    "themesCss": {
+      "path": "assets/css/foundation/themes.css",
+      "sha256": "4ff610b024970cb705e6fd89c01e49d1a003224f2a7380019db7124dac0cc22c"
+    }
+  },
+  "preM61LayoutPrimitiveSha256": "1dc213f17a29b43c6d726d7f6fa0baf2f023df9358f923ade75e535c75e265f6",
+  "defaultEquivalence": {
+    "stack": "--wm-space-200",
+    "stackSm": "--wm-space-100",
+    "stackLg": "--wm-space-300",
+    "cluster": "--wm-space-100",
+    "grid": "--wm-space-200",
+    "pageMax": "--wm-content-max",
+    "pageInlinePadding": "--wm-space-400",
+    "sectionGap": "--wm-space-150"
+  }
+}

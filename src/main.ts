@@ -1,7 +1,17 @@
 import '../assets/css/foundation/tokens.css';
 import '../assets/css/foundation/themes.css';
+import '../assets/css/foundation/token-architecture.css';
+import '../assets/css/foundation/typography-system.css';
+import '../assets/css/foundation/layout-system.css';
+import '../assets/css/foundation/responsive-system.css';
+import '../assets/css/foundation/accessibility-system.css';
 import '../assets/css/foundation/primitives.css';
 import '../assets/css/foundation/interactions.css';
+import '../assets/css/foundation/overlay-system.css';
+import '../assets/css/foundation/feedback-system.css';
+import '../assets/css/foundation/dense-data-system.css';
+import '../assets/css/foundation/analytics-system.css';
+import '../assets/css/foundation/motion-continuity-system.css';
 import '../assets/css/app.css';
 import '../assets/css/foundation/components.css';
 import '../assets/css/foundation/application-migration.css';
@@ -11,7 +21,9 @@ import '../assets/css/shell-overlays.css';
 import '../assets/css/shared-application-ui.css';
 import '../assets/css/shell-account-menu.css';
 import '../assets/css/shell-accessibility.css';
+import '../assets/css/foundation/host-ui-migration.css';
 import '../assets/css/boards-monday.css';
+import '../assets/css/foundation/boards-ui-migration.css';
 
 // Keep the existing checked-in public-client configuration as the compatibility
 // baseline, then allow Vite mode/environment values to override it at build/dev time.

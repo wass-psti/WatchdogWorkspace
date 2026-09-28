@@ -1,0 +1,40 @@
+{
+  "milestone": 60,
+  "sourceMilestone": 59,
+  "themeModes": [
+    "system",
+    "light",
+    "dark"
+  ],
+  "expectedUniqueThemeRoles": 91,
+  "contrastThresholds": {
+    "normalText": 4.5,
+    "focus": 3.0
+  },
+  "certifiedAuthorities": {
+    "tokensCss": {
+      "path": "assets/css/foundation/tokens.css",
+      "sha256": "bb57be981b061589b992b19bb149cec0513d6872c032006d72486be9f4ac2891"
+    },
+    "tokenArchitectureCss": {
+      "path": "assets/css/foundation/token-architecture.css",
+      "sha256": "0b54b31d483c92f7664f301ac40b7f6e6b6146845f0c52c93ae7fb5b06574ec3"
+    },
+    "typographySystemCss": {
+      "path": "assets/css/foundation/typography-system.css",
+      "sha256": "9664fd35aefbfe55d0f899684f87e21cd30a05fcf7f26fedd16d05e45635dedb"
+    },
+    "themePreferenceRuntime": {
+      "path": "assets/js/core/platform.ts",
+      "sha256": "a1e73978f58423f9de7ae15a8a43cd4757bca9cc84cd3640f657daf0e591a77d"
+    },
+    "settingsRuntime": {
+      "path": "src/app/management/authenticated-management-ui-runtime.ts",
+      "sha256": "bae20e94446a6e1ffbfc40f05ba3a1946309df12d37630cdc1f5c76b0c0c5b84"
+    }
+  },
+  "correctedLightRoles": {
+    "--wm-color-text-tertiary": "#6d7784",
+    "--wm-color-accent": "#c74f26"
+  }
+}

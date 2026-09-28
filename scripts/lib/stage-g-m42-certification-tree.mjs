@@ -26,7 +26,7 @@ const excludedRelativeFiles = new Set([
 ]);
 
 const isConcreteEnvironmentFile = (name) => name === '.env' || (name.startsWith('.env.') && !name.endsWith('.example'));
-const isLocalGeneratedFile = (name) => name === '.DS_Store' || /^npm-debug\.log(?:\.|$)/.test(name);
+const isLocalGeneratedFile = (name) => name === '.DS_Store' || name.startsWith('._') || /^npm-debug\.log(?:\.|$)/.test(name);
 
 function collect(root, current = root, entries = []) {
   for (const dirent of fs.readdirSync(current, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {

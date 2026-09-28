@@ -2,6 +2,7 @@ import type { BoardGroup, BoardItem, StatusLabel } from '../../../../../src/feat
 import type { MutableBoardViewState } from '../../../../../src/features/boards/contracts/view-state.ts';
 import type { UserId } from '../../../../../src/types/identifiers.ts';
 import type { DateFormatter, EscapeHtml } from '../../../../../src/platform/contracts/ui.ts';
+import { buttonClass, iconButtonClass } from '../../../platform/ui/primitives.ts';
 
 interface KanbanMember {
   readonly display_name?: string | null;
@@ -93,7 +94,7 @@ export function renderBoardKanbanView({
     const laneTitleId = `kanban-lane-title-${laneIndex}`;
     const laneCanAccept = statusLabel.active;
     const addAction = editable && primaryGroup && laneCanAccept
-      ? `<button type="button" class="kanban-add-item" data-kanban-add-status="${esc(status)}" data-kanban-add-group="${primaryGroup}" aria-label="Add an item with status ${esc(label)}">${addIcon}<span>Add item</span></button>`
+      ? `<button type="button" class="${buttonClass({ tone: 'ghost', size: 'sm' }, 'kanban-add-item')}" data-kanban-add-status="${esc(status)}" data-kanban-add-group="${primaryGroup}" aria-label="Add an item with status ${esc(label)}">${addIcon}<span>Add item</span></button>`
       : '';
     const cards = lane.length ? lane.map((item, cardIndex) => {
       const group = groupsById.get(String(item.group_id));
@@ -102,10 +103,10 @@ export function renderBoardKanbanView({
       const cardTitleId = `kanban-card-title-${laneIndex}-${cardIndex}`;
       const dueLabel = item.due_date ? formatDay(item.due_date) : 'No due date';
       const dragHandle = editable
-        ? `<button type="button" class="kanban-drag-handle" data-kanban-item-drag="${esc(item.id)}" aria-label="Move ${esc(item.title)} between status lanes. Use Arrow Left or Arrow Right, Home, or End." title="Drag card or use Left/Right/Home/End to change status">${dragIcon}</button>`
+        ? `<button type="button" class="${iconButtonClass({ tone: 'ghost', size: 'sm' }, 'kanban-drag-handle')}" data-kanban-item-drag="${esc(item.id)}" aria-label="Move ${esc(item.title)} between status lanes. Use Arrow Left or Arrow Right, Home, or End." title="Drag card or use Left/Right/Home/End to change status">${dragIcon}</button>`
         : '';
       return `<article class="kanban-card ${state.itemPanel.itemId === item.id ? 'is-detail-open' : ''}" role="listitem" draggable="${editable}" data-item-id="${item.id}" data-group-id="${item.group_id}" aria-labelledby="${cardTitleId}">
-        <div class="kanban-card-command-row">${dragHandle}<button type="button" class="kanban-card-open" data-open-item="${item.id}" aria-label="Open ${esc(item.title)}">
+        <div class="kanban-card-command-row">${dragHandle}<button type="button" class="${buttonClass({ tone: 'ghost' }, 'kanban-card-open')}" data-open-item="${item.id}" aria-label="Open ${esc(item.title)}">
           <span class="kanban-card-context"><span class="kanban-card-group" title="${esc(group?.title || 'No group')}">${esc(group?.title || 'No group')}</span><span class="kanban-card-open-mark">${openIcon}</span></span>
           <strong id="${cardTitleId}" title="${esc(item.title)}">${esc(item.title)}</strong>
         </button></div>
@@ -114,7 +115,7 @@ export function renderBoardKanbanView({
           <span class="kanban-card-due ${item.due_date ? '' : 'is-empty'}" title="${esc(dueLabel)}">${calendarIcon}<span>${esc(dueLabel)}</span></span>
         </footer>
       </article>`;
-    }).join('') : `<div class="kanban-empty" role="note">${emptyIcon}<div class="kanban-empty-copy"><strong>No items in ${esc(label)}</strong><span>${editable && laneCanAccept ? 'Add an item here or drag work into this lane.' : statusLabel.active ? 'Items moved to this status will appear here.' : 'Existing items remain visible here, but inactive statuses cannot receive new items.'}</span></div>${editable && primaryGroup && laneCanAccept ? `<button type="button" class="kanban-empty-add" data-kanban-add-status="${esc(status)}" data-kanban-add-group="${primaryGroup}">${addIcon}<span>Add first item</span></button>` : ''}</div>`;
+    }).join('') : `<div class="kanban-empty" role="note">${emptyIcon}<div class="kanban-empty-copy"><strong>No items in ${esc(label)}</strong><span>${editable && laneCanAccept ? 'Add an item here or drag work into this lane.' : statusLabel.active ? 'Items moved to this status will appear here.' : 'Existing items remain visible here, but inactive statuses cannot receive new items.'}</span></div>${editable && primaryGroup && laneCanAccept ? `<button type="button" class="${buttonClass({ tone: 'secondary', size: 'sm' }, 'kanban-empty-add')}" data-kanban-add-status="${esc(status)}" data-kanban-add-group="${primaryGroup}">${addIcon}<span>Add first item</span></button>` : ''}</div>`;
 
     const dropAttribute = laneCanAccept ? ` data-drop-status="${esc(status)}"` : '';
     const laneState = statusLabel.active ? '' : `<span class="kanban-lane-state" aria-label="${statusLabel.unavailable ? 'Unavailable status' : 'Inactive status'}">${statusLabel.unavailable ? 'Unavailable' : 'Inactive'}</span>`;
@@ -128,8 +129,8 @@ export function renderBoardKanbanView({
   }).join('');
 
   if (!configured.length) {
-    return `<div class="kanban-board kanban-board-empty" role="region" aria-label="Board Kanban view" tabindex="0"><div class="kanban-view-empty">${emptyIcon}<strong>No status lanes are configured</strong><span>Configure a Status column to organize this board in Kanban.</span></div></div>`;
+    return `<div class="wm-data-region wm-scroll-region kanban-board kanban-board-empty" role="region" data-wm-boards-migrated="kanban" aria-label="Board Kanban view" tabindex="0"><div class="wm-empty-state kanban-view-empty">${emptyIcon}<strong>No status lanes are configured</strong><span>Configure a Status column to organize this board in Kanban.</span></div></div>`;
   }
 
-  return `<div class="kanban-board" role="region" aria-label="Board Kanban view. Scroll horizontally to review status lanes." tabindex="0" data-kanban-lane-count="${configured.length}">${lanes}</div>`;
+  return `<div class="wm-data-region wm-scroll-region kanban-board" role="region" data-wm-boards-migrated="kanban" aria-label="Board Kanban view. Scroll horizontally to review status lanes." tabindex="0" data-kanban-lane-count="${configured.length}">${lanes}</div>`;
 }

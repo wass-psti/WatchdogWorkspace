@@ -1,0 +1,59 @@
+{
+  "milestone": 75,
+  "stage": "H",
+  "baseline": "M74-certified",
+  "migrationModel": "embedded-module-presentation-harmonization",
+  "harmonizedFuelTrackSurfaces": [
+    "navigation-and-shell-status",
+    "dashboard-and-primary-metrics",
+    "analytics",
+    "requests-and-data-regions",
+    "new-request-and-forms",
+    "approvals-and-refueling",
+    "lightfuels-activity-roles",
+    "dialogs-feedback-and-status"
+  ],
+  "requiredSharedConsumers": [
+    "wm-screen-host",
+    "wm-page-header",
+    "wm-action-row",
+    "wm-panel",
+    "wm-field",
+    "wm-field-control",
+    "wm-checkbox",
+    "wm-table",
+    "wm-data-region",
+    "wm-scroll-region",
+    "wm-feedback-state",
+    "wm-empty-state",
+    "wm-status-message",
+    "wm-status-pill",
+    "wm-metric-card",
+    "wm-button",
+    "wm-icon-button",
+    "wm-tabs",
+    "wm-tab",
+    "wm-dialog"
+  ],
+  "certifiedAuthorityHashes": {
+    "apps/fueltrack-plus/domain-config.js": "90d444dbd9bdb6c23cab6b9396d319ec5405f363e7b6f6f8c43be169b618180d",
+    "apps/fueltrack-plus/stability-runtime.js": "4455359bfa0f52a686bf4d5ba8cd453314119dad9d180b3df45e97d70961f615",
+    "assets/js/runtime/module-bootstrap.ts": "fe9d4b66d6e36a9bee15cfbfa93f0302a7d990d09aa4e1562e4b131e1d0aea46",
+    "assets/js/runtime/fueltrack-analytics.ts": "d2c6b178146d43cd50eedffc6e2e49ba342ceb9ea0fae2b557113a52e8ad11a3",
+    "src/design-system/time-tracker-harmonization-system.ts": "3023149966b3f79a7ede41e51c5440f2ca38eeb008503a26dd1f6444b3d5cabb",
+    "apps/time-tracker/domain-config.js": "7c378a04e2e5fffe3d1be3a21cc7cf3d66050db7cc94b5738ad9bfe96f97a0f7",
+    "apps/time-tracker/stability-runtime.js": "67354bf430fb2983a88ce467977e92f93520d8cde5ce429d4bf347b566b5bf74",
+    "apps/time-tracker/v2-motion.js": "7386e7098c816e56c59df8a85a2c76df8ec7c35d58fb171b4caa6e09573dd65b"
+  },
+  "domainPolicyChanged": false,
+  "requestLifecycleChanged": false,
+  "approvalLifecycleChanged": false,
+  "refuelingLifecycleChanged": false,
+  "rolePolicyChanged": false,
+  "cloudIdentityOwnershipChanged": false,
+  "analyticsRuntimeChanged": false,
+  "successorOwnership": {
+    "tradeLink": 76,
+    "finalProductionCertification": 77
+  }
+}

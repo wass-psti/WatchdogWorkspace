@@ -1,0 +1,61 @@
+{
+  "milestone": 64,
+  "certifiedBaseline": "M63",
+  "certifiedAuthorityHashes": {
+    "assets/css/foundation/tokens.css": "bb57be981b061589b992b19bb149cec0513d6872c032006d72486be9f4ac2891",
+    "assets/css/foundation/themes.css": "4ff610b024970cb705e6fd89c01e49d1a003224f2a7380019db7124dac0cc22c",
+    "assets/css/foundation/token-architecture.css": "0b54b31d483c92f7664f301ac40b7f6e6b6146845f0c52c93ae7fb5b06574ec3",
+    "assets/css/foundation/typography-system.css": "9664fd35aefbfe55d0f899684f87e21cd30a05fcf7f26fedd16d05e45635dedb",
+    "assets/css/foundation/layout-system.css": "274b454f645b6bf3b5183e2c0af8ff9cc49aa23e43b025f6e046c77a2e795593",
+    "assets/css/foundation/responsive-system.css": "4da93149f25b8715c722d924bef70e44bc9d3764d279b881fdb1aab5f5e8ce12",
+    "assets/css/foundation/accessibility-system.css": "940a608a720066358a7ba5506c972e81c9c30f86dad1ac19454f3b4964c7b965",
+    "assets/css/foundation/primitives.css": "80d8ae24bb04d3c7aba23c9435fd9a86fc8a8eb9e3aba47e5e47544901ff5743",
+    "assets/css/foundation/interactions.css": "d49856303bfc4445b50dea34afa02f5a06928ba35ea66ca7f01c72e99b475b0a",
+    "assets/css/foundation/components.css": "29c6d7f58a90d490e29afe341d664b2b1943ee949c29e4bee9e1860a5eb7ac37",
+    "src/design-system/interactions/button.tsx": "7b60cd02ea3f4c14a58c9c92571fcde770e43418f3ccf882354026989405b67d",
+    "src/design-system/interactions/dialog.tsx": "db4cac01b8acf489449c4089b39964642aaf3a3d9bcc804c44f1eb33c2e433a0",
+    "src/design-system/interactions/menu.tsx": "5088c371fd6c194a3be555d3ec7e140cb1fb98681944640a7d41092fc11ff43e",
+    "src/design-system/interactions/tabs.tsx": "345d51f59dc14e0a1d1b1a7b0e607c30ebb6436214a0be9694d0a792cdb6c4d5",
+    "assets/css/app.css": "a285b61d0a02ffd25442898cbfa461983a462e1d932e5d849e7f4d7f0e431c8d",
+    "assets/css/boards-monday.css": "a71da936e15f425bac8c0df715a29df6a76f42068cb22628f8201f7e04823d5e",
+    "apps/time-tracker/styles.css": "bcd071c336d0c1cf577293e3573853feec9b785cd47dcf2eba1122d0b93f4da8",
+    "apps/time-tracker/v2.css": "c4de8422ae012abb715960771b8222b851477716883cd6df2a574b56046aa4dd",
+    "apps/fueltrack-plus/styles.v3.17.0-wm6.css": "74e37b62399d067a7d7ee5a51c84046c209e81f2d3fee93a2020d47fbfa29ffe",
+    "apps/tradelink/styles.v1.42.0-wm1.css": "42ffd96684016fee9b0e254aab164390162b788fb5754e786673277724c557e2"
+  },
+  "canonicalTypedComponents": [
+    "WMButton",
+    "WMIconButton",
+    "WMSurface",
+    "WMDivider",
+    "WMBadge",
+    "WMToolbar",
+    "WMToolbarGroup",
+    "WMToolbarSpacer",
+    "WMTabs",
+    "WMCheckbox",
+    "WMSwitch",
+    "WMCollapsible",
+    "WMDialog",
+    "WMMenu",
+    "WMPopover",
+    "WMTooltip"
+  ],
+  "newM64Components": [
+    "WMBadge",
+    "WMToolbar",
+    "WMToolbarGroup",
+    "WMToolbarSpacer"
+  ],
+  "deferredOwnership": {
+    "formsAndDataEntry": 65,
+    "overlays": 66,
+    "feedbackAndEmptyStates": 67,
+    "hostMigration": 72,
+    "boardsMigration": 73,
+    "timeTrackerMigration": 74,
+    "fuelTrackMigration": 75,
+    "tradeLinkMigration": 76
+  },
+  "consumerRewriteRequired": false
+}

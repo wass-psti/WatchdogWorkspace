@@ -1,0 +1,41 @@
+{
+  "baseline": "Work-Management-App-v1.43.2-Stage-H-M71-Certified-Baseline.zip",
+  "milestone": 72,
+  "certifiedAuthorityHashes": {
+    "assets/js/app.ts": "08b3f39a3e4f43bc01a837e2936b412c8b69167cd8b05b5689d9701ac72c8d5e",
+    "src/app/auth/authentication-ui-runtime.ts": "71575603aba152e52a5f6505a98a3eb6dc110c750ba75c7972e1981a4424e686",
+    "src/app/management/authenticated-management-ui-runtime.ts": "bae20e94446a6e1ffbfc40f05ba3a1946309df12d37630cdc1f5c76b0c0c5b84",
+    "src/app/shared-ui/shared-application-ui-runtime.ts": "ae49d108086fe7687d6d34a6d451ae2064f6f1878835fb1666367a3a62a7c1a5",
+    "src/app/shell/shell-runtime-bridge.ts": "89147d0dc166291b2c1ee526aba0126f742650c51fa7522d9c04558ae01c39ba",
+    "assets/js/runtime/motion-orchestrator.ts": "991a86d32296731466df2c7b739b3c3b1dbc90213fa7f2c4416ff29c9ea83f38",
+    "assets/js/platform/state/client-state-store.ts": "def486b0843ce5596319ad680193646ec615c51b951cad6963e3e7731d5c3f1b",
+    "src/design-system/motion-continuity-system.ts": "52382cfc9a990dc12b66af10a826512657ec1ff7d79628c8c0bfa2a30b648555",
+    "assets/css/foundation/motion-continuity-system.css": "41d217231d01681c36a2ae3157e6084e39ec6b88cb2ed731d8fb2a860629ea5c"
+  },
+  "migratedReactSurfaces": [
+    "shell",
+    "authentication",
+    "management-account",
+    "management-settings",
+    "management-users",
+    "shared-ui"
+  ],
+  "requiredSharedConsumers": [
+    "WMButton",
+    "WMField",
+    "WMInput",
+    "WMNativeSelect",
+    "WMStatusMessage",
+    "WMLoadingState",
+    "WMErrorState",
+    "WMEmptyState"
+  ],
+  "boardsMigrationMilestone": 73,
+  "timeTrackerMigrationMilestone": 74,
+  "fuelTrackMigrationMilestone": 75,
+  "tradeLinkMigrationMilestone": 76,
+  "finalUiCertificationMilestone": 77,
+  "hostRuntimeOwnershipChanged": false,
+  "businessLogicChanged": false,
+  "embeddedModuleConsumerMigrationRequired": false
+}

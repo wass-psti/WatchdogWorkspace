@@ -1,0 +1,42 @@
+{
+  "milestone": 59,
+  "semanticsVersion": "1.43.2-m59-v1",
+  "sourceMilestone": 58,
+  "certifiedAuthorities": {
+    "tokensCss": {
+      "sha256": "bb57be981b061589b992b19bb149cec0513d6872c032006d72486be9f4ac2891"
+    },
+    "themesCss": {
+      "sha256": "deb357a6e6d154e5277fc121fcf2db063a7ec142e4352ea1d99f7438ede42bb7"
+    },
+    "tokenArchitectureCss": {
+      "sha256": "0b54b31d483c92f7664f301ac40b7f6e6b6146845f0c52c93ae7fb5b06574ec3"
+    }
+  },
+  "roles": [
+    "display",
+    "pageTitle",
+    "sectionTitle",
+    "subsectionTitle",
+    "body",
+    "bodyStrong",
+    "control",
+    "label",
+    "caption",
+    "helper",
+    "metadata",
+    "data",
+    "dataHeader"
+  ],
+  "specializedRoles": [
+    "numeric",
+    "code"
+  ],
+  "contentFlow": [
+    "wrap",
+    "truncate",
+    "preserve"
+  ],
+  "existingConsumerRewriteRequired": false,
+  "concreteTokenChangeAllowed": false
+}

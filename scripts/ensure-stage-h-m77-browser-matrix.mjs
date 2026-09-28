@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+const root=path.resolve(import.meta.dirname,'..');
+const bootstrap=spawnSync(process.execPath,['scripts/ensure-modern-test-toolchain.mjs'],{cwd:root,stdio:'inherit'});
+if(bootstrap.error) throw bootstrap.error;
+if(bootstrap.status!==0) throw new Error(`M77 modern test toolchain bootstrap failed with exit code ${bootstrap.status??'unknown'}.`);
+const playwright=path.join(root,'node_modules','.bin','playwright');
+if(!fs.existsSync(playwright)) throw new Error('M77 requires the governed Playwright CLI.');
+const install=spawnSync(playwright,['install','chromium','firefox','webkit'],{cwd:root,stdio:'inherit',env:{...process.env}});
+if(install.error) throw install.error;
+if(install.status!==0) throw new Error(`M77 Playwright browser provisioning failed with exit code ${install.status??'unknown'}.`);
+console.log('M77 managed browser matrix provisioning: PASS (chromium, firefox, webkit)');

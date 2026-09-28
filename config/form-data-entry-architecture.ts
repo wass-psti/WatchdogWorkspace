@@ -1,0 +1,26 @@
+export const formDataEntryArchitecture = Object.freeze({
+  milestone: 65,
+  stage: 'H',
+  typedAuthority: 'src/design-system/form-system.ts',
+  typedComponents: 'src/design-system/forms',
+  presentationAuthority: 'assets/css/foundation/components.css',
+  policies: Object.freeze({
+    nativeControlsFirst: true,
+    explicitLabelControlAssociation: true,
+    composeDescriptionsWithAriaDescribedBy: true,
+    invalidStateUsesAriaInvalidAndAriaErrorMessage: true,
+    requiredAndDisabledUseNativeAttributes: true,
+    messagesRemainNonLiveByDefault: true,
+    preserveApplicationFormStateAndSubmissionLogic: true,
+    noFeatureConsumerRewriteInM65: true,
+  }),
+  successorBoundaries: Object.freeze({
+    customSelectComboboxFloatingChoices: 66,
+    feedbackStatusEmptyErrorUx: 67,
+    shellMigration: 72,
+    boardsMigration: 73,
+    timeTrackerMigration: 74,
+    fuelTrackMigration: 75,
+    tradeLinkMigration: 76,
+  }),
+});

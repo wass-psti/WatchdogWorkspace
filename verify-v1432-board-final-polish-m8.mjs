@@ -67,8 +67,8 @@ for (const marker of [
   'Column resize handles support Arrow Left and Arrow Right.',
 ]) assert.ok(table.includes(marker), `Milestone 8 Main Table accessibility contract missing ${marker}`);
 
-assert.ok(kanban.includes('class="kanban-board" role="region" aria-label="Board Kanban view. Scroll horizontally to review status lanes." tabindex="0"'), 'Milestone 8 Kanban work surface must be keyboard-focusable');
-assert.ok(kanban.includes('class="kanban-board kanban-board-empty" role="region" aria-label="Board Kanban view" tabindex="0"'), 'Milestone 8 empty Kanban work surface must remain keyboard-focusable');
+assert.ok(/class="[^"]*\bkanban-board\b[^"]*" role="region"[^>]*aria-label="Board Kanban view\. Scroll horizontally to review status lanes\."[^>]*tabindex="0"/.test(kanban), 'Milestone 8 Kanban work surface must remain keyboard-focusable through M73 design-system migration');
+assert.ok(/class="[^"]*\bkanban-board\b[^"]*\bkanban-board-empty\b[^"]*" role="region"[^>]*aria-label="Board Kanban view"[^>]*tabindex="0"/.test(kanban), 'Milestone 8 empty Kanban work surface must remain keyboard-focusable through M73 design-system migration');
 
 for (const marker of [
   'const tabId = (id: ItemWorkspaceTab)',

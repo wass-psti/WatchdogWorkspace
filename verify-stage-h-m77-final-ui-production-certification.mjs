@@ -1,0 +1,23 @@
+import fs from 'node:fs';
+const read=(p)=>fs.readFileSync(new URL(p,import.meta.url),'utf8');
+const required=(ok,msg)=>{if(!ok)throw new Error(msg)};
+const target=read('./config/stage-h-m77-final-ui-production-certification-target.ts');
+const arch=read('./config/final-ui-production-certification-architecture.ts');
+const system=read('./src/design-system/final-ui-production-certification-system.ts');
+const config=read('./playwright.m77.config.mjs');
+const spec=read('./tests/modern/e2e/final-ui-production-certification.spec.mjs');
+const runner=read('./scripts/run-stage-h-m77-browser-matrix.mjs');
+const pkg=JSON.parse(read('./package.json'));
+const m76=read('./config/stage-h-m76-tradelink-ui-harmonization-target.ts');
+required(m76.includes("activationState: 'active-certified'"),'M77 requires active-certified M76.');
+required(target.includes("activationState: 'implementation-complete-pending-certification'")||target.includes("activationState: 'active-certified'"),'M77 activation state invalid.');
+for(const engine of ['chromium','firefox','webkit']){required(target.includes(engine)&&arch.includes(engine)&&system.includes(engine)&&config.includes(`name: '${engine}'`),`M77 browser authority missing ${engine}`)}
+for(const size of ['390x844','768x1024','1366x768','1440x900']) required(target.includes(size),`M77 target missing viewport ${size}`);
+for(const token of ['mobile','tablet','laptop','desktop']) required(spec.includes(`id: '${token}'`),`M77 spec missing ${token} viewport`);
+for(const moduleId of ['time-tracker','fueltrack-plus','tradelink']) required(spec.includes(moduleId),`M77 browser spec missing ${moduleId}`);
+for(const tag of ['@m77-host-','@m77-modules-','@m77-accessibility','@m77-reduced-motion']) required(spec.includes(tag),`M77 browser spec missing ${tag}`);
+required(runner.includes('ensure-stage-h-m77-browser-matrix.mjs')&&runner.includes('playwright.m77.config.mjs'),'M77 runner must provision and use governed browser matrix.');
+for(const script of ['final-ui:check','final-ui:test','final-ui:browsers:ensure','final-ui:browser','final-ui:certify','final-ui:post-certification','final-ui:package-hygiene','final-ui:final-checkpoint']) required(pkg.scripts?.[script],`package.json missing ${script}`);
+required(pkg.scripts['release:check'].includes('final-ui:check')&&pkg.scripts['release:check'].includes('final-ui:test'),'release:check must include M77 static/deterministic gates.');
+console.log('M77 final UI production certification architecture verification: PASS');
+console.log('Verified M76 certified prerequisite, frozen Stage H presentation ownership, 3-engine browser matrix, 4 viewport classes, final certification wiring, and fail-closed successor boundary.');

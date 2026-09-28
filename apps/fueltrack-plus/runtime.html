@@ -9,16 +9,27 @@
   <link rel="stylesheet" href="./styles.v3.17.0-wm6.css" />
   <link rel="stylesheet" href="../../assets/css/foundation/tokens.css" />
   <link rel="stylesheet" href="../../assets/css/foundation/themes.css" />
+  <link rel="stylesheet" href="../../assets/css/foundation/token-architecture.css" />
+  <link rel="stylesheet" href="../../assets/css/foundation/typography-system.css" />
+  <link rel="stylesheet" href="../../assets/css/foundation/layout-system.css" />
+  <link rel="stylesheet" href="../../assets/css/foundation/responsive-system.css" />
+  <link rel="stylesheet" href="../../assets/css/foundation/accessibility-system.css" />
   <link rel="stylesheet" href="../../assets/css/foundation/primitives.css" />
+  <link rel="stylesheet" href="../../assets/css/foundation/overlay-system.css" />
+  <link rel="stylesheet" href="../../assets/css/foundation/feedback-system.css" />
+  <link rel="stylesheet" href="../../assets/css/foundation/dense-data-system.css" />
+  <link rel="stylesheet" href="../../assets/css/foundation/analytics-system.css" />
+  <link rel="stylesheet" href="../../assets/css/foundation/motion-continuity-system.css">
   <link rel="stylesheet" href="../../assets/css/foundation/module-unification.css" />
   <link rel="stylesheet" href="../../assets/css/foundation/components.css" />
   <link rel="stylesheet" href="../../assets/css/foundation/application-migration.css" />
   <link rel="stylesheet" href="../../assets/css/motion-design.css" />
+  <link rel="stylesheet" href="./m75-harmonization.css" />
 </head>
-<body data-wm-surface="fueltrack">
+<body data-wm-surface="fueltrack" data-wm-fueltrack-harmonized="m75">
   <div class="ambient ambient-a" aria-hidden="true"></div>
   <div class="ambient ambient-b" aria-hidden="true"></div>
-  <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <div id="toastRegion" class="toast-region wm-feedback-stack" aria-live="polite" aria-atomic="true"></div>
 
   <div class="app-frame">
     <aside id="sidebar" class="sidebar glass" aria-label="Primary navigation">
@@ -33,7 +44,7 @@
         </div>
       </div>
 
-      <nav id="nav" class="nav-list">
+      <nav id="nav" class="nav-list wm-nav-list">
         <button class="nav-item active" type="button" data-route="dashboard">
           <span class="nav-icon">⌂</span><span>Dashboard</span>
         </button>
@@ -79,11 +90,11 @@
           </div>
         </div>
         <div class="topbar-actions">
-          <label class="global-search">
+          <label class="global-search wm-field">
             <span aria-hidden="true">⌕</span>
-            <input id="globalSearch" type="search" placeholder="Search request ID, requester, vehicle…" autocomplete="off" />
+            <input id="globalSearch" class="wm-field-control wm-control--md" type="search" placeholder="Search request ID, requester, vehicle…" autocomplete="off" />
           </label>
-          <div id="autoRefreshStatus" class="auto-refresh-status" role="status" aria-live="polite" title="Auto Refresh status">
+          <div id="autoRefreshStatus" class="auto-refresh-status wm-status-message" role="status" aria-live="polite" title="Auto Refresh status">
             <span class="auto-refresh-dot" aria-hidden="true"></span>
             <span class="auto-refresh-copy"><strong>Auto Refresh</strong><small id="autoRefreshStatusText">Starting…</small></span>
           </div>
@@ -92,7 +103,7 @@
             <span id="notificationDot" class="notification-dot"></span>
           </button>
           <button id="themeToggle" class="icon-button" type="button" aria-label="Toggle theme" title="Toggle theme">◐</button>
-          <div id="roleBadge" class="profile-chip role-badge" aria-label="Current access role">
+          <div id="roleBadge" class="profile-chip role-badge wm-status-pill" aria-label="Current access role">
             <span class="avatar">RB</span>
             <span class="profile-copy"><strong id="roleBadgeText">User</strong><small>Access role</small></span>
           </div>
@@ -108,11 +119,11 @@
     </main>
   </div>
 
-  <dialog id="detailDialog" class="app-dialog detail-dialog">
+  <dialog id="detailDialog" class="app-dialog detail-dialog wm-overlay-surface wm-dialog">
     <div id="detailDialogBody"></div>
   </dialog>
 
-  <dialog id="confirmDialog" class="app-dialog confirm-dialog">
+  <dialog id="confirmDialog" class="app-dialog confirm-dialog wm-overlay-surface wm-dialog">
     <form method="dialog" id="confirmDialogForm">
       <div class="dialog-icon danger">!</div>
       <h3 id="confirmTitle">Confirm action</h3>
@@ -125,7 +136,7 @@
   </dialog>
 
 
-  <dialog id="approvalDecisionDialog" class="app-dialog approval-decision-dialog">
+  <dialog id="approvalDecisionDialog" class="app-dialog approval-decision-dialog wm-overlay-surface wm-dialog">
     <form id="approvalDecisionForm" novalidate>
       <div class="dialog-header">
         <div>
@@ -155,7 +166,7 @@
 
 
 
-  <dialog id="refuelingCompletionDialog" class="app-dialog refueling-completion-dialog">
+  <dialog id="refuelingCompletionDialog" class="app-dialog refueling-completion-dialog wm-overlay-surface wm-dialog">
     <form id="refuelingCompletionForm" novalidate>
       <div class="dialog-header">
         <div>
@@ -207,7 +218,7 @@
     </form>
   </dialog>
 
-  <dialog id="activityDetailDialog" class="app-dialog activity-detail-dialog">
+  <dialog id="activityDetailDialog" class="app-dialog activity-detail-dialog wm-overlay-surface wm-dialog">
     <div class="dialog-header">
       <div>
         <p class="section-label">ACTIVITY EVENT</p>
@@ -219,7 +230,7 @@
     <div id="activityDetailFooter" class="dialog-footer"></div>
   </dialog>
 
-  <dialog id="notificationDialog" class="app-dialog notification-dialog">
+  <dialog id="notificationDialog" class="app-dialog notification-dialog wm-overlay-surface wm-dialog">
     <div class="dialog-header">
       <div>
         <p class="section-label">Workspace alerts</p>

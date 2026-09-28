@@ -120,7 +120,7 @@ export function renderBoardHeader({ board, canEdit, canManage, icons, escapeHtml
   })();
   const realtimeTone = realtime?.state === 'live' ? 'is-live' : realtime?.state === 'connecting' || realtime?.state === 'reconnecting' ? 'is-syncing' : 'is-degraded';
 
-  return `<section class="board-detail-head monday-board-head" data-board-header aria-labelledby="board-workspace-title">
+  return `<section class="wm-panel board-detail-head monday-board-head" data-wm-boards-migrated="workspace-header" data-board-header aria-labelledby="board-workspace-title">
     <nav class="board-breadcrumb" aria-label="Board breadcrumb">
       <button type="button" class="${breadcrumbBack}" data-board-back aria-label="Back to Boards">${icons.back}<span>Boards</span></button>
       <span class="board-breadcrumb-separator" aria-hidden="true">/</span>
@@ -135,7 +135,7 @@ export function renderBoardHeader({ board, canEdit, canManage, icons, escapeHtml
         ${descriptionMarkup}
       </div>
       <div class="${toolbarClass('board-head-actions')}" aria-label="Board actions">
-        <span class="board-realtime-status ${realtimeTone}" data-board-realtime-status role="status" aria-live="polite" title="Collaborative Board synchronization status"><span class="board-realtime-dot" aria-hidden="true"></span><span>${esc(realtimeLabel)}</span></span>
+        <span class="wm-status-message board-realtime-status ${realtimeTone}" data-board-realtime-status role="status" aria-live="polite" title="Collaborative Board synchronization status"><span class="board-realtime-dot" aria-hidden="true"></span><span>${esc(realtimeLabel)}</span></span>
         ${canManage ? `<button type="button" class="${action}" data-board-members title="Manage board access and member roles">${icons.users ?? ''}<span>Members</span></button>` : ''}
         <button type="button" class="${action}" data-board-activity title="Review recent changes to this board">${activityIcon}<span>Activity</span></button>
         ${menu ? `<span class="board-head-action-divider" aria-hidden="true"></span><span class="board-menu-host board-head-menu-host" data-board-menu-host><button type="button" class="${more}" data-board-menu-trigger="board" aria-label="More actions for this board" aria-haspopup="menu" aria-expanded="false" title="More board actions">${moreIcon}</button><template data-board-menu-template>${menu}</template></span>` : ''}
@@ -206,7 +206,7 @@ export function renderBoardControls({ state, canEdit, icons, escapeHtml, history
 
   const responsiveOverflowItems = `${statusMenuItems ? `<div class="board-menu-section-label board-overflow-status-label">Status filter</div>${statusMenuItems}` : ''}${peopleColumn ? `<button role="menuitem" class="board-overflow-people${peopleFilterActive ? ' is-selected' : ''}" data-column-filter="${esc(peopleColumn.id)}">Filter ${esc(peopleColumn.name)}${peopleFilterActive ? '<span aria-hidden="true">•</span>' : ''}</button>` : ''}${sortColumn ? `<button role="menuitem" class="board-overflow-sort-clear" data-column-sort="${esc(sortColumn.id)}" data-direction="none">Clear sorting · ${esc(sortColumn.name)}</button>` : ''}${canEdit ? '<button role="menuitem" class="board-overflow-columns" data-board-columns>Manage columns</button>' : ''}<button role="menuitem" class="board-overflow-history" data-board-undo ${historyState.canUndo ? '' : 'disabled'}>Undo${historyState.undoLabel ? ` · ${esc(historyState.undoLabel)}` : ''}</button><button role="menuitem" class="board-overflow-history" data-board-redo ${historyState.canRedo ? '' : 'disabled'}>Redo${historyState.redoLabel ? ` · ${esc(historyState.redoLabel)}` : ''}</button>`;
 
-  return `<div class="monday-board-control-stack" data-board-command-stack>
+  return `<div class="monday-board-control-stack" data-wm-boards-migrated="workspace-controls" data-board-command-stack>
     <nav class="board-view-bar" aria-label="Board views">
       <div class="wm-segmented view-switch board-view-tabs" role="tablist" aria-label="Board view">
         <button id="boardViewTab-table" type="button" role="tab" data-board-view="table" class="board-view-tab ${view === 'table' ? 'active' : ''}" aria-selected="${view === 'table'}" aria-controls="boardViewRegion" tabindex="${view === 'table' ? '0' : '-1'}">${tableIcon}<span>Main table</span></button>

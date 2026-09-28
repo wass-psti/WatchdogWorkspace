@@ -1,0 +1,58 @@
+{
+  "milestone": 76,
+  "stage": "H",
+  "baseline": "M75-certified",
+  "migrationModel": "embedded-module-presentation-harmonization",
+  "harmonizedTradeLinkSurfaces": [
+    "navigation-and-shell-status",
+    "create-new-and-document-type-tabs",
+    "commercial-document-forms",
+    "documents-ledger-and-dense-data",
+    "workflow-approval-and-status",
+    "company-template-and-branding",
+    "recovery-activity-and-manual",
+    "dialogs-feedback-pdf-and-portability"
+  ],
+  "requiredSharedConsumers": [
+    "wm-screen-host",
+    "wm-screen",
+    "wm-page-header",
+    "wm-action-row",
+    "wm-panel",
+    "wm-field",
+    "wm-field-control",
+    "wm-checkbox",
+    "wm-table",
+    "wm-data-region",
+    "wm-scroll-region",
+    "wm-feedback-state",
+    "wm-empty-state",
+    "wm-status-message",
+    "wm-status-pill",
+    "wm-metric-card",
+    "wm-button",
+    "wm-icon-button",
+    "wm-tabs",
+    "wm-tab",
+    "wm-overlay-surface",
+    "wm-dialog"
+  ],
+  "certifiedAuthorityHashes": {
+    "apps/tradelink/domain-config.js": "eb54ef8ef7f66b2e221be20407f01c5a006ef5bb1bc09bd6acde22d002e6d946",
+    "apps/tradelink/stability-runtime.js": "5330f0bb8591f53702501f910074e9d59bb2d2f58861b68f6196ed6c20b89959",
+    "assets/js/runtime/module-bootstrap.ts": "fe9d4b66d6e36a9bee15cfbfa93f0302a7d990d09aa4e1562e4b131e1d0aea46",
+    "src/design-system/fueltrack-plus-harmonization-system.ts": "203b937bde4cd46db05021bd138a3e2897f13f3487d8660980c5293c3f826993",
+    "apps/fueltrack-plus/domain-config.js": "90d444dbd9bdb6c23cab6b9396d319ec5405f363e7b6f6f8c43be169b618180d",
+    "apps/fueltrack-plus/stability-runtime.js": "4455359bfa0f52a686bf4d5ba8cd453314119dad9d180b3df45e97d70961f615",
+    "assets/js/runtime/fueltrack-analytics.ts": "d2c6b178146d43cd50eedffc6e2e49ba342ceb9ea0fae2b557113a52e8ad11a3"
+  },
+  "domainPolicyChanged": false,
+  "documentWorkflowChanged": false,
+  "financialCalculationChanged": false,
+  "pdfGenerationChanged": false,
+  "recoveryImportExportChanged": false,
+  "cloudIdentityOwnershipChanged": false,
+  "successorOwnership": {
+    "finalProductionCertification": 77
+  }
+}

@@ -1,0 +1,47 @@
+export const workManagementHostMigrationSystem = Object.freeze({
+  milestone: 72,
+  stage: 'H',
+  baseline: 'M71-certified',
+  migrationModel: 'controlled-react-host-consumer-migration',
+  migratedSurfaces: Object.freeze([
+    'shell',
+    'authentication',
+    'management-account',
+    'management-settings',
+    'management-users',
+    'shared-ui',
+  ] as const),
+  sharedAuthoritiesConsumed: Object.freeze([
+    'M63-accessibility',
+    'M64-core-components',
+    'M65-forms',
+    'M66-overlays',
+    'M67-feedback',
+    'M68-shell-ia',
+    'M69-dense-data',
+    'M70-analytics',
+    'M71-motion-continuity',
+  ] as const),
+  invariants: Object.freeze({
+    routeOwnershipRemainsM40Authority: true,
+    shellMechanicsRemainM68Authority: true,
+    authenticationRuntimeRemainsM12Authority: true,
+    managementRuntimeRemainsM13Authority: true,
+    sharedApplicationRuntimeRemainsM14Authority: true,
+    overlayLifecycleRemainsM66Authority: true,
+    businessAndPersistenceLogicUnchanged: true,
+    legacyDataAndEventHooksRemainCompatible: true,
+    noEmbeddedModuleConsumerMigrationInM72: true,
+    noBoardsConsumerMigrationInM72: true,
+    hostConsumersUseCertifiedSharedPrimitivesWhereSemanticallyEquivalent: true,
+  }),
+  successorOwnership: Object.freeze({
+    boards: 73,
+    timeTracker: 74,
+    fuelTrackPlus: 75,
+    tradeLink: 76,
+    finalProductionCertification: 77,
+  }),
+});
+
+export type WorkManagementHostMigratedSurface = typeof workManagementHostMigrationSystem.migratedSurfaces[number];

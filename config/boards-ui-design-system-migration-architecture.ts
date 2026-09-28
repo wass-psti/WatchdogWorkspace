@@ -1,0 +1,20 @@
+export const boardsUiDesignSystemMigrationArchitecture = Object.freeze({
+  milestone: 73,
+  stage: 'H',
+  scope: 'boards-ui-design-system-migration',
+  baseline: 'Work-Management-App-v1.43.2-Stage-H-M72-Certified-Baseline.zip',
+  presentationOwners: Object.freeze(['react-board-route-facade','typed-imperative-board-views'] as const),
+  designSystemAuthorities: Object.freeze(['interactions','forms','overlays','feedback','dense-data','accessibility','motion-continuity'] as const),
+  invariants: Object.freeze({
+    presentationOnly: true,
+    noBoardSchemaOrMigrationChange: true,
+    noBoardBackendApiChange: true,
+    noBoardStateLifecycleChange: true,
+    noBoardRbacChange: true,
+    noBoardRealtimeChange: true,
+    noBoardPersistenceChange: true,
+    noReactRewriteOfImperativeBoardEngine: true,
+    preserveLegacySelectorsAndDataHooks: true,
+  }),
+  successors: Object.freeze({ timeTracker:74, fuelTrackPlus:75, tradeLink:76, finalUiCertification:77 }),
+});

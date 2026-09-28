@@ -59,7 +59,9 @@ rollback_uncommitted_certification() {
 trap rollback_uncommitted_certification EXIT
 
 CERTIFICATION_TREE_HELPER="$ROOT/scripts/lib/stage-g-m42-certification-tree.mjs"
-SOURCE_TREE_DIGEST_BEFORE="$(node "$CERTIFICATION_TREE_HELPER" "$ROOT")"
+SOURCE_TREE_MANIFEST="$STAGE_ROOT/m42-certified-source-manifest.json"
+node "$CERTIFICATION_TREE_HELPER" "$ROOT" --manifest-json > "$SOURCE_TREE_MANIFEST"
+SOURCE_TREE_DIGEST_BEFORE="$(node -e 'const fs=require("node:fs"); const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write(p.digest)' "$SOURCE_TREE_MANIFEST")"
 CERTIFIED_SOURCE_COMMIT="${GITHUB_SHA:-${WM_SOURCE_COMMIT:-unbound}}"
 
 # Dedicated certification owns environment preflight, dependency restoration,
@@ -81,7 +83,7 @@ printf '%s\n' "$STATUS_OUTPUT" | grep -q 'active-certified' || { echo 'FAIL: M42
 
 CERTIFIED_AT="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 mkdir -p "$STAGE_DIR"
-tar \
+COPYFILE_DISABLE=1 tar \
   --exclude='./.git' --exclude='*/.git' --exclude='*/.git/*' \
   --exclude='./node_modules' --exclude='*/node_modules' --exclude='*/node_modules/*' \
   --exclude='./test-results' --exclude='*/test-results' --exclude='*/test-results/*' \
@@ -93,15 +95,12 @@ tar \
   --exclude='./m37-evidence' --exclude='*/m37-evidence' --exclude='*/m37-evidence/*' \
   --exclude='./.env' --exclude='./.env.local' --exclude='./.env.*.local' \
   --exclude='./npm-debug.log*' --exclude='./.DS_Store' --exclude='*/.DS_Store' \
-  -cf - . | (cd "$STAGE_DIR" && tar -xf -)
+  -cf - . | (cd "$STAGE_DIR" && COPYFILE_DISABLE=1 tar -xf -)
 find "$STAGE_DIR" -name '.DS_Store' -delete
-STAGED_SOURCE_TREE_DIGEST="$(node "$STAGE_DIR/scripts/lib/stage-g-m42-certification-tree.mjs" "$STAGE_DIR")"
-if [ "$STAGED_SOURCE_TREE_DIGEST" != "$SOURCE_TREE_DIGEST_BEFORE" ]; then
-  echo 'FAIL: staged M42 certified baseline does not match the source tree that was certified.'
-  exit 1
-fi
+find "$STAGE_DIR" -type f -name '._*' -delete
 # Certified source baselines retain environment templates only. Any concrete/local
-# environment file is deployment-specific and must not cross the package boundary.
+# environment file is deployment-specific, excluded from the M42 certification
+# tree digest, and must be pruned before staged security validation.
 find "$STAGE_DIR" -type f -name '.env*' ! -name '*.example' -delete
 
 # A certified baseline must never contain repository internals, local runtime
@@ -113,7 +112,7 @@ if find "$STAGE_DIR" -type d \
   exit 1
 fi
 if find "$STAGE_DIR" -type f \
-  \( -name 'npm-debug.log*' -o -name '.DS_Store' \) \
+  \( -name 'npm-debug.log*' -o -name '.DS_Store' -o -name '._*' \) \
   -print -quit | grep -q .; then
   echo 'FAIL: local/private file detected in staged M42 certified baseline.'
   exit 1
@@ -150,10 +149,39 @@ if find "$STAGE_DIR" -type l -print -quit | grep -q .; then
   exit 1
 fi
 
-# Scan the exact staged payload, after package-specific pruning/status updates and
-# before checksums/ZIP creation. This makes the certified artifact—not merely the
-# working tree—the security boundary.
+# Archive extraction is not a portable permission-preservation boundary: BSD tar
+# may apply the caller's umask differently from GNU tar. Reapply the exact
+# certified regular-file modes captured before dedicated certification, then let
+# the content+mode parity digest reject missing, extra, mistyped, or changed files.
+node - "$SOURCE_TREE_MANIFEST" "$STAGE_DIR" <<'NODE'
+const fs = require('node:fs');
+const path = require('node:path');
+const [manifestPath, stageRoot] = process.argv.slice(2);
+const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+for (const entry of manifest.manifest || []) {
+  if (entry.type !== 'file') continue;
+  const target = path.join(stageRoot, ...entry.relative.split('/'));
+  if (!fs.existsSync(target)) continue;
+  const stat = fs.lstatSync(target);
+  if (!stat.isFile()) continue;
+  fs.chmodSync(target, Number.parseInt(entry.mode, 8));
+}
+NODE
+
+# Scan the exact staged payload before parity publication. This intentionally
+# precedes the source-tree parity assertion so a staged secret is rejected by
+# the security boundary designed to detect it. Package-specific mutable state
+# and concrete environment files are excluded from the certification-tree
+# digest, so this ordering does not weaken evidence binding.
 node "$STAGE_DIR/scripts/scan-secrets.mjs"
+
+# After the staged payload passes security validation, prove that every stable
+# source byte and file mode still matches the source tree that was certified.
+STAGED_SOURCE_TREE_DIGEST="$(node "$STAGE_DIR/scripts/lib/stage-g-m42-certification-tree.mjs" "$STAGE_DIR")"
+if [ "$STAGED_SOURCE_TREE_DIGEST" != "$SOURCE_TREE_DIGEST_BEFORE" ]; then
+  echo 'FAIL: staged M42 certified baseline does not match the source tree that was certified.'
+  exit 1
+fi
 (
   cd "$STAGE_DIR"
   rm -f CHECKSUMS.sha256
@@ -163,10 +191,10 @@ node "$STAGE_DIR/scripts/scan-secrets.mjs"
 
 (
   cd "$STAGE_ROOT"
-  zip -qry "$STAGE_ZIP" "$FINAL_NAME" -x \
+  COPYFILE_DISABLE=1 zip -qry "$STAGE_ZIP" "$FINAL_NAME" -x \
     '*/.git/*' '*/node_modules/*' '*/test-results/*' '*/playwright-report/*' \
     '*/coverage/*' '*/dist/*' '*/.vite/*' '*/.vitest/*' '*/m37-evidence/*' \
-    '*/.env' '*/.env.local' '*/.env.*.local' '*/npm-debug.log*' '*/.DS_Store'
+    '*/.env' '*/.env.local' '*/.env.*.local' '*/npm-debug.log*' '*/.DS_Store' '*/._*'
 )
 unzip -t "$STAGE_ZIP" >/dev/null
 ZIP_VERIFY_ROOT="$STAGE_ROOT/zip-verify"

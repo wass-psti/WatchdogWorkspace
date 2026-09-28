@@ -1,0 +1,40 @@
+/*
+ * Stage H M62 — Responsive Architecture & Adaptive Primitives.
+ *
+ * M62 owns shared breakpoint semantics and opt-in adaptive behavior. Existing
+ * shell, Boards, and embedded-module media queries remain compatibility
+ * authorities until their staged M72–M76 migrations.
+ *
+ * CSS custom properties cannot parameterize @media conditions, so the query
+ * literals below are verifier-locked equivalents of the certified M58 tokens:
+ * narrow=640px/40rem, tablet=840px/52.5rem, laptop=1120px/70rem, wide=1440px/90rem.
+ */
+:root {
+  --wm-responsive-breakpoint-narrow: var(--wm-breakpoint-narrow);
+  --wm-responsive-breakpoint-tablet: var(--wm-breakpoint-tablet);
+  --wm-responsive-breakpoint-laptop: var(--wm-breakpoint-laptop);
+  --wm-responsive-breakpoint-wide: var(--wm-breakpoint-wide);
+}
+
+/* Shared page behavior moved from primitives.css without changing geometry. */
+@media (max-width: 52.5rem) {
+  :where(.wm-page) { padding-inline:var(--wm-layout-min-inline-gutter); }
+}
+
+/* Opt-in grid collapse. No responsive behavior is implied when the attribute is absent. */
+@media (max-width: 90rem) {
+  :where(.wm-grid[data-collapse-at="wide"]) { grid-template-columns:minmax(0,1fr); }
+  :where(.wm-cluster[data-stack-at="wide"]) { flex-direction:column; align-items:stretch; }
+}
+@media (max-width: 70rem) {
+  :where(.wm-grid[data-collapse-at="laptop"]) { grid-template-columns:minmax(0,1fr); }
+  :where(.wm-cluster[data-stack-at="laptop"]) { flex-direction:column; align-items:stretch; }
+}
+@media (max-width: 52.5rem) {
+  :where(.wm-grid[data-collapse-at="tablet"]) { grid-template-columns:minmax(0,1fr); }
+  :where(.wm-cluster[data-stack-at="tablet"]) { flex-direction:column; align-items:stretch; }
+}
+@media (max-width: 40rem) {
+  :where(.wm-grid[data-collapse-at="narrow"]) { grid-template-columns:minmax(0,1fr); }
+  :where(.wm-cluster[data-stack-at="narrow"]) { flex-direction:column; align-items:stretch; }
+}

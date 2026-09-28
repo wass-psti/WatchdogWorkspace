@@ -1,0 +1,89 @@
+/*
+ * Stage H M59 — Typography & Content Hierarchy System.
+ *
+ * Role aliases map exclusively to the certified M58 token architecture.
+ * Existing selectors are intentionally not rewritten in M59; consumers opt in
+ * through wm-type-* roles during later host/module migrations.
+ */
+:root {
+  --wm-type-display-size: var(--wm-text-4xl);
+  --wm-type-display-weight: var(--wm-font-weight-heavy);
+  --wm-type-display-line: var(--wm-line-height-tight);
+
+  --wm-type-page-title-size: var(--wm-text-3xl);
+  --wm-type-page-title-weight: var(--wm-font-weight-bold);
+  --wm-type-page-title-line: var(--wm-line-height-tight);
+
+  --wm-type-section-title-size: var(--wm-text-2xl);
+  --wm-type-section-title-weight: var(--wm-font-weight-bold);
+  --wm-type-section-title-line: var(--wm-line-height-tight);
+
+  --wm-type-subsection-title-size: var(--wm-text-xl);
+  --wm-type-subsection-title-weight: var(--wm-font-weight-semibold);
+  --wm-type-subsection-title-line: var(--wm-line-height-tight);
+
+  --wm-type-body-size: var(--wm-text-md);
+  --wm-type-body-weight: var(--wm-font-weight-regular);
+  --wm-type-body-line: var(--wm-line-height-normal);
+
+  --wm-type-body-strong-size: var(--wm-text-md);
+  --wm-type-body-strong-weight: var(--wm-font-weight-semibold);
+  --wm-type-body-strong-line: var(--wm-line-height-normal);
+
+  --wm-type-control-size: var(--wm-text-sm);
+  --wm-type-control-weight: var(--wm-font-weight-semibold);
+  --wm-type-control-line: var(--wm-line-height-normal);
+
+  --wm-type-label-size: var(--wm-text-xs);
+  --wm-type-label-weight: var(--wm-font-weight-semibold);
+  --wm-type-label-line: var(--wm-line-height-normal);
+
+  --wm-type-caption-size: var(--wm-text-xs);
+  --wm-type-caption-weight: var(--wm-font-weight-regular);
+  --wm-type-caption-line: var(--wm-line-height-normal);
+
+  --wm-type-helper-size: var(--wm-text-xs);
+  --wm-type-helper-weight: var(--wm-font-weight-regular);
+  --wm-type-helper-line: var(--wm-line-height-relaxed);
+
+  --wm-type-metadata-size: var(--wm-text-2xs);
+  --wm-type-metadata-weight: var(--wm-font-weight-medium);
+  --wm-type-metadata-line: var(--wm-line-height-normal);
+
+  --wm-type-data-size: var(--wm-text-sm);
+  --wm-type-data-weight: var(--wm-font-weight-regular);
+  --wm-type-data-line: var(--wm-line-height-normal);
+
+  --wm-type-data-header-size: var(--wm-text-xs);
+  --wm-type-data-header-weight: var(--wm-font-weight-semibold);
+  --wm-type-data-header-line: var(--wm-line-height-normal);
+}
+
+:where(.wm-type-display,.wm-type-page-title,.wm-type-section-title,.wm-type-subsection-title,
+       .wm-type-body,.wm-type-body-strong,.wm-type-control,.wm-type-label,
+       .wm-type-caption,.wm-type-helper,.wm-type-metadata,.wm-type-data,.wm-type-data-header) {
+  font-family: var(--wm-semantic-font-family-body);
+  min-width: 0;
+}
+:where(.wm-type-display) { font-size:var(--wm-type-display-size);font-weight:var(--wm-type-display-weight);line-height:var(--wm-type-display-line); }
+:where(.wm-type-page-title) { font-size:var(--wm-type-page-title-size);font-weight:var(--wm-type-page-title-weight);line-height:var(--wm-type-page-title-line); }
+:where(.wm-type-section-title) { font-size:var(--wm-type-section-title-size);font-weight:var(--wm-type-section-title-weight);line-height:var(--wm-type-section-title-line); }
+:where(.wm-type-subsection-title) { font-size:var(--wm-type-subsection-title-size);font-weight:var(--wm-type-subsection-title-weight);line-height:var(--wm-type-subsection-title-line); }
+:where(.wm-type-body) { font-size:var(--wm-type-body-size);font-weight:var(--wm-type-body-weight);line-height:var(--wm-type-body-line); }
+:where(.wm-type-body-strong) { font-size:var(--wm-type-body-strong-size);font-weight:var(--wm-type-body-strong-weight);line-height:var(--wm-type-body-strong-line); }
+:where(.wm-type-control) { font-size:var(--wm-type-control-size);font-weight:var(--wm-type-control-weight);line-height:var(--wm-type-control-line); }
+:where(.wm-type-label) { font-size:var(--wm-type-label-size);font-weight:var(--wm-type-label-weight);line-height:var(--wm-type-label-line); }
+:where(.wm-type-caption) { font-size:var(--wm-type-caption-size);font-weight:var(--wm-type-caption-weight);line-height:var(--wm-type-caption-line); }
+:where(.wm-type-helper) { font-size:var(--wm-type-helper-size);font-weight:var(--wm-type-helper-weight);line-height:var(--wm-type-helper-line); }
+:where(.wm-type-metadata) { font-size:var(--wm-type-metadata-size);font-weight:var(--wm-type-metadata-weight);line-height:var(--wm-type-metadata-line); }
+:where(.wm-type-data) { font-size:var(--wm-type-data-size);font-weight:var(--wm-type-data-weight);line-height:var(--wm-type-data-line); }
+:where(.wm-type-data-header) { font-size:var(--wm-type-data-header-size);font-weight:var(--wm-type-data-header-weight);line-height:var(--wm-type-data-header-line); }
+
+:where(.wm-type-numeric) { font-variant-numeric: tabular-nums lining-nums; }
+:where(.wm-type-code) { font-family:var(--wm-semantic-font-family-code);font-size:var(--wm-type-data-size);line-height:var(--wm-type-data-line); }
+:where(.wm-text-wrap) { white-space:normal;overflow-wrap:anywhere;word-break:normal; }
+:where(.wm-text-truncate) { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+:where(.wm-text-preserve) { white-space:pre-wrap;overflow-wrap:anywhere; }
+
+/* M59 deliberately avoids viewport-specific font-size overrides. Rem-based
+ * role mapping preserves browser zoom/text scaling; breakpoint ownership is M62. */

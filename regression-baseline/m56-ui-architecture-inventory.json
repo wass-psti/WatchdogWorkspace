@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "milestone": 56,
+  "sourceBaseline": "Work-Management-App-v1.43.2-Stage-H-M55-Certified-Baseline.zip",
+  "scope": "ui-architecture-inventory-design-governance-baseline",
+  "observations": {
+    "reactDesignSystemRoot": "src/design-system",
+    "foundationCssRoot": "assets/css/foundation",
+    "hostPresentationRoot": "src/app",
+    "imperativeUiRoot": "assets/js/platform/ui",
+    "embeddedModuleRoot": "apps",
+    "embeddedModules": ["time-tracker", "fueltrack-plus", "tradelink"],
+    "moduleCssFiles": [
+      "apps/fueltrack-plus/styles.v3.17.0-wm6.css",
+      "apps/time-tracker/styles.css",
+      "apps/time-tracker/v2.css",
+      "apps/tradelink/styles.v1.42.0-wm1.css"
+    ],
+    "directChakraImports": [
+      "src/design-system/WorkManagementDesignSystemProvider.tsx",
+      "src/design-system/system.ts"
+    ],
+    "foundationTokenDeclarationCountAtDiscovery": 322,
+    "uniqueWmCustomPropertyReferencesAtDiscovery": 382,
+    "notes": [
+      "Discovery counts are evidence snapshots, not future immutable thresholds; subsequent certified UI milestones may legitimately change them.",
+      "No runtime presentation file is modified by M56 merely to normalize the inventory."
+    ]
+  },
+  "classificationRules": {
+    "authoritative": "Current source of truth for a presentation responsibility.",
+    "compatibilityAuthority": "Current live authority retained because certified consumers still depend on it.",
+    "moduleSpecificAuthority": "Application-module-owned UI whose workflow differences are intentional.",
+    "migrationCandidate": "A live authority may be evolved only in its declared successor milestone; inventory presence alone does not authorize replacement or deletion."
+  }
+}

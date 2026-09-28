@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, type KeyboardEvent as ReactKeyboardEvent } 
 import { createOverlayManager } from '../../../assets/js/platform/ui/overlay-manager.ts';
 import { sharedApplicationUiRuntime } from './shared-application-ui-runtime.ts';
 import { useSharedApplicationUiRuntime } from './useSharedApplicationUiRuntime.ts';
+import { WMButton, WMStatusMessage } from '../../design-system/index.ts';
 
 function CommandPalette() {
   const command = useSharedApplicationUiRuntime((snapshot) => snapshot.command);
@@ -70,7 +71,7 @@ function CommandPalette() {
   return (
     <div
       className={`command-backdrop${command.phase === 'closing' ? ' closing' : ''}`}
-      data-wm-shared-command-palette=""
+      data-wm-shared-command-palette="" data-wm-host-migrated="shared-ui"
       aria-hidden={command.phase === 'closing' ? true : undefined}
     >
       <div ref={dialogRef} className="command-dialog" role="dialog" aria-modal="true" aria-label="Command palette" data-command-dialog onKeyDown={handleKeyDown}>
@@ -78,6 +79,8 @@ function CommandPalette() {
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
           <input
             ref={inputRef}
+            className="wm-field-control"
+            data-wm-component="input"
             id="commandInput"
             autoComplete="off"
             placeholder="Search applications, capabilities and commands…"
@@ -93,7 +96,7 @@ function CommandPalette() {
             const selected = index === command.selection;
             const resultId = `wm-command-${item.id.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
             return (
-              <button
+              <WMButton
                 id={resultId}
                 key={item.id}
                 type="button"
@@ -109,7 +112,7 @@ function CommandPalette() {
                 <span aria-hidden="true" dangerouslySetInnerHTML={{ __html: item.icon }} />
                 <div><strong>{item.title}</strong><small>{item.subtitle}</small></div>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M14 7l5 5-5 5"/></svg>
-              </button>
+              </WMButton>
             );
           }) : <div className="command-empty" role="status">No matching commands.</div>}
         </div>
@@ -123,17 +126,13 @@ function UpdateBanner() {
   const update = useSharedApplicationUiRuntime((snapshot) => snapshot.update);
   if (!update.available) return null;
   return (
-    <div className="update-banner" data-wm-shared-update-banner="" role="status">
-      <span>A newer Work Management build is ready. Updating reloads open Work Management tabs.</span>
-      <button type="button" disabled={update.applying} aria-busy={update.applying || undefined} onClick={() => void sharedApplicationUiRuntime.applyUpdate()}>{update.applying ? 'Updating…' : 'Update now'}</button>
-      <button type="button" disabled={update.applying} aria-label="Dismiss update" onClick={() => sharedApplicationUiRuntime.dismissUpdate()}>×</button>
-    </div>
+    <WMStatusMessage className="update-banner" data-wm-shared-update-banner="" tone="info" title="A newer Work Management build is ready." description="Updating reloads open Work Management tabs." announcement="polite" actions={<><WMButton type="button" loading={update.applying} onClick={() => void sharedApplicationUiRuntime.applyUpdate()}>{update.applying ? 'Updating…' : 'Update now'}</WMButton><WMButton type="button" variant="ghost" disabled={update.applying} aria-label="Dismiss update" onClick={() => sharedApplicationUiRuntime.dismissUpdate()}>×</WMButton></>} />
   );
 }
 
 function ToastStack() {
   const toasts = useSharedApplicationUiRuntime((snapshot) => snapshot.toasts);
-  return <>{toasts.map((toast) => <div key={toast.id} className={`toast ${toast.tone} visible`} data-wm-shared-toast={toast.id} role="status"><span aria-hidden="true">{toast.tone === 'success' ? '✓' : '!'}</span><strong>{toast.message}</strong></div>)}</>;
+  return <>{toasts.map((toast) => <WMStatusMessage key={toast.id} className={`toast ${toast.tone} visible`} data-wm-shared-toast={toast.id} tone={toast.tone === 'success' ? 'success' : 'warning'} title={toast.message} icon={<span>{toast.tone === 'success' ? '✓' : '!'}</span>} announcement="polite" />)}</>;
 }
 
 export function SharedApplicationOverlayLayer() {

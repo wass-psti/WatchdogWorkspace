@@ -1,0 +1,63 @@
+:root {
+  --wm-data-row-compact: var(--wm-table-row-compact);
+  --wm-data-row-default: var(--wm-table-row-default);
+  --wm-data-cell-padding-inline: var(--wm-space-100);
+  --wm-data-cell-padding-block: var(--wm-space-075);
+}
+
+:where(.wm-data-region[data-density="compact"]) .wm-table td,
+:where(.wm-table[data-density="compact"] td) {
+  min-height:var(--wm-data-row-compact);
+  padding-block:var(--wm-space-050);
+}
+
+:where(.wm-data-region[data-density="default"]) .wm-table td,
+:where(.wm-table[data-density="default"] td) {
+  min-height:var(--wm-data-row-default);
+}
+
+:where(.wm-table[data-layout="fixed"]) { table-layout:fixed; }
+:where(.wm-table[data-layout="auto"]) { table-layout:auto; }
+
+:where(.wm-table [data-align="center"],.wm-data-list [data-align="center"]) { text-align:center; }
+:where(.wm-table [data-align="end"],.wm-data-list [data-align="end"]) { text-align:end; font-variant-numeric:tabular-nums; }
+
+:where(.wm-table [data-wrap="nowrap"],.wm-data-list [data-wrap="nowrap"]) { white-space:nowrap; }
+:where(.wm-table [data-wrap="wrap"],.wm-data-list [data-wrap="wrap"]) { white-space:normal; overflow-wrap:anywhere; }
+:where(.wm-table [data-wrap="truncate"],.wm-data-list [data-wrap="truncate"]) { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+:where(.wm-table th[aria-sort]) { position:relative; }
+:where(.wm-table th[aria-sort="ascending"]::after) { content:" ↑"; }
+:where(.wm-table th[aria-sort="descending"]::after) { content:" ↓"; }
+
+:where(.wm-data-list) {
+  margin:0;
+  padding:0;
+  list-style:none;
+  display:grid;
+  min-width:0;
+}
+
+:where(.wm-data-list-item) {
+  min-width:0;
+  min-height:var(--wm-data-row-default);
+  display:flex;
+  align-items:center;
+  gap:var(--wm-space-100);
+  padding:var(--wm-data-cell-padding-block) var(--wm-data-cell-padding-inline);
+  border-bottom:1px solid var(--wm-color-border-subtle);
+  color:var(--wm-color-text-primary);
+}
+
+:where(.wm-data-list[data-density="compact"] .wm-data-list-item) {
+  min-height:var(--wm-data-row-compact);
+  padding-block:var(--wm-space-050);
+}
+
+:where(.wm-data-list-item:hover) { background:var(--wm-color-row-hover); }
+:where(.wm-data-list-item[aria-current="true"],.wm-data-list-item.is-current) { background:var(--wm-color-row-selected); }
+
+@media (forced-colors:active) {
+  :where(.wm-data-region,.wm-data-list-item) { border-color:CanvasText; }
+  :where(.wm-table th[aria-sort]::after) { forced-color-adjust:auto; }
+}

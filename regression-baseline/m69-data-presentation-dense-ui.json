@@ -1,0 +1,40 @@
+{
+  "milestone": 69,
+  "certifiedAuthorityHashes": {
+    "assets/css/foundation/components.css": "29c6d7f58a90d490e29afe341d664b2b1943ee949c29e4bee9e1860a5eb7ac37",
+    "assets/css/foundation/accessibility-system.css": "940a608a720066358a7ba5506c972e81c9c30f86dad1ac19454f3b4964c7b965",
+    "assets/css/foundation/responsive-system.css": "4da93149f25b8715c722d924bef70e44bc9d3764d279b881fdb1aab5f5e8ce12",
+    "assets/css/boards-monday.css": "a71da936e15f425bac8c0df715a29df6a76f42068cb22628f8201f7e04823d5e",
+    "src/features/boards/virtualization/board-table-virtualization.ts": "329f1cc58b8072f4dd3498183d23acd2f4b5803a3b6d5dd93febcfabd531c220",
+    "src/features/boards/contracts/selection.ts": "fee1c519d5d7e35f9b53ae94458930245665e39e646adc482fb7d4cc7d1eec52",
+    "src/app/boards/evaluation/tanstack-table-evaluation.ts": "b997436cae70af0d1b84742f0df67445416df65bc193960d187a2317968a96c8",
+    "src/app/boards/evaluation/board-table-requirements.ts": "8020cd5bda20124047660795a22a6ea8d1fd4fdc740a973cb46fe95e7d85743a"
+  },
+  "canonicalComponents": [
+    "WMDataRegion",
+    "WMTable",
+    "WMTableHeaderCell",
+    "WMTableCell",
+    "WMDataList",
+    "WMDataListItem"
+  ],
+  "densities": [
+    "compact",
+    "default"
+  ],
+  "wrapPolicies": [
+    "wrap",
+    "nowrap",
+    "truncate"
+  ],
+  "alignments": [
+    "start",
+    "center",
+    "end"
+  ],
+  "tanStackDecision": "defer-production-adoption",
+  "consumerRewriteRequired": false,
+  "dashboardPresentationMilestone": 70,
+  "hostMigrationMilestone": 72,
+  "boardsMigrationMilestone": 73
+}

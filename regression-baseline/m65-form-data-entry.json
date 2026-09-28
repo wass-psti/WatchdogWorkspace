@@ -1,0 +1,43 @@
+{
+  "milestone": 65,
+  "certifiedBaseline": "M64",
+  "certifiedAuthorityHashes": {
+    "assets/css/foundation/components.css": "29c6d7f58a90d490e29afe341d664b2b1943ee949c29e4bee9e1860a5eb7ac37",
+    "assets/css/foundation/interactions.css": "d49856303bfc4445b50dea34afa02f5a06928ba35ea66ca7f01c72e99b475b0a",
+    "assets/css/foundation/accessibility-system.css": "940a608a720066358a7ba5506c972e81c9c30f86dad1ac19454f3b4964c7b965",
+    "src/design-system/core-component-system.ts": "558e5eb14dd465854919da63bb0bdd1242a67b486e3d9309e7949d85def54788",
+    "src/design-system/components/index.ts": "9c1e4a8d66d72c5b8fdb93f9dd08a2b8c07ec50d5563bec465b974468748c5b4",
+    "src/design-system/components/badge.tsx": "1991747389204f95c47af3365f4b1e9930fc68e1b5b45f9357d9ff2740e5a2b3",
+    "src/design-system/components/toolbar.tsx": "6196bf1ee0f01bc0bdb8e7b8d95cf14cbf12a38cf194e894ae7101c011697f58",
+    "src/design-system/interactions/button.tsx": "7b60cd02ea3f4c14a58c9c92571fcde770e43418f3ccf882354026989405b67d",
+    "src/design-system/interactions/dialog.tsx": "db4cac01b8acf489449c4089b39964642aaf3a3d9bcc804c44f1eb33c2e433a0",
+    "src/design-system/interactions/menu.tsx": "5088c371fd6c194a3be555d3ec7e140cb1fb98681944640a7d41092fc11ff43e",
+    "src/design-system/interactions/tabs.tsx": "345d51f59dc14e0a1d1b1a7b0e607c30ebb6436214a0be9694d0a792cdb6c4d5"
+  },
+  "canonicalFormComponents": [
+    "WMField",
+    "WMInput",
+    "WMTextarea",
+    "WMNativeSelect",
+    "WMFormGrid"
+  ],
+  "semanticContracts": [
+    "labelAssociation",
+    "describedByComposition",
+    "ariaInvalid",
+    "ariaErrorMessage",
+    "nativeRequired",
+    "nativeDisabled",
+    "nonLiveMessages"
+  ],
+  "deferredOwnership": {
+    "customSelectComboboxFloatingChoices": 66,
+    "feedbackStatusEmptyErrorUx": 67,
+    "hostMigration": 72,
+    "boardsMigration": 73,
+    "timeTrackerMigration": 74,
+    "fuelTrackMigration": 75,
+    "tradeLinkMigration": 76
+  },
+  "consumerRewriteRequired": false
+}

@@ -623,7 +623,7 @@ async function addComment(id,text){
 
 function toast(message,type='success'){
   let host=document.querySelector('.toast-host'); if(!host){host=document.createElement('div');host.className='toast-host';document.body.appendChild(host)}
-  const node=document.createElement('div');node.className=`toast ${type}`;node.textContent=message;host.appendChild(node);setTimeout(()=>node.remove(),3200);
+  const node=document.createElement('div');node.className=`toast ${type} wm-status-message`;node.dataset.tone=type==='error'?'danger':'success';node.textContent=message;host.appendChild(node);setTimeout(()=>node.remove(),3200);
 }
 function setTab(tab){
   const resolved=LEGACY_TAB_REDIRECTS[tab]||tab, next=PRIMARY_TABS.includes(resolved)?resolved:'create';
@@ -664,8 +664,9 @@ function restoreRenderViewport(snapshot){
   root.style.scrollBehavior=previous;
 }
 function enhanceTradeLinkPresentation(root=document){
+  document.body.dataset.wmTradeLinkHarmonized='m76';
   const main=root.querySelector?.('#mainView')||document.querySelector('#mainView');
-  if(main){main.dataset.uiScreen=ui.tab;main.classList.add('wm-screen-host');}
+  if(main){main.dataset.uiScreen=ui.tab;main.dataset.wmTradeLinkHarmonized='m76';main.classList.add('wm-screen-host');}
   root.querySelectorAll?.('.view').forEach(node=>node.classList.add('wm-screen'));
   root.querySelectorAll?.('.intro-grid,.section-head,.documents-commandbar,.create-commandbar').forEach(node=>node.classList.add('wm-page-header'));
   root.querySelectorAll?.('.toolbar-group,.modal-actions,.template-card-actions,.company-asset-actions,.empty-state-actions,.actions').forEach(node=>node.classList.add('wm-action-row'));
@@ -674,10 +675,14 @@ function enhanceTradeLinkPresentation(root=document){
   root.querySelectorAll?.('input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):not([type=color]),select,textarea').forEach(control=>control.classList.add('wm-field-control','wm-control--md'));
   root.querySelectorAll?.('input[type="checkbox"]').forEach(control=>control.classList.add('wm-checkbox'));
   root.querySelectorAll?.('table:not(.pdf-items)').forEach(table=>table.classList.add('wm-table'));
-  root.querySelectorAll?.('.empty-state').forEach(node=>node.classList.add('wm-empty-state'));
-  root.querySelectorAll?.('.notice,.company-warning,.inline-validation.error').forEach(node=>{node.classList.add('wm-alert');if(node.classList.contains('error'))node.dataset.tone='danger';});
+  root.querySelectorAll?.('.empty-state').forEach(node=>node.classList.add('wm-feedback-state','wm-empty-state'));
+  root.querySelectorAll?.('.metric').forEach(node=>node.classList.add('wm-metric-card'));
+  root.querySelectorAll?.('.documents-table-wrap,.preview-sheet').forEach(node=>node.classList.add('wm-data-region','wm-scroll-region'));
+  root.querySelectorAll?.('.workflow-state,.terms-status,.payment-method-badge,.status-badge,.revision-pill,.activity-kind,.currency-badge,.calculation-status').forEach(node=>node.classList.add('wm-status-pill'));
+  root.querySelectorAll?.('.modal,.company-panel').forEach(node=>node.classList.add('wm-overlay-surface','wm-dialog'));
+  root.querySelectorAll?.('.notice,.company-warning,.inline-validation.error').forEach(node=>{node.classList.add('wm-feedback-state','wm-status-message');if(node.classList.contains('error'))node.dataset.tone='danger';});
   root.querySelectorAll?.('button.button').forEach(button=>{const primary=button.classList.contains('primary');const danger=button.classList.contains('danger');const ghost=button.classList.contains('ghost');button.classList.add('wm-button',`wm-button--${danger?'danger':primary?'primary':ghost?'ghost':'secondary'}`,button.classList.contains('small')?'wm-control--sm':'wm-control--md');});
-  root.querySelectorAll?.('button.icon-button,button.modal-close,button.document-menu-trigger').forEach(button=>button.classList.add('wm-icon-button','wm-icon-button--ghost','wm-control--sm'));
+  root.querySelectorAll?.('button.icon-button,button.modal-close,button.document-menu-trigger,button.icon-action').forEach(button=>button.classList.add('wm-icon-button','wm-icon-button--ghost','wm-control--sm'));
   root.querySelectorAll?.('.nav-tabs,.create-type-tabs,.recovery-tabs').forEach(tabs=>tabs.classList.add('wm-tabs'));
   root.querySelectorAll?.('.nav-tabs [role="tab"],.create-type-tabs [role="tab"],.recovery-tabs [role="tab"]').forEach(tab=>{tab.classList.add('wm-tab');tab.classList.toggle('is-active',tab.getAttribute('aria-selected')==='true'||tab.classList.contains('active'));});
 }
