@@ -6,22 +6,54 @@ cd "$ROOT"
 TARGET="$ROOT/config/stage-h-m77-final-ui-production-certification-target.ts"
 STATUS="$ROOT/RELEASE-STATUS-v1.43.2-STAGE-H-M77-FINAL-UI-PRODUCTION-CERTIFICATION.md"
 CONTINUATION="$ROOT/M77-CONTINUATION-STATE.md"
+BASE='Work-Management-App-v1.43.2-Stage-H-M77-Certified-Baseline'
+OUT="$ROOT/m77-certified-artifacts-upload"
+TMP="$(mktemp -d)"
+STATE_BACKUP="$TMP/root-state-backup"
+PROMOTED=0
+PUBLISHED=0
+HAD_OUT=0
+mkdir -p "$STATE_BACKUP"
+
+rollback() {
+  local code=$?
+  if [ "$code" -ne 0 ]; then
+    if [ "$PUBLISHED" -eq 1 ]; then
+      rm -rf "$OUT"
+      if [ "$HAD_OUT" -eq 1 ] && [ -d "$OUT.previous" ]; then mv "$OUT.previous" "$OUT"; fi
+    fi
+    if [ "$PROMOTED" -eq 1 ]; then
+      cp "$STATE_BACKUP/target" "$TARGET"
+      cp "$STATE_BACKUP/status" "$STATUS"
+      cp "$STATE_BACKUP/continuation" "$CONTINUATION"
+    fi
+    echo 'M77 certification transaction rolled back after failure.' >&2
+  fi
+  rm -rf "$OUT.next"
+  if [ "$code" -eq 0 ]; then rm -rf "$OUT.previous"; fi
+  rm -rf "$TMP"
+  exit "$code"
+}
+trap rollback EXIT
+
 grep -q "activationState: 'implementation-complete-pending-certification'" "$TARGET" || { echo 'FAIL: M77 target is not pending certification.' >&2; exit 1; }
 grep -q '\*\*State:\*\* implementation-complete-pending-certification' "$STATUS" || { echo 'FAIL: M77 release status is not pending certification.' >&2; exit 1; }
 grep -q '\*\*State:\*\* IMPLEMENTATION COMPLETE — LOCAL VERIFICATION/CERTIFICATION REMAINS' "$CONTINUATION" || { echo 'FAIL: M77 continuation state is not pending local certification.' >&2; exit 1; }
+
 npm run dependencies:certify
 SOURCE_BEFORE="$(node scripts/lib/stage-h-m77-certification-tree.mjs "$ROOT")"
 npm run final-ui:check
 npm run final-ui:test
+npm run final-ui:git-roundtrip:test
 npm run final-ui:browser
 npm run release:check
 SOURCE_AFTER="$(node scripts/lib/stage-h-m77-certification-tree.mjs "$ROOT")"
 [ "$SOURCE_BEFORE" = "$SOURCE_AFTER" ] || { echo 'FAIL: M77 source tree changed during pre-certification gates.' >&2; exit 1; }
-BASE='Work-Management-App-v1.43.2-Stage-H-M77-Certified-Baseline'
-OUT="$ROOT/m77-certified-artifacts-upload"
-TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
+
 STAGE="$TMP/$BASE"; mkdir -p "$STAGE"
-rsync -a --exclude='.git' --exclude='node_modules' --exclude='dist' --exclude='coverage' --exclude='test-results' --exclude='playwright-report'   --exclude='m55-certified-artifacts-upload' --exclude='m56-certified-artifacts-upload' --exclude='m57-certified-artifacts-upload' --exclude='m58-certified-artifacts-upload' --exclude='m59-certified-artifacts-upload' --exclude='m60-certified-artifacts-upload' --exclude='m61-certified-artifacts-upload' --exclude='m62-certified-artifacts-upload' --exclude='m63-certified-artifacts-upload' --exclude='m64-certified-artifacts-upload' --exclude='m65-certified-artifacts-upload' --exclude='m66-certified-artifacts-upload' --exclude='m67-certified-artifacts-upload' --exclude='m68-certified-artifacts-upload' --exclude='m69-certified-artifacts-upload' --exclude='m70-certified-artifacts-upload' --exclude='m71-certified-artifacts-upload' --exclude='m72-certified-artifacts-upload' --exclude='m73-certified-artifacts-upload' --exclude='m74-certified-artifacts-upload' --exclude='m75-certified-artifacts-upload' --exclude='m76-certified-artifacts-upload' --exclude='m77-certified-artifacts-upload' "$ROOT/" "$STAGE/"
+rsync -a --exclude='.git' --exclude='node_modules' --exclude='dist' --exclude='coverage' --exclude='test-results' --exclude='playwright-report' \
+  --exclude='m55-certified-artifacts-upload' --exclude='m56-certified-artifacts-upload' --exclude='m57-certified-artifacts-upload' --exclude='m58-certified-artifacts-upload' --exclude='m59-certified-artifacts-upload' --exclude='m60-certified-artifacts-upload' --exclude='m61-certified-artifacts-upload' --exclude='m62-certified-artifacts-upload' --exclude='m63-certified-artifacts-upload' --exclude='m64-certified-artifacts-upload' --exclude='m65-certified-artifacts-upload' --exclude='m66-certified-artifacts-upload' --exclude='m67-certified-artifacts-upload' --exclude='m68-certified-artifacts-upload' --exclude='m69-certified-artifacts-upload' --exclude='m70-certified-artifacts-upload' --exclude='m71-certified-artifacts-upload' --exclude='m72-certified-artifacts-upload' --exclude='m73-certified-artifacts-upload' --exclude='m74-certified-artifacts-upload' --exclude='m75-certified-artifacts-upload' --exclude='m76-certified-artifacts-upload' --exclude='m77-certified-artifacts-upload' "$ROOT/" "$STAGE/"
+
 python3 - "$STAGE/config/stage-h-m77-final-ui-production-certification-target.ts" "$STAGE/RELEASE-STATUS-v1.43.2-STAGE-H-M77-FINAL-UI-PRODUCTION-CERTIFICATION.md" "$STAGE/M77-CONTINUATION-STATE.md" <<'PY2'
 from pathlib import Path
 import sys
@@ -31,8 +63,27 @@ PY2
 STAGED_SOURCE="$(node "$STAGE/scripts/lib/stage-h-m77-certification-tree.mjs" "$STAGE")"
 [ "$STAGED_SOURCE" = "$SOURCE_BEFORE" ] || { echo 'FAIL: staged active-certified M77 payload does not match verified source tree.' >&2; exit 1; }
 node "$STAGE/scripts/verify-stage-h-m77-certified-state.mjs" "$STAGE"
+
 npm run verify:historical-all
 [ "$(node scripts/lib/stage-h-m77-certification-tree.mjs "$ROOT")" = "$SOURCE_BEFORE" ] || { echo 'FAIL: M77 source tree changed during historical regression verification.' >&2; exit 1; }
+
+# Root-state promotion is part of the certification transaction. Back up the
+# pending state first so any later gate restores the exact pre-certification state.
+cp "$TARGET" "$STATE_BACKUP/target"
+cp "$STATUS" "$STATE_BACKUP/status"
+cp "$CONTINUATION" "$STATE_BACKUP/continuation"
+python3 - "$TARGET" "$STATUS" "$CONTINUATION" <<'PY3'
+from pathlib import Path
+import sys
+for name in sys.argv[1:]:
+    p=Path(name);s=p.read_text();s=s.replace("activationState: 'implementation-complete-pending-certification'","activationState: 'active-certified'");s=s.replace('**State:** implementation-complete-pending-certification','**State:** active-certified');s=s.replace('**State:** IMPLEMENTATION COMPLETE — LOCAL VERIFICATION/CERTIFICATION REMAINS','**State:** FULLY COMPLETE — IMPLEMENTATION AND REQUIRED VERIFICATION COMPLETE');p.write_text(s)
+PY3
+PROMOTED=1
+node scripts/verify-stage-h-m77-certified-state.mjs "$ROOT"
+[ "$(node scripts/lib/stage-h-m77-certification-tree.mjs "$ROOT")" = "$SOURCE_BEFORE" ] || { echo 'FAIL: root-state promotion changed normalized M77 source identity.' >&2; exit 1; }
+
+# Only after the repository itself is durably in certified state may a PASS
+# record or certified ZIP be created.
 if find "$STAGE" -type l -print -quit | grep -q .; then echo 'FAIL: symbolic link in M77 certified payload.' >&2; exit 1; fi
 if find "$STAGE" -type f -name '.env*' ! -name '*.example' -print -quit | grep -q .; then echo 'FAIL: concrete environment file in M77 certified payload.' >&2; exit 1; fi
 node "$STAGE/scripts/scan-secrets.mjs"
@@ -56,7 +107,21 @@ Milestone 77 certification: PASS
 PASS
 node scripts/verify-stage-h-m77-certified-artifact.mjs "$TMP/$BASE.zip" "$TMP/$BASE-PASS.txt"
 node scripts/verify-stage-h-m77-certified-package-hygiene.mjs "$TMP/$BASE.zip"
-PUBLISH="$TMP/publish";mkdir -p "$PUBLISH";cp "$TMP/$BASE.zip" "$PUBLISH/";cp "$TMP/$BASE-PASS.txt" "$PUBLISH/";rm -rf "$OUT.next";mv "$PUBLISH" "$OUT.next";if [ -d "$OUT" ];then rm -rf "$OUT.previous";mv "$OUT" "$OUT.previous";fi;mv "$OUT.next" "$OUT";rm -rf "$OUT.previous"
+
+PUBLISH="$TMP/publish";mkdir -p "$PUBLISH";cp "$TMP/$BASE.zip" "$PUBLISH/";cp "$TMP/$BASE-PASS.txt" "$PUBLISH/"
+rm -rf "$OUT.next";mv "$PUBLISH" "$OUT.next"
+if [ -d "$OUT" ]; then HAD_OUT=1; rm -rf "$OUT.previous"; mv "$OUT" "$OUT.previous"; fi
+mv "$OUT.next" "$OUT";PUBLISHED=1
+
+# Final state, artifact, package, and source identity must all agree before commit.
+node scripts/verify-stage-h-m77-certified-state.mjs "$ROOT"
+node scripts/verify-stage-h-m77-certified-artifact.mjs
+node scripts/verify-stage-h-m77-certified-package-hygiene.mjs
 node scripts/verify-stage-h-m77-final-checkpoint.mjs
+[ "$(node scripts/lib/stage-h-m77-certification-tree.mjs "$ROOT")" = "$SOURCE_BEFORE" ] || { echo 'FAIL: committed M77 certified state changed normalized source identity.' >&2; exit 1; }
+
+PROMOTED=0
+PUBLISHED=0
+rm -rf "$OUT.previous"
 echo 'STAGE H M77 FINAL UI PRODUCTION CERTIFICATION: PASS'
 echo "Certified baseline: $OUT/$BASE.zip";echo "PASS record: $OUT/$BASE-PASS.txt";echo "SHA-256: $SHA";echo "Source tree SHA-256: $SOURCE_BEFORE"

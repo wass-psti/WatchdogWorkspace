@@ -689,9 +689,10 @@
     "final-ui:browser": "node scripts/run-stage-h-m77-browser-matrix.mjs",
     "final-ui:release": "bash scripts/verify-stage-h-m77-release.sh",
     "final-ui:certify": "bash scripts/finalize-stage-h-m77.sh",
-    "final-ui:post-certification": "node scripts/verify-stage-h-m77-certified-artifact.mjs",
+    "final-ui:post-certification": "node scripts/verify-stage-h-m77-certified-state.mjs && node scripts/verify-stage-h-m77-certified-artifact.mjs",
     "final-ui:package-hygiene": "node scripts/verify-stage-h-m77-certified-package-hygiene.mjs",
-    "final-ui:final-checkpoint": "node scripts/verify-stage-h-m77-final-checkpoint.mjs"
+    "final-ui:final-checkpoint": "node scripts/verify-stage-h-m77-final-checkpoint.mjs",
+    "final-ui:git-roundtrip:test": "node scripts/verify-stage-h-m77-git-restorable-roundtrip.mjs"
   },
   "devDependencies": {
     "@types/react": "19.2.18",

@@ -303,9 +303,11 @@ bebe8083c367bc0ec824e4283530db1e3ebdcc516d30fce3ad751a798b3ddf95  ./M76-CERTIFIC
 3ec610551b790235f4309960d2c5f68d0a50d82e6623d5b2d2fdc291919e5fba  ./M76-CONTINUATION-STATE.md
 b1ab9853c9b03fc175a887b6f125efaae07f24eeccaf53de82f440c5c2a8044d  ./M76-PASS-RECORD-MILESTONE-LABEL-CORRECTIVE-2026-09-28.md
 ff40c15be448f1cdaf5b962f1de2681beda58275ad122029e7bcbeacf493c327  ./M76-TRADELINK-UI-HARMONIZATION.md
-dd552b67c90b7da308891d053f51463156e157e69ec02e18141ce7223c084356  ./M77-CERTIFICATION-HANDOFF.md
-12b1abcdf731168527e40f9b426b0115c4ca51413e76ab82d4b98f925e1cbea0  ./M77-CONTINUATION-STATE.md
+a4f7cfd1bc277ecf6d58ff0421277e10349453c3d58e3088889d9ec9f3f2e094  ./M77-CERTIFICATION-HANDOFF.md
+f133a9b6992a2a667880aa37ad97584692297207739bb904f35cff833bb4aeb3  ./M77-CONTINUATION-STATE.md
 6e746266514cfc8e8db9d9f9044deca062d440ba6192e861b13ffdccea5a5e94  ./M77-FINAL-UI-PRODUCTION-CERTIFICATION.md
+55a6808a5931c3deb5a7fb35527c266a118062ddd72229dc63245c01e0fdc669  ./M77-GIT-RESTORABLE-SOURCE-IDENTITY-CORRECTIVE-V7-2026-09-28.md
+20eb765a630be4ff9e6f18db575a5f47c7a452c6cb60c9781f2068981a712fab  ./M77-GIT-ROUNDTRIP-HARNESS-CORRECTIVE-V8-2026-09-28.md
 701e2dac53a7517dd82a7c24729915ea546e140e4ad8a0db519f6d223412dda6  ./M77-HOSTED-M49-CDP-PORTABILITY-CORRECTIVE-2026-09-28.md
 8e5bc25cd7d521819ee9b71342b5bad32d89319afb041bea23e8f08371a35297  ./M77-M47-SUPABASE-CWD-ISOLATION-CORRECTIVE-2026-09-28.md
 b44a2800bf8e40b35e79c3511be45b424162480f123e960452e82ae715da6767  ./M77-M47-SUPABASE-VERSION-PROBE-ISOLATION-CORRECTIVE-2026-09-28.md
@@ -420,7 +422,7 @@ ba6bf47c774a7ce35294e0d6197e3cd6aa924d11a405afb26b81550e46f6b8f2  ./RELEASE-STAT
 1dfa85ae07d3cf8fc069fa78310f4a2a03e02170b9e1faf07b18d14cc46c4f0e  ./RELEASE-STATUS-v1.43.2-STAGE-H-M74-TIMETRACKER-UI-HARMONIZATION.md
 bccc1e63aae856ff49ee06585004417f44d76fcce9df3a8b1657f8f0c71bc085  ./RELEASE-STATUS-v1.43.2-STAGE-H-M75-FUELTRACK-PLUS-UI-HARMONIZATION.md
 b363b93e288a855128634a7977bc24704ec28551bda363a56c01210afe2427ea  ./RELEASE-STATUS-v1.43.2-STAGE-H-M76-TRADELINK-UI-HARMONIZATION.md
-64557cced28d5ab572104e42632f1f8fc70ed482b79513b9c6a7786aed56aed2  ./RELEASE-STATUS-v1.43.2-STAGE-H-M77-FINAL-UI-PRODUCTION-CERTIFICATION.md
+d878c4af92e1e069f02c094ff978f2b07f5e841d9b336cda42df5f7d030743c7  ./RELEASE-STATUS-v1.43.2-STAGE-H-M77-FINAL-UI-PRODUCTION-CERTIFICATION.md
 f5456ced7546bf790b612a3900905bd4a25b45ab21bd9fd0c1d8a616395069a7  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-FINAL.md
 2d3c24a6567659c068f896542d02442d2991c2a2ffc15030e90d5f2018c825ad  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE2.md
 73619f1c62c3b893ec438e0cc77f36c7590c5c2a57677e6e8cf1c42e538f3c05  ./RELEASE-STATUS-v1.43.2-UI-PRESENTATION-PHASE3.md
@@ -858,7 +860,7 @@ a4bb072413e0927f65df01d7366cc12a3724196ffaf82e95406b0f905cb1e795  ./index.html
 3aac27b7874a3dcd28c4a84598a200196068f639ac8f9118af358e7c4cd09a95  ./m54-live-attestation.json
 c73879bfdb6e13422a5bb82f0176c7e44bf1d68ddcc79fc0b3fd5f1c7e49138b  ./manifest.webmanifest
 22677ed5a0abd2997e57691e200fa80bd9e11ab1a824a6b64b18048adb2f8b84  ./package-lock.json
-7740a497116d3d8cccd2a0bbdba1d2f95a8bff234c9194a49111876f1b68d877  ./package.json
+0efa45b1471fa23047abfd9e54d3eef7b76ddbcfbb32a5bf6fa5d03c7a881a30  ./package.json
 f600d177fdc95af705d5609c03b9eb02a1552b9c9921b9a93e074daa16d401fb  ./playwright.config.mjs
 20e5ef39fa026052b3b7bc9ebe92a81118df262a915277061594ed3b26b1b28c  ./playwright.m77.config.mjs
 5c7a53c40f31529c80f9e1a588eff079a84e62ee2123a32685a7ab72aa420a4c  ./public/assets/icon.svg
@@ -1008,7 +1010,7 @@ fda2d3d5a3a6bf1d8b79a896583fd2a5f29662b8bf3cf3d64d93c5c4f60b0365  ./scripts/fina
 5233ef10ab78e7a5a3d6cb2460607c7d0a717c9683a7767ee6d71b2d77b28eaa  ./scripts/finalize-stage-h-m74.sh
 5e626617e61ecc212fcac40454bc2b4d1f6bde17d9516cbc749b602cc5743e23  ./scripts/finalize-stage-h-m75.sh
 5db8cee7bd52970f1be3dd7a441e77165a1ba1e460ed3e6ea3728de2e57d8372  ./scripts/finalize-stage-h-m76.sh
-c666c0d46edaf8d5586abc97e720f9b2d2360f7f1a27a15cfb17d536a53575c0  ./scripts/finalize-stage-h-m77.sh
+422434d25955e8b248b425672dc346118d99182938d1e6672d5e96dcfb32aa62  ./scripts/finalize-stage-h-m77.sh
 4191b1ce8c4ffa30a595ba03f650475ed5dea210d1216ccadf22ea8a8ebf58d1  ./scripts/generate-functional-regression-evidence.mjs
 ef49e97b37d4f51535895bf71045b7076f1df18bc41995ff07cadf45fbb7db39  ./scripts/generate-production-cutover-evidence.mjs
 270ac34e8a020b57bf44061930be29e6ab75c815879e30f8603c011a1942ded9  ./scripts/lib/browser-cdp-smoke.mjs
@@ -1053,7 +1055,7 @@ e4dde38bbf872e22bb14eb8dd69e56086db6ba562da918e6e3bf7148abfc6b49  ./scripts/lib/
 3eda678666252f06d4ce045428dcfe021f83ca6f859f447b62576320c0c99f4a  ./scripts/lib/stage-h-m74-certification-tree.mjs
 6e635ca0d28956a7934a6b3af876adacda5647f8da08c1e6dc785e9fdd31cc7c  ./scripts/lib/stage-h-m75-certification-tree.mjs
 94352d6b390c751e7b088e473e5032545b47e77c707816106d8eff902c7f9e91  ./scripts/lib/stage-h-m76-certification-tree.mjs
-7c8b4d37f351ded649d2ff248fac04cef458bf2d20de4c9c33dcbb1e88cb7824  ./scripts/lib/stage-h-m77-certification-tree.mjs
+330ac2ad953522a9d43837e667d4f1d500da5ad52424b4d381994e75528d6b97  ./scripts/lib/stage-h-m77-certification-tree.mjs
 891d39f24173d299ff2aa299f0113e97c7df5a301b2b71b9287d258a930dc570  ./scripts/package-stage-g-m43-certified.sh
 291e07be9579f9fbedd66d8ffe0bfbda0fec67510548e696a2808813d361bf7a  ./scripts/package-stage-g-m44-certified.sh
 d0e7bd8535e96a536cc7b55ece0c76af12ec29ebfcd68ed9857c530027784f8e  ./scripts/package-stage-g-m45-certified.sh
@@ -1381,8 +1383,9 @@ b8004a23e6dcd5d46d764b9900a41a215457dac057ffa6ea2fea926ffada0e03  ./scripts/veri
 b656b47aa50ff898f549d4d8cea1b8cd0d9f986be1d7565343c25c462505adb2  ./scripts/verify-stage-h-m77-certified-artifact.mjs
 5cb192daabf0c8bc7c427af6c00077779bf97d49e903ec4adb1d14f13fd4019b  ./scripts/verify-stage-h-m77-certified-package-hygiene.mjs
 18889041b3372582d0e4511c0bc3b35eb1dc0a483074920e4607cc44c81509f6  ./scripts/verify-stage-h-m77-certified-state.mjs
-fc11c65adc1ed1ff83ecab9f948cbbe03acd65e65159aab4945d94651136f9f3  ./scripts/verify-stage-h-m77-final-checkpoint.mjs
-95eec4f83d4c7ed00d86eca55d1734eb183b81310259d54ecf4ff8ae6f708cbd  ./scripts/verify-stage-h-m77-final-ui-production-certification-execution.mjs
+70cfc806cc2525dd3326a94f46a3be66cfb88e972fb422820a0b284ea4083a6c  ./scripts/verify-stage-h-m77-final-checkpoint.mjs
+49059217b68230409c18540e485dede30e084af380b2a7eb1918346790346603  ./scripts/verify-stage-h-m77-final-ui-production-certification-execution.mjs
+21e45653d9be8500530fe265694f393ee7bd2ee58fed31aed24db31fbd289c4c  ./scripts/verify-stage-h-m77-git-restorable-roundtrip.mjs
 9e9ded170227aeffa1d75d4c33313b5c3ce213928a324727ee574459ee9127e3  ./scripts/verify-stage-h-m77-release.sh
 c7735800203768ff14daf9518ff92f43775286161a558370f6338bbf36c21977  ./scripts/verify-supabase-client-adapter-execution.mjs
 3ab7a6d8edec82fc72a933385c5d2952b3e9e743e7c140d718c239ee09255f9a  ./scripts/verify-tanstack-query-execution.mjs
