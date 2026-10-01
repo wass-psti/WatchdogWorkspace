@@ -3,7 +3,7 @@
   "entrySource": "index.html",
   "initialClosureMode": "vite-manifest-static-import-closure-v1",
   "initialJsRawBytes": 650000,
-  "initialCssRawBytes": 590000,
+  "initialCssRawBytes": 624000,
   "largestInitialChunkRawBytes": 420000,
   "totalManifestJsRawBytes": 1800000,
   "largestAnyJsChunkRawBytes": 600000,

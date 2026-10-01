@@ -1,0 +1,28 @@
+/* M86 FuelTrack+ visual migration — presentation-only successor to M75. */
+body[data-wm-surface="fueltrack"][data-wm-fueltrack-visual="m86"]{
+  --m86-ft-surface:var(--wm-color-surface-primary);
+  --m86-ft-raised:var(--wm-color-surface-elevated);
+  --m86-ft-border:var(--wm-color-border-subtle);
+  --m86-ft-radius:var(--wm-semantic-radius-surface);
+}
+body[data-wm-fueltrack-visual="m86"] .app-frame{background:linear-gradient(180deg,color-mix(in srgb,var(--wm-color-canvas) 96%,transparent),var(--wm-color-canvas));}
+body[data-wm-fueltrack-visual="m86"] .sidebar,body[data-wm-fueltrack-visual="m86"] .topbar{border-color:var(--m86-ft-border);box-shadow:var(--wm-shadow-sm);backdrop-filter:blur(14px);}
+body[data-wm-fueltrack-visual="m86"] .content{max-width:100%;padding:clamp(1rem,2vw,1.5rem);}
+body[data-wm-fueltrack-visual="m86"] :is(.dashboard-page-head,.analytics-page-head,.requests-page-head,.new-request-page-head,.approvals-page-head,.lightfuels-page-head,.activity-page-head,.roles-page-head){display:flex;align-items:flex-start;justify-content:space-between;gap:var(--wm-semantic-space-control);margin-block-end:var(--wm-semantic-space-section);}
+body[data-wm-fueltrack-visual="m86"] :is(.metric-card,.wm-metric-card,.panel,.wm-panel,.analytics-trend-card,.analytics-insights-card,.request-card,.approval-card,.lightfuel-card,.activity-event-card,.role-card){border:1px solid var(--m86-ft-border);border-radius:var(--m86-ft-radius);background:var(--m86-ft-surface);box-shadow:var(--wm-shadow-xs);}
+body[data-wm-fueltrack-visual="m86"] :is(.analytics-kpi-grid,.dashboard-metrics,.metric-grid,.analytics-summary-grid){display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:var(--wm-semantic-space-control);}
+body[data-wm-fueltrack-visual="m86"] :is(.request-filters,.analytics-filters,.approval-filters,.lightfuel-filters,.activity-filter-panel,.roles-toolbar){border:1px solid var(--m86-ft-border);border-radius:var(--wm-semantic-radius-control);background:var(--m86-ft-raised);padding:var(--wm-semantic-space-control);}
+body[data-wm-fueltrack-visual="m86"] :is(.request-table,.analytics-table-panel,.wm-data-region){border:1px solid var(--m86-ft-border);border-radius:var(--wm-semantic-radius-control);overflow:auto;background:var(--m86-ft-surface);}
+body[data-wm-fueltrack-visual="m86"] :is(.status-pill,.wm-status-pill,.activity-type-pill,.priority-pill){font-weight:650;letter-spacing:.01em;}
+body[data-wm-fueltrack-visual="m86"] :is(.app-dialog,.wm-dialog){border:1px solid var(--m86-ft-border);border-radius:var(--wm-overlay-surface-radius);background:var(--m86-ft-surface);box-shadow:var(--wm-shadow-lg);max-width:min(46rem,calc(100vw - 2rem));}
+body[data-wm-fueltrack-visual="m86"] :is(.refueling-completion-grid,.form-grid,.request-form-grid){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--wm-semantic-space-control);}
+body[data-wm-fueltrack-visual="m86"] :is(.approval-decision-summary,.refueling-completion-summary,.receipt-preview){border-radius:var(--wm-semantic-radius-control);background:var(--m86-ft-raised);border:1px solid var(--m86-ft-border);}
+body[data-wm-fueltrack-visual="m86"] :is(.activity-event-card,.request-card,.approval-card,.lightfuel-card){transition:transform var(--wm-motion-duration-fast) var(--wm-motion-ease-standard),box-shadow var(--wm-motion-duration-fast) var(--wm-motion-ease-standard);}
+body[data-wm-fueltrack-visual="m86"] :is(.activity-event-card,.request-card,.approval-card,.lightfuel-card):hover{transform:translateY(-1px);box-shadow:var(--wm-shadow-sm);}
+@media (max-width:52.5rem){body[data-wm-fueltrack-visual="m86"] .topbar{align-items:flex-start;gap:var(--wm-semantic-space-cluster);}body[data-wm-fueltrack-visual="m86"] .topbar-actions{flex-wrap:wrap;}body[data-wm-fueltrack-visual="m86"] :is(.analytics-breakdown-grid,.dashboard-grid){grid-template-columns:1fr;}}
+@media (max-width:40rem){body[data-wm-fueltrack-visual="m86"] .content{padding:.875rem;}body[data-wm-fueltrack-visual="m86"] :is(.refueling-completion-grid,.form-grid,.request-form-grid){grid-template-columns:1fr;}body[data-wm-fueltrack-visual="m86"] :is(.dashboard-page-head,.analytics-page-head,.requests-page-head,.new-request-page-head,.approvals-page-head,.lightfuels-page-head,.activity-page-head,.roles-page-head){flex-direction:column;}}
+@media (prefers-reduced-motion:reduce){body[data-wm-fueltrack-visual="m86"] *,body[data-wm-fueltrack-visual="m86"] *::before,body[data-wm-fueltrack-visual="m86"] *::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important;}body[data-wm-fueltrack-visual="m86"] :is(.activity-event-card,.request-card,.approval-card,.lightfuel-card):hover{transform:none;}}
+@media (forced-colors:active){body[data-wm-fueltrack-visual="m86"] :is(.metric-card,.wm-metric-card,.panel,.wm-panel,.app-dialog,.wm-dialog){border:1px solid CanvasText;box-shadow:none;}}
+/* M96 retirement consolidation: active M75 reconciliation retained under the M86 owner. */
+body[data-wm-fueltrack-visual="m86"] .wm-metric-card{min-width:0;}
+body[data-wm-fueltrack-visual="m86"] .app-dialog.wm-dialog{padding:0;}

@@ -24,7 +24,7 @@ if (architectureVersion >= 43) {
 assert.ok(css.includes('position: relative;\n  z-index: 1;\n  flex: 0 0 auto;\n  width: var(--wm-shell-sidebar-collapse-size);'), 'Collapse control must use structural flow inside the action rail');
 assert.ok(css.includes('inset-inline-end: calc(0px - var(--wm-shell-sidebar-effective-padding-inline) - var(--wm-shell-header-collapse-size) / 2 - var(--wm-shell-sidebar-divider-width));'), 'Header rail must attach the toggle to the actual visible sidebar boundary');
 assert.ok(css.includes('.shell-sidebar-pin:disabled {\n  display: none;'), 'Disabled pin control must not reserve layout space that can displace the expand control');
-assert.ok(css.includes('@media (max-width:900px) and (min-width:621px)'), 'Tablet rail behavior must remain explicit');
+assert.ok(css.includes('@media (max-width:52.5rem) and (min-width:40.0625rem)'), 'Tablet rail behavior must remain explicit');
 assert.ok(css.includes('.shell-sidebar-header-actions {\n    display: flex;\n    inset-inline-end: 0;'), 'Mobile drawer must keep the close control structurally in its header');
 for (const phrase of [
   'Shell collapse control stays in the header and never drops into primary navigation',

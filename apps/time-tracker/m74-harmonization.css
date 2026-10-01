@@ -1,4 +1,0 @@
-/* M74 — TimeTracker shared design-system reconciliation. */
-body[data-wm-surface="time-tracker"] .wm-metric-card:is(.report-kpi,.overview-stat){border-radius:0;box-shadow:none}
-body[data-wm-surface="time-tracker"] .wm-data-region:is(.overview-table-wrap,.log-list,.tt-v2-log-timeline,.calendar-grid,.role-cards,.ot-list){border:0;background:transparent}
-body[data-wm-surface="time-tracker"] .wm-dialog.tt-v2-overlay-surface{max-inline-size:min(720px,calc(100vw - 32px))}

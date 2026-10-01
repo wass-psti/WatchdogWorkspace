@@ -43,6 +43,7 @@ function RuntimeApplicationBoundaryComponent({ className, workspace = false, ine
       ref={hostRef}
       className={className}
       data-workspace-root={workspace ? '' : undefined}
+      data-wm-global-page-frame={workspace ? '' : undefined}
       aria-label={workspace ? 'Workspace content' : undefined}
       inert={inert ? true : undefined}
       hidden={hidden}

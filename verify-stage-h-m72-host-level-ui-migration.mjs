@@ -6,6 +6,7 @@ const root = process.cwd();
 const failures = [];
 const ok = (condition, message) => { if (!condition) failures.push(message); };
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
+const m96AuthorityExists = fs.existsSync(path.join(root, 'config/stage-i-m96-visual-consistency-legacy-styling-retirement-target.ts'));
 
 const required = [
   'assets/css/foundation/host-ui-migration.css',
@@ -26,7 +27,7 @@ const required = [
   'scripts/verify-stage-h-m72-certified-package-hygiene.mjs',
   'scripts/verify-stage-h-m72-final-checkpoint.mjs',
 ];
-for (const file of required) ok(fs.existsSync(path.join(root, file)), `missing M72 artifact: ${file}`);
+for (const file of required) { if (m96AuthorityExists && file === 'assets/css/foundation/host-ui-migration.css') continue; ok(fs.existsSync(path.join(root, file)), `missing M72 artifact: ${file}`); }
 
 const system = read('src/design-system/host-migration-system.ts');
 for (const marker of [
@@ -41,7 +42,7 @@ for (const marker of [
 ]) ok(system.includes(marker), `M72 host contract missing: ${marker}`);
 
 const main = read('src/main.ts');
-ok(main.includes("host-ui-migration.css"), 'M72 host migration stylesheet is not loaded by the host entry');
+if (m96AuthorityExists) ok(!main.includes("host-ui-migration.css"), 'M96 must retire the M72 host migration stylesheet from the host entry'); else ok(main.includes("host-ui-migration.css"), 'M72 host migration stylesheet is not loaded by the host entry');
 for (const embedded of ['apps/time-tracker/index.html', 'apps/fueltrack-plus/runtime.html', 'apps/tradelink/runtime.html']) {
   ok(!read(embedded).includes('host-ui-migration.css'), `M72 host-only stylesheet must not be injected into ${embedded}`);
 }
@@ -54,8 +55,14 @@ const shared = read('src/app/shared-ui/SharedApplicationUI.tsx');
 for (const marker of ['WMButton', 'WMStatusMessage', 'data-wm-host-migrated="shared-ui"', 'data-wm-component="input"']) ok(shared.includes(marker), `M72 shared UI migration missing: ${marker}`);
 ok(read('src/app/shell/WorkManagementShell.tsx').includes('data-wm-host-migrated="shell"'), 'M72 shell migration marker missing');
 
-const css = read('assets/css/foundation/host-ui-migration.css');
-for (const marker of ['.update-banner.wm-status-message', '@media(max-width:620px)']) ok(css.includes(marker), `M72 host CSS contract missing: ${marker}`);
+if (m96AuthorityExists) {
+  ok(!fs.existsSync(path.join(root,'assets/css/foundation/host-ui-migration.css')), 'M96 must remove the retired M72 host bridge');
+  const css = read('assets/css/foundation/cross-module-responsive-harmonization.css');
+  for (const marker of ['.update-banner.wm-status-message', '@media (max-width:40rem)']) ok(css.includes(marker), `M72 successor CSS contract missing after M96: ${marker}`);
+} else {
+  const css = read('assets/css/foundation/host-ui-migration.css');
+  for (const marker of ['.update-banner.wm-status-message', '@media(max-width:620px)']) ok(css.includes(marker), `M72 host CSS contract missing: ${marker}`);
+}
 ok(read('assets/css/foundation/feedback-system.css').includes('@media (forced-colors: active)'), 'M72 must inherit forced-colors feedback behavior from M67');
 ok(read('assets/css/foundation/interactions.css').includes('@media (prefers-reduced-motion:reduce)'), 'M72 must inherit reduced-motion interaction behavior from the shared interaction authority');
 

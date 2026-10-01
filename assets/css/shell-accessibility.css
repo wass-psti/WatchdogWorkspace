@@ -67,7 +67,7 @@ body[data-wm-surface="shell"] .module-identity :is(strong,small) {
   white-space: nowrap;
 }
 
-@media (max-width: 620px) {
+@media (max-width:40rem) {
   body[data-wm-surface="shell"] .topbar {
     display: grid;
     grid-template-columns: minmax(0,1fr) auto;
@@ -96,10 +96,10 @@ body[data-wm-surface="shell"] .module-identity :is(strong,small) {
   }
 }
 
-@media (max-width: 360px) {
+@media (max-width:40rem) {
   body[data-wm-surface="shell"] .topbar h1 { font-size: var(--wm-text-xl); }
   body[data-wm-surface="shell"] .top-actions { gap: var(--wm-space-050); }
-  body[data-wm-surface="shell"] .sidebar { width: calc(100vw - var(--wm-space-150)); max-width: calc(100vw - var(--wm-space-150)); }
+  body[data-wm-surface="shell"] .sidebar { width: min(var(--wm-shell-sidebar-mobile-width), calc(100vw - var(--wm-space-150))); max-width: calc(100vw - var(--wm-space-150)); }
 }
 
 @media (pointer: coarse) {

@@ -56,7 +56,7 @@ for (const handler of [
   "btn.matches('[data-add-group]')",
 ]) assert.ok(boardsUi.includes(handler), `Board command routing lost ${handler}`);
 
-assert.match(main, /assets\/css\/motion-design\.css';\n(?:import '\.\.\/assets\/css\/shell-navigation\.css';\n)?(?:import '\.\.\/assets\/css\/shell-overlays\.css';\n)?(?:import '\.\.\/assets\/css\/shared-application-ui\.css';\n)?(?:import '\.\.\/assets\/css\/shell-account-menu\.css';\n)?(?:import '\.\.\/assets\/css\/shell-accessibility\.css';\n)?(?:import '\.\.\/assets\/css\/foundation\/host-ui-migration\.css';\n)?import '\.\.\/assets\/css\/boards-monday\.css';/, 'Board presentation layer must load after the established motion/application/shared-UI/host-migration cascade');
+assert.match(main, /assets\/css\/motion-design\.css';\n(?:import '\.\.\/assets\/css\/shell-navigation\.css';\n)?(?:import '\.\.\/assets\/css\/shell-overlays\.css';\n)?(?:import '\.\.\/assets\/css\/shared-application-ui\.css';\n)?(?:import '\.\.\/assets\/css\/shell-account-menu\.css';\n)?(?:import '\.\.\/assets\/css\/shell-accessibility\.css';\n)?(?:import '\.\.\/assets\/css\/foundation\/host-ui-migration\.css';\n)?(?:import '\.\.\/assets\/css\/foundation\/authentication-account-system\.css';\n)?import '\.\.\/assets\/css\/boards-monday\.css';/, 'Board presentation layer must load after the established motion/application/shared-UI/host-migration cascade, including the authorized host/M83 authentication-account cascade');
 for (const token of [
   '--wm-board-primary:',
   '--wm-board-primary-hover:',
@@ -78,7 +78,7 @@ for (const selector of [
   '.kanban-column',
   '.board-floating-menu',
 ]) assert.ok(css.includes(selector), `Board presentation CSS missing ${selector}`);
-assert.ok(css.includes('@media (max-width:760px)'), 'Board presentation is missing narrow-viewport behavior');
+assert.ok(css.includes('@media (max-width:40rem)'), 'Board presentation is missing narrow-viewport behavior');
 assert.ok(css.includes('@media (prefers-reduced-motion: reduce)'), 'Board presentation is missing reduced-motion behavior');
 assert.ok(css.includes('@media (forced-colors: active)'), 'Board presentation is missing forced-colors behavior');
 assert.doesNotMatch(css, /https?:\/\//, 'Board presentation must not depend on remote styles/assets');

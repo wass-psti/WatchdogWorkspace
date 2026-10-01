@@ -1,0 +1,3 @@
+import type { HTMLAttributes } from 'react';
+export interface WMSkeletonStateProps extends HTMLAttributes<HTMLDivElement>{readonly label:string;readonly lines?:number;readonly compact?:boolean;}
+export function WMSkeletonState({label,lines=3,compact=false,className,...props}:WMSkeletonStateProps){const count=Math.max(1,Math.min(12,Math.trunc(lines)||1));return <div {...props} className={['wm-skeleton-state',compact?'is-compact':'',className??''].filter(Boolean).join(' ')} data-wm-component="skeleton-state" aria-busy="true" aria-label={label}>{Array.from({length:count},(_,i)=><span key={i} className="wm-skeleton-line" aria-hidden="true" />)}</div>}

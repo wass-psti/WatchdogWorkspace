@@ -1,0 +1,367 @@
+/*
+ * Stage I M84 — Boards Visual Migration
+ * Presentation-only successor over the M73 Board migration and certified M45–M52
+ * behavior authorities. No selector in this file owns persistence, drag/drop,
+ * realtime, RBAC, status identifiers, data contracts, or Board lifecycle state.
+ */
+
+body[data-wm-surface="shell"] :is(.boards-page,.board-detail-page,.board-item-panel) {
+  --m84-board-surface: color-mix(in srgb,var(--wm-board-surface) 97%,var(--wm-color-canvas));
+  --m84-board-surface-subtle: color-mix(in srgb,var(--wm-board-surface-subtle) 94%,var(--wm-color-canvas));
+  --m84-board-raised: color-mix(in srgb,var(--wm-board-surface-elevated) 98%,transparent);
+  --m84-board-line: color-mix(in srgb,var(--wm-board-border) 86%,transparent);
+  --m84-board-line-strong: color-mix(in srgb,var(--wm-board-border-strong) 88%,transparent);
+  --m84-board-accent-line: color-mix(in srgb,var(--wm-board-primary) 34%,var(--wm-board-border));
+  --m84-board-accent-soft: color-mix(in srgb,var(--wm-board-primary-soft) 88%,transparent);
+  --m84-board-shadow: 0 1px 2px rgb(15 23 42 / .04),0 8px 28px rgb(15 23 42 / .055);
+  --m84-board-shadow-raised: 0 2px 4px rgb(15 23 42 / .05),0 14px 36px rgb(15 23 42 / .08);
+  --m84-board-radius: max(var(--wm-board-radius-surface),12px);
+  --m84-board-control-radius: max(var(--wm-board-radius-control),8px);
+}
+
+/* Boards shell + collection */
+body[data-wm-surface="shell"] .boards-page {
+  width:100%;
+  min-width:0;
+  padding-block-end:clamp(24px,4vw,56px);
+}
+body[data-wm-surface="shell"] .boards-page .boards-intro {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:end;
+  gap:var(--wm-board-space-standard);
+}
+body[data-wm-surface="shell"] .boards-page .boards-intro :is(h1,h2) {
+  max-width:22ch;
+  text-wrap:balance;
+}
+body[data-wm-surface="shell"] .board-list-toolbar {
+  border:1px solid var(--m84-board-line);
+  background:color-mix(in srgb,var(--m84-board-surface) 94%,transparent);
+  box-shadow:var(--m84-board-shadow);
+}
+body[data-wm-surface="shell"] :is(.board-list-toolbar,.board-view-tabs,.board-toolbar,.board-filter-bar) :is(button,[role="button"],input,select) {
+  min-height:var(--wm-board-control-small);
+}
+body[data-wm-surface="shell"] .board-grid {
+  align-items:stretch;
+  grid-auto-rows:1fr;
+}
+body[data-wm-surface="shell"] .board-card {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  border-color:var(--m84-board-line);
+  background:linear-gradient(180deg,var(--m84-board-surface),color-mix(in srgb,var(--m84-board-surface-subtle) 74%,var(--m84-board-surface)));
+  box-shadow:0 1px 1px rgb(15 23 42 / .025);
+}
+body[data-wm-surface="shell"] .board-card::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  opacity:0;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--wm-board-primary) 7%,transparent),transparent 46%);
+  transition:opacity var(--wm-motion-fast) var(--wm-motion-ease-standard);
+}
+body[data-wm-surface="shell"] .board-card:is(:hover,:focus-within)::after { opacity:1; }
+body[data-wm-surface="shell"] .board-card:is(:hover,:focus-visible) {
+  transform:translateY(-1px);
+  border-color:var(--m84-board-accent-line);
+  box-shadow:var(--m84-board-shadow-raised);
+}
+
+/* Board workspace shell + views */
+body[data-wm-surface="shell"] .board-detail-page {
+  container-type:inline-size;
+  container-name:m84-board-workspace;
+}
+body[data-wm-surface="shell"] .board-workspace-shell {
+  gap:var(--wm-board-space-compact);
+}
+body[data-wm-surface="shell"] .monday-board-head {
+  position:relative;
+  border-color:var(--m84-board-line)!important;
+  background:linear-gradient(180deg,var(--m84-board-surface),color-mix(in srgb,var(--m84-board-surface-subtle) 52%,var(--m84-board-surface)))!important;
+  box-shadow:var(--m84-board-shadow)!important;
+}
+body[data-wm-surface="shell"] .monday-board-head::before {
+  content:"";
+  position:absolute;
+  inset-inline:0;
+  inset-block-start:0;
+  block-size:2px;
+  background:linear-gradient(90deg,var(--wm-board-primary),color-mix(in srgb,var(--wm-board-primary) 16%,transparent) 72%,transparent);
+  pointer-events:none;
+}
+body[data-wm-surface="shell"] :is(.board-view-tabs,.board-toolbar,.board-selection-toolbar) {
+  border-color:var(--m84-board-line);
+  background:var(--m84-board-surface);
+}
+body[data-wm-surface="shell"] .board-view-tabs {
+  overflow-x:auto;
+  scrollbar-width:thin;
+}
+body[data-wm-surface="shell"] .board-view-tabs :is(button,[role="tab"]) {
+  position:relative;
+  white-space:nowrap;
+}
+body[data-wm-surface="shell"] .board-view-tabs :is(button,[role="tab"])[aria-selected="true"]::after,
+body[data-wm-surface="shell"] .board-view-tabs .active::after {
+  content:"";
+  position:absolute;
+  inset-inline:10px;
+  inset-block-end:1px;
+  block-size:2px;
+  border-radius:999px;
+  background:var(--wm-board-primary);
+}
+body[data-wm-surface="shell"] .board-view-region {
+  min-width:0;
+  border-radius:var(--m84-board-radius);
+}
+
+/* Filters + search */
+body[data-wm-surface="shell"] :is(.board-filter-bar,.board-toolbar,.board-list-toolbar) :is(input[type="search"],input[data-board-search],input[data-item-search]) {
+  border-color:var(--m84-board-line);
+  background:var(--m84-board-surface-subtle);
+  border-radius:var(--m84-board-control-radius);
+}
+body[data-wm-surface="shell"] :is(.board-filter-bar,.board-toolbar,.board-list-toolbar) :is(input[type="search"],input[data-board-search],input[data-item-search]):focus {
+  border-color:var(--m84-board-accent-line);
+  background:var(--m84-board-surface);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--wm-board-primary) 13%,transparent);
+}
+body[data-wm-surface="shell"] :is(.filter-chip,.board-filter-chip,[data-filter-chip]) {
+  border:1px solid var(--m84-board-line);
+  border-radius:999px;
+  background:var(--m84-board-surface-subtle);
+}
+body[data-wm-surface="shell"] :is(.filter-chip,.board-filter-chip,[data-filter-chip]).active,
+body[data-wm-surface="shell"] :is(.filter-chip,.board-filter-chip,[data-filter-chip])[aria-pressed="true"] {
+  border-color:var(--m84-board-accent-line);
+  background:var(--m84-board-accent-soft);
+  color:var(--wm-board-text);
+}
+
+/* Table / grid / list density */
+body[data-wm-surface="shell"] :is(.board-table-wrap,.board-table-scroll,[data-group-table-scroll],.wm-data-region) {
+  border-color:var(--m84-board-line);
+  border-radius:var(--m84-board-radius);
+  background:var(--m84-board-surface);
+}
+body[data-wm-surface="shell"] :is(.board-table,.wm-table) {
+  border-collapse:separate;
+  border-spacing:0;
+}
+body[data-wm-surface="shell"] :is(.board-table,.wm-table) thead :is(th,td) {
+  position:sticky;
+  inset-block-start:0;
+  z-index:3;
+  background:color-mix(in srgb,var(--m84-board-surface-subtle) 96%,transparent);
+  backdrop-filter:blur(8px);
+  border-block-end:1px solid var(--m84-board-line-strong);
+}
+body[data-wm-surface="shell"] :is(.board-table,.wm-table) tbody tr {
+  background:var(--m84-board-surface);
+}
+body[data-wm-surface="shell"] :is(.board-table,.wm-table) tbody tr:hover {
+  background:color-mix(in srgb,var(--wm-board-hover) 74%,var(--m84-board-surface));
+}
+body[data-wm-surface="shell"] :is(.board-table,.wm-table) :is(th,td) {
+  border-color:var(--m84-board-line);
+}
+body[data-wm-surface="shell"] :is(.board-group,.board-group-section) {
+  border-color:var(--m84-board-line);
+  border-radius:var(--m84-board-radius);
+  background:var(--m84-board-surface);
+  box-shadow:0 1px 2px rgb(15 23 42 / .025);
+}
+body[data-wm-surface="shell"] :is(.board-group-head,.group-header,.board-group-header) {
+  background:linear-gradient(90deg,color-mix(in srgb,var(--m84-board-accent-soft) 62%,var(--m84-board-surface)),var(--m84-board-surface) 72%);
+}
+body[data-wm-surface="shell"] :is(.board-list-row,.board-list-item,[data-board-list-item]) {
+  border-color:var(--m84-board-line);
+  background:var(--m84-board-surface);
+}
+body[data-wm-surface="shell"] :is(.board-list-row,.board-list-item,[data-board-list-item]):hover {
+  border-color:var(--m84-board-accent-line);
+  background:color-mix(in srgb,var(--wm-board-hover) 56%,var(--m84-board-surface));
+}
+
+/* Statuses */
+body[data-wm-surface="shell"] :is(.status-pill,.status-label,.board-status,[data-status-label]) {
+  min-height:var(--wm-board-status-height);
+  border:1px solid color-mix(in srgb,var(--status-color,var(--wm-board-border-strong)) 34%,transparent);
+  border-radius:999px;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wm-color-canvas) 18%,transparent);
+}
+body[data-wm-surface="shell"] :is(.status-pill,.status-label,.board-status,[data-status-label])::before {
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--status-color,var(--wm-board-primary)) 12%,transparent);
+}
+
+/* Kanban */
+body[data-wm-surface="shell"] :is(.kanban-board,.board-kanban,.kanban-lanes) {
+  gap:var(--wm-board-space-control);
+  align-items:start;
+}
+body[data-wm-surface="shell"] .kanban-column {
+  border:1px solid var(--m84-board-line);
+  border-radius:var(--m84-board-radius);
+  background:color-mix(in srgb,var(--m84-board-surface-subtle) 78%,var(--m84-board-surface));
+  box-shadow:0 1px 2px rgb(15 23 42 / .025);
+}
+body[data-wm-surface="shell"] .kanban-column:is([data-drag-over="true"],.is-drop-target) {
+  border-color:var(--m84-board-accent-line);
+  background:color-mix(in srgb,var(--m84-board-accent-soft) 52%,var(--m84-board-surface));
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--wm-board-primary) 12%,transparent);
+}
+body[data-wm-surface="shell"] :is(.kanban-card,.kanban-item,[data-kanban-item]) {
+  border:1px solid var(--m84-board-line);
+  border-radius:max(var(--wm-board-radius-card),10px);
+  background:var(--m84-board-surface);
+  box-shadow:0 1px 2px rgb(15 23 42 / .04);
+}
+body[data-wm-surface="shell"] :is(.kanban-card,.kanban-item,[data-kanban-item]):hover {
+  border-color:var(--m84-board-accent-line);
+  box-shadow:var(--m84-board-shadow);
+}
+body[data-wm-surface="shell"] :is(.kanban-card,.kanban-item,[data-kanban-item])[aria-grabbed="true"],
+body[data-wm-surface="shell"] :is(.kanban-card,.kanban-item,[data-kanban-item]).dragging {
+  opacity:.78;
+  box-shadow:var(--m84-board-shadow-raised);
+}
+
+/* Dialogs + floating Board surfaces */
+body[data-wm-surface="shell"] :is(.board-dialog,.board-popover,.board-menu,.wm-overlay-surface) {
+  border-color:var(--m84-board-line);
+}
+body[data-wm-surface="shell"] :is(.board-dialog,.board-popover,.board-menu) {
+  background:var(--m84-board-raised);
+  box-shadow:var(--m84-board-shadow-raised);
+}
+body[data-wm-surface="shell"] :is(.board-dialog,.wm-overlay-surface) :is(input,select,textarea) {
+  border-color:var(--m84-board-line);
+  border-radius:var(--m84-board-control-radius);
+}
+body[data-wm-surface="shell"] :is(.board-dialog,.wm-overlay-surface) :is(input,select,textarea):focus {
+  border-color:var(--m84-board-accent-line);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--wm-board-primary) 13%,transparent);
+}
+
+/* Item workspace */
+body[data-wm-surface="shell"] .board-item-panel {
+  border-inline-start:1px solid var(--m84-board-line);
+  background:var(--m84-board-surface);
+  box-shadow:-18px 0 48px rgb(15 23 42 / .12);
+}
+body[data-wm-surface="shell"] .board-item-panel .item-panel-head {
+  border-block-end:1px solid var(--m84-board-line);
+  background:linear-gradient(180deg,var(--m84-board-surface),color-mix(in srgb,var(--m84-board-surface-subtle) 58%,var(--m84-board-surface)));
+}
+body[data-wm-surface="shell"] .board-item-panel .item-panel-tabs {
+  position:sticky;
+  inset-block-start:0;
+  z-index:4;
+  border-block-end:1px solid var(--m84-board-line);
+  background:color-mix(in srgb,var(--m84-board-surface) 96%,transparent);
+  backdrop-filter:blur(10px);
+}
+body[data-wm-surface="shell"] .board-item-panel .item-panel-body {
+  background:var(--m84-board-surface);
+}
+body[data-wm-surface="shell"] .board-item-panel :is(.item-panel-section,.item-update-stream,.item-files,.item-activity) {
+  border-color:var(--m84-board-line);
+}
+body[data-wm-surface="shell"] .board-item-panel :is(.item-file,.item-update-card,.item-activity-list article) {
+  border-color:var(--m84-board-line);
+  border-radius:max(var(--wm-board-radius-card),10px);
+  background:var(--m84-board-surface-subtle);
+}
+body[data-wm-surface="shell"] .board-item-panel .item-file-drop {
+  border-color:color-mix(in srgb,var(--wm-board-primary) 30%,var(--m84-board-line));
+  background:color-mix(in srgb,var(--m84-board-accent-soft) 42%,var(--m84-board-surface));
+  border-radius:var(--m84-board-radius);
+}
+
+/* Selection and interaction feedback; behavior remains runtime-owned. */
+body[data-wm-surface="shell"] :is(.board-row-selected,[aria-selected="true"],[data-selected="true"]) {
+  --m84-selection-fill:color-mix(in srgb,var(--wm-board-selected) 72%,var(--m84-board-surface));
+}
+body[data-wm-surface="shell"] .board-detail-page :is(tr[aria-selected="true"],.is-selected,[data-selected="true"]) {
+  background:var(--m84-selection-fill,color-mix(in srgb,var(--wm-board-selected) 72%,var(--m84-board-surface)));
+}
+body[data-wm-surface="shell"] .board-detail-page :is(button,[role="button"],input,select,textarea):focus-visible {
+  outline:2px solid var(--wm-board-focus);
+  outline-offset:2px;
+}
+
+@container m84-board-workspace (max-width: 760px) {
+  body[data-wm-surface="shell"] .board-detail-page .monday-board-head {
+    padding-inline:var(--wm-board-space-control)!important;
+  }
+  body[data-wm-surface="shell"] .board-detail-page :is(.board-toolbar,.board-filter-bar) {
+    align-items:stretch;
+    flex-wrap:wrap;
+  }
+  body[data-wm-surface="shell"] .board-detail-page :is(.board-toolbar,.board-filter-bar) > * {
+    min-width:0;
+  }
+}
+
+@media (max-width:52.5rem) {
+  body[data-wm-surface="shell"] .boards-page .boards-intro {
+    grid-template-columns:minmax(0,1fr);
+    align-items:start;
+  }
+  body[data-wm-surface="shell"] .board-list-toolbar {
+    position:static;
+  }
+  body[data-wm-surface="shell"] .board-item-panel {
+    inline-size:min(100%,720px);
+  }
+}
+
+@media (max-width:40rem) {
+  body[data-wm-surface="shell"] .board-grid {
+    grid-template-columns:minmax(0,1fr);
+  }
+  body[data-wm-surface="shell"] .board-card {
+    min-height:auto;
+  }
+  body[data-wm-surface="shell"] .board-item-panel {
+    inline-size:100%;
+    border-inline-start:0;
+    box-shadow:none;
+  }
+  body[data-wm-surface="shell"] .board-item-panel .item-panel-tabs {
+    overflow-x:auto;
+    justify-content:flex-start;
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  body[data-wm-surface="shell"] .board-card,
+  body[data-wm-surface="shell"] .board-card::after,
+  body[data-wm-surface="shell"] :is(.kanban-card,.kanban-item,[data-kanban-item]) {
+    transition-duration:.001ms!important;
+    animation-duration:.001ms!important;
+    transform:none!important;
+  }
+}
+
+@media (forced-colors:active) {
+  body[data-wm-surface="shell"] :is(.board-card,.board-group,.kanban-column,.kanban-card,.board-item-panel,.board-list-toolbar,.monday-board-head) {
+    border-color:CanvasText!important;
+    box-shadow:none!important;
+  }
+  body[data-wm-surface="shell"] :is(.status-pill,.status-label,.board-status,[data-status-label]) {
+    border-color:CanvasText!important;
+  }
+  body[data-wm-surface="shell"] .board-detail-page :is(button,[role="button"],input,select,textarea):focus-visible {
+    outline-color:Highlight!important;
+  }
+}
+/* M96 retirement consolidation: formerly isolated M73 Board reconciliation. */
+body[data-wm-surface="shell"] :is(.board-table-view,.kanban-board).wm-data-region{border:0;border-radius:0;background:transparent;}

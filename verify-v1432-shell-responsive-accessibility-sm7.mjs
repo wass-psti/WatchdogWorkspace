@@ -48,7 +48,7 @@ assert.ok(presentation.includes('aria-keyshortcuts="ArrowLeft ArrowRight Home En
 assert.ok(app.includes('aria-label="Search applications and boards"'), 'Shell M7 sidebar search input must have an explicit accessible name');
 
 assert.ok(css.includes('.shell-skip-link:focus-visible'), 'Shell M7 skip link must become visible on focus');
-assert.ok(css.includes('@media (max-width: 360px)'), 'Shell M7 must protect 320–360px layouts');
+assert.ok(css.includes('@media (max-width:40rem)'), 'Shell M7 must protect 320–360px layouts');
 assert.ok(css.includes('@media (pointer: coarse)'), 'Shell M7 must protect touch/coarse-pointer targets');
 assert.ok(css.includes('@media (prefers-contrast: more)'), 'Shell M7 must support increased contrast');
 assert.ok(css.includes('@media (prefers-reduced-motion: reduce)'), 'Shell M7 must preserve reduced-motion behavior');

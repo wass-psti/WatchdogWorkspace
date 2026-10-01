@@ -1,0 +1,36 @@
+import fs from 'node:fs';
+const failures=[];const read=p=>fs.readFileSync(p,'utf8');const ok=(v,m)=>{if(!v)failures.push(m)};
+const target=read('config/stage-i-m95-cross-module-responsive-harmonization-target.ts');
+const contract=read('src/design-system/cross-module-responsive-harmonization.ts');
+const base=read('src/design-system/responsive-system.ts');
+const css=read('assets/css/foundation/cross-module-responsive-harmonization.css');
+const m94=read('config/stage-i-m94-motion-transition-architecture-target.ts');
+const performanceBudgets=JSON.parse(read('config/performance-budgets.json'));
+const m95BudgetAuthority=read('M95-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-10-01.md');
+const bundleBudgetVerifier=read('scripts/verify-performance-budgets.mjs');
+const shellAccessibility=read('assets/css/shell-accessibility.css');
+const shellNavigation=read('assets/css/shell-navigation.css');
+const m81ExecutionVerifier=read('scripts/verify-stage-i-m81-application-shell-global-navigation-execution.mjs');
+const m95SourceGuardManifest=JSON.parse(read('regression-baseline/m95-m94-source-guard.json'));
+ok(target.includes('milestone: 95')&&["activationState: 'implementation-complete-local-certification-pending'","activationState: 'certification-gates-passed-pending-regression'","activationState: 'active-certified'"].some((state)=>target.includes(state)),'M95 target/state missing');
+ok(target.includes("certifiedZipSha256: '4e625a02bd5dbc91cf96f6a9bbf14d223698de87958f4d87da268003b6eabf21'"),'M94 certified prerequisite ZIP identity missing');
+ok(m94.includes("activationState: 'active-certified'"),'M94 prerequisite is not active-certified');
+ok(performanceBudgets.initialCssRawBytes===624000,'M95 must preserve M93 historical CSS budget provenance');
+ok(target.includes('inheritedM93Ceiling: 624000')&&target.includes('measuredInitialCssRawBytes: 625371')&&target.includes('successorCeiling: 628000')&&target.includes('headroomBytes: 2629'),'M95 target adaptive CSS budget evidence missing');
+ok(m95BudgetAuthority.includes('M95 successor CSS ceiling: `628000`')&&m95BudgetAuthority.includes('M95 measured initial CSS from the v7 clean production build: `625371`')&&m95BudgetAuthority.includes('Headroom after the measured M95 build: `2629`'),'M95 adaptive CSS budget authority missing');
+ok(bundleBudgetVerifier.includes("m95BudgetIsGoverned ? 628000 : historicalBudgets.initialCssRawBytes")&&bundleBudgetVerifier.includes("cssBudgetAuthority: m95BudgetIsGoverned ? 'M95-successor-adaptive-628000' : 'historical-config'"),'M95 production bundle budget resolver is not fail-closed successor-aware');
+ok(shellAccessibility.includes('width: min(var(--wm-shell-sidebar-mobile-width), calc(100vw - var(--wm-space-150)))')&&shellNavigation.includes('--wm-shell-sidebar-mobile-width'), 'M95 shell mobile drawer must retain the semantic mobile-width cap under the accessibility viewport constraint');
+ok(m81ExecutionVerifier.includes('m95SuccessorAuthority')&&m81ExecutionVerifier.includes("@media (max-width:40rem)")&&m81ExecutionVerifier.includes("@media (max-width:620px)"),'M95 historical M81 deterministic verifier is not successor-aware');
+ok((m95SourceGuardManifest.allowedMutations||[]).includes('scripts/verify-stage-i-m81-application-shell-global-navigation-execution.mjs'),'M95 source guard must explicitly authorize M81 deterministic successor synchronization');
+for(const token of ['px: 640','px: 840','px: 1120','px: 1440']) ok(base.includes(token),`shared responsive authority missing ${token}`);
+for(const surface of ["'shell'","'boards'","'time-tracker'","'fueltrack'","'tradelink'"]) ok(contract.includes(surface),`M95 surface contract missing ${surface}`);
+for(const policy of ['canonicalViewportBreakpointsOnly: true','moduleOwnedViewportBreakpointsForbidden: true','horizontalDataOverflowMustRemainReachable: true','mobileNavigationMustRemainOperable: true','tabletLayoutsMustNotInheritDesktopOnlyGeometry: true']) ok(contract.includes(policy),`M95 policy missing ${policy}`);
+for(const q of ['@media (max-width:70rem)','@media (max-width:52.5rem)','@media (max-width:40rem)']) ok(css.includes(q),`M95 CSS missing ${q}`);
+ok(read('src/main.ts').includes("cross-module-responsive-harmonization.css"),'host does not load M95 harmonization CSS');
+for(const f of ['apps/time-tracker/index.html','apps/fueltrack-plus/runtime.html','apps/tradelink/runtime.html']) ok(read(f).includes('cross-module-responsive-harmonization.css'),`${f} does not load M95 CSS`);
+const governed=['assets/css/app.css','assets/css/boards-monday.css','assets/css/shell-navigation.css','assets/css/shell-account-menu.css','assets/css/shell-accessibility.css','apps/time-tracker/styles.css','apps/time-tracker/v2.css','apps/time-tracker/m85-visual-migration.css','apps/fueltrack-plus/styles.v3.17.0-wm6.css','apps/fueltrack-plus/m86-visual-migration.css','apps/tradelink/styles.v1.42.0-wm1.css','apps/tradelink/m87-visual-migration.css','assets/css/foundation/cross-module-responsive-harmonization.css'];
+const allowed=new Set(['40rem','40.0625rem','52.5rem','52.5625rem','70rem','70.0625rem','90rem','90.0625rem']);
+for(const file of governed){const text=read(file);for(const m of text.matchAll(/\((?:max|min)-width\s*:\s*([^\)]+)\)/g)){const v=m[1].trim();ok(allowed.has(v),`${file} contains noncanonical viewport breakpoint ${v}`)}}
+if(failures.length){console.error('M95 cross-module responsive harmonization verification FAILED');for(const f of failures)console.error(` - ${f}`);process.exit(1)}
+console.log('M95 cross-module responsive harmonization verification: PASS');
+console.log(`Governed responsive surfaces=${governed.length}; canonical breakpoints=640/840/1120/1440px.`);

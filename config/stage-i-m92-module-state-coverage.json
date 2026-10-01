@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "milestone": 92,
+  "requiredStateClasses": [
+    "async",
+    "empty",
+    "validation",
+    "failure-retry",
+    "completion"
+  ],
+  "modules": [
+    {
+      "id": "authentication",
+      "evidence": [
+        "src/app/auth/AuthenticationUI.tsx",
+        "src/app/auth/authentication-ui-runtime.ts"
+      ],
+      "markers": [
+        "WMLoadingState",
+        "WMErrorState",
+        "busy",
+        "password.length < 10",
+        "setFeedback"
+      ]
+    },
+    {
+      "id": "account",
+      "evidence": [
+        "src/app/management/AuthenticatedManagementUI.tsx",
+        "src/app/management/authenticated-management-ui-runtime.ts"
+      ],
+      "markers": [
+        "accountBusy",
+        "accountFeedback",
+        "Completed",
+        "Action required",
+        "refreshAccess"
+      ]
+    },
+    {
+      "id": "users-rbac",
+      "evidence": [
+        "src/app/management/AuthenticatedManagementUI.tsx"
+      ],
+      "markers": [
+        "WMEmptyState",
+        "busyUsers",
+        "setFeedback",
+        "could not be refreshed",
+        "updated successfully"
+      ]
+    },
+    {
+      "id": "settings",
+      "evidence": [
+        "src/app/management/AuthenticatedManagementUI.tsx"
+      ],
+      "markers": [
+        "settingsBusy",
+        "DiagnosticList",
+        "Verify again",
+        "Refresh status",
+        "Setup required"
+      ]
+    },
+    {
+      "id": "boards",
+      "evidence": [
+        "assets/js/features/boards/controllers/board-data-controller.ts",
+        "assets/js/features/boards/views/board-list-view.ts"
+      ],
+      "markers": [
+        "state.loading = true",
+        "state.error",
+        "Try again",
+        "wm-empty-state",
+        "data-status"
+      ]
+    },
+    {
+      "id": "time-tracker",
+      "evidence": [
+        "apps/time-tracker/app.js",
+        "apps/time-tracker/README.md"
+      ],
+      "markers": [
+        "emptyState",
+        "gpsBusy",
+        "retry",
+        "validation",
+        "completed"
+      ]
+    },
+    {
+      "id": "fueltrack-plus",
+      "evidence": [
+        "apps/fueltrack-plus/app.js",
+        "apps/fueltrack-plus/stability-runtime.js"
+      ],
+      "markers": [
+        "dataStatus: \"loading\"",
+        "renderLoadingState",
+        "storageErrors",
+        "pending",
+        "Completed"
+      ]
+    },
+    {
+      "id": "tradelink",
+      "evidence": [
+        "apps/tradelink/app.js",
+        "apps/tradelink/stability-runtime.js"
+      ],
+      "markers": [
+        "error",
+        "success",
+        "empty",
+        "validation",
+        "busy"
+      ]
+    },
+    {
+      "id": "application-shell",
+      "evidence": [
+        "src/app/composition/RuntimeApplicationBoundary.tsx",
+        "src/app/shell/shell-runtime-bridge.ts"
+      ],
+      "markers": [
+        "error",
+        "startup",
+        "ready",
+        "failed",
+        "catch"
+      ]
+    },
+    {
+      "id": "shared-application-ui",
+      "evidence": [
+        "src/app/shared-ui/SharedApplicationUI.tsx",
+        "src/app/shared-ui/shared-application-ui-runtime.ts"
+      ],
+      "markers": [
+        "command-empty",
+        "loading",
+        "success",
+        "warning",
+        "Updating"
+      ]
+    }
+  ]
+}

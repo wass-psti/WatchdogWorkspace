@@ -21,7 +21,7 @@ const checks=[
  ['storage rls',sql.includes('wm board files read')&&sql.includes('wm board files insert')&&sql.includes('wm board files delete')],
  ['server access checks',sql.includes("work_board_access(bid,'view')")],
  ['postgrest refresh',sql.includes("notify pgrst, 'reload schema'")],
- ['responsive panel',css.includes('.board-item-panel')&&css.includes('@media(max-width:600px)')],
+ ['responsive panel',css.includes('.board-item-panel')&&css.includes('@media(max-width:40rem)')],
  ['reduced motion',css.includes('.board-item-panel,.item-panel-scrim{animation:none!important}')],
 ];
 let failed=0;for(const [name,ok] of checks){console.log(`${ok?'PASS':'FAIL'} ${name}`);if(!ok)failed++;}if(failed)process.exit(1);

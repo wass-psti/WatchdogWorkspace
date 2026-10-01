@@ -19,3 +19,6 @@ export type {
   WMDataWrap,
   WMDataSort,
 } from './data-presentation.tsx';
+
+export { WMDenseDataToolbar, WMDataSummary, WMBulkActionBar, WMPagination, WMDenseDataViewport } from './enterprise-interactions.tsx';
+export type { WMDenseDataToolbarProps, WMDataSummaryProps, WMBulkActionBarProps, WMPaginationProps, WMDenseDataViewportProps } from './enterprise-interactions.tsx';

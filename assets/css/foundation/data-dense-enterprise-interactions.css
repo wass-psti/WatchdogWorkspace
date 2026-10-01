@@ -1,0 +1,17 @@
+:root{--m90-data-dense-enterprise:1;--m90-dense-control-gap:var(--wm-space-075);--m90-dense-row-min:var(--wm-table-row-compact)}
+:where(.wm-dense-toolbar){display:flex;align-items:center;gap:var(--m90-dense-control-gap);flex-wrap:wrap;min-width:0}
+:where(.wm-dense-toolbar .wm-search,.wm-dense-toolbar .app-search){flex:1 1 16rem;min-width:min(100%,16rem)}
+:where(.wm-data-summary){display:flex;align-items:center;justify-content:space-between;gap:var(--wm-space-100);min-height:var(--m90-dense-row-min);color:var(--wm-color-text-secondary);font-size:var(--wm-font-size-150)}
+:where(.wm-data-summary strong){color:var(--wm-color-text-primary);font-variant-numeric:tabular-nums}
+:where(.wm-bulk-action-bar){display:flex;align-items:center;justify-content:space-between;gap:var(--wm-space-100);flex-wrap:wrap;padding:var(--wm-space-075) var(--wm-space-100);border:1px solid var(--wm-color-border-subtle);border-radius:var(--wm-radius-150);background:var(--wm-color-surface-primary)}
+:where(.wm-bulk-selection){font-weight:var(--wm-font-weight-semibold);font-variant-numeric:tabular-nums}
+:where(.wm-bulk-actions,.wm-pagination){display:flex;align-items:center;gap:var(--wm-space-050);flex-wrap:wrap}
+:where(.wm-pagination){justify-content:flex-end}
+:where(.wm-pagination-status){min-width:7rem;text-align:center;color:var(--wm-color-text-secondary);font-variant-numeric:tabular-nums}
+:where(.wm-dense-data-viewport){min-width:0;max-width:100%;overflow:auto;overscroll-behavior-inline:contain;scrollbar-gutter:stable}
+:where(.wm-dense-data-viewport:focus-visible){outline:var(--wm-focus-width) solid var(--wm-color-focus);outline-offset:2px}
+:where([data-wm-data-dense-visual="m90"] .user-directory){display:grid;gap:var(--wm-space-050)}
+:where([data-wm-data-dense-visual="m90"] .user-row){min-height:var(--m90-dense-row-min)}
+:where(.board-table-view,.board-sheet-view){scrollbar-gutter:stable}
+@media(max-width:52.5rem){:where(.wm-dense-toolbar,.wm-bulk-action-bar){align-items:stretch}:where(.wm-pagination){justify-content:space-between;width:100%}}
+@media(forced-colors:active){:where(.wm-bulk-action-bar,.wm-dense-data-viewport:focus-visible){border-color:CanvasText;outline-color:Highlight}}

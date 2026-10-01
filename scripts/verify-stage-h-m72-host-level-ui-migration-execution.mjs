@@ -9,6 +9,9 @@ const ok = (condition, message) => { if (!condition) failures.push(message); };
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 const sha = (relative) => crypto.createHash('sha256').update(fs.readFileSync(path.join(root, relative))).digest('hex');
 const snapshot = JSON.parse(read('regression-baseline/m72-host-level-ui-migration.json'));
+const m81AuthorityExists = fs.existsSync(path.join(root, 'config/stage-i-m81-application-shell-global-navigation-target.ts'));
+const m96AuthorityExists = fs.existsSync(path.join(root, 'config/stage-i-m96-visual-consistency-legacy-styling-retirement-target.ts'));
+const m81AllowedM72AuthorityMutations = new Set(['assets/js/app.ts']);
 
 const m67Baseline = JSON.parse(read('regression-baseline/m67-system-feedback.json'));
 const m67Migratable = new Set(m67Baseline.successorMigratableAuthorities || []);
@@ -25,7 +28,7 @@ ok(m68Baseline.successorMigrationPolicy === 'hash-frozen-through-m71-semantic-in
 
 for (const [relative, expected] of Object.entries(snapshot.certifiedAuthorityHashes)) {
   ok(fs.existsSync(path.join(root, relative)), `M72 certified M71 authority missing: ${relative}`);
-  ok(sha(relative) === expected, `M72 certified M71 runtime authority drift: ${relative}`);
+  if (!(m81AuthorityExists && m81AllowedM72AuthorityMutations.has(relative))) ok(sha(relative) === expected, `M72 certified M71 runtime authority drift: ${relative}`);
 }
 
 const auth = read('src/app/auth/AuthenticationUI.tsx');
@@ -51,11 +54,17 @@ ok(boardMondayVerifier.includes('motion/application/shared-UI/host-migration cas
 ok(shellM1Verifier.includes('host-ui-migration'), 'M72 must keep the Shell M1 foundation verifier successor-aware of the host migration cascade');
 ok(shellM1Verifier.includes('M72 host migration layers'), 'M72 Shell M1 cascade verifier message must document the authorized host migration layer');
 
-const cssPath = path.join(root, 'assets/css/foundation/host-ui-migration.css');
-const css = read('assets/css/foundation/host-ui-migration.css');
-ok(fs.statSync(cssPath).size <= 400, 'M72 host consolidation CSS must remain within the 400-byte source budget');
-ok(!css.includes('transition: all') && !css.includes('transition-all'), 'M72 host consolidation must not add broad transition-all behavior');
-ok(!css.includes('prefers-reduced-motion') && !css.includes('forced-colors'), 'M72 host bridge must not duplicate reduced-motion or forced-colors rules owned by shared authorities');
+if (m96AuthorityExists) {
+  ok(!fs.existsSync(path.join(root,'assets/css/foundation/host-ui-migration.css')), 'M96 must retire the M72 host consolidation file');
+  const css = read('assets/css/foundation/cross-module-responsive-harmonization.css');
+  ok(css.includes('.update-banner.wm-status-message') && css.includes('@media (max-width:40rem)'), 'M96 successor must preserve the M72 update-banner composition under canonical responsive authority');
+} else {
+  const cssPath = path.join(root, 'assets/css/foundation/host-ui-migration.css');
+  const css = read('assets/css/foundation/host-ui-migration.css');
+  ok(fs.statSync(cssPath).size <= 400, 'M72 host consolidation CSS must remain within the 400-byte source budget');
+  ok(!css.includes('transition: all') && !css.includes('transition-all'), 'M72 host consolidation must not add broad transition-all behavior');
+  ok(!css.includes('prefers-reduced-motion') && !css.includes('forced-colors'), 'M72 host bridge must not duplicate reduced-motion or forced-colors rules owned by shared authorities');
+}
 ok(read('assets/css/foundation/interactions.css').includes('@media (prefers-reduced-motion:reduce)'), 'M72 reduced-motion behavior must remain owned by the shared interaction authority');
 ok(read('assets/css/foundation/feedback-system.css').includes('@media (forced-colors: active)'), 'M72 forced-colors feedback behavior must remain owned by M67');
 
@@ -65,4 +74,4 @@ if (failures.length) {
   process.exit(1);
 }
 console.log('M72 host-level UI migration deterministic verification: PASS');
-console.log(`Validated ${snapshot.migratedReactSurfaces.length} migrated React host surfaces, ${snapshot.requiredSharedConsumers.length} shared primitive consumers, certified runtime-authority preservation, explicit M67/M68 successor-migration authorization, accessibility fallbacks, and M73–M77 ownership boundaries.`);
+console.log(`Validated ${snapshot.migratedReactSurfaces.length} migrated React host surfaces, ${snapshot.requiredSharedConsumers.length} shared primitive consumers, certified runtime-authority preservation${m81AuthorityExists ? ', M81-authorized app shell semantic migration' : ''}, explicit M67/M68 successor-migration authorization, accessibility fallbacks, and M73–M77 ownership boundaries.`);

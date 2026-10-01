@@ -1,14 +1,19 @@
 export const workManagementThemeContract = Object.freeze({
   modes: Object.freeze(['system', 'light', 'dark'] as const),
   cssAttribute: 'data-theme',
+  architecture: 'futuristic-minimalist-semantic-v1',
+  rawPaletteAuthority: 'assets/css/foundation/tokens.css',
+  semanticThemeAuthority: 'assets/css/foundation/themes.css',
   semanticRoles: Object.freeze({
     canvas: '--wm-color-canvas',
     surfacePrimary: '--wm-color-surface-primary',
     surfaceSecondary: '--wm-color-surface-secondary',
     surfaceElevated: '--wm-color-surface-elevated',
+    surfaceSelected: '--wm-color-surface-selected',
     textPrimary: '--wm-color-text-primary',
     textSecondary: '--wm-color-text-secondary',
     textTertiary: '--wm-color-text-tertiary',
+    textInverse: '--wm-color-text-inverse',
     accent: '--wm-color-accent',
     accentContrast: '--wm-color-accent-contrast',
     positive: '--wm-color-positive',
@@ -16,11 +21,15 @@ export const workManagementThemeContract = Object.freeze({
     warning: '--wm-color-warning',
     info: '--wm-color-info',
     focus: '--wm-color-focus',
+    overlay: '--wm-color-overlay',
+    input: '--wm-color-input',
+    inputDisabled: '--wm-color-input-disabled',
   }),
   contrast: Object.freeze({
     normalTextMinimum: 4.5,
     largeTextMinimum: 3,
     nonTextFocusMinimum: 3,
+    semanticRolesResolveThroughPrimitives: true,
   }),
 });
 

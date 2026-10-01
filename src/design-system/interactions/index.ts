@@ -8,3 +8,5 @@ export * from './tabs.tsx';
 export * from './toggle.tsx';
 export * from './collapsible.tsx';
 export * from './floating.ts';
+export * from './drawer.tsx';
+export * from './confirmation-dialog.tsx';

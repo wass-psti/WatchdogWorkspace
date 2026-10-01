@@ -4,7 +4,7 @@ import { navigate } from '../../../assets/js/core/router.ts';
 import { authenticationUiRuntime } from './authentication-ui-runtime.ts';
 import { useAuthenticationUiRuntime } from './useAuthenticationUiRuntime.ts';
 import { presentationReadinessRuntime } from '../composition/presentation-readiness-runtime.ts';
-import { WMButton, WMErrorState, WMField, WMInput, WMLoadingState, WMStatusMessage } from '../../design-system/index.ts';
+import { WMButton, WMErrorState, WMField, WMIdentityBrand, WMIdentityPanel, WMIdentitySurface, WMInput, WMLoadingState, WMStatusMessage } from '../../design-system/index.ts';
 
 type BusyAction = 'login' | 'register' | 'resend' | 'verify' | 'verify-resend' | 'signout' | 'recover' | null;
 
@@ -15,23 +15,21 @@ const cooldownLabel = (milliseconds: number, fallback: string): string => millis
 
 function Brand() {
   return (
-    <div className="auth-brand">
+    <WMIdentityBrand>
       <span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>
       <div><strong>Work Management</strong><small>Cloud identity</small></div>
-    </div>
+    </WMIdentityBrand>
   );
 }
 
 function AuthenticationShell({ kicker, title, children }: { readonly kicker: string; readonly title: string; readonly children: ReactNode }) {
   return (
-    <div className="auth-shell" data-wm-authentication-ui-host="" data-wm-composition-owner="react-authentication-ui" data-wm-host-migrated="authentication">
-      <main id="main" className="auth-panel" data-wm-authentication-ui-view={authenticationUiRuntime.getSnapshot().view} aria-labelledby="wm-authentication-title">
+    <WMIdentitySurface data-wm-authentication-ui-host="" data-wm-composition-owner="react-authentication-ui" data-wm-host-migrated="authentication" data-wm-m83-surface="authentication">
+      <WMIdentityPanel kicker={kicker} title={title} data-wm-authentication-ui-view={authenticationUiRuntime.getSnapshot().view}>
         <Brand />
-        <span className="auth-kicker">{kicker}</span>
-        <h1 id="wm-authentication-title">{title}</h1>
         {children}
-      </main>
-    </div>
+      </WMIdentityPanel>
+    </WMIdentitySurface>
   );
 }
 
@@ -42,7 +40,7 @@ function Feedback({ message, tone }: { readonly message: string; readonly tone: 
 
 function BootView() {
   return (
-    <main id="main" className="boot-screen" data-wm-authentication-ui-host="" data-wm-composition-owner="react-authentication-ui" data-wm-authentication-ui-view="boot" aria-live="polite">
+    <main id="main" className="boot-screen wm-identity-boot" data-wm-authentication-ui-host="" data-wm-m83-surface="boot" data-wm-composition-owner="react-authentication-ui" data-wm-authentication-ui-view="boot" aria-live="polite">
       <span aria-hidden="true" />
       <strong>Starting Work Management</strong>
       <small>Initializing workspace and identity services.</small>

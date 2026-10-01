@@ -38,7 +38,7 @@ assert.match(migration, /@media \(pointer:coarse\)[\s\S]*input:not\(\[type=\"che
 
 // Compact shell/Board behavior must avoid sticky overlap and clipped navigation.
 assert.match(migration, /@media \(max-width:1120px\)[\s\S]*\.board-list-toolbar\s*\{\s*position:static/s);
-assert.match(shellNavigation, /@media \(max-width:620px\)[\s\S]*\.sidebar\s*\{[^}]*position:\s*fixed[^}]*height:\s*100dvh/s);
+assert.match(shellNavigation, /@media \(max-width:40rem\)[\s\S]*\.sidebar\s*\{[^}]*position:\s*fixed[^}]*height:\s*100dvh/s);
 assert.match(shellNavigation, /data-shell-mobile-open=\"true\"[^}]*\.sidebar[\s\S]*left:\s*0/s);
 assert.doesNotMatch(migration, /padding-bottom:calc\(72px \+ env\(safe-area-inset-bottom\)\)/);
 assert.match(migration, /\.board-inline-popover,\.board-status-popover,\.column-quick-picker\)[^{]*\{[^}]*max-width:calc\(100vw - 12px\)[^}]*max-height:calc\(100dvh - 12px\)/s);

@@ -1544,7 +1544,6 @@ function render({ animate = true } = {}) {
 }
 
 function enhanceScreenPresentation(root = document) {
-  document.body.dataset.wmTimeTrackerHarmonized = 'm74';
   root.querySelectorAll('.filter-panel label,.selector-grid label,.note-field,.overview-control-dock label,.tt-v2-overlay-surface form label').forEach((label) => label.classList.add('wm-field'));
   root.querySelectorAll('.filter-panel input,.filter-panel select,.selector-grid input,.selector-grid select,.note-field input,.overview-control-dock input,.overview-control-dock select,.tt-v2-overlay-surface input,.tt-v2-overlay-surface select,.tt-v2-overlay-surface textarea').forEach((control) => control.classList.add('wm-field-control','wm-control--md'));
   root.querySelectorAll('.filter-panel label > span,.selector-grid label > span,.note-field > span,.tt-v2-overlay-surface label > span').forEach((label) => label.classList.add('wm-field-label'));
@@ -1564,7 +1563,6 @@ function enhanceScreenPresentation(root = document) {
   root.querySelectorAll('.tt-v2-overlay-surface .modal-actions').forEach((footer) => footer.classList.add('wm-dialog-footer'));
   root.querySelectorAll('.report-kpi,.overview-stat').forEach((metric) => metric.classList.add('wm-metric-card'));
   root.querySelectorAll('[data-tt-v2-screen] .wm-panel,[data-tt-v2-screen] .log-record,[data-tt-v2-screen] .ot-card,[data-tt-v2-screen] .role-card').forEach((surface) => surface.classList.add('tt-v2-surface'));
-  root.querySelectorAll('[data-tt-v2-screen]').forEach((screen) => screen.setAttribute('data-wm-time-tracker-harmonized','true'));
   globalThis.TimeTrackerV2Motion?.enhance?.(root);
 }
 

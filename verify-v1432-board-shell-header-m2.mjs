@@ -52,8 +52,8 @@ for (const selector of [
   '.board-head-actions .board-head-action',
   '.board-head-action-divider',
   '.board-head-actions .board-more-trigger',
-  '@media (max-width:900px)',
-  '@media (max-width:760px)',
+  '@media (max-width:52.5rem)',
+  '@media (max-width:40rem)',
   '@media (pointer:coarse)',
 ]) assert.ok(css.includes(selector), `Milestone 2 Board header CSS missing ${selector}`);
 

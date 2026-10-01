@@ -1,0 +1,22 @@
+export const stageIM93Target = Object.freeze({
+  milestone: 93,
+  stage: 'I',
+  baseline: Object.freeze({
+    certifiedZipSha256: 'ac2867343e06845fa4f552ef1be1d1a5ef6e939ccc1def74d36062b9d55c8468',
+    certifiedSourceSha256: '845216e46e514e55f7978c9379a3dff9932ceae570fdbfcbe2e40d9ec07e774a',
+  }),
+  activationState: 'active-certified',
+  semanticsVersion: '1.43.2-m93-v1',
+  requiredStates: Object.freeze(['focus-visible','hover','active','disabled','validation','keyboard','contrast','reduced-motion']),
+  requiredAuthorities: Object.freeze([63,65,71,80,81,91,92]),
+  visualBoundary: 'interaction-state-only-no-resting-state-redesign',
+  inheritedM92AdaptiveCssCeiling: 621000,
+  measuredInitialCssRawBytes: 622184,
+  successorCeiling: 624000,
+  headroomBytes: 1816,
+  successorBudgetChangeRequired: true,
+  schemaMigrationRequired: false,
+  backendMutationRequired: false,
+  authorizationSemanticChange: false,
+  persistenceSemanticChange: false,
+});

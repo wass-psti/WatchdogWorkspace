@@ -1,0 +1,1 @@
+import fs from 'node:fs';const t=fs.readFileSync('config/stage-i-m93-interaction-state-harmonization-target.ts','utf8');if(!t.includes("activationState: 'active-certified'")){console.error('M93 certified-state verification FAILED');process.exit(1)}console.log('M93 certified-state verification: PASS');

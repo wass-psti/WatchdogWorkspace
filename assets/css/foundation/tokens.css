@@ -5,6 +5,66 @@
  * than hard-coded palette values.
  */
 :root {
+  /* Stage I M79 — Futuristic Minimalist primitive palette.
+   * Raw color values are centralized here; semantic theme roles consume these
+   * primitives instead of carrying duplicated ad-hoc literals. */
+  --wm-palette-neutral-000: #ffffff;
+  --wm-palette-n025: #fbfdff;
+  --wm-palette-n050: #f5f8fb;
+  --wm-palette-n075: #eef3f7;
+  --wm-palette-n100: #e6edf3;
+  --wm-palette-n200: #cfd9e2;
+  --wm-palette-n300: #aebdca;
+  --wm-palette-n400: #8799a8;
+  --wm-palette-n500: #637481;
+  --wm-palette-n600: #4c5d6a;
+  --wm-palette-n800: #1c2a35;
+  --wm-palette-n850: #14212b;
+  --wm-palette-n900: #0e1821;
+  --wm-palette-n925: #0b141c;
+  --wm-palette-neutral-950: #081017;
+  --wm-palette-n975: #060c12;
+  --wm-palette-c050: #e9fbfd;
+  --wm-palette-c300: #79e3ee;
+  --wm-palette-cyan-400: #55d6e7;
+  --wm-palette-cyan-700: #007f91;
+  --wm-palette-c800: #006a7c;
+  --wm-palette-c900: #064551;
+  --wm-palette-c950: #06272d;
+
+  --wm-palette-s100: #eef8fb;
+  --wm-palette-s150: #f4fbff;
+  --wm-palette-s300: #b4c2cb;
+  --wm-palette-s400: #9ab0bf;
+  --wm-palette-s500: #8798a5;
+  --wm-palette-s700: #3d5262;
+  --wm-palette-s800: #253746;
+  --wm-palette-s850: #1b2a36;
+
+  --wm-palette-g050: #e9f7f0;
+  --wm-palette-g300: #65c995;
+  --wm-palette-g700: #147a4f;
+  --wm-palette-g900: #193328;
+  --wm-palette-r050: #fff0ef;
+  --wm-palette-r300: #ef8b84;
+  --wm-palette-r700: #b23b36;
+  --wm-palette-r900: #3c2323;
+  --wm-palette-a050: #fff6df;
+  --wm-palette-a300: #e5b367;
+  --wm-palette-a700: #8a5a14;
+  --wm-palette-a900: #3a2f1d;
+  --wm-palette-b050: #eef6fd;
+  --wm-palette-b300: #86b7e5;
+  --wm-palette-b700: #246b9a;
+  --wm-palette-b900: #1d3042;
+
+  --wm-palette-ol: rgba(9, 20, 29, .46);
+  --wm-palette-od: rgba(0, 0, 0, .66);
+  --wm-palette-w008: rgba(255, 255, 255, .08);
+  --wm-palette-w010: rgba(255, 255, 255, .10);
+  --wm-palette-w012: rgba(255, 255, 255, .12);
+  --wm-palette-w022: rgba(255, 255, 255, .22);
+
   /* Typography — compact enterprise hierarchy for long operational sessions. */
   --wm-font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --wm-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
@@ -72,6 +132,11 @@
   --wm-panel-wide: 760px;
   --wm-table-row-compact: 38px;
   --wm-table-row-default: 44px;
+  --wm-icon-xs: 14px;
+  --wm-icon-sm: 16px;
+  --wm-icon-md: 18px;
+  --wm-icon-lg: 20px;
+  --wm-icon-xl: 24px;
 
   /* Work Management Shell — Navigation Foundation.
    * These are shell-level roles for the persistent host navigation. They do
@@ -317,8 +382,27 @@
   --wm-radius-500: 24px;
   --wm-radius-round: 999px;
 
-  --wm-border-width: 1px;
+  /* Borders — one centralized width/style vocabulary. */
+  --wm-border-width-hairline: 1px;
+  --wm-border-width: var(--wm-border-width-hairline);
+  --wm-border-width-strong: 2px;
+  --wm-border-style: solid;
   --wm-focus-width: 2px;
+
+  /* Blur / translucency — restrained and optional; never required for meaning. */
+  --wm-blur-none: 0;
+  --wm-blur-subtle: 4px;
+  --wm-blur-surface: 8px;
+  --wm-blur-overlay: 14px;
+  --wm-blur-ambient: 22px;
+
+  /* Density — semantic composition maps these roles to concrete scales. */
+  --wm-density-space-compact: var(--wm-space-075);
+  --wm-density-space-default: var(--wm-space-100);
+  --wm-density-space-comfortable: var(--wm-space-150);
+  --wm-density-control-compact: var(--wm-control-sm);
+  --wm-density-control-default: var(--wm-control-md);
+  --wm-density-control-comfortable: var(--wm-control-lg);
 
   /* Elevation — only overlays and raised surfaces receive significant shadow. */
   --wm-shadow-xs: 0 1px 2px rgba(15, 23, 42, .05);

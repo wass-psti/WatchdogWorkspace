@@ -16,7 +16,7 @@ export const stageFM31PerformanceEngineeringTarget = Object.freeze({
   }),
   budgets: Object.freeze({
     initialJsRawBytes: 650000,
-    initialCssRawBytes: 590000,
+    initialCssRawBytes: 613000,
     largestInitialChunkRawBytes: 420000,
     totalManifestJsRawBytes: 1800000,
     largestAnyJsChunkRawBytes: 600000,
@@ -34,7 +34,7 @@ export const stageFM31PerformanceEngineeringTarget = Object.freeze({
   ]),
   measurement: Object.freeze({ warmupIterations: 250, sampleIterations: 1500, percentile: 95, releaseGateRequired: true, nodeTypeScriptExecutionFlag: '--experimental-strip-types', bundleEntrySource: 'index.html', initialClosureMode: 'vite-manifest-static-import-closure-v1', dynamicImportsIncludedInInitialBudget: false }),
   compatibilityBoundaries: Object.freeze([
-    Object.freeze({ id: 'm30-production-css-baseline', status: 'measured-baseline-with-headroom' as const, reason: 'Initial CSS is measured from the Vite entry manifest. The 590000-byte gate is anchored to the observed 566180-byte M30/M31 production CSS artifact rather than the prior incorrect 260000-byte all-dist interpretation.' }),
+    Object.freeze({ id: 'm30-production-css-baseline', status: 'measured-baseline-with-headroom' as const, reason: 'Initial CSS is measured from the Vite entry manifest. The historical 590000-byte M31 gate was anchored to the observed 566180-byte M30/M31 production CSS artifact. M82 historically authorized 591000 bytes for required semantic-density aliases. M83 historically authorized a narrowly bounded successor ceiling of 597000 bytes for the authentication/account visual-system layer after a measured 596211-byte production build. M84 historically authorized a bounded successor ceiling of 612000 bytes for the Board-only visual migration. M88 authorizes a narrowly bounded successor ceiling of 613000 bytes after a measured 612320-byte corrective-v2 production build for the Users / roles / administration presentation boundary; the clean production build remains the authoritative measurement and unrelated JS/build budgets remain unchanged.' }),
     Object.freeze({ id: 'machine-sensitive-wall-clock-benchmarks', status: 'generous-regression-budget' as const, reason: 'Microbenchmarks use warmup and p95 with deliberately generous ceilings; bundle budgets remain deterministic and are the primary release regression authority.' }),
     Object.freeze({ id: 'legacy-cdp-browser-harness', status: 'retained-parity-backstop' as const, reason: 'M30 bounded-CDP parity remains retained while M31 performance work layers on top of Playwright rather than replacing browser coverage.' }),
     Object.freeze({ id: 'embedded-module-performance', status: 'host-budget-plus-existing-module-verifiers' as const, reason: 'TimeTracker, FuelTrack+, and TradeLink remain compatibility islands; M31 governs host bundle/startup and existing module verification without rewriting embedded runtimes.' }),

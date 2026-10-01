@@ -1,0 +1,8 @@
+import fs from 'node:fs';import path from 'node:path';import process from 'node:process';
+const root=process.cwd(),failures=[];const read=r=>fs.readFileSync(path.join(root,r),'utf8');const ok=(c,m)=>{if(!c)failures.push(m)};
+const coverage=JSON.parse(read('config/stage-i-m92-module-state-coverage.json'));const ids=coverage.modules.map(x=>x.id);ok(new Set(ids).size===ids.length,'M92 module coverage IDs must be unique');ok(coverage.requiredStateClasses.join('|')==='async|empty|validation|failure-retry|completion','M92 required state-class matrix drift');
+const system=read('src/design-system/state-system.ts');for(const s of ['loading','refreshing','empty','validation-error','failure','retrying','success','complete'])ok(system.includes(`'${s}'`),`M92 lifecycle missing ${s}`);
+const asyncState=read('src/design-system/feedback/async-state.tsx');ok(asyncState.includes("announcement={state==='loading'?'polite':'none'}"),'M92 initial loading announcement policy missing');ok(asyncState.includes("announcement={state==='complete'?'polite':'none'}"),'M92 completion announcement policy missing');
+const skeleton=read('src/design-system/feedback/skeleton-state.tsx');ok(skeleton.includes('Math.max(1,Math.min(12'),'M92 skeleton line count must be bounded');
+const css=read('assets/css/foundation/state-system.css');ok(css.includes('animation:none')&&css.includes('forced-colors:active'),'M92 preference fallbacks incomplete');
+if(failures.length){console.error('M92 state-system deterministic verification FAILED');failures.forEach(x=>console.error(` - ${x}`));process.exit(1)}console.log('M92 state-system deterministic verification: PASS');console.log(`Validated state taxonomy and governed evidence coverage for ${ids.join(', ')}.`);

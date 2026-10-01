@@ -23,7 +23,7 @@ const checks = [
   ['parallax runtime is event-driven and frame-bounded', /requestAnimationFrame\(commitPointer\)/.test(motion) && /requestAnimationFrame\(commitScroll\)/.test(motion) && /IntersectionObserver/.test(motion)],
   ['parallax runtime supports reduced motion and coarse pointers', /prefers-reduced-motion: reduce/.test(motion) && /pointer: coarse/.test(motion) && /dataset\.ttV2Motion/.test(motion)],
   ['v2 CSS contains a complete reduced-motion path', /@media \(prefers-reduced-motion: reduce\)/.test(css) && /transform:\s*none !important/.test(css)],
-  ['v2 CSS collapses rail navigation for intermediate viewports', /@media \(max-width: 960px\)/.test(css) && /grid-template-areas:[\s\S]*?'header'[\s\S]*?'rail'[\s\S]*?'main'/.test(css)],
+  ['v2 CSS collapses rail navigation for intermediate viewports', /@media \(max-width:70rem\)/.test(css) && /grid-template-areas:[\s\S]*?'header'[\s\S]*?'rail'[\s\S]*?'main'/.test(css)],
   ['v2 CSS avoids broad transition-all declarations', !/transition\s*:\s*all\b/.test(css)],
   ['release verifier protects v2 presentation assets', /v2\.css/.test(release) && /v2-motion\.js/.test(release)],
 ];

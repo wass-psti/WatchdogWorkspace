@@ -1,0 +1,1 @@
+import fs from 'node:fs';const target=fs.readFileSync('config/stage-i-m90-data-dense-enterprise-interaction-patterns-target.ts','utf8');if(!target.includes("activationState:'active-certified'")){console.error('M90 certified-state verification FAILED');process.exit(1)}console.log('M90 certified-state verification: PASS');

@@ -1,0 +1,6 @@
+:root{--m89-settings-surface:1}
+[data-wm-settings-visual="m89"]{display:grid;gap:var(--wm-space-200)}
+[data-wm-settings-visual="m89"] .m89-settings-group{border-color:var(--wm-color-border-subtle);border-radius:var(--wm-radius-200);box-shadow:var(--wm-shadow-sm)}
+[data-wm-settings-visual="m89"] .theme-options{background:var(--wm-color-surface-secondary)}
+@media(max-width:52.5rem){[data-wm-settings-visual="m89"] .settings-row{grid-template-columns:1fr}}
+@media(forced-colors:active){[data-wm-settings-visual="m89"] .m89-settings-group{border:1px solid CanvasText;box-shadow:none}}

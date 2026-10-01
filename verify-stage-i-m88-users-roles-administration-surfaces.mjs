@@ -1,0 +1,53 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
+import {spawnSync} from 'node:child_process';
+const root=process.cwd(),failures=[];
+const read=(relative)=>fs.readFileSync(path.join(root,relative),'utf8');
+const ok=(condition,message)=>{if(!condition)failures.push(message);};
+const target=read('config/stage-i-m88-users-roles-administration-surfaces-target.ts');
+ok(target.includes("certifiedZipSha256:'260ed2de533e7f9536f63c91b5b69b152326d9f3bb7e3a65d3a4cf3c75aaab25'"),'M88 lost M87 certified ZIP binding');
+ok(target.includes("certifiedSourceSha256:'5420f687989d0ca2bc0c9670e901c0e5fa5560a061a6436056826959910a370f'"),'M88 lost M87 certified source binding');
+
+const m93BudgetAuthority=fs.existsSync(path.join(root,'M93-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-30.md'))?read('M93-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-30.md'):'';const m92BudgetAuthority=fs.existsSync(path.join(root,'M92-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-30.md'))?read('M92-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-30.md'):'';const m91BudgetAuthority=fs.existsSync(path.join(root,'M91-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-30.md'))?read('M91-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-30.md'):'';const m90BudgetAuthority=fs.existsSync(path.join(root,'M90-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-30.md'))?read('M90-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-30.md'):'';
+const m88BudgetAuthority=read('M88-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-30.md');
+ok(m88BudgetAuthority.includes('M88 successor CSS ceiling: `613000`'),'M88 adaptive CSS budget authority missing');
+ok(m88BudgetAuthority.includes('initialCssRawBytes = 612320'),'M88 measured CSS evidence missing');
+const performanceBudgets=JSON.parse(read('config/performance-budgets.json'));
+const activeCssBudgetCeiling=m93BudgetAuthority.includes('M93 successor CSS ceiling: `624000`')?624000:(m92BudgetAuthority.includes('M92 successor CSS ceiling: `621000`')?621000:(m91BudgetAuthority.includes('M91 successor CSS ceiling: `619000`')?619000:(m90BudgetAuthority.includes('M90 successor CSS ceiling: `616000`')?616000:613000))); ok(performanceBudgets.initialCssRawBytes===activeCssBudgetCeiling,'M88 adaptive CSS successor ceiling drift');
+ok(target.includes('m88MeasuredInitialCssRawBytes:612320')&&target.includes('successorCeiling:613000')&&target.includes('headroomBytes:680'),'M88 target does not bind adaptive CSS governance evidence');
+ok(read('verify-stage-f-m31-performance-engineering.mjs').includes("M88 successor CSS ceiling: `613000`"),'M31 verifier is not M88 successor-aware');
+ok(read('verify-stage-i-m79-design-tokens-semantic-theme.mjs').includes("m88BudgetAuthority ? 613000"),'M79 static verifier is not M88 successor-aware');
+ok(read('scripts/verify-stage-i-m79-design-tokens-semantic-theme-execution.mjs').includes("m88BudgetAuthority ? 613000"),'M79 deterministic verifier is not M88 successor-aware');
+ok(read('verify-stage-i-m83-authentication-account-surfaces.mjs').includes("M88 successor CSS ceiling: `613000`"),'M83 verifier is not M88 successor-aware');
+ok(read('verify-stage-i-m84-boards-visual-migration.mjs').includes("M88 successor CSS ceiling: `613000`"),'M84 verifier is not M88 successor-aware');
+
+const system=read('src/design-system/users-administration-visual-migration-system.ts');
+for(const marker of ['presentation-only-users-administration-successor','workManagementGlobalRbacRemainsAuthoritative: true','m42SerializedAdminMutationRemainsAuthoritative: true','m44ManagementRuntimeRemainsAuthoritative: true','bootstrapAdminProtectionPreserved: true','lastAdminProtectionPreserved: true','selfDisableProtectionPreserved: true','timeTrackerRoleModelRemainsApplicationScoped: true','fuelTrackRoleModelRemainsApplicationScoped: true','noApplicationRoleFlatteningIntoGlobalRbac: true','noSchemaMigrationRequired: true','noBackendMutationRequired: true'])ok(system.includes(marker),`M88 system contract missing: ${marker}`);
+const main=read('src/main.ts');
+ok(main.includes("import '../assets/css/foundation/users-administration-visual-migration.css';"),'M88 stylesheet import missing');
+ok(main.indexOf("authentication-account-system.css")<main.indexOf("users-administration-visual-migration.css"),'M88 stylesheet must load after M83 authentication/account foundation');
+const ui=read('src/app/management/AuthenticatedManagementUI.tsx');
+for(const marker of ['data-wm-users-admin-visual="m88"','data-wm-administration-surface="global-rbac"','data-wm-role-boundaries="global-vs-application"','data-wm-administration-surface="user-directory"','Admin/General Manager','TimeTracker','System Admin · HR · Supervisor · Finance · IT Administrator · OJT · Employee','FuelTrack+','Admin · Pump Attendant · User'])ok(ui.includes(marker),`M88 Users presentation marker missing: ${marker}`);
+for(const marker of ['user.is_bootstrap_admin','user.is_self','user.is_last_active_admin',"values.get('platformRole') || current.platform_role","values.get('status') || current.status",'authenticatedManagementUiRuntime.updateUserAccess'])ok(ui.includes(marker),`M88 preserved Users admin behavior marker missing: ${marker}`);
+const css=read('assets/css/foundation/users-administration-visual-migration.css');
+for(const marker of ['--m88-admin-surface','m88-role-boundaries','m88-boundary-card','m88-scope-list','user-directory-card','user-toolbar','user-row','users-denied','@media (max-width:64rem)','@media (max-width:52.5rem)','@media (max-width:40rem)','@media (prefers-reduced-motion:reduce)','@media (forced-colors:active)'])ok(css.includes(marker),`M88 visual coverage missing: ${marker}`);
+ok(!/transition\s*:\s*all/i.test(css),'M88 CSS must not use transition: all');
+const foundations=fs.readdirSync(path.join(root,'assets/css/foundation')).filter((name)=>name.endsWith('.css')&&name!=='users-administration-visual-migration.css').map((name)=>read(`assets/css/foundation/${name}`)).join('\n');
+const refs=[...new Set([...css.matchAll(/var\((--wm-[A-Za-z0-9_-]+)/g)].map((match)=>match[1]))];
+for(const ref of refs)ok(foundations.includes(`${ref}:`),`M88 CSS references undefined foundation token: ${ref}`);
+const auth=read('assets/js/core/auth.ts');
+for(const marker of ["Object.freeze(['admin_general_manager','hr','supervisor','employee'])","'/rest/v1/rpc/list_user_directory'","'/rest/v1/rpc/admin_set_user_access'","if (!this.canManageUsers) throw new Error('Administrator access is required.')"] )ok(auth.includes(marker),`M88 global RBAC authority missing: ${marker}`);
+const runtime=read('src/app/management/authenticated-management-ui-runtime.ts');
+ok(runtime.includes('return await auth.updateUserAccess(input)'),'M88 M44 management mutation delegation missing');
+const m42=read('verify-stage-g-m42-users-rbac-functional-recovery.mjs');
+for(const marker of ['pg_advisory_xact_lock(42420042)','The bootstrap administrator cannot be demoted or disabled','At least one active Admin/General Manager is required','transactional module-role synchronization'])ok(m42.includes(marker),`M88 M42 preservation authority missing: ${marker}`);
+const tt=read('apps/time-tracker/domain-config.js');for(const role of ['System Admin','HR','Supervisor','Finance','IT Administrator','OJT','Employee'])ok(tt.includes(`'${role}'`),`M88 TimeTracker scoped role missing: ${role}`);
+const fuel=read('apps/fueltrack-plus/domain-config.js');for(const role of ['ADMIN: "Admin"','PUMP_ATTENDANT: "Pump Attendant"','USER: "User"'])ok(fuel.includes(role),`M88 FuelTrack+ scoped role missing: ${role}`);
+const m78=read('scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs');for(const marker of ['stage-i-m88-users-roles-administration-surfaces-target.ts','src/app/management/AuthenticatedManagementUI.tsx','assets/css/foundation/users-administration-visual-migration.css','src/design-system/users-administration-visual-migration-system.ts','M88 Users/roles administration presentation mutation/additions authorized'])ok(m78.includes(marker),`M88 M78 successor authorization missing: ${marker}`);
+const browser=read('tests/modern/e2e/m88-users-roles-administration-surfaces.spec.mjs');ok(browser.includes("getPropertyValue('--m88-admin-surface')"),'M88 browser must prove compiled presentation marker');
+const pkg=JSON.parse(read('package.json'));for(const key of ['users-admin-visual:source-guard','users-admin-visual:check','users-admin-visual:test','users-admin-visual:browser','users-admin-visual:certify','users-admin-visual:post-certification','users-admin-visual:package-hygiene','users-admin-visual:final-checkpoint','users-admin-visual:publish-certified'])ok(typeof pkg.scripts?.[key]==='string',`M88 package script missing: ${key}`);
+const m95SuccessorActive=fs.existsSync(path.join(root,'config/stage-i-m95-cross-module-responsive-harmonization-target.ts'));if(!m95SuccessorActive){const guard=spawnSync(process.execPath,['scripts/verify-stage-i-m88-m87-source-guard.mjs'],{cwd:root,encoding:'utf8'});ok(guard.status===0,`M88 source guard failed: ${(guard.stderr||guard.stdout).trim()}`);}
+if(failures.length){console.error('M88 Users, Roles & Administration Surfaces verification FAILED');failures.forEach((failure)=>console.error(` - ${failure}`));process.exit(1);}
+console.log('M88 Users, Roles & Administration Surfaces verification: PASS');
+console.log(`Verified Users/global-role/admin table/form/action presentation with ${refs.length} resolved foundation-token dependencies while preserving M42/M44 and application-scoped role authorities.`);

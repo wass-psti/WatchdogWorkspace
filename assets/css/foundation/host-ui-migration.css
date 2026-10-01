@@ -1,3 +1,0 @@
-/* Stage H M72 — host-only bridge; shared primitives retain accessibility/motion ownership. */
-:where(.update-banner.wm-status-message){grid-template-columns:minmax(0,1fr) auto}
-@media(max-width:620px){:where(.update-banner.wm-status-message){grid-template-columns:1fr}}

@@ -1,0 +1,30 @@
+export const stageIM82LayoutSurfaceResponsiveCompositionTarget = Object.freeze({
+  milestone: 82,
+  stage: 'I',
+  name: 'Layout, Surface & Responsive Composition System',
+  activationState: 'active-certified',
+  prerequisite: Object.freeze({
+    milestone: 81,
+    certifiedZipSha256: '3002a9f0c3c0317bb985a157c76bfa3f42674f4e1023d27faeb5ee92fb26c2cb',
+    certifiedSourceSha256: '6e592a683159119860a7b131d06652e9608d8938b4be6067c6a34d23a5bf6f49',
+  }),
+  scope: Object.freeze([
+    'page-layouts',
+    'grids',
+    'container-rules',
+    'section-composition',
+    'surface-composition',
+    'responsive-variants',
+    'density-behavior',
+    'desktop-tablet-mobile-layout-primitives',
+  ]),
+  boundaries: Object.freeze({
+    noDatabaseSchemaMutation: true,
+    noMigrationMutation: true,
+    noAuthenticationAuthorizationMutation: true,
+    noPersistenceMutation: true,
+    noRouteOwnershipMutation: true,
+    noModuleBusinessLogicMutation: true,
+    noNewGlobalCssPayloadRequired: true,
+  }),
+} as const);

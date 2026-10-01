@@ -463,7 +463,6 @@
   });
 
   function initialize() {
-    document.body.dataset.wmFuelTrackHarmonized = "m75";
     bindGlobalEvents();
     routeTo("dashboard", false);
     updateAutoRefreshStatus("starting");
@@ -591,7 +590,6 @@
 
   function enhanceFuelTrackPresentation(route = state.route) {
     els.content.dataset.uiScreen = route;
-    els.content.dataset.wmFuelTrackHarmonized = "m75";
     els.content.classList.add("wm-screen-host");
     els.content.querySelectorAll(".page-head").forEach((node)=>node.classList.add("wm-page-header"));
     els.content.querySelectorAll(".page-actions,.filter-actions,.table-actions,.form-actions,.modal-actions,.activity-actions").forEach((node)=>node.classList.add("wm-action-row"));

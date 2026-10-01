@@ -1,4 +1,0 @@
-/* M75 FuelTrack+ design-system harmonization: bounded reconciliation only. */
-body[data-wm-surface="fueltrack"][data-wm-fueltrack-harmonized="m75"] .wm-metric-card { min-width: 0; }
-body[data-wm-surface="fueltrack"][data-wm-fueltrack-harmonized="m75"] .wm-data-region { min-width: 0; }
-body[data-wm-surface="fueltrack"][data-wm-fueltrack-harmonized="m75"] .app-dialog.wm-dialog { padding: 0; }

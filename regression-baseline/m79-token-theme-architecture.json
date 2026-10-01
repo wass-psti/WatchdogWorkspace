@@ -1,0 +1,39 @@
+{
+  "milestone": 79,
+  "semanticsVersion": "1.43.2-m79-v1",
+  "m78CertifiedZipSha256": "8414ed0aa4dc596af45b76ba16aae8f28d87bc1b41ddc39108c138acf5e662f2",
+  "m78CertifiedSourceSha256": "437188880f12256e1bcd76924e3704e51005900af166251d513232bfcc27866a",
+  "primitiveTokenCount": 394,
+  "semanticAliasCount": 51,
+  "globalSemanticColorRoles": 37,
+  "palettePrimitiveCount": 53,
+  "categories": [
+    "color",
+    "semantic-color",
+    "typography",
+    "spacing",
+    "sizing",
+    "border",
+    "radius",
+    "surface",
+    "elevation",
+    "shadow",
+    "blur",
+    "density",
+    "breakpoint",
+    "motion-timing",
+    "motion-easing"
+  ],
+  "themeModes": [
+    "system",
+    "light",
+    "dark"
+  ],
+  "contrast": {
+    "normalTextMinimum": 4.5,
+    "focusMinimum": 3
+  },
+  "deferredConsumerMigration": "M80-M96",
+  "initialCssRawBytesCeiling": 590000,
+  "performanceCorrection": "mode-invariant-theme-role-hoisting-and-unused-m79-alias-pruning"
+}

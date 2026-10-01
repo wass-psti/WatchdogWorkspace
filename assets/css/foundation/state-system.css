@@ -1,0 +1,9 @@
+/* Stage I M92 — complete lifecycle-state presentation successor over M67/M91. */
+:root{--m92-state-system:1;--wm-skeleton-min-block:0.625rem}
+:where(.wm-skeleton-state){display:grid;gap:var(--wm-space-075);inline-size:100%;min-inline-size:0}
+:where(.wm-skeleton-line){display:block;block-size:var(--wm-skeleton-min-block);border-radius:var(--wm-radius-round);background:linear-gradient(90deg,var(--wm-color-surface-secondary),var(--wm-color-surface-tertiary),var(--wm-color-surface-secondary));background-size:200% 100%;animation:wm-m92-skeleton var(--wm-motion-duration-slow) linear infinite}
+:where(.wm-skeleton-line:nth-child(2n)){inline-size:82%}:where(.wm-skeleton-line:nth-child(3n)){inline-size:64%}:where(.wm-skeleton-state.is-compact){gap:var(--wm-space-050)}
+:where(.wm-validation-state){margin-block-start:var(--wm-space-050);font-size:var(--wm-font-size-sm);color:var(--wm-color-negative)}:where(.wm-validation-state[data-valid="true"]){color:var(--wm-color-positive)}
+@keyframes wm-m92-skeleton{to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){:where(.wm-skeleton-line){animation:none;background:var(--wm-color-surface-tertiary)}}
+@media(forced-colors:active){:where(.wm-skeleton-line){border:1px solid CanvasText;background:Canvas}:where(.wm-validation-state){color:CanvasText}}

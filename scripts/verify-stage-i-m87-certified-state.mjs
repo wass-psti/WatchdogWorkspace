@@ -1,0 +1,1 @@
+import fs from 'node:fs';const t=fs.readFileSync('config/stage-i-m87-tradelink-visual-migration-target.ts','utf8');if(!t.includes("activationState:'active-certified'")){console.error('M87 certified-state verification FAILED');process.exit(1)}console.log('M87 certified-state verification: PASS');

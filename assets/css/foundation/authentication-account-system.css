@@ -1,0 +1,127 @@
+/* Stage I M83 — Authentication & Account Surfaces.
+   Presentation-only successor. Authentication/session/authorization semantics remain owned by M12/M13/M39/M41/M44. */
+:root {
+  --wm-identity-panel-width: 31rem;
+  --wm-identity-panel-wide: 38rem;
+  --wm-identity-orb-size: 30rem;
+}
+
+.wm-identity-surface {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  min-height:100dvh;
+  padding:clamp(var(--wm-space-200),5vw,var(--wm-space-500));
+  background:
+    radial-gradient(circle at 10% 12%,color-mix(in srgb,var(--wm-color-accent) 12%,transparent),transparent 34%),
+    radial-gradient(circle at 88% 82%,color-mix(in srgb,var(--wm-color-info) 9%,transparent),transparent 30%),
+    var(--wm-color-surface-canvas);
+}
+.wm-identity-surface::before {
+  content:"";
+  position:absolute;
+  inset:auto auto -12rem -10rem;
+  width:var(--wm-identity-orb-size);
+  aspect-ratio:1;
+  border:1px solid color-mix(in srgb,var(--wm-color-border-primary) 55%,transparent);
+  border-radius:50%;
+  pointer-events:none;
+  opacity:.55;
+}
+.wm-identity-panel {
+  position:relative;
+  z-index:1;
+  width:min(var(--wm-identity-panel-width),100%);
+  padding:clamp(var(--wm-space-250),4vw,var(--wm-space-400));
+  border:1px solid color-mix(in srgb,var(--wm-color-border-primary) 88%,transparent);
+  border-radius:var(--wm-radius-300);
+  background:color-mix(in srgb,var(--wm-color-surface-primary) 94%,transparent);
+  box-shadow:var(--wm-shadow-lg);
+  backdrop-filter:blur(18px) saturate(1.08);
+}
+.wm-identity-brand { margin-bottom:var(--wm-space-300); }
+.wm-identity-brand .brand-mark { box-shadow:0 0 0 1px color-mix(in srgb,var(--wm-color-accent) 20%,transparent),0 8px 24px color-mix(in srgb,var(--wm-color-accent) 14%,transparent); }
+.wm-identity-panel-header { display:grid; gap:var(--wm-space-075); margin-bottom:var(--wm-space-250); }
+.wm-identity-panel-header .auth-kicker { margin:0; }
+.wm-identity-panel-header h1 { margin:0; max-width:18ch; font-size:clamp(var(--wm-text-2xl),4.5vw,var(--wm-text-4xl)); letter-spacing:-.035em; }
+.wm-identity-description { margin:0; max-width:52ch; color:var(--wm-color-text-secondary); font-size:var(--wm-text-sm); line-height:1.6; }
+.wm-identity-panel-body { display:grid; gap:var(--wm-space-150); }
+.wm-identity-panel-body .auth-form { gap:var(--wm-space-150); }
+.wm-identity-panel-body :is(.wm-field,input,.wm-input) { min-width:0; }
+.wm-identity-panel-body .auth-message { margin:0; }
+.wm-identity-panel-body :is(.auth-confirmation-help,.auth-rate-note,.verification-state) { border-radius:var(--wm-radius-200); border-color:var(--wm-color-border-primary); background:var(--wm-color-surface-secondary); }
+.wm-identity-panel-body .auth-security { margin:0; padding-top:var(--wm-space-150); }
+.wm-identity-panel-body .auth-switch { margin:0; }
+
+.wm-account-surface {
+  display:grid;
+  gap:var(--wm-space-200);
+  max-width:var(--wm-layout-page-max);
+  margin-inline:auto;
+}
+.wm-account-section {
+  overflow:hidden;
+  border-color:var(--wm-color-border-primary);
+  border-radius:var(--wm-radius-250);
+  background:var(--wm-color-surface-primary);
+  box-shadow:var(--wm-shadow-sm);
+}
+.wm-account-section > .settings-row { padding:clamp(var(--wm-space-150),2.5vw,var(--wm-space-250)); }
+.wm-account-section > .settings-row + .settings-row { border-top:1px solid var(--wm-color-border-subtle); }
+.wm-account-section .settings-row > div:first-child > span { color:var(--wm-color-text-tertiary); letter-spacing:.13em; }
+.wm-account-section .settings-row h2 { letter-spacing:-.015em; }
+.wm-account-section .role-map-list > div { background:var(--wm-color-surface-secondary); border-color:var(--wm-color-border-subtle); }
+.wm-account-section :is(.inline-account-form,.settings-actions) { align-items:center; }
+
+@media (max-width:52.5rem) {
+  .wm-identity-surface { align-items:center; padding:var(--wm-space-200); }
+  .wm-account-section .settings-row { grid-template-columns:minmax(0,1fr); gap:var(--wm-space-150); }
+  .wm-account-section :is(.inline-account-form,.settings-actions) { width:100%; justify-content:flex-start; flex-wrap:wrap; }
+  .wm-account-section .role-map-list { min-width:0; }
+}
+@media (max-width:40rem) {
+  .wm-identity-surface { padding:var(--wm-space-125); align-items:stretch; }
+  .wm-identity-panel { align-self:center; padding:var(--wm-space-200); border-radius:var(--wm-radius-250); }
+  .wm-identity-panel-header h1 { font-size:var(--wm-text-2xl); }
+  .wm-account-section { border-radius:var(--wm-radius-200); }
+  .wm-account-section .inline-account-form { display:grid; grid-template-columns:1fr; }
+  .wm-account-section .inline-account-form > * { width:100%; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .wm-identity-surface::before { display:none; }
+  .wm-identity-panel { backdrop-filter:none; }
+}
+@media (forced-colors:active) {
+  .wm-identity-panel,.wm-account-section { border:1px solid CanvasText; box-shadow:none; }
+}
+
+/* Explicit M83 identity lifecycle states. */
+.wm-identity-boot {
+  min-height:100dvh;
+  background:
+    radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--wm-color-accent) 10%,transparent),transparent 26%),
+    var(--wm-color-surface-canvas);
+}
+.wm-identity-panel :is(.verification-state,.auth-confirmation-help,.auth-rate-note) {
+  padding:var(--wm-space-150);
+  border:1px solid var(--wm-color-border-primary);
+}
+.wm-identity-panel .verification-state.success,
+.wm-identity-panel .auth-message.success {
+  border-color:color-mix(in srgb,var(--wm-color-positive) 35%,var(--wm-color-border-primary));
+  background:var(--wm-color-positive-soft);
+}
+.wm-identity-panel .verification-state.error,
+.wm-identity-panel .auth-message.warning,
+.wm-identity-panel .auth-confirmation-help {
+  border-color:color-mix(in srgb,var(--wm-color-warning) 38%,var(--wm-color-border-primary));
+  background:var(--wm-color-warning-soft);
+}
+.wm-identity-panel .verification-state.processing {
+  border-color:color-mix(in srgb,var(--wm-color-info) 30%,var(--wm-color-border-primary));
+  background:var(--wm-color-info-soft);
+}
+.wm-identity-panel :is(.verification-state,.auth-confirmation-help,.auth-rate-note) > :first-child { margin-top:0; }
+.wm-identity-panel :is(.verification-state,.auth-confirmation-help,.auth-rate-note) > :last-child { margin-bottom:0; }
+.wm-account-section[data-wm-account-feedback="success"] { border-color:color-mix(in srgb,var(--wm-color-positive) 34%,var(--wm-color-border-primary)); }
+.wm-account-section[data-wm-account-feedback="warning"] { border-color:color-mix(in srgb,var(--wm-color-warning) 38%,var(--wm-color-border-primary)); }

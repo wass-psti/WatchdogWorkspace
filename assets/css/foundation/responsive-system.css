@@ -23,18 +23,18 @@
 
 /* Opt-in grid collapse. No responsive behavior is implied when the attribute is absent. */
 @media (max-width: 90rem) {
-  :where(.wm-grid[data-collapse-at="wide"]) { grid-template-columns:minmax(0,1fr); }
-  :where(.wm-cluster[data-stack-at="wide"]) { flex-direction:column; align-items:stretch; }
+  .wm-grid[data-collapse-at="wide"] { grid-template-columns:minmax(0,1fr); }
+  .wm-cluster[data-stack-at="wide"] { flex-direction:column; align-items:stretch; }
 }
 @media (max-width: 70rem) {
-  :where(.wm-grid[data-collapse-at="laptop"]) { grid-template-columns:minmax(0,1fr); }
-  :where(.wm-cluster[data-stack-at="laptop"]) { flex-direction:column; align-items:stretch; }
+  .wm-grid[data-collapse-at="laptop"] { grid-template-columns:minmax(0,1fr); }
+  .wm-cluster[data-stack-at="laptop"] { flex-direction:column; align-items:stretch; }
 }
 @media (max-width: 52.5rem) {
-  :where(.wm-grid[data-collapse-at="tablet"]) { grid-template-columns:minmax(0,1fr); }
-  :where(.wm-cluster[data-stack-at="tablet"]) { flex-direction:column; align-items:stretch; }
+  .wm-grid[data-collapse-at="tablet"] { grid-template-columns:minmax(0,1fr); }
+  .wm-cluster[data-stack-at="tablet"] { flex-direction:column; align-items:stretch; }
 }
 @media (max-width: 40rem) {
-  :where(.wm-grid[data-collapse-at="narrow"]) { grid-template-columns:minmax(0,1fr); }
-  :where(.wm-cluster[data-stack-at="narrow"]) { flex-direction:column; align-items:stretch; }
+  .wm-grid[data-collapse-at="narrow"] { grid-template-columns:minmax(0,1fr); }
+  .wm-cluster[data-stack-at="narrow"] { flex-direction:column; align-items:stretch; }
 }

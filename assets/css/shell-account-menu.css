@@ -126,7 +126,7 @@ body[data-wm-surface="shell"] .account-pill[data-account-menu-trigger][aria-expa
 .shell-account-menu-subhead small { color: var(--wm-shell-account-muted); font-size: var(--wm-text-xs); }
 .shell-account-theme-item { grid-template-columns: minmax(0,1fr) auto; }
 
-@media (max-width: 620px) {
+@media (max-width:40rem) {
   body[data-wm-surface="shell"] .account-pill { min-width: var(--wm-shell-account-trigger-height); min-height: var(--wm-shell-account-trigger-height); padding: 0; justify-content: center; }
   body[data-wm-surface="shell"] .account-pill > span:last-child { display: none; }
   .shell-account-menu { width: min(calc(100vw - 16px), var(--wm-shell-account-menu-width)); max-height: calc(100vh - 16px); }

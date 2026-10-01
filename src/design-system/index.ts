@@ -20,6 +20,8 @@ export type { WorkManagementCoreComponentCategory } from './core-component-syste
 export * from './icons/index.tsx';
 export { workManagementTokens } from './tokens.ts';
 export type { WorkManagementTokenReferences } from './tokens.ts';
+export { futuristicMinimalistTokenContract } from './futuristic-token-contract.ts';
+export type { FuturisticMinimalistTokenCategory } from './futuristic-token-contract.ts';
 
 export { workManagementTypography } from './typography-system.ts';
 export type { WorkManagementTypographyRole, WorkManagementTextFlow } from './typography-system.ts';
@@ -54,3 +56,42 @@ export * from './fueltrack-plus-harmonization-system';
 export * from './tradelink-harmonization-system';
 
 export * from './final-ui-production-certification-system';
+
+// Stage I M80 — Futuristic Minimalist shared primitive component boundary.
+export { WMAlert, WMCard, WMFilterBar, WMFilterChip, WMSearchInput, WMSelector, WMSegmentedControl } from './shared-primitives/index.ts';
+export type { WMAlertProps, WMCardProps, WMFilterBarProps, WMFilterChipProps, WMSearchInputProps, WMSelectorProps, WMSegmentedControlOption, WMSegmentedControlProps } from './shared-primitives/index.ts';
+export { workManagementSharedPrimitiveSystem } from './shared-primitive-system.ts';
+export type { WorkManagementSharedPrimitiveCategory } from './shared-primitive-system.ts';
+
+// Stage I M81 — Application shell and global navigation composition boundary.
+export { WMApplicationShellFrame, WMGlobalNavigation, WMShellHeaderFrame, WMShellNavigationScroll, WMShellStatusFooter, WMGlobalPageFrame } from './application-shell/index.tsx';
+export type { WMApplicationShellFrameProps, WMGlobalNavigationProps, WMShellHeaderFrameProps, WMShellNavigationScrollProps, WMShellStatusFooterProps, WMGlobalPageFrameProps } from './application-shell/index.tsx';
+export { workManagementApplicationShellSystem } from './application-shell-system.ts';
+export type { WorkManagementApplicationShellHierarchy } from './application-shell-system.ts';
+
+// Stage I M82 — Layout, surface and responsive composition boundary.
+export { WMPageLayout, WMContentContainer, WMSectionLayout, WMSurfaceSection, WMResponsiveGrid, WMResponsiveCluster, WMLayoutStack } from './layout-composition/index.tsx';
+export type { WMPageLayoutProps, WMContentContainerProps, WMSectionLayoutProps, WMSurfaceSectionProps, WMResponsiveGridProps, WMResponsiveClusterProps, WMLayoutStackProps } from './layout-composition/index.tsx';
+export { workManagementLayoutCompositionSystem } from './layout-composition-system.ts';
+export type { WorkManagementLayoutCompositionPrimitive, WorkManagementViewportClass, WorkManagementLayoutDensity, WorkManagementGridProfile, WorkManagementClusterProfile } from './layout-composition-system.ts';
+
+// Stage I M83 — Authentication & Account Surfaces presentation boundary.
+export { WMIdentitySurface, WMIdentityPanel, WMIdentityBrand, WMAccountSurface, WMAccountSection } from './authentication-account/index.tsx';
+export { workManagementAuthenticationAccountSystem } from './authentication-account-system.ts';
+export type { WorkManagementIdentitySurface } from './authentication-account-system.ts';
+
+// Stage I M84 — Boards Visual Migration presentation boundary.
+export { workManagementBoardsVisualMigrationSystem } from './boards-visual-migration-system.ts';
+export type { WorkManagementBoardsVisualSurface } from './boards-visual-migration-system.ts';
+
+export * from './time-tracker-visual-migration-system';
+export { workManagementStateSystem } from './state-system.ts';
+export type { WorkManagementLifecycleState, WorkManagementValidationState } from './state-system.ts';
+
+// Stage I M93 — Accessibility & Interaction-State Harmonization successor boundary.
+export { workManagementInteractionStateHarmonizationSystem } from './interaction-state-harmonization-system.ts';
+export type { WorkManagementInteractionState } from './interaction-state-harmonization-system.ts';
+
+// Stage I M94 — Motion & Transition Architecture successor boundary.
+export { workManagementMotionTransitionArchitectureSystem } from './motion-transition-architecture-system.ts';
+export type { WorkManagementMotionDomain, WorkManagementMotionTransitionArchitectureSystem } from './motion-transition-architecture-system.ts';

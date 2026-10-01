@@ -1,5 +1,20 @@
 import crypto from 'node:crypto'; import fs from 'node:fs'; import path from 'node:path'; import process from 'node:process';
 const root=process.cwd(), failures=[]; const ok=(c,m)=>{if(!c)failures.push(m)}; const read=p=>fs.readFileSync(path.join(root,p),'utf8'); const sha=p=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,p))).digest('hex'); const snap=JSON.parse(read('regression-baseline/m60-color-theme-contrast.json'));
+const m79AuthorityExists=fs.existsSync(path.join(root,'config/stage-i-m79-design-tokens-semantic-theme-target.ts'));
+if(m79AuthorityExists){
+  const target=read('config/stage-i-m79-design-tokens-semantic-theme-target.ts');
+  ok(target.includes("activationState: 'implementation-complete-pending-certification'")||target.includes("activationState: 'active-certified'"),'M60 successor M79 authority has invalid activation state');
+  for(const [rel,key] of [['assets/js/core/platform.ts','themePreferenceRuntime'],['src/app/management/authenticated-management-ui-runtime.ts','settingsRuntime']]) ok(sha(rel)===snap.certifiedAuthorities[key].sha256,`M60 persistence/runtime authority drift under M79: ${rel}`);
+  const css=read('assets/css/foundation/themes.css');
+  ok(css.includes(':root[data-theme="dark"]')&&css.includes(':root[data-theme="system"]'),'M60 theme-mode authority lost under M79');
+  const semantic=[...css.matchAll(/(--wm-color-[\w-]+)\s*:\s*([^;]+);/g)];
+  ok(semantic.length>0,'M79 successor exposes no semantic color roles');
+  for(const [,name,value] of semantic) ok(value.trim().startsWith('var(--wm-palette-'),`M79 global semantic role bypasses primitive palette: ${name}`);
+  const pkg=JSON.parse(read('package.json')); ok(pkg.scripts['release:check'].includes('verify:ui'),'M60 release must retain UI regression suite');
+  if(failures.length){console.error('M60 color/theme/contrast deterministic verification FAILED');failures.forEach(x=>console.error(` - ${x}`));process.exit(1)}
+  console.log('M60 color/theme/contrast deterministic verification: PASS (M79 successor authority synchronized; persistence and theme-mode invariants preserved).');
+  process.exit(0);
+}
 for(const [rel,key] of [['assets/css/foundation/tokens.css','tokensCss'],['assets/css/foundation/token-architecture.css','tokenArchitectureCss'],['assets/css/foundation/typography-system.css','typographySystemCss'],['assets/js/core/platform.ts','themePreferenceRuntime'],['src/app/management/authenticated-management-ui-runtime.ts','settingsRuntime']])ok(sha(rel)===snap.certifiedAuthorities[key].sha256,`M60 certified M59 authority drift: ${rel}`);
 const css=read('assets/css/foundation/themes.css'); const darkMark=':root[data-theme="dark"]'; const mediaMark='@media (prefers-color-scheme: dark)'; const systemMark=':root[data-theme="system"]'; const di=css.indexOf(darkMark), mi=css.indexOf(mediaMark), si=css.indexOf(systemMark); ok(di>0&&mi>di&&si>mi,'M60 theme blocks not found in governed order');
 function vars(text){const out={}; for(const m of text.matchAll(/(--wm-[\w-]+)\s*:\s*(#[0-9a-fA-F]{6})\s*;/g))out[m[1]]=m[2].toLowerCase(); return out;} const light=vars(css.slice(0,di)), dark=vars(css.slice(di,mi)), systemDark=vars(css.slice(si));

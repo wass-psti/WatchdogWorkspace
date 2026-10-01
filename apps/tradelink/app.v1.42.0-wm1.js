@@ -664,9 +664,8 @@ function restoreRenderViewport(snapshot){
   root.style.scrollBehavior=previous;
 }
 function enhanceTradeLinkPresentation(root=document){
-  document.body.dataset.wmTradeLinkHarmonized='m76';
   const main=root.querySelector?.('#mainView')||document.querySelector('#mainView');
-  if(main){main.dataset.uiScreen=ui.tab;main.dataset.wmTradeLinkHarmonized='m76';main.classList.add('wm-screen-host');}
+  if(main){main.dataset.uiScreen=ui.tab;main.classList.add('wm-screen-host');}
   root.querySelectorAll?.('.view').forEach(node=>node.classList.add('wm-screen'));
   root.querySelectorAll?.('.intro-grid,.section-head,.documents-commandbar,.create-commandbar').forEach(node=>node.classList.add('wm-page-header'));
   root.querySelectorAll?.('.toolbar-group,.modal-actions,.template-card-actions,.company-asset-actions,.empty-state-actions,.actions').forEach(node=>node.classList.add('wm-action-row'));

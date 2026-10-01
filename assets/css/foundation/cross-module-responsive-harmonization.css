@@ -1,0 +1,44 @@
+/* Stage I M95 — Cross-Module Responsive Harmonization.
+ * Canonical viewport authority: narrow 40rem, tablet 52.5rem, laptop 70rem, wide 90rem.
+ * Loaded after each surface's migration stylesheet so shell and module composition converge
+ * on the same mobile/tablet behavior without changing domain or persistence semantics.
+ */
+:root{
+  --wm-m95-breakpoint-narrow:40rem;
+  --wm-m95-breakpoint-tablet:52.5rem;
+  --wm-m95-breakpoint-laptop:70rem;
+  --wm-m95-breakpoint-wide:90rem;
+}
+
+/* M96 retirement consolidation: M72 host bridge now resolves through the current responsive authority. */
+body[data-wm-surface="shell"] :where(.update-banner.wm-status-message){grid-template-columns:minmax(0,1fr) auto;}
+
+/* Shared overflow contract: dense regions scroll internally rather than widening the page. */
+body[data-wm-surface] :is(.wm-data-region,.table-wrap,.documents-table-wrap,.request-table,.analytics-table-panel,.table-scroll,.board-table-scroll,.board-table-wrap){
+  max-width:100%;
+  min-width:0;
+  overscroll-behavior-inline:contain;
+  -webkit-overflow-scrolling:touch;
+}
+
+@media (max-width:70rem){
+  body[data-wm-surface] :is(.wm-page,.content,.main-content,.page-content){min-width:0;max-width:100%;}
+}
+
+@media (max-width:52.5rem){
+  body[data-wm-surface] :is(.page-head,.dashboard-page-head,.analytics-page-head,.requests-page-head,.new-request-page-head,.approvals-page-head,.lightfuels-page-head,.activity-page-head,.roles-page-head,.documents-commandbar,.create-commandbar,.activity-head,.preview-head){
+    min-width:0;
+    flex-wrap:wrap;
+  }
+  body[data-wm-surface] :is(.toolbar,.toolbar-actions,.topbar-actions,.actions,.documents-utility-actions,.documents-command-actions){min-width:0;max-width:100%;flex-wrap:wrap;}
+  body[data-wm-surface] :is(.wm-dialog,.app-dialog,.modal,.company-panel,.document-history-modal){max-width:min(calc(100vw - 2rem),46rem);}
+}
+
+@media (max-width:40rem){
+  body[data-wm-surface="shell"] :where(.update-banner.wm-status-message){grid-template-columns:1fr;}
+  body[data-wm-surface] :is(.wm-page,.content,.main-content,.page-content){padding-inline:max(var(--wm-space-150),env(safe-area-inset-left));}
+  body[data-wm-surface] :is(.page-head,.dashboard-page-head,.analytics-page-head,.requests-page-head,.new-request-page-head,.approvals-page-head,.lightfuels-page-head,.activity-page-head,.roles-page-head,.documents-commandbar,.create-commandbar,.activity-head,.preview-head){flex-direction:column;align-items:stretch;}
+  body[data-wm-surface] :is(.wm-grid,.form-grid,.request-form-grid,.client-grid,.approval-assignment-grid,.document-filter-grid,.activity-filter-grid,.recovery-grid,.manual-grid){min-width:0;}
+  body[data-wm-surface] :is(.nav-tabs,.create-type-tabs,.tab-list,[role="tablist"]){max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin;}
+  body[data-wm-surface] :is(input,select,textarea,button){max-width:100%;}
+}

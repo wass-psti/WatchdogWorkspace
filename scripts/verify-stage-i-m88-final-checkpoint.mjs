@@ -1,0 +1,3 @@
+import {spawnSync} from 'node:child_process';import process from 'node:process';
+for(const args of [['scripts/verify-stage-i-m88-post-certification-state.mjs'],['scripts/verify-all-historical-verifiers.mjs'],['scripts/verify-stage-i-m88-certified-package-hygiene.mjs'],['verify-stage-i-m88-users-roles-administration-surfaces.mjs'],['scripts/verify-stage-i-m88-users-roles-administration-surfaces-execution.mjs'],['scripts/verify-stage-i-m88-m87-source-guard.mjs']]){const result=spawnSync(process.execPath,args,{stdio:'inherit'});if(result.status!==0)process.exit(result.status??1);}
+console.log('M88 final checkpoint verification: PASS (all required prepublication gates complete; publication may proceed)');

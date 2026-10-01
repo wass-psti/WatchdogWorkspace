@@ -23,7 +23,7 @@ const checks = [
   ['shared modal surfaces use the v2 overlay layer', /tt-v2-overlay-backdrop/.test(app) && /tt-v2-overlay-surface/.test(app) && /aria-modal="true"/.test(app)],
   ['modal keyboard lifecycle traps focus, restores focus and closes the topmost select first', /modalReturnFocus/.test(app) && /event\.key === 'Tab'/.test(app) && /modernSelectState\.open/.test(app) && /returnTarget\.focus/.test(app)],
   ['modern select collision handling remains viewport aware', /positionModernSelectMenu/.test(app) && /viewportPadding/.test(app) && /opens-up/.test(app)],
-  ['Pass 2 provides responsive Log, Calendar, Reports, OT and Roles behavior', /@media \(max-width: 720px\)/.test(css) && /tt-v2-log-timeline/.test(css) && /calendar-grid \{ min-width: 630px/.test(css) && /tt-v2-report-summary/.test(css) && /tt-v2-ot-stateflow/.test(css) && /tt-v2-principal-plane/.test(css)],
+  ['Pass 2 provides responsive Log, Calendar, Reports, OT and Roles behavior', /@media \(max-width:40rem\)/.test(css) && /tt-v2-log-timeline/.test(css) && /calendar-grid \{ min-width: 630px/.test(css) && /tt-v2-report-summary/.test(css) && /tt-v2-ot-stateflow/.test(css) && /tt-v2-principal-plane/.test(css)],
   ['Pass 2 coarse-pointer targets are practical', /@media \(pointer: coarse\)/.test(css) && /min-height: 44px/.test(css)],
   ['Pass 2 reduced-motion path disables spatial transforms and heavy translucency', /@media \(prefers-reduced-motion: reduce\)/.test(css) && /transform: none !important/.test(css) && /backdrop-filter: none/.test(css)],
   ['v2 motion runtime pauses spatial work while hidden', /pageVisible/.test(motion) && /visibilitychange/.test(motion) && /version: '2\.0\.0-pass2'/.test(motion)],

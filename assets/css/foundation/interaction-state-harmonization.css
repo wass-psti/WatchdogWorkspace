@@ -1,0 +1,146 @@
+/* Stage I M93 — Accessibility & Interaction-State Harmonization.
+   Successor state styling only. M63 focus semantics, M65 validation semantics,
+   M71 motion policy, M80 primitive behavior, M81 navigation semantics, M91
+   overlay behavior and M92 lifecycle semantics remain authoritative. */
+:root {
+  --m93-interaction-state-harmonization: 1;
+  --wm-m93-focus-width: var(--wm-focus-width);
+  --wm-m93-focus-color: var(--wm-color-focus);
+  --wm-m93-focus-offset: 2px;
+  --wm-m93-hover-surface: var(--wm-color-surface-secondary);
+  --wm-m93-active-surface: var(--wm-color-surface-tertiary);
+  --wm-m93-disabled-surface: var(--wm-color-input-disabled);
+  --wm-m93-validation-color: var(--wm-color-negative);
+  --wm-m93-validation-surface: var(--wm-color-negative-soft);
+}
+
+/* One focus contract across shared controls. :focus-visible preserves keyboard
+   discoverability without introducing pointer-only focus decoration. The surface
+   qualifier matches the legacy !important selector specificity so this later
+   successor rule is authoritative without changing resting-state presentation. */
+body[data-wm-surface] :where(
+  .wm-a11y-focus-ring,
+  .wm-react-button,
+  .wm-react-menu__item,
+  .wm-react-tabs__trigger,
+  .wm-react-collapsible__trigger,
+  .wm-react-checkbox__control,
+  .wm-react-switch__control,
+  .wm-m93-interactive
+):focus-visible {
+  outline: var(--wm-m93-focus-width) solid var(--wm-m93-focus-color) !important;
+  outline-offset: var(--wm-m93-focus-offset) !important;
+}
+
+/* Generic opt-in interaction state. It deliberately has no resting-state
+   visual declaration so accessibility remains subordinate to no visual effect. */
+@media (hover: hover) and (pointer: fine) {
+  :where(.wm-m93-interactive):hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled]) {
+    background-color: var(--wm-m93-hover-surface);
+  }
+}
+
+:where(.wm-m93-interactive):active:not(:disabled):not([aria-disabled="true"]):not([data-disabled]) {
+  background-color: var(--wm-m93-active-surface);
+}
+
+/* Disabled is semantically inert first; presentation is restrained and does
+   not depend on animation or pointer-only feedback. */
+:where(
+  .wm-m93-interactive:disabled,
+  .wm-m93-interactive[aria-disabled="true"],
+  .wm-m93-interactive[data-disabled],
+  .wm-react-button:disabled,
+  .wm-react-menu__item[data-disabled],
+  .wm-react-tabs__trigger[data-disabled],
+  .wm-react-checkbox[data-disabled],
+  .wm-react-switch[data-disabled]
+) {
+  cursor: not-allowed;
+  opacity: .55;
+  transform: none;
+}
+
+/* Validation must be semantic and must not be conveyed by color alone. */
+:where(
+  .wm-m93-validation,
+  [aria-invalid="true"].wm-field__control,
+  [aria-invalid="true"].wm-input,
+  [aria-invalid="true"].wm-select,
+  [aria-invalid="true"].wm-textarea
+) {
+  border-color: var(--wm-m93-validation-color);
+  box-shadow: inset 3px 0 0 var(--wm-m93-validation-color);
+}
+
+:where(.wm-m93-validation-message, .wm-validation-state[data-valid="false"]) {
+  color: var(--wm-m93-validation-color);
+}
+
+/* Harmonize existing primitive interaction motion without changing resting
+   geometry. Disabled controls never receive press transforms. */
+.wm-react-button:active:not(:disabled) {
+  transform: scale(var(--wm-motion-press-scale));
+}
+.wm-react-button:disabled {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(
+    .wm-m93-interactive,
+    .wm-react-button,
+    .wm-react-tabs__indicator,
+    .wm-react-switch__control,
+    .wm-react-switch__thumb,
+    .wm-react-collapsible__content
+  ) {
+    animation: none !important;
+    scroll-behavior: auto;
+    transition-duration: 0.001ms !important;
+  }
+
+  :where(.wm-m93-interactive, .wm-react-button):active:not(:disabled):not([aria-disabled="true"]):not([data-disabled]) {
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  body[data-wm-surface] :where(
+    .wm-a11y-focus-ring,
+    .wm-react-button,
+    .wm-react-menu__item,
+    .wm-react-tabs__trigger,
+    .wm-react-collapsible__trigger,
+    .wm-react-checkbox__control,
+    .wm-react-switch__control,
+    .wm-m93-interactive
+  ):focus-visible {
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px !important;
+  }
+
+  :where(
+    .wm-m93-validation,
+    [aria-invalid="true"].wm-field__control,
+    [aria-invalid="true"].wm-input,
+    [aria-invalid="true"].wm-select,
+    [aria-invalid="true"].wm-textarea
+  ) {
+    border-color: Mark;
+    box-shadow: inset 3px 0 0 Mark;
+  }
+
+  :where(
+    .wm-m93-interactive:disabled,
+    .wm-m93-interactive[aria-disabled="true"],
+    .wm-m93-interactive[data-disabled],
+    .wm-react-button:disabled,
+    .wm-react-menu__item[data-disabled],
+    .wm-react-tabs__trigger[data-disabled]
+  ) {
+    color: GrayText;
+    border-color: GrayText;
+    opacity: 1;
+  }
+}

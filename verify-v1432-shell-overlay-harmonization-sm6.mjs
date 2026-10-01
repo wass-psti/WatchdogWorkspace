@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
+import { assertLegacyThreeScopeThemeRole, assertM79ShellThemeRoles, hasM79SuccessorAuthority } from './scripts/lib/m79-shell-theme-semantics.mjs';
 
 const read = (path) => fs.readFileSync(path, 'utf8');
 const tokens = read('assets/css/foundation/tokens.css');
@@ -31,15 +32,20 @@ for (const marker of [
   '--wm-shell-tooltip-radius:',
 ]) assert.ok(tokens.includes(marker), `Shell M6 semantic token missing: ${marker}`);
 
-for (const marker of [
-  '--wm-shell-overlay-surface:',
-  '--wm-shell-overlay-text:',
-  '--wm-shell-overlay-border:',
-  '--wm-shell-overlay-shadow:',
-  '--wm-shell-tooltip-surface:',
-  '--wm-shell-tooltip-text:',
-  '--wm-shell-tooltip-shadow:',
-]) assert.ok((themes.match(new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) ?? []).length >= 3, `Shell M6 theme role must exist in light, dark and system-dark scopes: ${marker}`);
+const overlayThemeRoles = [
+  '--wm-shell-overlay-surface',
+  '--wm-shell-overlay-text',
+  '--wm-shell-overlay-border',
+  '--wm-shell-overlay-shadow',
+  '--wm-shell-tooltip-surface',
+  '--wm-shell-tooltip-text',
+  '--wm-shell-tooltip-shadow',
+];
+if (hasM79SuccessorAuthority()) {
+  assertM79ShellThemeRoles({ themes, tokens, roles: overlayThemeRoles, label: 'Shell M6 overlay theme' });
+} else {
+  for (const role of overlayThemeRoles) assertLegacyThreeScopeThemeRole({ themes, role: `${role}:`, label: 'Shell M6 overlay theme', atLeast: true });
+}
 
 assert.ok(main.indexOf('shell-navigation.css') < main.indexOf('shell-overlays.css'), 'Shell M6 shared overlay layer must load after navigation');
 assert.ok(main.indexOf('shell-overlays.css') < main.indexOf('shell-account-menu.css'), 'Shell M6 shared overlay layer must load before account-specific rules');

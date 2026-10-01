@@ -63,7 +63,7 @@ for (const selector of [
   '.board-group-empty-state',
   '.board-empty-add',
   '.board-group-add-row',
-  '@media (max-width:760px)',
+  '@media (max-width:40rem)',
   '@media (pointer:coarse)',
 ]) assert.ok(css.includes(selector), `Milestone 4 table CSS missing ${selector}`);
 

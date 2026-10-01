@@ -1,0 +1,1 @@
+import fs from 'node:fs';const target=fs.readFileSync('config/stage-i-m91-dialog-drawer-overlay-feedback-system-target.ts','utf8');if(!target.includes("activationState:'active-certified'")){console.error('M91 certified-state verification FAILED');process.exit(1)}console.log('M91 certified-state verification: PASS');

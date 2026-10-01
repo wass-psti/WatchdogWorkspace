@@ -87,10 +87,10 @@ for (const selector of [
   '.board-menu-section-label',
   '.board-sort-menu-group',
   '.board-responsive-overflow-menu',
-  '@media (max-width:1180px)',
-  '@media (max-width:900px)',
-  '@media (max-width:760px)',
-  '@media (max-width:480px)',
+  '@media (max-width:70rem)',
+  '@media (max-width:52.5rem)',
+  '@media (max-width:40rem)',
+  '@media (max-width:40rem)',
   '@media (pointer:coarse)',
 ]) assert.ok(css.includes(selector), `Milestone 3 command CSS missing ${selector}`);
 

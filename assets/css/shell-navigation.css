@@ -861,13 +861,13 @@ body[data-wm-surface="shell"] .shell-sidebar-backdrop {
   display: none;
 }
 
-@media (max-width:900px) and (min-width:621px) {
+@media (max-width:52.5rem) and (min-width:40.0625rem) {
   body[data-wm-surface="shell"] :is(.shell-sidebar-header-actions,.shell-sidebar-resizer,[data-shell-resizer]) {
     display: none!important;
   }
 }
 
-@media (max-width:900px) and (min-width:621px) {
+@media (max-width:52.5rem) and (min-width:40.0625rem) {
   body[data-wm-surface="shell"] .shell {
     --wm-shell-navigation-current-width: var(--wm-shell-sidebar-width-compact);
   }
@@ -920,7 +920,7 @@ body[data-wm-surface="shell"] .shell-sidebar-backdrop {
   }
 }
 
-@media (max-width:620px) {
+@media (max-width:40rem) {
   body[data-wm-surface="shell"] .shell {
     --wm-shell-navigation-current-width: 0px;
     display: block;

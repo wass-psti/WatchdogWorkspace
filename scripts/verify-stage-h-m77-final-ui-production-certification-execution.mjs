@@ -2,8 +2,37 @@ import fs from 'node:fs';import path from 'node:path';import crypto from 'node:c
 const root=path.resolve(import.meta.dirname,'..');const fail=(m)=>{throw new Error(m)};
 const baseline=JSON.parse(fs.readFileSync(path.join(root,'regression-baseline/m77-final-ui-production-certification.json'),'utf8'));
 const sha=(p)=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,p))).digest('hex');
+const m96TargetPath=path.join(root,'config/stage-i-m96-visual-consistency-legacy-styling-retirement-target.ts');
+const m96ManifestPath=path.join(root,'regression-baseline/m96-m95-source-guard.json');
+const m96SuccessorAuthority=fs.existsSync(m96TargetPath)&&fs.existsSync(m96ManifestPath)&&fs.readFileSync(m96TargetPath,'utf8').includes('milestone: 96');
+const m96Manifest=m96SuccessorAuthority?JSON.parse(fs.readFileSync(m96ManifestPath,'utf8')):null;
+const m96RetiredMarkerAuthorities=new Map([
+  ['apps/time-tracker/app.js',['wmTimeTrackerHarmonized','data-wm-time-tracker-harmonized']],
+  ['apps/fueltrack-plus/app.v3.17.0-wm6.js',['wmFuelTrackHarmonized','data-wm-fueltrack-harmonized']],
+  ['apps/tradelink/app.v1.42.0-wm1.js',['wmTradeLinkHarmonized','data-wm-tradelink-harmonized']],
+]);
+const m96RetiredStyleAuthorities=new Set([
+  'apps/time-tracker/m74-harmonization.css',
+  'apps/fueltrack-plus/m75-harmonization.css',
+  'apps/tradelink/m76-harmonization.css',
+]);
 if(baseline.productSourceChangesAllowed!==false)fail('M77 must freeze product UI source.');
-for(const [file,expected] of Object.entries(baseline.protectedAuthorities)){if(!fs.existsSync(path.join(root,file)))fail(`M77 protected authority missing: ${file}`);const actual=sha(file);if(actual!==expected)fail(`M77 protected authority drift: ${file}`)}
+if(m96SuccessorAuthority&&!m96Manifest?.allowedMutations?.includes('scripts/verify-stage-h-m77-final-ui-production-certification-execution.mjs'))fail('M77 M96 successor delegation requires explicit verifier mutation authorization.');
+for(const [file,expected] of Object.entries(baseline.protectedAuthorities)){
+  const absolute=path.join(root,file);
+  if(!fs.existsSync(absolute)){
+    if(m96SuccessorAuthority&&m96RetiredStyleAuthorities.has(file)&&m96Manifest?.allowedRemovals?.includes(file))continue;
+    fail(`M77 protected authority missing: ${file}`);
+  }
+  const actual=sha(file);
+  if(actual===expected)continue;
+  if(m96SuccessorAuthority&&m96RetiredMarkerAuthorities.has(file)&&m96Manifest?.allowedMutations?.includes(file)){
+    const source=fs.readFileSync(absolute,'utf8');
+    for(const marker of m96RetiredMarkerAuthorities.get(file))if(source.includes(marker))fail(`M77 M96 successor delegation requires retired presentation marker absence in ${file}: ${marker}`);
+    continue;
+  }
+  fail(`M77 protected authority drift: ${file}`);
+}
 if(JSON.stringify(baseline.browserEngines)!==JSON.stringify(['chromium','firefox','webkit']))fail('M77 browser matrix must contain exactly chromium/firefox/webkit.');
 if(baseline.viewports.length!==4)fail('M77 must certify four representative viewport classes.');
 const finalizer=fs.readFileSync(path.join(root,'scripts/finalize-stage-h-m77.sh'),'utf8');

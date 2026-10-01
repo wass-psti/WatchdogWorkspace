@@ -8,6 +8,7 @@ import { useAuthenticationUiRuntime } from '../auth/useAuthenticationUiRuntime.t
 import { AuthenticatedManagementUI } from '../management/AuthenticatedManagementUI.tsx';
 import { useAuthenticatedManagementUiRuntime } from '../management/useAuthenticatedManagementUiRuntime.ts';
 import { BoardPresentationFacade } from '../boards/BoardPresentationFacade.tsx';
+import { WMApplicationShellFrame, WMGlobalNavigation, WMShellHeaderFrame, WMShellNavigationScroll, WMShellStatusFooter } from '../../design-system/application-shell/index.tsx';
 import { useBoardPresentationFacadeRuntime } from '../boards/useBoardPresentationFacadeRuntime.ts';
 
 const navigationGlyphs = Object.freeze({
@@ -59,8 +60,8 @@ export function WorkManagementShell() {
 
   return (
     <div data-wm-react-shell-root="" data-wm-react-shell-mode={runtime.mode} data-wm-host-migrated="shell">
-      <div
-        className={shellActive ? 'shell' : undefined}
+      <WMApplicationShellFrame
+        active={shellActive}
         data-wm-react-shell-layout=""
         data-workspace-shell={shellActive ? '' : undefined}
         data-shell-navigation-state={shellActive ? shell.navigation.mode : undefined}
@@ -74,28 +75,27 @@ export function WorkManagementShell() {
           <a className="shell-skip-link" data-shell-skip href="#main">Skip to main content</a>
           <button className="shell-mobile-navigation-trigger" data-shell-navigation-mobile-toggle type="button" aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} data-shell-tooltip={mobileOpen ? 'Close navigation' : 'Open navigation'} data-shell-tooltip-placement="bottom" aria-controls="primarySidebar" aria-expanded={mobileOpen} aria-haspopup="dialog">{navigationGlyphs.menu}</button>
           <button className="shell-sidebar-backdrop" data-shell-navigation-dismiss type="button" tabIndex={-1} aria-hidden="true" aria-label="Close navigation" />
-          <aside
-            className="sidebar"
+          <WMGlobalNavigation
             id="primarySidebar"
             aria-hidden={mobile ? !mobileOpen : undefined}
             role={mobile ? 'dialog' : undefined}
             aria-modal={mobile && mobileOpen ? true : undefined}
             aria-label={mobile ? 'Navigation menu' : 'Primary navigation'}
           >
-            <div className="shell-sidebar-header">
+            <WMShellHeaderFrame>
               <button className="brand" data-nav="" aria-label="Work Management home" data-shell-tooltip="Work Management home" data-shell-tooltip-mode="compact"><span className="brand-mark"><i /><i /><i /><i /></span><span className="brand-copy"><strong>Work</strong><small>Management</small></span></button>
               <div className="shell-sidebar-header-actions">
                 <button className="shell-sidebar-pin" data-shell-navigation-pin type="button" aria-label={pinLabel} data-shell-tooltip={pinLabel} data-shell-tooltip-variant="action" aria-pressed={shell.navigation.pinned} disabled={!resizeAvailable} tabIndex={resizeAvailable ? 0 : -1}>{navigationGlyphs.pin}</button>
                 <button className="shell-sidebar-collapse" data-shell-navigation-toggle type="button" aria-label={collapseLabel} data-shell-tooltip={collapseLabel} data-shell-tooltip-variant="action" aria-controls="primarySidebar" aria-expanded={mobile ? mobileOpen : visuallyExpanded}>{navigationGlyphs.collapse}</button>
               </div>
-            </div>
-            <div className="shell-navigation-scroll">
+            </WMShellHeaderFrame>
+            <WMShellNavigationScroll>
               <nav data-shell-nav aria-label="Main" dangerouslySetInnerHTML={{ __html: runtime.navigationMarkup }} />
-            </div>
-            <div className="sidebar-foot"><span className={`health-dot ${runtime.online ? '' : 'offline'}`} /><div><strong>{runtime.online ? 'Platform ready' : 'Offline mode'}</strong><small>v{runtime.platformVersion} · {runtime.cloudModeLabel}</small></div></div>
+            </WMShellNavigationScroll>
+            <WMShellStatusFooter><span className={`health-dot ${runtime.online ? '' : 'offline'}`} /><div><strong>{runtime.online ? 'Platform ready' : 'Offline mode'}</strong><small>v{runtime.platformVersion} · {runtime.cloudModeLabel}</small></div></WMShellStatusFooter>
             <button type="button" className="shell-sidebar-resizer" data-shell-resizer role="separator" aria-label="Resize navigation" aria-orientation="vertical" aria-valuemin={224} aria-valuemax={360} aria-valuenow={shell.navigation.width} aria-valuetext={`${shell.navigation.width} pixels`} aria-keyshortcuts="ArrowLeft ArrowRight Home End" aria-disabled={!resizeAvailable} disabled={!resizeAvailable} tabIndex={resizeAvailable ? 0 : -1} data-shell-tooltip="Drag to resize. Arrow keys use 8px steps; Shift uses 24px." data-shell-tooltip-placement="right" />
             <span className="wm-visually-hidden shell-navigation-status" data-shell-navigation-status aria-live="polite" aria-atomic="true" />
-          </aside>
+          </WMGlobalNavigation>
         </> : null}
         {authenticationActive ? <AuthenticationUI /> : null}
         {managementActive ? <AuthenticatedManagementUI /> : null}
@@ -109,7 +109,7 @@ export function WorkManagementShell() {
           inert={mobileOpen || authenticationActive || managementActive || boardPresentationActive}
           hidden={authenticationActive || managementActive || boardPresentationActive}
         />
-      </div>
+      </WMApplicationShellFrame>
       <GlobalOverlayHost />
     </div>
   );

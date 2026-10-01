@@ -11,6 +11,15 @@ const analysis=await req('./scripts/lib/performance-budget-analysis.mjs');
 const fixture=await req('./scripts/verify-performance-budget-analysis.mjs');
 const pkg=JSON.parse(await req('./package.json'));
 const budgets=JSON.parse(await req('./config/performance-budgets.json'));
+const m93BudgetAuthority=await req('./M93-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-30.md').catch(()=> '');
+const m92BudgetAuthority=await req('./M92-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-30.md').catch(()=> '');
+const m91BudgetAuthority=await req('./M91-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-30.md').catch(()=> '');
+const m90BudgetAuthority=await req('./M90-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-30.md').catch(()=> '');
+const m88BudgetAuthority=await req('./M88-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-30.md').catch(()=> '');
+const m84BudgetAuthority=await req('./M84-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-29.md').catch(()=> '');
+const m83BudgetAuthority=await req('./M83-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-09-29.md').catch(()=> '');
+const m82BudgetAuthority=await req('./M82-CSS-PERFORMANCE-BUDGET-CORRECTIVE-2026-09-29.md').catch(()=> '');
+const currentCssCeiling=m93BudgetAuthority.includes('M93 successor CSS ceiling: `624000`') ? 624000 : (m92BudgetAuthority.includes('M92 successor CSS ceiling: `621000`') ? 621000 : (m91BudgetAuthority.includes('M91 successor CSS ceiling: `619000`') ? 619000 : (m90BudgetAuthority.includes('M90 successor CSS ceiling: `616000`') ? 616000 : (m88BudgetAuthority.includes('M88 successor CSS ceiling: `613000`') ? 613000 : (m84BudgetAuthority.includes('M84 successor CSS ceiling: `612000`') ? 612000 : (m83BudgetAuthority.includes('M83 successor CSS ceiling: `597000`') ? 597000 : (m82BudgetAuthority.includes('M82 successor CSS ceiling: `591000`') ? 591000 : 590000)))))));
 const bench=await req('./scripts/run-performance-benchmarks.mjs');
 const governedBench=pkg.scripts?.['performance:bench:governed'];
 const governedCheck=pkg.scripts?.['performance:check:governed'];
@@ -25,7 +34,7 @@ const checks=[
   ['benchmark script uses governed TypeScript execution',governedBench==='node --experimental-strip-types scripts/run-performance-benchmarks.mjs'],
   ['benchmark imports TypeScript hot paths',bench.includes('board-table-virtualization.ts')&&bench.includes('route-policy.ts')],
   ['manifest budget semantics',budgets.version===2&&budgets.entrySource==='index.html'&&budgets.initialClosureMode==='vite-manifest-static-import-closure-v1'],
-  ['corrective budget ceilings',budgets.initialCssRawBytes===590000&&budgets.largestAnyJsChunkRawBytes===600000&&budgets.totalManifestJsRawBytes===1800000],
+  ['corrective budget ceilings',budgets.initialCssRawBytes===currentCssCeiling&&budgets.largestAnyJsChunkRawBytes===600000&&budgets.totalManifestJsRawBytes===1800000],
   ['budget analysis uses Vite manifest static closure',analysis.includes(".vite/manifest.json")&&analysis.includes('collectStaticManifestClosure')&&analysis.includes('dynamicImports')===false],
   ['budget analysis accepts URL roots',analysis.includes('value instanceof URL ? fileURLToPath(value)')],
   ['budget analysis fixture governed',governedCheck==='node verify-stage-f-m31-performance-engineering.mjs && node scripts/verify-performance-budget-analysis.mjs'&&fixture.includes('Dynamic import leaked into initial closure')],

@@ -1,0 +1,1 @@
+import fs from 'node:fs';const t=fs.readFileSync('config/stage-i-m94-motion-transition-architecture-target.ts','utf8');if(!t.includes("activationState: 'active-certified'")){console.error('M94 certified-state verification FAILED');process.exit(1)}console.log('M94 certified-state verification: PASS');

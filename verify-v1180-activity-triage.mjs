@@ -19,5 +19,5 @@ assert.ok(app.includes('activity-view-tabs') && app.includes('data-activity-view
 assert.ok(app.includes('The shared audit record was not deleted') && app.includes('Append-only shared audit stream'),'audit immutability language missing');
 assert.ok(!app.includes('removeItem(KEYS.activity'),'Activity audit stream must never be deleted by triage UI');
 assert.ok(css.includes('.activity-more-popover') && css.includes('.activity-selection-bar') && css.includes('.activity-view-tabs'),'Activity contextual interaction styles missing');
-assert.ok(css.includes('@media(max-width:900px)'),'Activity triage responsive behavior missing');
+assert.ok(css.includes('@media(max-width:52.5rem)'),'Activity triage responsive behavior missing');
 console.log('v1.18.0 Activity triage verification: PASS');

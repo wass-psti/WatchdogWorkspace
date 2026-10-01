@@ -1,0 +1,21 @@
+/* Stage I M91 — unified overlay/feedback successor presentation.
+   Interaction semantics remain owned by M63/M66/M67 and certified Ark/runtime authorities. */
+:root{--m91-overlay-feedback-system:1}
+.wm-react-drawer-positioner{position:fixed;inset:0;z-index:calc(var(--wm-z-modal) + 1);display:flex;pointer-events:none}
+.wm-react-drawer-positioner[data-placement="end"]{justify-content:flex-end}
+.wm-react-drawer-positioner[data-placement="start"]{justify-content:flex-start}
+.wm-react-drawer-positioner[data-placement="bottom"]{align-items:flex-end}
+.wm-react-drawer{pointer-events:auto;display:flex;flex-direction:column;min-width:0;max-width:min(36rem,calc(100vw - var(--wm-space-200)));max-height:100dvh;overflow:auto;border:1px solid var(--wm-color-border-primary);background:var(--wm-color-surface-primary);color:var(--wm-color-text-primary);box-shadow:var(--wm-shadow-overlay)}
+.wm-react-drawer[data-placement="end"],.wm-react-drawer[data-placement="start"]{width:min(32rem,calc(100vw - var(--wm-space-200)));height:100dvh}
+.wm-react-drawer[data-placement="bottom"]{width:100%;max-width:none;max-height:min(80dvh,48rem);border-radius:var(--wm-radius-300) var(--wm-radius-300) 0 0}
+.wm-react-drawer__header{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--wm-space-200);padding:var(--wm-space-200);border-bottom:1px solid var(--wm-color-border-subtle)}
+.wm-react-drawer__title{margin:0;font-size:var(--wm-text-lg);font-weight:var(--wm-font-weight-semibold)}
+.wm-react-drawer__description{margin:var(--wm-space-050) 0 0;color:var(--wm-color-text-secondary);font-size:var(--wm-text-sm)}
+.wm-react-drawer__body{padding:var(--wm-space-200);min-width:0}
+.wm-confirmation-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:var(--wm-space-100);margin-top:var(--wm-space-200)}
+.wm-confirmation-actions [data-danger]{background:var(--wm-color-negative);color:var(--wm-color-text-inverse)}
+.wm-notification-stack{display:grid;gap:var(--wm-space-100);width:min(26rem,calc(100vw - var(--wm-space-200)));max-height:min(70dvh,40rem);overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+[data-wm-interaction="dialog"],[data-wm-interaction="drawer"],[data-wm-interaction="popover"],[data-wm-interaction="menu"]{isolation:isolate}
+@media(max-width:52.5rem){.wm-react-dialog-positioner{padding:var(--wm-space-100);align-items:end}.wm-react-dialog{width:100%;max-height:min(88dvh,48rem);border-radius:var(--wm-radius-300) var(--wm-radius-300) 0 0}.wm-react-drawer-positioner[data-placement="start"],.wm-react-drawer-positioner[data-placement="end"]{width:100vw;max-width:100vw;align-items:flex-end}.wm-react-drawer[data-placement="start"],.wm-react-drawer[data-placement="end"]{width:100%;max-width:none;height:auto;max-height:min(88dvh,48rem);border-radius:var(--wm-radius-300) var(--wm-radius-300) 0 0}.wm-confirmation-actions>*{flex:1 1 auto}}
+@media(prefers-reduced-motion:reduce){.wm-react-drawer,.wm-react-dialog,.wm-react-popover,.wm-react-menu{scroll-behavior:auto}}
+@media(forced-colors:active){.wm-react-drawer,.wm-notification-stack .wm-status-message{border-color:CanvasText;box-shadow:none}}

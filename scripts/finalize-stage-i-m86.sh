@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)";cd "$ROOT";TARGET="$ROOT/config/stage-i-m86-fueltrack-plus-visual-migration-target.ts";STATUS="$ROOT/RELEASE-STATUS-v1.43.2-STAGE-I-M86-FUELTRACK-PLUS-VISUAL-MIGRATION.md"
+grep -q "activationState:'implementation-complete-pending-certification'" "$TARGET" || { echo 'FAIL: M86 target is not pending certification.' >&2; exit 1; };grep -q '\*\*State:\*\* implementation-complete-pending-certification' "$STATUS" || exit 1
+npm run dependencies:certify;SOURCE_BEFORE="$(node scripts/lib/stage-i-m86-checkpoint-tree.mjs "$ROOT")";bash scripts/verify-stage-i-m86-release.sh;[ "$(node scripts/lib/stage-i-m86-checkpoint-tree.mjs "$ROOT")" = "$SOURCE_BEFORE" ] || exit 1
+python3 - "$TARGET" "$STATUS" <<'PY'
+from pathlib import Path
+import sys
+for n in sys.argv[1:]:
+ p=Path(n);s=p.read_text().replace("activationState:'implementation-complete-pending-certification'","activationState:'certification-gates-passed-pending-regression'").replace('**State:** implementation-complete-pending-certification','**State:** certification-gates-passed-pending-regression');p.write_text(s)
+PY
+node scripts/verify-stage-i-m86-post-certification-state.mjs
+echo 'STAGE I M86 DEDICATED CERTIFICATION GATES: PASS (historical regression/package/final checkpoint remain)';echo "Normalized source tree SHA-256: $SOURCE_BEFORE"

@@ -1,0 +1,26 @@
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import {spawnSync} from 'node:child_process';
+import process from 'node:process';
+
+const fail = (message) => { console.error(`M98 browser evidence verification FAILED: ${message}`); process.exit(1); };
+const attestationPath = path.join(process.cwd(),'m98-browser-evidence','M98-BROWSER-ATTESTATION.json');
+const manifestPath = path.join(process.cwd(),'m97-browser-evidence','M97-SCREENSHOT-MANIFEST.json');
+if (!fs.existsSync(attestationPath)) fail('M98 browser attestation missing');
+if (!fs.existsSync(manifestPath)) fail('M97 screenshot manifest missing');
+const attestation = JSON.parse(fs.readFileSync(attestationPath,'utf8'));
+const manifestBytes = fs.readFileSync(manifestPath);
+const manifest = JSON.parse(manifestBytes);
+if (attestation.milestone !== 98 || attestation.inheritedMatrixMilestone !== 97) fail('milestone binding mismatch');
+if (attestation.screenshotCount !== 84 || manifest.screenshotCount !== 84) fail('expected 84 screenshots');
+for (const browser of ['chromium','firefox','webkit']) if (!attestation.browserMatrix.includes(browser)) fail(`browser missing: ${browser}`);
+for (const viewport of ['mobile','tablet','laptop','desktop']) if (!attestation.viewports.includes(viewport)) fail(`viewport missing: ${viewport}`);
+const manifestSha = crypto.createHash('sha256').update(manifestBytes).digest('hex');
+if (attestation.m97ScreenshotManifestSha256 !== manifestSha) fail('M97 screenshot manifest digest drift');
+const source = spawnSync(process.execPath,['scripts/lib/stage-i-m98-checkpoint-tree.mjs',process.cwd()],{encoding:'utf8'});
+if (source.status !== 0) process.exit(source.status ?? 1);
+if (attestation.sourceTreeSha256 !== source.stdout.trim()) fail('M98 browser attestation source-tree binding drift');
+const evidence = spawnSync(process.execPath,['scripts/verify-stage-i-m97-browser-evidence.mjs'],{stdio:'inherit'});
+if (evidence.status !== 0) process.exit(evidence.status ?? 1);
+console.log('M98 browser evidence verification: PASS (84 PNGs + 3 browsers + 4 viewports + 7 surfaces + source-tree-bound attestation)');

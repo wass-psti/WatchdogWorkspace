@@ -1,0 +1,16 @@
+export const stageIM95CrossModuleResponsiveHarmonizationTarget = Object.freeze({
+  milestone: 95,
+  stage: 'I',
+  release: '1.43.2',
+  name: 'Cross-Module Responsive Harmonization',
+  semanticsVersion: '1.43.2-m95-v13',
+  activationState: 'active-certified',
+  failClosed: true,
+  prerequisite: Object.freeze({ milestone: 94, certifiedZipSha256: '4e625a02bd5dbc91cf96f6a9bbf14d223698de87958f4d87da268003b6eabf21', certifiedSourceSha256: 'b3367038a1d379296314acb7d72c11a319a1a28c4140a3080740079194d6dc7c' }),
+  scope: Object.freeze(['shell','boards','time-tracker','fueltrack-plus','tradelink','breakpoint-consistency','mobile-audit','tablet-audit','responsive-drift-prevention']),
+  canonicalBreakpoints: Object.freeze({ narrow: 640, tablet: 840, laptop: 1120, wide: 1440 }),
+  adaptiveCssBudget: Object.freeze({ inheritedM93Ceiling: 624000, measuredInitialCssRawBytes: 625371, successorCeiling: 628000, headroomBytes: 2629, authority: 'M95-ADAPTIVE-CSS-PERFORMANCE-BUDGET-2026-10-01.md' }),
+  boundaries: Object.freeze({ noDatabaseSchemaMutation:true, noMigrationMutation:true, noAuthenticationAuthorizationMutation:true, noPersistenceMutation:true, noRouteOwnershipMutation:true, noModuleBusinessLogicMutation:true }),
+  outputDirectory: 'm95-continuation-artifacts-upload',
+  continuationBaseline: 'Work-Management-App-v1.43.2-Stage-I-M95-Implementation-Complete-Verification-Pending-v13.zip',
+} as const);

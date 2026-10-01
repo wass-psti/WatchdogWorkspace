@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
+import { assertLegacyThreeScopeThemeRole, assertM79ShellThemeRoles, hasM79SuccessorAuthority } from './scripts/lib/m79-shell-theme-semantics.mjs';
 
 const read = (path) => fs.readFileSync(path, 'utf8');
 const app = read('assets/js/app.ts');
@@ -24,18 +25,23 @@ for (const marker of [
   '--wm-shell-account-avatar-size: 42px;',
 ]) assert.ok(tokens.includes(marker), `Shell M5 semantic token missing: ${marker}`);
 
-for (const marker of [
-  '--wm-shell-account-surface:',
-  '--wm-shell-account-surface-elevated:',
-  '--wm-shell-account-header-surface:',
-  '--wm-shell-account-hover:',
-  '--wm-shell-account-selected:',
-  '--wm-shell-account-text:',
-  '--wm-shell-account-muted:',
-  '--wm-shell-account-border:',
-  '--wm-shell-account-focus:',
-  '--wm-shell-account-shadow:',
-]) assert.ok((themes.match(new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) ?? []).length >= 3, `Shell M5 theme role must exist in light, dark and system-dark scopes: ${marker}`);
+const accountThemeRoles = [
+  '--wm-shell-account-surface',
+  '--wm-shell-account-surface-elevated',
+  '--wm-shell-account-header-surface',
+  '--wm-shell-account-hover',
+  '--wm-shell-account-selected',
+  '--wm-shell-account-text',
+  '--wm-shell-account-muted',
+  '--wm-shell-account-border',
+  '--wm-shell-account-focus',
+  '--wm-shell-account-shadow',
+];
+if (hasM79SuccessorAuthority()) {
+  assertM79ShellThemeRoles({ themes, tokens, roles: accountThemeRoles, label: 'Shell M5 account theme' });
+} else {
+  for (const role of accountThemeRoles) assertLegacyThreeScopeThemeRole({ themes, role: `${role}:`, label: 'Shell M5 account theme', atLeast: true });
+}
 
 assert.ok(main.indexOf("shell-navigation.css") < main.indexOf("shell-overlays.css"), 'Shell M6 shared overlay layer must load after Shell navigation');
 assert.ok(main.indexOf("shell-overlays.css") < main.indexOf("shell-account-menu.css"), 'Shell M5 account layer must consume the shared Shell M6 overlay foundation');
@@ -99,7 +105,7 @@ for (const marker of [
   '.shell-account-menu-header',
   '.shell-account-menu-item',
   '.shell-account-menu-session',
-  '@media (max-width: 620px)',
+  '@media (max-width:40rem)',
   '@media (pointer: coarse)',
   '@media (prefers-reduced-motion: reduce)',
   '@media (forced-colors: active)',

@@ -1,10 +1,10 @@
 /*
- * Stage H M58 — Design Token Architecture Consolidation.
+ * Stage I M79 — Design Tokens & Semantic Theme Architecture.
  *
- * This file introduces canonical semantic aliases without changing concrete
- * visual values. Every alias resolves through the pre-existing certified
- * foundation/theme authorities. Existing consumers remain valid during the
- * controlled migration window; successor milestones may adopt these aliases.
+ * M58 established the tier model; M79 promotes it to the Futuristic Minimalist
+ * visual authority. Concrete palette values remain primitive, theme-aware color
+ * roles remain semantic, and component layers consume role aliases rather than
+ * introducing new ad-hoc constants.
  */
 :root {
   /* Typography intent — concrete scale ownership remains M59. */
@@ -62,4 +62,30 @@
   --wm-semantic-z-modal: var(--wm-z-modal);
   --wm-semantic-z-command: var(--wm-z-command);
   --wm-semantic-z-toast: var(--wm-z-toast);
+
+  /* M79 semantic color/surface roles. */
+  --wm-semantic-color-canvas: var(--wm-color-canvas);
+
+  /* M79 sizing / icon intent. */
+  --wm-semantic-size-icon-md: var(--wm-icon-md);
+
+  /* M79 border intent. */
+  --wm-semantic-border-hairline: var(--wm-border-width-hairline);
+
+  /* M79 blur / translucency intent. */
+  --wm-semantic-blur-overlay: var(--wm-blur-overlay);
+
+  /* M79 density intent. Keep the product-facing semantic density API complete. */
+  --wm-semantic-density-space-compact: var(--wm-density-space-compact);
+  --wm-semantic-density-space-default: var(--wm-density-space-default);
+  --wm-semantic-density-space-comfortable: var(--wm-density-space-comfortable);
+  --wm-semantic-density-control-compact: var(--wm-density-control-compact);
+  --wm-semantic-density-control-default: var(--wm-density-control-default);
+  --wm-semantic-density-control-comfortable: var(--wm-density-control-comfortable);
+
+  /* Breakpoint tokens remain descriptive because CSS variables cannot drive media queries. */
+  --wm-semantic-breakpoint-tablet: var(--wm-breakpoint-tablet);
+
+  /* Elevation aliases separate intent from shadow implementation. */
+  --wm-semantic-elevation-floating: var(--wm-shadow-md);
 }

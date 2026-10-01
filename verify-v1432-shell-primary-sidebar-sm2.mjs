@@ -1,9 +1,13 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
+import { assertLegacyThreeScopeThemeRole, assertM79ShellThemeRoles, hasM79SuccessorAuthority } from './scripts/lib/m79-shell-theme-semantics.mjs';
 
 const read = (path) => fs.readFileSync(path, 'utf8');
 const app = read('assets/js/app.ts');
 const reactShell = read('src/app/shell/WorkManagementShell.tsx');
+const m81ShellPrimitivesPath = 'src/design-system/application-shell/index.tsx';
+const hasM81ApplicationShellSuccessor = fs.existsSync(m81ShellPrimitivesPath) && fs.existsSync('config/stage-i-m81-application-shell-global-navigation-target.ts');
+const m81ShellPrimitives = hasM81ApplicationShellSuccessor ? read(m81ShellPrimitivesPath) : '';
 const manifest = read('config/application-manifest.ts');
 const architectureVersion = Number(manifest.match(/architectureVersion:\s*(\d+)/)?.[1] ?? 0);
 const css = read('assets/css/shell-navigation.css');
@@ -21,8 +25,11 @@ for (const marker of [
   '--wm-shell-navigation-row-touch-height: 44px;',
 ]) assert.ok(tokens.includes(marker), `Shell M2 token missing: ${marker}`);
 
-const backdropMatches = themes.match(/--wm-shell-navigation-backdrop:/g) ?? [];
-assert.equal(backdropMatches.length, 3, 'Shell navigation backdrop role must exist in light, dark and system-dark themes');
+if (hasM79SuccessorAuthority()) {
+  assertM79ShellThemeRoles({ themes, tokens, roles: ['--wm-shell-navigation-backdrop'], label: 'Shell M2 navigation backdrop theme' });
+} else {
+  assertLegacyThreeScopeThemeRole({ themes, role: '--wm-shell-navigation-backdrop:', label: 'Shell M2 navigation backdrop theme' });
+}
 
 for (const marker of [
   "import type { ShellNavigationMode, ShellSectionClientState, ShellSectionId } from '../../src/platform/contracts/client-state.ts';",
@@ -44,9 +51,36 @@ if (architectureVersion >= 43) {
     'data-shell-navigation-mobile-toggle',
     'data-shell-navigation-dismiss',
     'id="primarySidebar"',
-    'className="shell-navigation-scroll"',
     '<nav data-shell-nav aria-label="Main"',
   ]) assert.ok(reactShell.includes(marker), `Shell M2 React runtime contract missing after M35: ${marker}`);
+
+  if (hasM81ApplicationShellSuccessor) {
+    assert.ok(
+      reactShell.includes("import { WMApplicationShellFrame, WMGlobalNavigation, WMShellHeaderFrame, WMShellNavigationScroll, WMShellStatusFooter } from '../../design-system/application-shell/index.tsx';"),
+      'M81 successor must import the governed shell navigation scroll primitive',
+    );
+    assert.ok(
+      reactShell.includes('<WMShellNavigationScroll>') && reactShell.includes('</WMShellNavigationScroll>'),
+      'M81 successor must compose the governed shell navigation scroll primitive around primary navigation',
+    );
+    assert.ok(
+      m81ShellPrimitives.includes("className={classes('shell-navigation-scroll', className)}"),
+      'M81 shell navigation scroll primitive must preserve the certified shell-navigation-scroll class authority',
+    );
+    const scrollOpen = reactShell.indexOf('<WMShellNavigationScroll>');
+    const navMarker = reactShell.indexOf('<nav data-shell-nav aria-label="Main"');
+    const scrollClose = reactShell.indexOf('</WMShellNavigationScroll>');
+    assert.ok(
+      scrollOpen >= 0 && navMarker > scrollOpen && scrollClose > navMarker,
+      'M81 primary navigation landmark must remain inside the governed shell navigation scroll region',
+    );
+  } else {
+    assert.ok(
+      reactShell.includes('className="shell-navigation-scroll"'),
+      'Shell M2 React runtime contract missing after M35: className="shell-navigation-scroll"',
+    );
+  }
+
   assert.ok(!app.includes('function shellNavigationToggleMarkup()'), 'M35 must keep the obsolete Shell M2 toggle markup helper deleted.');
 } else {
   for (const marker of [
@@ -83,7 +117,7 @@ for (const marker of [
   'width: min(var(--wm-shell-sidebar-mobile-width)',
   'height: 100dvh!important;',
   'body.shell-navigation-open',
-  '@media (max-width:620px)',
+  '@media (max-width:40rem)',
   '@media (pointer:coarse)',
   '@media (prefers-reduced-motion:reduce)',
   '@media (forced-colors:active)',

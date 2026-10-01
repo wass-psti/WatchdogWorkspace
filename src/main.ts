@@ -21,9 +21,17 @@ import '../assets/css/shell-overlays.css';
 import '../assets/css/shared-application-ui.css';
 import '../assets/css/shell-account-menu.css';
 import '../assets/css/shell-accessibility.css';
-import '../assets/css/foundation/host-ui-migration.css';
+import '../assets/css/foundation/authentication-account-system.css';
 import '../assets/css/boards-monday.css';
-import '../assets/css/foundation/boards-ui-migration.css';
+import '../assets/css/foundation/boards-visual-migration.css';
+import '../assets/css/foundation/users-administration-visual-migration.css';
+import '../assets/css/foundation/settings-configuration-visual-migration.css';
+import '../assets/css/foundation/data-dense-enterprise-interactions.css';
+import '../assets/css/foundation/overlay-feedback-successor.css';
+import '../assets/css/foundation/state-system.css';
+import '../assets/css/foundation/interaction-state-harmonization.css';
+import '../assets/css/foundation/motion-transition-architecture.css';
+import '../assets/css/foundation/cross-module-responsive-harmonization.css';
 
 // Keep the existing checked-in public-client configuration as the compatibility
 // baseline, then allow Vite mode/environment values to override it at build/dev time.
@@ -35,6 +43,7 @@ import type { VitePublicRuntimeEnv } from '../config/vite-runtime-config.ts';
 // applications share the same global motion contracts.
 import '../assets/js/runtime/motion-orchestrator.ts';
 import '../assets/js/runtime/motion-design.ts';
+import '../assets/js/runtime/motion-transition-architecture.ts';
 
 type ViteRuntimeEnv = VitePublicRuntimeEnv & Readonly<{ PROD?: boolean; DEV?: boolean; MODE?: string; BASE_URL?: string }>;
 const startupMark = 'wm:startup:entry';

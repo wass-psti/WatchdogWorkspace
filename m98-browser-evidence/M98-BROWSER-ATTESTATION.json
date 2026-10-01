@@ -1,0 +1,27 @@
+{
+  "milestone": 98,
+  "sourceTreeSha256": "818b3531ff97baa0cd21a5c5380c2d93ca1a5690f0218ef3064eb07f1029c277",
+  "inheritedMatrixMilestone": 97,
+  "browserMatrix": [
+    "chromium",
+    "firefox",
+    "webkit"
+  ],
+  "viewports": [
+    "mobile",
+    "tablet",
+    "laptop",
+    "desktop"
+  ],
+  "surfaces": [
+    "account",
+    "settings",
+    "users",
+    "boards",
+    "time-tracker",
+    "fueltrack-plus",
+    "tradelink"
+  ],
+  "screenshotCount": 84,
+  "m97ScreenshotManifestSha256": "bb5f6828dace9a3d2fe0f3faaacd57b12642aeebab8b862bd4e81a57c12e8c84"
+}

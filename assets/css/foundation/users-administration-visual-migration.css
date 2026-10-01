@@ -1,0 +1,21 @@
+/* Stage I M88 — Users, Roles & Administration Surfaces. Presentation-only successor; M42/M44 and application-scoped role authorities remain unchanged. */
+:root{--m88-admin-surface:1;--m88-admin-directory-min:44rem}
+[data-wm-users-admin-visual="m88"]{position:relative;isolation:isolate}
+[data-wm-users-admin-visual="m88"] .role-policy>span,[data-wm-users-admin-visual="m88"] :is(.user-directory-card,.user-toolbar,.user-row){border-color:var(--wm-color-border-primary);background:var(--wm-color-surface-primary)}
+[data-wm-users-admin-visual="m88"] .role-policy b{color:var(--wm-color-text-primary)}
+.m88-role-boundaries{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:var(--wm-space-150)}
+.m88-boundary-card{display:grid;gap:var(--wm-space-100);padding:var(--wm-space-200);border:1px solid var(--wm-color-border-primary);border-radius:var(--wm-radius-200);background:var(--wm-color-surface-primary);box-shadow:var(--wm-shadow-sm)}
+.m88-boundary-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--wm-space-125)}
+.m88-boundary-card h4,.m88-boundary-card p{margin:0}.m88-boundary-card h4{color:var(--wm-color-text-primary);font-size:var(--wm-text-md)}
+.m88-boundary-card p,.m88-scope-list li{color:var(--wm-color-text-secondary);font-size:var(--wm-text-sm);line-height:var(--wm-line-height-normal)}
+.m88-scope-list{display:grid;gap:var(--wm-space-075);margin:0;padding:0;list-style:none}
+.m88-scope-list li{grid-template-columns:minmax(8rem,.45fr) minmax(0,1fr);display:grid;gap:var(--wm-space-125);padding-top:var(--wm-space-100);border-top:1px solid var(--wm-color-border-subtle)}
+.m88-scope-list strong{color:var(--wm-color-text-primary);font-weight:var(--wm-font-weight-semibold)}
+[data-wm-users-admin-visual="m88"] .user-toolbar,[data-wm-users-admin-visual="m88"] .user-row{border-color:var(--wm-color-border-subtle)}
+[data-wm-users-admin-visual="m88"] .user-row:hover{background:var(--wm-color-surface-secondary)}
+[data-wm-users-admin-visual="m88"][data-wm-management-view="users-denied"]{display:grid;place-items:center;min-height:calc(100dvh - 8rem)}
+@media (max-width:64rem){.m88-role-boundaries{grid-template-columns:1fr}}
+@media (max-width:52.5rem){[data-wm-users-admin-visual="m88"] .user-directory-card{overflow-x:auto}[data-wm-users-admin-visual="m88"] .user-toolbar,[data-wm-users-admin-visual="m88"] .user-directory{min-width:var(--m88-admin-directory-min)}.m88-scope-list li{grid-template-columns:1fr}}
+@media (max-width:40rem){.m88-boundary-card{padding:var(--wm-space-150)}.m88-boundary-card>header{display:grid}}
+@media (prefers-reduced-motion:reduce){[data-wm-users-admin-visual="m88"] .user-row{transition:none}}
+@media (forced-colors:active){[data-wm-users-admin-visual="m88"] :is(.role-policy>span,.user-directory-card,.user-row,.empty),.m88-boundary-card{border:1px solid CanvasText;box-shadow:none}}

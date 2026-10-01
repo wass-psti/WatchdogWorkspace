@@ -25,6 +25,7 @@ function BoardPresentationSurfaceComponent({ className, inert = false, model }: 
       ref={hostRef}
       className={className}
       data-workspace-root=""
+      data-wm-global-page-frame=""
       aria-label={model.ariaLabel}
       inert={inert || !active ? true : undefined}
       hidden={!active}

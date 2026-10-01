@@ -1,0 +1,449 @@
+{
+  "milestone": 97,
+  "browsers": [
+    "chromium",
+    "firefox",
+    "webkit"
+  ],
+  "viewports": [
+    "mobile",
+    "tablet",
+    "laptop",
+    "desktop"
+  ],
+  "hostRoutes": [
+    "account",
+    "settings",
+    "users",
+    "boards"
+  ],
+  "modules": [
+    "time-tracker",
+    "fueltrack-plus",
+    "tradelink"
+  ],
+  "expectedScreenshotCount": 84,
+  "screenshotCount": 84,
+  "screenshots": [
+    {
+      "path": "chromium/desktop/host-account.png",
+      "bytes": 218148,
+      "sha256": "4065831eaa2a020b0b5b1fa4da6d3e606def9b30083cb3d03e9b77554948cef8"
+    },
+    {
+      "path": "chromium/desktop/host-boards.png",
+      "bytes": 157561,
+      "sha256": "37a304bf7922b6cb339ed75bfc205b3cdb06d3c571e9805777063bdbc1668f72"
+    },
+    {
+      "path": "chromium/desktop/host-settings.png",
+      "bytes": 249949,
+      "sha256": "26a5e0328e330de9615966258f984929504ebcc3a52c69d2ac43fe1b1c5ee4b8"
+    },
+    {
+      "path": "chromium/desktop/host-users.png",
+      "bytes": 236039,
+      "sha256": "fff0d586c3ff7aa06fa25c7477e69bd6eb6d12c0d89deb2b8db9d8a82da6647c"
+    },
+    {
+      "path": "chromium/desktop/module-fueltrack-plus.png",
+      "bytes": 117411,
+      "sha256": "0774b11d37aeabcab434fab9e67fdc6b134177739240ed4761ecb5610adb2238"
+    },
+    {
+      "path": "chromium/desktop/module-time-tracker.png",
+      "bytes": 273577,
+      "sha256": "e9942db6512f7cc6bc04308d7df3ab14793fb7f2db1dfaa6a85626563b51eace"
+    },
+    {
+      "path": "chromium/desktop/module-tradelink.png",
+      "bytes": 193052,
+      "sha256": "7b2167fc18f0eaa7ad453dcda9649126874fccbd14463b119a6b9592042e84cf"
+    },
+    {
+      "path": "chromium/laptop/host-account.png",
+      "bytes": 209426,
+      "sha256": "2ee898b52f07d701445cbe0450e7b28d0295eb5467474e451799445a09e672c1"
+    },
+    {
+      "path": "chromium/laptop/host-boards.png",
+      "bytes": 138313,
+      "sha256": "9781a0f7eff71c214cef3a43c2ef61125b15cd914340a1c6a8d479dbf581b50e"
+    },
+    {
+      "path": "chromium/laptop/host-settings.png",
+      "bytes": 252981,
+      "sha256": "17a73be6297f77952e4d14f65ab37ebf1f80b9cd90aa58bd2b678cd736607fe0"
+    },
+    {
+      "path": "chromium/laptop/host-users.png",
+      "bytes": 239074,
+      "sha256": "40c568376c251b655d5e58d2280ce42a003078f3788721b2416f22db7de778fa"
+    },
+    {
+      "path": "chromium/laptop/module-fueltrack-plus.png",
+      "bytes": 274415,
+      "sha256": "8548635d27b1836c3bd53ce4e8d986b10881b78578ca17d9367749ebd74efa13"
+    },
+    {
+      "path": "chromium/laptop/module-time-tracker.png",
+      "bytes": 186218,
+      "sha256": "4a96bd66ba0b93c7f4101d00fc4013759d0d80d8a6da8646c11e25540baaaab3"
+    },
+    {
+      "path": "chromium/laptop/module-tradelink.png",
+      "bytes": 173475,
+      "sha256": "5c3ee1ddafe02e8d8482ed2a04d8fe34bd90d5e45ba9db3d7a99b218f397bfff"
+    },
+    {
+      "path": "chromium/mobile/host-account.png",
+      "bytes": 130603,
+      "sha256": "dabf393f5b6943d3848c4f11e7db27fd5bfe281a385a3e1753e4e8ed9a1ff16d"
+    },
+    {
+      "path": "chromium/mobile/host-boards.png",
+      "bytes": 84176,
+      "sha256": "0f9e5acbbd8fcd768a6615be99bafadd7e49ac6a92871dcdaae1c94430245b42"
+    },
+    {
+      "path": "chromium/mobile/host-settings.png",
+      "bytes": 180249,
+      "sha256": "61350037f3330e45944bc009bf68713ab4146136141bdea5445709bd5514b716"
+    },
+    {
+      "path": "chromium/mobile/host-users.png",
+      "bytes": 122662,
+      "sha256": "668ac811b45e8c66c6cb93c7ede512fe260d2af1c784dbd33efc430adc6bd775"
+    },
+    {
+      "path": "chromium/mobile/module-fueltrack-plus.png",
+      "bytes": 90283,
+      "sha256": "57096680ab11f5ae920bfbfe01b5e80b7dd507fbac18983a9afa4abd705479fe"
+    },
+    {
+      "path": "chromium/mobile/module-time-tracker.png",
+      "bytes": 89391,
+      "sha256": "2efe23f3938af6aba485cdb29651eb3d9af166e52788085417175c6d975db490"
+    },
+    {
+      "path": "chromium/mobile/module-tradelink.png",
+      "bytes": 65897,
+      "sha256": "29e91035883e5eb517060e3e4948eb6a153df50aae83201cec4e948d08b4f2ad"
+    },
+    {
+      "path": "chromium/tablet/host-account.png",
+      "bytes": 166012,
+      "sha256": "f5e2dea6ef3294b423f3b2278410aac2a05838bce456b8c9f8305f68c8c175db"
+    },
+    {
+      "path": "chromium/tablet/host-boards.png",
+      "bytes": 110824,
+      "sha256": "209c157a0e95212a614611fa02543dac089d387f30eb0a1eba2651938540e188"
+    },
+    {
+      "path": "chromium/tablet/host-settings.png",
+      "bytes": 212250,
+      "sha256": "ec84d314088d3def6578c1f74c21ae78a57af43dbfe8c3da2f6e1e589029cf43"
+    },
+    {
+      "path": "chromium/tablet/host-users.png",
+      "bytes": 203771,
+      "sha256": "f3cc1192f63ee1c3370439ae479b55035425efca6c242e2fa7add7faabbfde33"
+    },
+    {
+      "path": "chromium/tablet/module-fueltrack-plus.png",
+      "bytes": 149980,
+      "sha256": "5bba8bba373893597d9d0dc09987cac3caac3a6dcb5c93c844da0a7ea1981a95"
+    },
+    {
+      "path": "chromium/tablet/module-time-tracker.png",
+      "bytes": 144336,
+      "sha256": "ede60cc990fc99468197e55ebef2193283e95d5503fce208a6dcd56dfea9836f"
+    },
+    {
+      "path": "chromium/tablet/module-tradelink.png",
+      "bytes": 126988,
+      "sha256": "6f9ab255ee614ffbe221b8a0d69b7135d584db9d086e02f00a14d88622ef7e75"
+    },
+    {
+      "path": "firefox/desktop/host-account.png",
+      "bytes": 113313,
+      "sha256": "fff5d36a48c4444bad795237b745453c4b29a16506ef1c291cc66156eea8f126"
+    },
+    {
+      "path": "firefox/desktop/host-boards.png",
+      "bytes": 152491,
+      "sha256": "d493c638bb5ccb1e94b5f39747791678fb2b9acf892bbba80b038952326fdc05"
+    },
+    {
+      "path": "firefox/desktop/host-settings.png",
+      "bytes": 334327,
+      "sha256": "208ff8a8701c16415f563c12a559090550e52ceb283750f3c8876d6f5158a434"
+    },
+    {
+      "path": "firefox/desktop/host-users.png",
+      "bytes": 277236,
+      "sha256": "5769d64a184b2210ea5df0642857b36f1d06bf3741acc2391ca9f834a7613857"
+    },
+    {
+      "path": "firefox/desktop/module-fueltrack-plus.png",
+      "bytes": 275354,
+      "sha256": "5f10d2aaa303f1dfef2c3b6e2d097988c6807a15e0924640436dff68f48349bc"
+    },
+    {
+      "path": "firefox/desktop/module-time-tracker.png",
+      "bytes": 304389,
+      "sha256": "628abec5b5cef52b33b9d03d5240f5d8f277e8550f6bbafb93957a047b2c4450"
+    },
+    {
+      "path": "firefox/desktop/module-tradelink.png",
+      "bytes": 219882,
+      "sha256": "84753e21c6e7ef29e94d807786e82f6dcee1ad366b3791ec2a6b9872a1629a0b"
+    },
+    {
+      "path": "firefox/laptop/host-account.png",
+      "bytes": 103415,
+      "sha256": "e87d4be3956a048203aac777aad0179facc009410762c691ef5bc848e55573d0"
+    },
+    {
+      "path": "firefox/laptop/host-boards.png",
+      "bytes": 141399,
+      "sha256": "4f2f05290bcb89b61dd9ffbdbb467f0c53b2826550de91af786d343b8c62b484"
+    },
+    {
+      "path": "firefox/laptop/host-settings.png",
+      "bytes": 325591,
+      "sha256": "97a3ef6415415182bd718305b416a918db6db7e7a34879a1ccdf14b49516c476"
+    },
+    {
+      "path": "firefox/laptop/host-users.png",
+      "bytes": 279661,
+      "sha256": "9279740aaf8d4d347b7927e0a80033a436821876847ab4ca0043d9bdc05f61e4"
+    },
+    {
+      "path": "firefox/laptop/module-fueltrack-plus.png",
+      "bytes": 86202,
+      "sha256": "98f204e9d5f8888bb73e4f151522363ebba277e0e62395ab1b116119ab4d1cc6"
+    },
+    {
+      "path": "firefox/laptop/module-time-tracker.png",
+      "bytes": 217962,
+      "sha256": "f32d1bbf9bb0a01d89f69fc350c79760f6d7d7a97302c70d4feefe01bd22b09c"
+    },
+    {
+      "path": "firefox/laptop/module-tradelink.png",
+      "bytes": 195458,
+      "sha256": "e342dc9c09ee8240efc736773ba34a00b591b3f325f21dd910c514e980e68f58"
+    },
+    {
+      "path": "firefox/mobile/host-account.png",
+      "bytes": 170510,
+      "sha256": "649d291f79381995842988ec47727e710a6f386a321bf46811abc2b18ab2668b"
+    },
+    {
+      "path": "firefox/mobile/host-boards.png",
+      "bytes": 92375,
+      "sha256": "e6a03e1dd98b4733324a6691b93d973e3984c1ed5680c044cd637d1a4e49beeb"
+    },
+    {
+      "path": "firefox/mobile/host-settings.png",
+      "bytes": 241631,
+      "sha256": "be404dd3b0245c78c00bea75c196855ae0bc51ad8331dcff7d91d34c1f5a7a6b"
+    },
+    {
+      "path": "firefox/mobile/host-users.png",
+      "bytes": 134772,
+      "sha256": "366df25766892f59731e086649862d6adbab350fdfe3fc5c5cca58f39203f9b6"
+    },
+    {
+      "path": "firefox/mobile/module-fueltrack-plus.png",
+      "bytes": 19885,
+      "sha256": "792d0bd279a55e7c8b2b022550e50953d0bc8ba7f14d4d222badc04b04020aae"
+    },
+    {
+      "path": "firefox/mobile/module-time-tracker.png",
+      "bytes": 97919,
+      "sha256": "3e1b16ee4684857e54f297ac675230897641587fc86941fdd032741ed7d9378e"
+    },
+    {
+      "path": "firefox/mobile/module-tradelink.png",
+      "bytes": 75478,
+      "sha256": "d5d8efb1ab1fa3168b44d910112200c679cc8b5933338424f27c926e5e2ed655"
+    },
+    {
+      "path": "firefox/tablet/host-account.png",
+      "bytes": 211978,
+      "sha256": "334d0870389db336d3ca987484ca9b3d1f490602ef7d779192350fcd2f04bc01"
+    },
+    {
+      "path": "firefox/tablet/host-boards.png",
+      "bytes": 106345,
+      "sha256": "87fc117d5f6b48038dc2dfa220431f476260e32c7079a5e166036d836831693e"
+    },
+    {
+      "path": "firefox/tablet/host-settings.png",
+      "bytes": 284523,
+      "sha256": "e6bf049fbcc773c41d11ca5aafbeddd1416b32e20c9f830213e6116f08dda92a"
+    },
+    {
+      "path": "firefox/tablet/host-users.png",
+      "bytes": 247410,
+      "sha256": "2537c09749b87c607adce8de4e1fb22c23e01a0b06d94d012ef3f9c5f81c16c7"
+    },
+    {
+      "path": "firefox/tablet/module-fueltrack-plus.png",
+      "bytes": 46253,
+      "sha256": "eef680a066b7ed85b440466f23951b14cf45bcf593896b00bf066be69ef69ecb"
+    },
+    {
+      "path": "firefox/tablet/module-time-tracker.png",
+      "bytes": 166727,
+      "sha256": "e1a94e5a452e35175d8d79675f1ed58b6149a3751866cdf5e022df168223a02b"
+    },
+    {
+      "path": "firefox/tablet/module-tradelink.png",
+      "bytes": 146936,
+      "sha256": "71aafdd8bea4bb1aef5bb44e64fd70f58108addaddb709b840f203b5f00afc35"
+    },
+    {
+      "path": "webkit/desktop/host-account.png",
+      "bytes": 266420,
+      "sha256": "71026aa6f362e26d3f987acce40d13b6b9e05a26288e367990d24146971db5da"
+    },
+    {
+      "path": "webkit/desktop/host-boards.png",
+      "bytes": 181642,
+      "sha256": "2dba16acafd73aa26414b2ffaca562f6ac05a79db8bd4dee86676b054c8ceb43"
+    },
+    {
+      "path": "webkit/desktop/host-settings.png",
+      "bytes": 321283,
+      "sha256": "5c00f2a2dfa98b21342cf73f6af1c270ad9a62e4a88cd9f0b6d06ede5b362965"
+    },
+    {
+      "path": "webkit/desktop/host-users.png",
+      "bytes": 300213,
+      "sha256": "dbb8cb89d96f0de152b3185bf57c360ca588ecf2ecc3a4121922a9c801ba4346"
+    },
+    {
+      "path": "webkit/desktop/module-fueltrack-plus.png",
+      "bytes": 947475,
+      "sha256": "1282c8d77789cf0d3e1b7e1a5f70fa20d0c4b83e6edc70ab6abb2a40f77f3f95"
+    },
+    {
+      "path": "webkit/desktop/module-time-tracker.png",
+      "bytes": 383062,
+      "sha256": "fe80b4660169d41ff21295cab1d72bad79c6fe50893b70b0010f6694decf6ab7"
+    },
+    {
+      "path": "webkit/desktop/module-tradelink.png",
+      "bytes": 325630,
+      "sha256": "bc5cb62aa37238b382948261e33071508fe40a2d7378ad2e54e2f1adf6511032"
+    },
+    {
+      "path": "webkit/laptop/host-account.png",
+      "bytes": 256187,
+      "sha256": "2c421ecb908c12a1d24fd2cced342ece57e05580643dbe94bb0248c8abe6542b"
+    },
+    {
+      "path": "webkit/laptop/host-boards.png",
+      "bytes": 159817,
+      "sha256": "eb6fed3194050ab53f4ae7b17d51e80e1578998c192324443a7c0dabee36be96"
+    },
+    {
+      "path": "webkit/laptop/host-settings.png",
+      "bytes": 309973,
+      "sha256": "36aff1f810b3412c1044f8745d42f523537166caae6ef346936661684f8e183e"
+    },
+    {
+      "path": "webkit/laptop/host-users.png",
+      "bytes": 289297,
+      "sha256": "250501941f6697847a04288ff2c568ad5df223f08c5bf3388bbcf98dfa6c4504"
+    },
+    {
+      "path": "webkit/laptop/module-fueltrack-plus.png",
+      "bytes": 618090,
+      "sha256": "572142142b904215a6e7a85dee87fe9f8f7f2154bda6621d91c97ce2d5cc8907"
+    },
+    {
+      "path": "webkit/laptop/module-time-tracker.png",
+      "bytes": 268799,
+      "sha256": "272c1e7bdafadc349a55f4033d971b6c97ac391d9215b8329d3a521488e84909"
+    },
+    {
+      "path": "webkit/laptop/module-tradelink.png",
+      "bytes": 289342,
+      "sha256": "1251ece7933ebcd705cfe529f5f805be0e420978403450b2cae1ccecc27a95e8"
+    },
+    {
+      "path": "webkit/mobile/host-account.png",
+      "bytes": 156046,
+      "sha256": "78bf9447c2a2f31a8e0a395f1a98f8fad8fe2e50d988bc537ae671b8c145499b"
+    },
+    {
+      "path": "webkit/mobile/host-boards.png",
+      "bytes": 93667,
+      "sha256": "d3917aff455c111b355a3e21c9d7a65a990fe825bb7152cb301e36eb5efe21a6"
+    },
+    {
+      "path": "webkit/mobile/host-settings.png",
+      "bytes": 214515,
+      "sha256": "20a2d67f1b69a23b02856d5ccd68b05ee1655ddb544e562235fe2c49200e2b25"
+    },
+    {
+      "path": "webkit/mobile/host-users.png",
+      "bytes": 147679,
+      "sha256": "942c062295ad21d688b340c0a66cb8608c1bf2aa1bddc958fdb87bf1c18cf941"
+    },
+    {
+      "path": "webkit/mobile/module-fueltrack-plus.png",
+      "bytes": 176117,
+      "sha256": "f7eb04425287350893276c90452d991fd846bf9f0e09e0e0e3f2f48db9df2bee"
+    },
+    {
+      "path": "webkit/mobile/module-time-tracker.png",
+      "bytes": 122984,
+      "sha256": "e1aafdc340f1ced9e338c054b6e19f58dc9a1b49f161cda5790abf80bfb7455e"
+    },
+    {
+      "path": "webkit/mobile/module-tradelink.png",
+      "bytes": 109214,
+      "sha256": "7f12db5762d52f0559911df493995e6f9ce896f8f11c33e7bf18697f43fb4020"
+    },
+    {
+      "path": "webkit/tablet/host-account.png",
+      "bytes": 203182,
+      "sha256": "5502e314ccf06e31b81bd6e0e91afe418a6774e3ec5c58731a8370fed7f749db"
+    },
+    {
+      "path": "webkit/tablet/host-boards.png",
+      "bytes": 120589,
+      "sha256": "2c1c7db7ff1c00c56d746b522a6dd37fe8a015c170cc93c892c03969a505aef2"
+    },
+    {
+      "path": "webkit/tablet/host-settings.png",
+      "bytes": 260625,
+      "sha256": "3faf75eb89b18257f797541320eb08b6ed813794c3d8476cd4c36cc53f9c8c98"
+    },
+    {
+      "path": "webkit/tablet/host-users.png",
+      "bytes": 252817,
+      "sha256": "6f33156d9134a94155f677fe54296c6ad87ffe1d0ab6fc3adf43e4b75a6b0c73"
+    },
+    {
+      "path": "webkit/tablet/module-fueltrack-plus.png",
+      "bytes": 322479,
+      "sha256": "1281315577b0ba14a670b988840ac49cb7f1552169b6926a93699c47482cccc5"
+    },
+    {
+      "path": "webkit/tablet/module-time-tracker.png",
+      "bytes": 201155,
+      "sha256": "8f7382deb6fa1310ef2282d33ee2c25a8b55ac672a0cb2157527000ec45676ad"
+    },
+    {
+      "path": "webkit/tablet/module-tradelink.png",
+      "bytes": 222661,
+      "sha256": "06340e6b7fee19781839d4a75966ffc881ac11aaf511a326f151e9f9472cf61e"
+    }
+  ]
+}

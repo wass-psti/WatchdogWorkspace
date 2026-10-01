@@ -1,0 +1,272 @@
+/* M85 — TimeTracker visual migration.
+ * Presentation-only successor to M74. Domain/runtime ownership stays in app.js,
+ * domain-config.js and stability-runtime.js.
+ */
+body[data-wm-surface="time-tracker"] {
+  --m85-tt-canvas: var(--wm-color-canvas);
+  --m85-tt-surface: var(--wm-color-surface-primary);
+  --m85-tt-surface-muted: var(--wm-color-surface-secondary);
+  --m85-tt-surface-raised: var(--wm-color-surface-elevated);
+  --m85-tt-border: var(--wm-color-border-primary);
+  --m85-tt-border-strong: var(--wm-color-border-strong);
+  --m85-tt-text: var(--wm-color-text-primary);
+  --m85-tt-muted: var(--wm-color-text-secondary);
+  --m85-tt-accent: var(--wm-color-accent);
+  --m85-tt-accent-soft: var(--wm-color-accent-soft);
+  --m85-tt-focus: var(--wm-a11y-focus-color);
+  --m85-tt-radius: var(--wm-board-radius-surface);
+  --m85-tt-radius-sm: var(--wm-board-radius-control);
+  --m85-tt-gap: var(--wm-board-space-standard);
+  --m85-tt-gap-lg: var(--wm-board-space-section);
+  --m85-tt-shadow: var(--wm-shadow-sm);
+  --m85-tt-shadow-raised: var(--wm-shadow-md);
+  background: var(--m85-tt-canvas);
+  color: var(--m85-tt-text);
+}
+body[data-wm-surface="time-tracker"] .tt-v2-shell {
+  background: var(--m85-tt-canvas);
+  color: var(--m85-tt-text);
+}
+body[data-wm-surface="time-tracker"] .tt-v2-rail,
+body[data-wm-surface="time-tracker"] .topbar {
+  background: color-mix(in srgb, var(--m85-tt-surface) 96%, transparent);
+  border-color: var(--m85-tt-border);
+  backdrop-filter: blur(14px);
+}
+body[data-wm-surface="time-tracker"] .nav-tabs .wm-tab {
+  border-radius: var(--m85-tt-radius-sm);
+  color: var(--m85-tt-muted);
+}
+body[data-wm-surface="time-tracker"] .nav-tabs .wm-tab:is(.active,.is-active) {
+  background: var(--m85-tt-accent-soft);
+  color: var(--m85-tt-text);
+}
+body[data-wm-surface="time-tracker"] .principal-pill,
+body[data-wm-surface="time-tracker"] .status-pill {
+  border-color: var(--m85-tt-border);
+  background: var(--m85-tt-surface-muted);
+}
+body[data-wm-surface="time-tracker"] [data-tt-v2-screen] {
+  --m85-screen-surface: var(--m85-tt-surface);
+  color: var(--m85-tt-text);
+}
+body[data-wm-surface="time-tracker"] .wm-panel,
+body[data-wm-surface="time-tracker"] .tt-v2-surface,
+body[data-wm-surface="time-tracker"] .overview-panel,
+body[data-wm-surface="time-tracker"] .clock-card,
+body[data-wm-surface="time-tracker"] .log-record,
+body[data-wm-surface="time-tracker"] .report-kpi,
+body[data-wm-surface="time-tracker"] .calendar-card,
+body[data-wm-surface="time-tracker"] .role-card,
+body[data-wm-surface="time-tracker"] .ot-card,
+body[data-wm-surface="time-tracker"] .board-item-panel {
+  background: var(--m85-tt-surface);
+  border-color: var(--m85-tt-border);
+  box-shadow: var(--m85-tt-shadow);
+}
+body[data-wm-surface="time-tracker"] .overview-view,
+body[data-wm-surface="time-tracker"] .clock-view {
+  min-width: 0;
+}
+/* Overview */
+body[data-wm-surface="time-tracker"] .overview-hero-redesign,
+body[data-wm-surface="time-tracker"] .tt-v2-overview-focus,
+body[data-wm-surface="time-tracker"] .overview-control-dock,
+body[data-wm-surface="time-tracker"] .overview-exceptions,
+body[data-wm-surface="time-tracker"] .overview-location-distribution,
+body[data-wm-surface="time-tracker"] .overview-rhythm,
+body[data-wm-surface="time-tracker"] .overview-department-matrix {
+  border-color: var(--m85-tt-border);
+}
+body[data-wm-surface="time-tracker"] .tt-v2-shift-focus,
+body[data-wm-surface="time-tracker"] .tt-v2-context-stack,
+body[data-wm-surface="time-tracker"] .overview-control-dock,
+body[data-wm-surface="time-tracker"] .exception-row,
+body[data-wm-surface="time-tracker"] .overview-location-card,
+body[data-wm-surface="time-tracker"] .department-cell {
+  background: var(--m85-tt-surface);
+  border-color: var(--m85-tt-border);
+  border-radius: var(--m85-tt-radius-sm);
+}
+body[data-wm-surface="time-tracker"] .tt-v2-shift-focus-action {
+  min-height: 44px;
+  border-radius: var(--m85-tt-radius-sm);
+}
+/* Clock + forms */
+body[data-wm-surface="time-tracker"] .clock-layout {
+  gap: var(--m85-tt-gap-lg);
+}
+body[data-wm-surface="time-tracker"] .selector-grid,
+body[data-wm-surface="time-tracker"] .form-grid,
+body[data-wm-surface="time-tracker"] .filter-grid,
+body[data-wm-surface="time-tracker"] .log-filter-grid {
+  gap: var(--m85-tt-gap);
+}
+body[data-wm-surface="time-tracker"] .wm-field-control,
+body[data-wm-surface="time-tracker"] input,
+body[data-wm-surface="time-tracker"] select,
+body[data-wm-surface="time-tracker"] textarea {
+  background: var(--m85-tt-surface);
+  border-color: var(--m85-tt-border);
+  color: var(--m85-tt-text);
+}
+body[data-wm-surface="time-tracker"] :is(input,select,textarea,button):focus-visible {
+  outline: 2px solid var(--m85-tt-focus);
+  outline-offset: 2px;
+}
+body[data-wm-surface="time-tracker"] .clock-btn,
+body[data-wm-surface="time-tracker"] .primary-action {
+  min-height: 44px;
+  border-radius: var(--m85-tt-radius-sm);
+}
+body[data-wm-surface="time-tracker"] .form-notice,
+body[data-wm-surface="time-tracker"] .gps-panel,
+body[data-wm-surface="time-tracker"] .gps-policy {
+  background: var(--m85-tt-surface-muted);
+  border-color: var(--m85-tt-border);
+  border-radius: var(--m85-tt-radius-sm);
+}
+/* Log + map/evidence */
+body[data-wm-surface="time-tracker"] .tt-v2-log-timeline,
+body[data-wm-surface="time-tracker"] .log-list {
+  gap: var(--m85-tt-gap);
+}
+body[data-wm-surface="time-tracker"] .log-record,
+body[data-wm-surface="time-tracker"] .evidence-card,
+body[data-wm-surface="time-tracker"] .audit-change-detail {
+  border-color: var(--m85-tt-border);
+  border-radius: var(--m85-tt-radius);
+}
+body[data-wm-surface="time-tracker"] .map-placeholder,
+body[data-wm-surface="time-tracker"] .compact-map-placeholder,
+body[data-wm-surface="time-tracker"] .leaflet-container {
+  min-height: 180px;
+  overflow: hidden;
+  border: 1px solid var(--m85-tt-border);
+  border-radius: var(--m85-tt-radius-sm);
+  background: var(--m85-tt-surface-muted);
+}
+body[data-wm-surface="time-tracker"] .leaflet-control-container :is(a,button) {
+  min-width: 36px;
+  min-height: 36px;
+}
+/* Reports */
+body[data-wm-surface="time-tracker"] .report-kpi,
+body[data-wm-surface="time-tracker"] .breakdown-list,
+body[data-wm-surface="time-tracker"] .trend-chart,
+body[data-wm-surface="time-tracker"] .distribution-chart {
+  border-color: var(--m85-tt-border);
+}
+body[data-wm-surface="time-tracker"] .breakdown-row {
+  border-bottom-color: var(--m85-tt-border);
+}
+/* Calendar */
+body[data-wm-surface="time-tracker"] .calendar-layout,
+body[data-wm-surface="time-tracker"] .calendar-grid {
+  gap: var(--m85-tt-gap);
+}
+body[data-wm-surface="time-tracker"] .calendar-day,
+body[data-wm-surface="time-tracker"] .day-detail,
+body[data-wm-surface="time-tracker"] .day-records {
+  background: var(--m85-tt-surface);
+  border-color: var(--m85-tt-border);
+  border-radius: var(--m85-tt-radius-sm);
+}
+body[data-wm-surface="time-tracker"] .calendar-day:is(.today,.selected) {
+  box-shadow: inset 0 0 0 2px var(--m85-tt-accent);
+}
+/* Roles: presentation only; application-scoped role authority stays unchanged. */
+body[data-wm-surface="time-tracker"] .role-cards,
+body[data-wm-surface="time-tracker"] .department-matrix {
+  gap: var(--m85-tt-gap);
+}
+body[data-wm-surface="time-tracker"] .role-card,
+body[data-wm-surface="time-tracker"] .rbac-table {
+  border-color: var(--m85-tt-border);
+}
+body[data-wm-surface="time-tracker"] .role-card.current {
+  box-shadow: inset 3px 0 0 var(--m85-tt-accent), var(--m85-tt-shadow);
+}
+/* OT */
+body[data-wm-surface="time-tracker"] .ot-list,
+body[data-wm-surface="time-tracker"] .ot-activity-list {
+  gap: var(--m85-tt-gap);
+}
+body[data-wm-surface="time-tracker"] .ot-card,
+body[data-wm-surface="time-tracker"] .ot-activity-panel,
+body[data-wm-surface="time-tracker"] .ot-activity-row {
+  border-color: var(--m85-tt-border);
+  border-radius: var(--m85-tt-radius-sm);
+}
+body[data-wm-surface="time-tracker"] .ot-status,
+body[data-wm-surface="time-tracker"] .record-status,
+body[data-wm-surface="time-tracker"] .wm-status-pill {
+  border-radius: 999px;
+}
+/* Dialogs and feedback */
+body[data-wm-surface="time-tracker"] .tt-v2-overlay-surface,
+body[data-wm-surface="time-tracker"] .wm-dialog {
+  background: var(--m85-tt-surface-raised);
+  border-color: var(--m85-tt-border-strong);
+  border-radius: var(--m85-tt-radius);
+  box-shadow: var(--m85-tt-shadow-raised);
+}
+body[data-wm-surface="time-tracker"] .wm-feedback-state,
+body[data-wm-surface="time-tracker"] .empty-state,
+body[data-wm-surface="time-tracker"] .tt-v2-empty {
+  background: var(--m85-tt-surface-muted);
+  border-color: var(--m85-tt-border);
+}
+@media (max-width: 52.5rem) {
+  body[data-wm-surface="time-tracker"] .clock-layout,
+  body[data-wm-surface="time-tracker"] .calendar-layout,
+  body[data-wm-surface="time-tracker"] .overview-intelligence-grid,
+  body[data-wm-surface="time-tracker"] .tt-v2-overview-focus {
+    grid-template-columns: minmax(0,1fr);
+  }
+  body[data-wm-surface="time-tracker"] .tt-v2-rail {
+    max-width: 100%;
+  }
+}
+@media (max-width: 40rem) {
+  body[data-wm-surface="time-tracker"] [data-tt-v2-screen] {
+    padding-inline: max(12px, env(safe-area-inset-left));
+  }
+  body[data-wm-surface="time-tracker"] .selector-grid,
+  body[data-wm-surface="time-tracker"] .form-grid,
+  body[data-wm-surface="time-tracker"] .filter-grid,
+  body[data-wm-surface="time-tracker"] .log-filter-grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+  body[data-wm-surface="time-tracker"] .wm-action-row,
+  body[data-wm-surface="time-tracker"] .clock-actions,
+  body[data-wm-surface="time-tracker"] .modal-actions {
+    flex-wrap: wrap;
+  }
+  body[data-wm-surface="time-tracker"] .wm-action-row > *,
+  body[data-wm-surface="time-tracker"] .clock-actions > * {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-wm-surface="time-tracker"] *,
+  body[data-wm-surface="time-tracker"] *::before,
+  body[data-wm-surface="time-tracker"] *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+@media (forced-colors: active) {
+  body[data-wm-surface="time-tracker"] :is(.wm-panel,.log-record,.report-kpi,.calendar-day,.role-card,.ot-card,.map-placeholder,.compact-map-placeholder) {
+    border: 1px solid CanvasText;
+  }
+  body[data-wm-surface="time-tracker"] :is(input,select,textarea,button):focus-visible {
+    outline: 2px solid Highlight;
+  }
+}
+/* M96 retirement consolidation: formerly isolated M74 TimeTracker reconciliation. */
+body[data-wm-surface="time-tracker"] .wm-metric-card:is(.report-kpi,.overview-stat){border-radius:0;box-shadow:none;}
+body[data-wm-surface="time-tracker"] .wm-data-region:is(.overview-table-wrap,.log-list,.tt-v2-log-timeline,.calendar-grid,.role-cards,.ot-list){border:0;background:transparent;}
+body[data-wm-surface="time-tracker"] .wm-dialog.tt-v2-overlay-surface{max-inline-size:min(720px,calc(100vw - 32px));}

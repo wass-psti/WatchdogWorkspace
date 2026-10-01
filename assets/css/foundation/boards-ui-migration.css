@@ -1,2 +1,0 @@
-/* M73 Board design-system reconciliation; behavior remains Board-owned. */
-body[data-wm-surface="shell"] :is(.board-table-view,.kanban-board).wm-data-region{border:0;border-radius:0;background:transparent}

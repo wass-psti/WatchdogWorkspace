@@ -1,0 +1,7 @@
+:root{--m94-motion-transition-architecture:1;--wm-m94-motion-fast:var(--wm-continuity-duration-fast,140ms);--wm-m94-motion-standard:var(--wm-continuity-duration-standard,220ms)}
+body[data-wm-surface="shell"] :is([data-wm-application-shell-frame],[data-wm-global-navigation],[data-wm-shell-header],[data-wm-shell-status-footer],.topbar,.shell-sidebar-header-actions,.brand-mark,.shell-sidebar-collapse svg){transform:none!important;animation:none!important}
+body[data-wm-surface="shell"] :is(.sidebar,.workspace){transition-property:background-color,border-color,color,box-shadow,opacity!important}
+body[data-wm-surface="shell"] [data-wm-global-navigation] :is(button,a,[role="button"]){transform:none!important}
+[data-wm-motion-zone="replaceable-content"]{transition:opacity var(--wm-m94-motion-standard) var(--wm-continuity-ease-standard,ease)}
+[data-wm-motion-feedback="active"]{transition:opacity var(--wm-m94-motion-fast) var(--wm-continuity-ease-standard,ease)}
+@media(prefers-reduced-motion:reduce){[data-wm-motion-zone="replaceable-content"],[data-wm-motion-feedback="active"]{transition-duration:.001ms!important;animation:none!important;transform:none!important}}

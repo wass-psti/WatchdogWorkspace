@@ -1136,7 +1136,7 @@ function renderBoardWorkspace(content: string, active: string = 'boards', motion
 }
 
 function topbar(title: string, subtitle: string = '', actions: string = ''): string {
-  return `<header class="topbar"><div><span class="top-eyebrow">WORK MANAGEMENT</span><h1>${esc(title)}</h1><p>${esc(subtitle)}</p></div><div class="${topActionToolbarClass}">${actions}<span class="connection-pill ${navigator.onLine?'':'offline'}"><i></i>${navigator.onLine?'Online':'Offline'}</span><button class="${iconButtonClass({ tone: 'secondary' }, 'icon-btn mobile-command')}" data-command aria-label="Search">${icons.search}</button>${accountControl()}</div></header>`;
+  return `<header class="topbar" data-wm-shell-page-header=""><div><span class="top-eyebrow">WORK MANAGEMENT</span><h1>${esc(title)}</h1><p>${esc(subtitle)}</p></div><div class="${topActionToolbarClass}">${actions}<span class="connection-pill ${navigator.onLine?'':'offline'}"><i></i>${navigator.onLine?'Online':'Offline'}</span><button class="${iconButtonClass({ tone: 'secondary' }, 'icon-btn mobile-command')}" data-command aria-label="Search">${icons.search}</button>${accountControl()}</div></header>`;
 }
 
 const boardsFeature = createBoardsFeature({ auth, renderWorkspace: renderBoardWorkspace, topbar, toast, navigate, icons, diagnostics, queryClient:serverState, service:platformServices.boards.service, commands:platformServices.boards.commands, realtime:platformServices.boards.realtime });
@@ -1223,7 +1223,7 @@ function renderModule(moduleId: string | null | undefined): void {
     ? `<iframe id="moduleFrame" title="${esc(mod.name)}" src="${esc(mod.route)}" ${moduleBrowserPermissions(mod) ? `allow="${esc(moduleBrowserPermissions(mod))}" ` : ''}referrerpolicy="same-origin"></iframe>`
     : `<section id="nativeModuleHost" class="native-module-host" data-native-module="${esc(mod.id)}" aria-label="${esc(mod.name)}"></section>`;
   const loadingCopy = iframeMode ? 'Loading the isolated compatibility runtime.' : 'Mounting the host-native module runtime.';
-  const content = `<header class="module-topbar"><button class="back-btn" data-nav="">${icons.back}<span>Work Management</span></button><div class="module-identity"><div class="module-mini-icon ${esc(mod.accent)}">${moduleIcon(mod)}</div><div><strong>${esc(mod.name)}</strong><small>${esc(mod.eyebrow)} · v${esc(mod.version)}</small></div></div><div class="module-actions">${actions}</div></header>
+  const content = `<header class="module-topbar" data-wm-shell-page-header=""><button class="back-btn" data-nav="">${icons.back}<span>Work Management</span></button><div class="module-identity"><div class="module-mini-icon ${esc(mod.accent)}">${moduleIcon(mod)}</div><div><strong>${esc(mod.name)}</strong><small>${esc(mod.eyebrow)} · v${esc(mod.version)}</small></div></div><div class="module-actions">${actions}</div></header>
   <main id="main" class="module-stage"><div class="frame-loading" id="frameLoading"><span></span><strong>Opening ${esc(mod.name)}</strong><small>${loadingCopy}</small></div>${moduleSurface}<div class="frame-error" id="frameError" hidden><strong>Module is taking longer than expected.</strong><p>Retry the authenticated module runtime without leaving Work Management.</p><div><button class="secondary-btn" data-reload-frame>Retry</button></div></div></main>`;
   renderWorkspace(content, `app/${mod.id}`, 'module');
   runtimeClient.setContext({ route: 'app', moduleId: mod.id, authenticated: auth.isAuthenticated });

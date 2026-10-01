@@ -1,0 +1,23 @@
+/* M87 TradeLink visual migration — presentation-only successor to M76. */
+body[data-wm-surface="tradelink"][data-wm-tradelink-visual="m87"]{
+  --m87-tl-surface:var(--wm-color-surface-primary);--m87-tl-border:var(--wm-color-border-subtle);--m87-tl-radius:var(--wm-semantic-radius-surface);
+}
+body[data-wm-tradelink-visual="m87"] .app-shell{background:linear-gradient(180deg,color-mix(in srgb,var(--wm-color-canvas) 97%,transparent),var(--wm-color-canvas));}
+body[data-wm-tradelink-visual="m87"] :is(.topbar,.nav-tabs,.create-commandbar,.documents-commandbar){border-color:var(--m87-tl-border);background:color-mix(in srgb,var(--m87-tl-surface) 94%,transparent);backdrop-filter:blur(14px);}
+body[data-wm-tradelink-visual="m87"] :is(.create-view,.documents-view,.activity-workspace,.recovery-grid,.manual-grid){gap:var(--wm-semantic-space-section);}
+body[data-wm-tradelink-visual="m87"] :is(.form-section,.card,.manual-card,.company-profile-card,.company-template-card,.client-lookup-card,.approval-card,.activity-item,.documents-filter-panel,.preview-sheet,.wm-data-region){border:1px solid var(--m87-tl-border);border-radius:var(--m87-tl-radius);background:var(--m87-tl-surface);box-shadow:var(--wm-shadow-xs);}
+body[data-wm-tradelink-visual="m87"] :is(.form-section-title,.documents-commandbar,.activity-head,.preview-head){display:flex;align-items:flex-start;justify-content:space-between;gap:var(--wm-semantic-space-control);}
+body[data-wm-tradelink-visual="m87"] :is(.form-grid,.client-grid,.approval-assignment-grid,.document-filter-grid,.activity-filter-grid,.recovery-grid,.manual-grid){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--wm-semantic-space-control);}
+body[data-wm-tradelink-visual="m87"] :is(.documents-table-wrap,.table-wrap,.document-ledger-table,.preview-table){border:1px solid var(--m87-tl-border);border-radius:var(--wm-semantic-radius-control);overflow:auto;background:var(--m87-tl-surface);}
+body[data-wm-tradelink-visual="m87"] :is(.status-badge,.workflow-pill,.workflow-state,.terms-status){font-weight:650;letter-spacing:.01em;}
+body[data-wm-tradelink-visual="m87"] :is(.modal,.company-panel,.document-history-modal){border:1px solid var(--m87-tl-border);border-radius:var(--wm-overlay-surface-radius);background:var(--m87-tl-surface);box-shadow:var(--wm-shadow-lg);}
+body[data-wm-tradelink-visual="m87"] :is(.items-section,.terms-layout,.approval-workflow,.pdf-commercial,.pdf-payment,.pdf-terms,.pdf-totals){border-radius:var(--wm-semantic-radius-control);}
+body[data-wm-tradelink-visual="m87"] :is(.form-section,.manual-card,.activity-item,.approval-card){transition:transform var(--wm-motion-duration-fast) var(--wm-motion-ease-standard),box-shadow var(--wm-motion-duration-fast) var(--wm-motion-ease-standard);}
+body[data-wm-tradelink-visual="m87"] :is(.form-section,.manual-card,.activity-item,.approval-card):hover{transform:translateY(-1px);box-shadow:var(--wm-shadow-sm);}
+body[data-wm-tradelink-visual="m87"] :is(.preview-sheet,.pdf-page){max-width:100%;margin-inline:auto;}
+@media (max-width:52.5rem){body[data-wm-tradelink-visual="m87"] :is(.create-commandbar,.documents-commandbar,.topbar){align-items:flex-start;flex-wrap:wrap;}body[data-wm-tradelink-visual="m87"] :is(.documents-utility-actions,.documents-command-actions,.actions){flex-wrap:wrap;}}
+@media (max-width:40rem){body[data-wm-tradelink-visual="m87"] :is(.form-grid,.client-grid,.approval-assignment-grid,.document-filter-grid,.activity-filter-grid,.recovery-grid,.manual-grid){grid-template-columns:1fr;}body[data-wm-tradelink-visual="m87"] :is(.create-type-tabs,.nav-tabs){overflow-x:auto;scrollbar-width:thin;}body[data-wm-tradelink-visual="m87"] :is(.form-section-title,.documents-commandbar,.activity-head,.preview-head){flex-direction:column;}}
+@media (prefers-reduced-motion:reduce){body[data-wm-tradelink-visual="m87"] *,body[data-wm-tradelink-visual="m87"] *::before,body[data-wm-tradelink-visual="m87"] *::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important;}body[data-wm-tradelink-visual="m87"] :is(.form-section,.manual-card,.activity-item,.approval-card):hover{transform:none;}}
+@media (forced-colors:active){body[data-wm-tradelink-visual="m87"] :is(.form-section,.card,.manual-card,.company-profile-card,.company-template-card,.client-lookup-card,.approval-card,.activity-item,.modal,.company-panel,.document-history-modal){border:1px solid CanvasText;box-shadow:none;}}
+/* M96 retirement consolidation: active M76 dialog padding retained under the M87 owner. */
+body[data-wm-tradelink-visual="m87"] :is(.modal.wm-dialog,.company-panel.wm-dialog){padding:0;}

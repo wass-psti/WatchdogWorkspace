@@ -1,0 +1,40 @@
+export const stageIM80SharedPrimitiveComponentLayerTarget = Object.freeze({
+  milestone: 80,
+  stage: 'I',
+  release: '1.43.2',
+  semanticsVersion: '1.43.2-m80-v1',
+  scope: 'shared-primitive-component-layer',
+  activationState: 'active-certified',
+  program: 'futuristic-minimalist-visual-system-migration',
+  prerequisite: Object.freeze({
+    milestone: 79,
+    requiredState: 'active-certified',
+    certifiedZipSha256: '42f6e572830916fd4a5c00af9030b296c9b2e64176fa7a16bf9b9c520b28ec58',
+    certifiedSourceSha256: 'ca31475242a58595373ca65a6305c6aa79396cd2b6ea089bb1f5dd8005b56d5c',
+  }),
+  authorities: Object.freeze({
+    registry: 'src/design-system/shared-primitive-system.ts',
+    publicApi: 'src/design-system/shared-primitives/index.ts',
+    rootPublicApi: 'src/design-system/index.ts',
+    certifiedPresentation: Object.freeze([
+      'assets/css/foundation/components.css',
+      'assets/css/foundation/interactions.css',
+    ]),
+  }),
+  primitives: Object.freeze([
+    'button', 'icon-button', 'input', 'textarea', 'selector', 'search-input', 'filter-bar', 'filter-chip',
+    'badge', 'icon', 'alert', 'checkbox', 'switch', 'segmented-control', 'tooltip', 'menu', 'popover', 'card',
+  ]),
+  certifiedArtifactDirectory: 'm80-certified-artifacts-upload',
+  certifiedBaseline: 'Work-Management-App-v1.43.2-Stage-I-M80-Certified-Baseline.zip',
+  failClosed: true,
+  boundaries: Object.freeze({
+    noDatabaseSchemaMutation: true,
+    noMigrationMutation: true,
+    noAuthenticationAuthorizationMutation: true,
+    noPersistenceContractMutation: true,
+    noRouteOwnershipMutation: true,
+    noModuleConsumerRewriteRequired: true,
+    consumerMigrationsRemainSuccessorOwned: true,
+  }),
+} as const);

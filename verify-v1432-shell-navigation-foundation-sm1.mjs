@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
+import { assertLegacyThreeScopeThemeRole, assertM79ShellThemeRoles, hasM79SuccessorAuthority } from './scripts/lib/m79-shell-theme-semantics.mjs';
 
 const read = (path) => fs.readFileSync(path, 'utf8');
 const tokens = read('assets/css/foundation/tokens.css');
@@ -82,10 +83,10 @@ const themeRoles = [
   '--wm-shell-navigation-scrollbar:',
   '--wm-shell-navigation-shadow:',
 ];
-for (const role of themeRoles) {
-  const escaped = role.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const matches = themes.match(new RegExp(escaped, 'g')) ?? [];
-  assert.equal(matches.length, 3, `Shell semantic theme role must exist exactly once in light, dark and system-dark modes: ${role}`);
+if (hasM79SuccessorAuthority()) {
+  assertM79ShellThemeRoles({ themes, tokens, roles: themeRoles.map((role) => role.slice(0, -1)), label: 'Shell M1 navigation theme' });
+} else {
+  for (const role of themeRoles) assertLegacyThreeScopeThemeRole({ themes, role, label: 'Shell M1 navigation theme' });
 }
 
 for (const marker of [
@@ -110,7 +111,7 @@ for (const marker of [
   '@media (forced-colors:active)',
 ]) assert.ok(shellCss.includes(marker), `Shell foundation CSS missing contract: ${marker}`);
 
-assert.match(entry, /foundation\/application-migration\.css';\nimport '\.\.\/assets\/css\/motion-design\.css';\nimport '\.\.\/assets\/css\/shell-navigation\.css';\n(?:import '\.\.\/assets\/css\/shell-overlays\.css';\n)?(?:import '\.\.\/assets\/css\/shared-application-ui\.css';\n)?(?:import '\.\.\/assets\/css\/shell-account-menu\.css';\n)?(?:import '\.\.\/assets\/css\/shell-accessibility\.css';\n)?(?:import '\.\.\/assets\/css\/foundation\/host-ui-migration\.css';\n)?import '\.\.\/assets\/css\/boards-monday\.css';/, 'Shell foundation stylesheet must load after the legacy motion layer and before the Board layer, while permitting later shared application UI and M72 host migration layers');
+assert.match(entry, /foundation\/application-migration\.css';\nimport '\.\.\/assets\/css\/motion-design\.css';\nimport '\.\.\/assets\/css\/shell-navigation\.css';\n(?:import '\.\.\/assets\/css\/shell-overlays\.css';\n)?(?:import '\.\.\/assets\/css\/shared-application-ui\.css';\n)?(?:import '\.\.\/assets\/css\/shell-account-menu\.css';\n)?(?:import '\.\.\/assets\/css\/shell-accessibility\.css';\n)?(?:import '\.\.\/assets\/css\/foundation\/host-ui-migration\.css';\n)?(?:import '\.\.\/assets\/css\/foundation\/authentication-account-system\.css';\n)?import '\.\.\/assets\/css\/boards-monday\.css';/, 'Shell foundation stylesheet must load after the legacy motion layer and before the Board layer, while permitting later shared application UI and M72 host migration layers plus the authorized M83 authentication/account layers');
 assert.ok(browser.includes("await fs.readFile('assets/css/shell-navigation.css', 'utf8')"), 'Browser integration must load the Shell M1 stylesheet in production CSS order');
 for (const marker of [
   'Shell navigation foundation uses the semantic 256px desktop width',
