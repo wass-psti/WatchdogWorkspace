@@ -2,8 +2,22 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import {spawnSync} from 'node:child_process';
 
 const root = process.cwd();
+const m99Target = path.join(root, 'config/stage-i-m99-sidebar-corrective-successor-target.ts');
+const m99Guard = path.join(root, 'scripts/verify-stage-i-m99-m98-source-guard.mjs');
+if (fs.existsSync(m99Target) || fs.existsSync(m99Guard)) {
+  if (!fs.existsSync(m99Target) || !fs.existsSync(m99Guard)) {
+    console.error('M98 M97-certified source guard FAILED: incomplete M99 successor authority');
+    process.exit(1);
+  }
+  const delegated = spawnSync(process.execPath, [m99Guard], {cwd: root, stdio: 'inherit'});
+  if (delegated.error) throw delegated.error;
+  if (delegated.status !== 0) process.exit(delegated.status ?? 1);
+  console.log('M98 M97-certified source guard: PASS (M99 successor authority delegated to M99→M98 source guard)');
+  process.exit(0);
+}
 const manifestPath = path.join(root, 'regression-baseline/m98-m97-source-guard.json');
 const fail = (message) => { console.error(`M98 M97-certified source guard FAILED: ${message}`); process.exit(1); };
 if (!fs.existsSync(manifestPath)) fail('baseline manifest missing');

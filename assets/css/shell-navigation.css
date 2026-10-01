@@ -161,6 +161,8 @@ body[data-wm-surface="shell"] .sidebar .brand-mark i:first-child {
 
 body[data-wm-surface="shell"] .sidebar .brand-copy {
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   line-height: 1.05;
@@ -290,8 +292,10 @@ body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"]:not(
 /* Navigation -------------------------------------------------------------- */
 body[data-wm-surface="shell"] .shell-navigation-scroll {
   flex: 1 1 auto;
+  min-width: 0;
   min-height: 0;
-  overflow-x: visible;
+  max-width: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
@@ -317,7 +321,39 @@ body[data-wm-surface="shell"] .sidebar nav {
   flex-direction: column;
   gap: var(--wm-shell-navigation-item-gap);
   min-width: 0;
-  overflow: visible;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+/* Sidebar content is clipped at its own content boundary while structural edge
+ * controls (collapse/pin/resizer) remain free to sit on the outer sidebar edge.
+ * This prevents labels, empty-state copy, and other internal navigation text
+ * from leaking into the workspace while the panel width is being resized or
+ * while compact/expanded transitions are settling. */
+body[data-wm-surface="shell"] .sidebar :is(
+  .brand,
+  .shell-nav-primary,
+  .shell-resource-navigation,
+  .shell-nav-section,
+  .shell-nav-section-body,
+  .shell-board-resource-list,
+  .sidebar-foot
+) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+body[data-wm-surface="shell"] .sidebar :is(
+  .brand,
+  .shell-nav-primary,
+  .shell-resource-navigation,
+  .shell-nav-section,
+  .shell-nav-section-body,
+  .shell-board-resource-list,
+  .sidebar-foot
+) {
+  overflow-x: hidden;
 }
 
 body[data-wm-surface="shell"] :is(.nav-item,.wm-nav-item) {
@@ -777,6 +813,7 @@ body[data-wm-surface="shell"] .shell[data-shell-navigation-state="compact"]:not(
 /* Footer ------------------------------------------------------------------ */
 body[data-wm-surface="shell"] .sidebar-foot {
   margin-top: var(--wm-shell-navigation-section-gap);
+  overflow: hidden;
   padding: var(--wm-shell-navigation-section-gap) var(--wm-shell-navigation-inline-padding) var(--wm-space-050);
   border-top: var(--wm-shell-sidebar-divider-width) solid var(--wm-shell-navigation-border);
   display: flex;

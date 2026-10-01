@@ -652,9 +652,19 @@ function sidebarNavMarkup(active: string = 'home'): string {
   </div>`;
 }
 
+function syncReactShellNavigationMarkup(): void {
+  const snapshot = reactShellRuntime.getSnapshot();
+  if (snapshot.mode !== 'shell') return;
+  reactShellRuntime.update({ navigationMarkup: sidebarNavMarkup(snapshot.activeRoute) });
+}
+
 function setShellSectionExpanded(id: ShellSectionId, expanded: boolean): void {
   const sections = workManagementClientState.setShellSection(id, expanded).shell.sections;
   writeShellSectionState(sections);
+  // Keep the React-owned navigation markup authoritative with the persisted section
+  // state. Without this refresh, a later React shell render can replay stale
+  // dangerouslySetInnerHTML markup and visually undo a section toggle.
+  syncReactShellNavigationMarkup();
   const section = shellQuery<HTMLElement>(`[data-shell-section="${id}"]`);
   const toggle = section?.querySelector<HTMLButtonElement>('[data-shell-section-toggle]');
   const body = section?.querySelector<HTMLElement>('.shell-nav-section-body');

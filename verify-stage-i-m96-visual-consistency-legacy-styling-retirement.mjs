@@ -32,6 +32,29 @@ for(const p of ['apps/time-tracker/app.js','apps/fueltrack-plus/app.v3.17.0-wm6.
 for(const p of ['apps/time-tracker/m74-harmonization.css','apps/fueltrack-plus/m75-harmonization.css','apps/tradelink/m76-harmonization.css'])ok(m96Guard.allowedRemovals.includes(p),`M96 source guard does not explicitly authorize governed reconciliation-layer retirement: ${p}`);
 for(const css of [m84,m85,m86,m87,m95])ok(!/transition\s*:\s*all/i.test(css),'M96 successor CSS must not introduce transition: all');
 const cssFiles=[...fs.readdirSync('assets/css/foundation').filter(x=>x.endsWith('.css')).map(x=>'assets/css/foundation/'+x),'assets/css/app.css','assets/css/boards-monday.css','assets/css/motion-design.css','assets/css/shared-application-ui.css','assets/css/shell-accessibility.css','assets/css/shell-account-menu.css','assets/css/shell-navigation.css','assets/css/shell-overlays.css',...['apps/time-tracker','apps/fueltrack-plus','apps/tradelink'].flatMap(d=>fs.readdirSync(d).filter(x=>x.endsWith('.css')).map(x=>`${d}/${x}`))];
-const total=cssFiles.reduce((n,p)=>n+fs.statSync(p).size,0);ok(cssFiles.length===42,`M96 expected 42 live CSS files after retirement, found ${cssFiles.length}`);ok(total<1202209,`M96 CSS source did not decrease from M95 baseline: ${total}`);
+const total=cssFiles.reduce((n,p)=>n+fs.statSync(p).size,0);
+ok(cssFiles.length===42,`M96 expected 42 live CSS files after retirement, found ${cssFiles.length}`);
+const m99GuardPath='regression-baseline/m99-m98-source-guard.json';
+if(fs.existsSync(m99GuardPath)){
+  const m99Guard=JSON.parse(read(m99GuardPath));
+  const cssMutations=(m99Guard.allowedMutations||[]).filter(p=>p.endsWith('.css'));
+  const cssAdditions=(m99Guard.allowedNewFiles||[]).filter(p=>p.endsWith('.css'));
+  const cssRemovals=(m99Guard.allowedRemovals||[]).filter(p=>p.endsWith('.css'));
+  ok(cssMutations.length===1&&cssMutations[0]==='assets/css/shell-navigation.css','M96 successor CSS reconciliation only permits the governed M99 shell-navigation.css mutation');
+  ok(cssAdditions.length===0&&cssRemovals.length===0,'M96 successor CSS reconciliation forbids M99 CSS additions/removals');
+  const baselineShell=(m99Guard.entries||[]).find(entry=>entry.path==='assets/css/shell-navigation.css');
+  ok(Boolean(baselineShell),'M96 successor CSS reconciliation missing M98 shell-navigation.css baseline entry');
+  if(baselineShell){
+    const currentShell=fs.statSync('assets/css/shell-navigation.css').size;
+    const successorDelta=currentShell-baselineShell.size;
+    const m96EquivalentTotal=total-successorDelta;
+    const m96Report=read('M96-IMPLEMENTATION-REPORT.md');
+    ok(m96Report.includes('42` live CSS files; `1,201,822` CSS source bytes'),'M96 historical CSS retirement evidence missing');
+    ok(m96EquivalentTotal===1201822,`M96 successor-normalized CSS source drift: expected=1201822 actual=${m96EquivalentTotal}`);
+    ok(m96EquivalentTotal<1202209,`M96 successor-normalized CSS source did not decrease from M95 baseline: ${m96EquivalentTotal}`);
+  }
+}else{
+  ok(total<1202209,`M96 CSS source did not decrease from M95 baseline: ${total}`);
+}
 if(failures.length){console.error('M96 visual consistency / legacy styling retirement verification FAILED');for(const f of failures)console.error(` - ${f}`);process.exit(1)}
 console.log(`M96 visual consistency / legacy styling retirement verification: PASS (liveCssFiles=${cssFiles.length}; liveCssBytes=${total}; retiredLayers=${retired.length})`);
