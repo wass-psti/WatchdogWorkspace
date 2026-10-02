@@ -93,7 +93,7 @@ export function WorkManagementShell() {
               <nav data-shell-nav aria-label="Main" dangerouslySetInnerHTML={{ __html: runtime.navigationMarkup }} />
             </WMShellNavigationScroll>
             <WMShellStatusFooter><span className={`health-dot ${runtime.online ? '' : 'offline'}`} /><div><strong>{runtime.online ? 'Platform ready' : 'Offline mode'}</strong><small>v{runtime.platformVersion} · {runtime.cloudModeLabel}</small></div></WMShellStatusFooter>
-            <button type="button" className="shell-sidebar-resizer" data-shell-resizer role="separator" aria-label="Resize navigation" aria-orientation="vertical" aria-valuemin={224} aria-valuemax={360} aria-valuenow={shell.navigation.width} aria-valuetext={`${shell.navigation.width} pixels`} aria-keyshortcuts="ArrowLeft ArrowRight Home End" aria-disabled={!resizeAvailable} disabled={!resizeAvailable} tabIndex={resizeAvailable ? 0 : -1} data-shell-tooltip="Drag to resize. Arrow keys use 8px steps; Shift uses 24px." data-shell-tooltip-placement="right" />
+            <button type="button" className="shell-sidebar-resizer" data-shell-resizer role="separator" aria-label="Resize navigation" aria-orientation="vertical" aria-valuemin={224} aria-valuemax={360} aria-valuenow={shell.navigation.width} aria-valuetext={`${shell.navigation.width} pixels`} aria-keyshortcuts="ArrowLeft ArrowRight Home End" aria-disabled={!resizeAvailable} disabled={!resizeAvailable} tabIndex={resizeAvailable ? 0 : -1} />
             <span className="wm-visually-hidden shell-navigation-status" data-shell-navigation-status aria-live="polite" aria-atomic="true" />
           </WMGlobalNavigation>
         </> : null}

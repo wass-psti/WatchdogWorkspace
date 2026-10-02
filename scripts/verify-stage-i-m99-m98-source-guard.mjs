@@ -14,6 +14,18 @@ if (manifest.baselineCertifiedSourceSha256 !== '0a8c5a05ed57904195b4c5665a54874a
 const mutations = new Set(manifest.allowedMutations || []);
 const additions = new Set(manifest.allowedNewFiles || []);
 const removals = new Set(manifest.allowedRemovals || []);
+const resizerSuccessor = Object.freeze({
+  shellPath: 'src/app/shell/WorkManagementShell.tsx',
+  shellSha256: 'ad85c3063213025cbb3d5c0b378ed3625722f2cbc3ca62ed017b0a39255a9f20',
+  verifierPath: 'verify-v1432-m99-sidebar-resizer-minimal-affordance-corrective.mjs',
+  evidencePath: 'M99-CORRECTIVE-LOOP-SIDEBAR-RESIZER-MINIMAL-AFFORDANCE-2026-10-02.md',
+});
+const resizerSuccessorAuthority = fs.existsSync(path.join(root, resizerSuccessor.verifierPath)) && fs.existsSync(path.join(root, resizerSuccessor.evidencePath));
+if (resizerSuccessorAuthority) {
+  mutations.add(resizerSuccessor.shellPath);
+  additions.add(resizerSuccessor.verifierPath);
+  additions.add(resizerSuccessor.evidencePath);
+}
 const baseline = new Map((manifest.entries || []).map((entry) => [entry.path, entry]));
 const ignored = new Set([
   '.git','node_modules','dist','coverage','test-results','playwright-report','CHECKSUMS.sha256',
@@ -42,6 +54,10 @@ const walk = (dir) => {
 walk(root);
 
 const issues = [];
+if (resizerSuccessorAuthority) {
+  const shell = current.get(resizerSuccessor.shellPath);
+  if (!shell || shell.sha256 !== resizerSuccessor.shellSha256) issues.push(`M99 resizer successor shell digest drift: ${resizerSuccessor.shellPath}`);
+}
 for (const [relative, expected] of baseline) {
   const actual = current.get(relative);
   if (!actual) {

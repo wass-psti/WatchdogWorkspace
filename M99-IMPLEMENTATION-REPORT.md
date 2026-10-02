@@ -33,3 +33,6 @@ Candidate v8 corrects only the certification harness ordering. Stage 11 now perf
 
 ## Hosted post-publication corrective — 2026-10-02
 Hosted M43 cold-start timing, Supabase shared migration-ledger visibility, and three workflow timeout ceilings were corrected without removing any verification gates. See `M99-CORRECTIVE-LOOP-HOSTED-POST-PUBLICATION-VALIDATION-2026-10-02.md` and `verify-v1432-m99-hosted-post-publication-corrective.mjs`.
+
+## Sidebar resizer minimal-affordance corrective — 2026-10-02
+Removed the visible resize instructional tooltip while retaining drag resizing, persistence, width bounds, separator semantics, keyboard resizing, and prior M99 dropdown/containment behavior. Added targeted static and browser regression coverage.

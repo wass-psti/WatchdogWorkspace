@@ -48,6 +48,7 @@ section '2. WORKSPACE / REPOSITORY VALIDATION'
 test -f package.json
 test -f package-lock.json
 test -f verify-v1432-shell-section-resize-corrective.mjs
+test -f verify-v1432-m99-sidebar-resizer-minimal-affordance-corrective.mjs
 test -f tests/modern/e2e/m99-sidebar-interaction-containment.spec.mjs
 test -f scripts/run-stage-i-m99-sidebar-browser.mjs
 node -e 'const p=require("./package.json"); if(p.name!=="work-management-app"||p.version!=="1.43.2") process.exit(1); console.log(`Repository identity: ${p.name}@${p.version}`)'
@@ -63,6 +64,7 @@ printf 'Dependency installation/integrity: PASS\n'
 
 section '4. STATIC VERIFICATION'
 npm run verify:m99:sidebar
+node --experimental-strip-types --disable-warning=ExperimentalWarning verify-v1432-m99-sidebar-resizer-minimal-affordance-corrective.mjs
 npm run verify:m99:hosted
 npm run typecheck
 npm run lint
@@ -82,6 +84,7 @@ printf 'M99 + hosted M43 browser/E2E gates: PASS\n'
 
 section '7. DEDICATED CERTIFICATION'
 npm run verify:m99:sidebar
+node --experimental-strip-types --disable-warning=ExperimentalWarning verify-v1432-m99-sidebar-resizer-minimal-affordance-corrective.mjs
 npm run verify:m99:hosted
 npm run workspace-regression:check
 npm run workspace-regression:test
@@ -141,6 +144,7 @@ printf 'Package hygiene/checksum: PASS\n'
 
 section '11. FINAL CHECKPOINT VALIDATION'
 npm run verify:m99:sidebar
+node --experimental-strip-types --disable-warning=ExperimentalWarning verify-v1432-m99-sidebar-resizer-minimal-affordance-corrective.mjs
 npm run verify:m99:hosted
 npm run typecheck
 npm run lint
@@ -155,7 +159,7 @@ npm run settings-recovery:browser
 cat > "$PASS_PATH" <<EOF
 M99 LOCAL CERTIFICATION: PASS
 Repository: work-management-app@1.43.2
-Checkpoint: Stage I M99 Sidebar Dropdown + Resize Containment Corrective
+Checkpoint: Stage I M99 Sidebar Dropdown + Resize Containment + Minimal Resizer Affordance Corrective
 Certified ZIP: $(basename "$ZIP_PATH")
 SHA-256: $ZIP_SHA
 State: FULLY COMPLETE — IMPLEMENTATION AND REQUIRED VERIFICATION COMPLETE

@@ -90,3 +90,39 @@ test('@m99-sidebar minimum-width resize clips all text-bearing navigation conten
   expect(containment.navOverflowX).toBe('hidden');
   expect(containment.documentOverflow).toBe(0);
 });
+
+test('@m99-sidebar resizer remains tooltip-free while horizontal drag resizing persists', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await bootstrap(page);
+
+  const resizer = page.locator('[data-shell-resizer]');
+  await expect(resizer).toBeVisible();
+  await expect(resizer).not.toHaveAttribute('data-shell-tooltip', /.+/);
+  await expect(resizer).not.toHaveAttribute('data-shell-tooltip-placement', /.+/);
+
+  await resizer.hover();
+  await page.waitForTimeout(450);
+  await expect(page.locator('#wmShellTooltip')).toHaveCount(0);
+
+  await resizer.focus();
+  await page.waitForTimeout(50);
+  await expect(page.locator('#wmShellTooltip')).toHaveCount(0);
+
+  const before = Number(await resizer.getAttribute('aria-valuenow'));
+  const box = await resizer.boundingBox();
+  if (!box) throw new Error('Sidebar resizer bounding box is unavailable.');
+  const startX = box.x + box.width / 2;
+  const startY = box.y + Math.min(box.height / 2, 80);
+
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX + 32, startY, { steps: 4 });
+  await page.mouse.up();
+
+  const after = Number(await resizer.getAttribute('aria-valuenow'));
+  expect(after).toBeGreaterThan(before);
+  await expect(page.locator('#wmShellTooltip')).toHaveCount(0);
+
+  const persisted = await page.evaluate(() => JSON.parse(localStorage.getItem('wm.platform.shell-navigation.v1') || '{}').width);
+  expect(Number(persisted)).toBe(after);
+});
