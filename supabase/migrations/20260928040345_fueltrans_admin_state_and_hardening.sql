@@ -1,0 +1,9 @@
+-- Shared Supabase migration-ledger compatibility mirror.
+-- Version: 20260928040345
+-- Remote migration name: fueltrans_admin_state_and_hardening
+-- Ownership: external/shared application; not authored by Work Management App.
+--
+-- This intentionally contains no SQL. The production Supabase project already records
+-- this version as applied. Keeping the exact version locally prevents Supabase Branching
+-- from treating the shared project's authoritative migration history as missing from this
+-- repository. Work Management must not replay or redefine another application's schema.

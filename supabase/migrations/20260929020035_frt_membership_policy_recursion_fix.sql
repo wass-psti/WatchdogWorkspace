@@ -1,0 +1,9 @@
+-- Shared Supabase migration-ledger compatibility mirror.
+-- Version: 20260929020035
+-- Remote migration name: frt_membership_policy_recursion_fix
+-- Ownership: external/shared application; not authored by Work Management App.
+--
+-- This intentionally contains no SQL. The production Supabase project already records
+-- this version as applied. Keeping the exact version locally prevents Supabase Branching
+-- from treating the shared project's authoritative migration history as missing from this
+-- repository. Work Management must not replay or redefine another application's schema.

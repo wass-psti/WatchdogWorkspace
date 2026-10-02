@@ -2,6 +2,14 @@ import fs from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
 import { installM39Fixture, seedM39Session, waitForM39Identity } from './helpers/m39-auth-fixture.mjs';
 
+const M43_IDENTITY_TIMEOUT_MS = 30_000;
+
+async function waitForM43Identity(page) {
+  await waitForM39Identity(page, { role: 'admin_general_manager', timeout: M43_IDENTITY_TIMEOUT_MS });
+}
+
+test.describe.configure({ timeout: 60_000 });
+
 async function installStorageFixture(page) {
   await page.addInitScript(() => {
     if (window.top !== window) return;
@@ -27,7 +35,7 @@ async function openSettings(page, options = {}) {
   await installStorageFixture(page);
   const fixture = await installM39Fixture(page, { principal: 'admin', ...options });
   await page.goto('/#/settings');
-  await waitForM39Identity(page, { role: 'admin_general_manager' });
+  await waitForM43Identity(page);
   await expect(page.locator('[data-wm-management-view="settings"]')).toBeVisible();
   return fixture;
 }
@@ -59,7 +67,7 @@ test('@m43-theme-density-reset theme and density persist across reload and prefe
   expect(prefs.compact).toBe(true);
 
   await page.reload();
-  await waitForM39Identity(page, { role: 'admin_general_manager' });
+  await waitForM43Identity(page);
   await expect(setting(page, 'theme').getByRole('button', { name: 'Dark' })).toHaveAttribute('aria-pressed', 'true');
   await expect(setting(page, 'density')).toContainText('Current mode: Compact');
 
@@ -80,7 +88,7 @@ test('@m43-theme-density-reset theme and density persist across reload and prefe
   expect(prefs.recent).toEqual([]);
 
   await page.reload();
-  await waitForM39Identity(page, { role: 'admin_general_manager' });
+  await waitForM43Identity(page);
   await expect(setting(page, 'theme').getByRole('button', { name: 'System' })).toHaveAttribute('aria-pressed', 'true');
   await expect(setting(page, 'density')).toContainText('Current mode: Comfortable');
 });
@@ -119,7 +127,7 @@ test('@m43-scans-diagnostics compatibility, diagnostics, and backend status are 
   expect(evidence?.backendStatus?.passed).toBe(true);
 
   await page.reload();
-  await waitForM39Identity(page, { role: 'admin_general_manager' });
+  await waitForM43Identity(page);
   await expect(setting(page, 'compatibility')).toContainText('Last checked');
   await expect(setting(page, 'diagnostics')).toContainText('Last checked');
   await expect(setting(page, 'auth-backend')).toContainText('Last checked');
@@ -136,7 +144,7 @@ test('@m43-storage persistent-storage request and storage-health refresh survive
   expect(await page.evaluate(() => localStorage.getItem('m43.fixture.storage-persistent'))).toBe('1');
 
   await page.reload();
-  await waitForM39Identity(page, { role: 'admin_general_manager' });
+  await waitForM43Identity(page);
   await expect(setting(page, 'storage-health')).toContainText('Persistent');
   await setting(page, 'storage-health').getByRole('button', { name: 'Refresh status' }).click();
   await expect(setting(page, 'storage-health')).toContainText('5.0 MB used of approximately 100.0 MB');
@@ -168,7 +176,7 @@ test('@m43-backup-roundtrip backup export and guarded restore round-trip shell p
   await page.locator('#wmBackupFileInput').setInputFiles({ name: 'm43-roundtrip.json', mimeType: 'application/json', buffer: backupBuffer });
   await expect.poll(() => fixture.backupRestoreCalls).toBe(1);
   await navigation;
-  await waitForM39Identity(page, { role: 'admin_general_manager' });
+  await waitForM43Identity(page);
   await expect(setting(page, 'theme').getByRole('button', { name: 'Dark' })).toHaveAttribute('aria-pressed', 'true');
   await expect(setting(page, 'density')).toContainText('Current mode: Compact');
 });

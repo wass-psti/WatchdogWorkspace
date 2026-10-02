@@ -63,6 +63,7 @@ printf 'Dependency installation/integrity: PASS\n'
 
 section '4. STATIC VERIFICATION'
 npm run verify:m99:sidebar
+npm run verify:m99:hosted
 npm run typecheck
 npm run lint
 npm run build
@@ -76,10 +77,12 @@ printf 'Deterministic automated tests: PASS\n'
 
 section '6. BROWSER / E2E GATE'
 npm run test:m99:sidebar
-printf 'M99 browser/E2E gate: PASS\n'
+npm run settings-recovery:browser
+printf 'M99 + hosted M43 browser/E2E gates: PASS\n'
 
 section '7. DEDICATED CERTIFICATION'
 npm run verify:m99:sidebar
+npm run verify:m99:hosted
 npm run workspace-regression:check
 npm run workspace-regression:test
 npm run futuristic-readiness:check
@@ -138,6 +141,7 @@ printf 'Package hygiene/checksum: PASS\n'
 
 section '11. FINAL CHECKPOINT VALIDATION'
 npm run verify:m99:sidebar
+npm run verify:m99:hosted
 npm run typecheck
 npm run lint
 # `npm run lint` invokes dependencies:ensure, which may restore the exact
@@ -146,6 +150,7 @@ npm run lint
 npm run modern-tests:check
 npm run modern-tests:test
 npm run test:m99:sidebar
+npm run settings-recovery:browser
 
 cat > "$PASS_PATH" <<EOF
 M99 LOCAL CERTIFICATION: PASS

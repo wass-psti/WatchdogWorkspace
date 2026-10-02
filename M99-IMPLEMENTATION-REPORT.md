@@ -30,3 +30,6 @@ Stage 9 of the v6 certification passed 214/215 historical verifiers and exposed 
 The v7 full certification reached Stage 11 after Stages 1–10 passed. During final validation, `npm run lint` invoked the governed dependency preflight, which correctly restored the exact application lockfile tree and removed the isolated `node_modules/.wm-modern-test-toolchain` workspace as extraneous to `package-lock.json`. The subsequent final `test:m99:sidebar` invocation therefore failed because Playwright was no longer materialized.
 
 Candidate v8 corrects only the certification harness ordering. Stage 11 now performs `verify:m99:sidebar`, `typecheck`, and `lint`, then re-runs the governed modern test-toolchain check/execution to re-materialize the isolated test-only toolchain before the final M99 Playwright gate. The application lockfile remains authoritative and unchanged; test-only packages are not added to the application dependency graph.
+
+## Hosted post-publication corrective — 2026-10-02
+Hosted M43 cold-start timing, Supabase shared migration-ledger visibility, and three workflow timeout ceilings were corrected without removing any verification gates. See `M99-CORRECTIVE-LOOP-HOSTED-POST-PUBLICATION-VALIDATION-2026-10-02.md` and `verify-v1432-m99-hosted-post-publication-corrective.mjs`.
