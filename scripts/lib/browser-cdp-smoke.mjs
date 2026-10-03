@@ -96,34 +96,73 @@ async function waitForChildExit(child, timeoutMs) {
   });
 }
 
-async function openDevToolsWebSocket(endpoint, browser, deadline, stderrText) {
+export const DEFAULT_DEVTOOLS_STARTUP_TIMEOUT_MS = 45_000;
+export const DEFAULT_DEVTOOLS_PAGE_TARGET_TIMEOUT_MS = 10_000;
+
+async function openDevToolsWebSocket(
+  endpoint,
+  browser,
+  startupDeadline,
+  pageTargetTimeoutMs,
+  stderrText,
+) {
+  let endpointReady = false;
   let target = null;
-  while (Date.now() < deadline) {
+  let targetDeadline = startupDeadline;
+
+  while (Date.now() < targetDeadline) {
     if (browser.exitCode !== null || browser.signalCode !== null) {
       throw new Error(`Chromium exited before its DevTools endpoint became available.\n${stderrText()}`);
     }
+
     try {
-      const response = await fetch(`${endpoint}/json/list`, { signal: AbortSignal.timeout(750) });
+      const response = await fetch(`${endpoint}/json/list`, {
+        signal: AbortSignal.timeout(750),
+      });
+
       if (response.ok) {
+        if (!endpointReady) {
+          endpointReady = true;
+          targetDeadline = Math.max(
+            targetDeadline,
+            Date.now() + Math.max(1_000, pageTargetTimeoutMs),
+          );
+        }
+
         const rows = await response.json();
-        target = Array.isArray(rows) ? rows.find((row) => row?.type === 'page' && row?.webSocketDebuggerUrl) : null;
+        target = Array.isArray(rows)
+          ? rows.find((row) => row?.type === 'page' && row?.webSocketDebuggerUrl)
+          : null;
+
         if (!target?.webSocketDebuggerUrl) {
           const createResponse = await fetch(`${endpoint}/json/new?about%3Ablank`, {
             method: 'PUT',
             signal: AbortSignal.timeout(750),
           }).catch(() => null);
+
           if (createResponse?.ok) {
             const created = await createResponse.json();
             if (created?.webSocketDebuggerUrl) target = created;
           }
         }
+
         if (target?.webSocketDebuggerUrl) break;
       }
     } catch {}
+
     await delay(50);
   }
+
+  if (!endpointReady) {
+    throw new Error(
+      `Chromium DevTools endpoint startup timed out before becoming reachable.\n${stderrText()}`,
+    );
+  }
+
   if (!target?.webSocketDebuggerUrl) {
-    throw new Error(`Chromium DevTools startup timed out before a page target became available.\n${stderrText()}`);
+    throw new Error(
+      `Chromium DevTools page target startup timed out after the endpoint became reachable.\n${stderrText()}`,
+    );
   }
 
   const ws = new WebSocket(target.webSocketDebuggerUrl);
@@ -140,7 +179,7 @@ async function openDevToolsWebSocket(endpoint, browser, deadline, stderrText) {
     };
     const onOpen = () => finish();
     const onError = () => finish(new Error('Chromium DevTools WebSocket failed to open.'));
-    const remaining = Math.max(250, deadline - Date.now());
+    const remaining = Math.max(250, targetDeadline - Date.now());
     const timer = setTimeout(() => finish(new Error('Chromium DevTools WebSocket open timed out.')), remaining);
     ws.addEventListener('open', onOpen, { once: true });
     ws.addEventListener('error', onError, { once: true });
@@ -148,7 +187,7 @@ async function openDevToolsWebSocket(endpoint, browser, deadline, stderrText) {
   return ws;
 }
 
-export async function captureBrowserDom(binary, url, { timeoutMs = 20_000, startupTimeoutMs = 15_000, ready, documentHtml = null } = {}) {
+export async function captureBrowserDom(binary, url, { timeoutMs = 20_000, startupTimeoutMs = DEFAULT_DEVTOOLS_STARTUP_TIMEOUT_MS, pageTargetTimeoutMs = DEFAULT_DEVTOOLS_PAGE_TARGET_TIMEOUT_MS, ready, documentHtml = null } = {}) {
   const debugPort = await allocateLoopbackPort();
   const browserProfile = await mkdtemp(join(tmpdir(), 'wm-vite-browser-'));
   const browserArgs = [
@@ -179,7 +218,13 @@ export async function captureBrowserDom(binary, url, { timeoutMs = 20_000, start
   let sequence = 0;
 
   try {
-    ws = await openDevToolsWebSocket(`http://127.0.0.1:${debugPort}`, browser, startupDeadline, stderrText);
+    ws = await openDevToolsWebSocket(
+      `http://127.0.0.1:${debugPort}`,
+      browser,
+      startupDeadline,
+      pageTargetTimeoutMs,
+      stderrText,
+    );
     deadline = Date.now() + Math.max(250, timeoutMs);
     ws.addEventListener('message', (event) => {
       let message;

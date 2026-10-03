@@ -26,6 +26,19 @@ if (resizerSuccessorAuthority) {
   additions.add(resizerSuccessor.verifierPath);
   additions.add(resizerSuccessor.evidencePath);
 }
+const cdpStartupSuccessor = Object.freeze({
+  driverPath: 'scripts/lib/browser-cdp-smoke.mjs',
+  vectorPath: 'scripts/verify-vite-browser-cdp-execution.mjs',
+  verifierPath: 'verify-v1432-m99-cdp-startup-portability-corrective.mjs',
+  evidencePath: 'M99-CORRECTIVE-LOOP-CDP-STARTUP-PORTABILITY-2026-10-02.md',
+});
+const cdpStartupSuccessorAuthority = fs.existsSync(path.join(root, cdpStartupSuccessor.verifierPath)) && fs.existsSync(path.join(root, cdpStartupSuccessor.evidencePath));
+if (cdpStartupSuccessorAuthority) {
+  mutations.add(cdpStartupSuccessor.driverPath);
+  mutations.add(cdpStartupSuccessor.vectorPath);
+  additions.add(cdpStartupSuccessor.verifierPath);
+  additions.add(cdpStartupSuccessor.evidencePath);
+}
 const baseline = new Map((manifest.entries || []).map((entry) => [entry.path, entry]));
 const ignored = new Set([
   '.git','node_modules','dist','coverage','test-results','playwright-report','CHECKSUMS.sha256',

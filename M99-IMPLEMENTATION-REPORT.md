@@ -36,3 +36,10 @@ Hosted M43 cold-start timing, Supabase shared migration-ledger visibility, and t
 
 ## Sidebar resizer minimal-affordance corrective — 2026-10-02
 Removed the visible resize instructional tooltip while retaining drag resizing, persistence, width bounds, separator semantics, keyboard resizing, and prior M99 dropdown/containment behavior. Added targeted static and browser regression coverage.
+
+## M99 v12 — Hosted CDP Startup Portability Corrective
+The shared Chromium DevTools smoke harness now uses a 45-second bounded endpoint-startup budget and an independent 10-second page-target acquisition budget after endpoint readiness. No production application or service-worker semantics are relaxed or bypassed. Dedicated static and runtime regression verification is included.
+
+
+## M99 v13 — Certification ordering corrective
+Preserved the successful v12 CDP startup-portability fix and corrected the browser-gate sequencing discovered during local certification. `verify:preview` may legitimately restore the exact lockfile dependency tree; the harness therefore re-runs `modern-tests:toolchain:ensure` after preview and before M99/M43 Playwright browser execution in both Stage 6 and final Stage 11 validation.

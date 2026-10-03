@@ -8,3 +8,10 @@ The M99 sidebar implementation remains complete. Post-publication hosted validat
 
 ## Sidebar resizer minimal-affordance successor — 2026-10-02
 Repository implementation is complete for removal of the resizer hover instructional surface. Horizontal drag resizing and keyboard accessibility remain intact. Full Stage 1–11 local certification and successor hosted validation remain required before this corrective can be marked fully complete.
+
+## 2026-10-02 — CDP Startup Portability Corrective v12
+The v11 hosted Service Worker Update Strategy production-preview gate reproduced the same Chromium DevTools startup/page-target timeout on two hosted attempts. The corrective separates endpoint startup and page-target acquisition into independent bounded phases while preserving fail-closed behavior. Repository implementation is complete; local verification/certification remains required.
+
+
+## 2026-10-03 — Certification ordering corrective v13
+The v12 CDP portability implementation passed its direct CDP and production-preview runtime gates. A subsequent Stage 6 failure exposed a deterministic certification-order defect: `verify:preview` restored the exact application lockfile tree and removed the isolated Playwright toolchain before `test:m99:sidebar`. The certification script now re-materializes the governed modern test toolchain after each preview gate and immediately before Playwright-backed browser gates. Repository implementation is complete; full local Stage 1–11 certification remains required.
