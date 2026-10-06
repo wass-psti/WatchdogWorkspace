@@ -8,6 +8,21 @@ const root = path.resolve(
   '..',
 );
 
+
+const m106Manifest = path.join(root, 'M106-M105-BASELINE-SOURCE-MANIFEST.json');
+const m106Guard = path.join(root, 'scripts/verify-stage-i-m106-m105-source-guard.mjs');
+if (fs.existsSync(m106Manifest) || fs.existsSync(m106Guard)) {
+  if (!fs.existsSync(m106Manifest) || !fs.existsSync(m106Guard)) {
+    console.error('M105 M104-certified source guard: FAIL (incomplete M106 successor authority)');
+    process.exit(1);
+  }
+  const { spawnSync } = await import('node:child_process');
+  const delegated = spawnSync(process.execPath, [m106Guard], { cwd: root, stdio: 'inherit' });
+  if (delegated.status !== 0) process.exit(delegated.status ?? 1);
+  console.log('M105 M104-certified source guard: PASS (M106 successor authority delegated to M106→M105 source guard)');
+  process.exit(0);
+}
+
 const manifest = JSON.parse(
   fs.readFileSync(
     path.join(root, 'M105-M104-BASELINE-GIT-MANIFEST.json'),
