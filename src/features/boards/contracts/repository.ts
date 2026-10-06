@@ -1,5 +1,6 @@
 import type { BoardColumnId, BoardGroupId, BoardId, BoardItemId, StatusLabelId, UserId } from '../../../types/identifiers.ts';
 import type { BoardRole } from '../../../types/auth.ts';
+import type { BoardImportCommitRequest, BoardImportCompletionSummary } from './import-preview.ts';
 import type { QueryClient } from '../../../platform/contracts/query.ts';
 import type {
   BoardCellValue,
@@ -64,6 +65,7 @@ export interface BoardRepository {
   openItemFile(file: ItemWorkspaceFile): Promise<void>;
   downloadItemFile(file: ItemWorkspaceFile): Promise<void>;
   deleteItemFile(file: ItemWorkspaceFile): Promise<void>;
+  importItemsAtomic(request: BoardImportCommitRequest): Promise<BoardImportCompletionSummary>;
   invalidate(): void;
   clearCache(): void;
 }

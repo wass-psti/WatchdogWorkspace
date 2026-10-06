@@ -5,6 +5,19 @@ import process from 'node:process';
 import {spawnSync} from 'node:child_process';
 
 const root = process.cwd();
+const m100Manifest = path.join(root, 'M100-M99-BASELINE-SOURCE-MANIFEST.json');
+const m100Guard = path.join(root, 'scripts/verify-stage-i-m100-m99-source-guard.mjs');
+if (fs.existsSync(m100Manifest) || fs.existsSync(m100Guard)) {
+  if (!fs.existsSync(m100Manifest) || !fs.existsSync(m100Guard)) {
+    console.error('M98 M97-certified source guard FAILED: incomplete M100 successor authority');
+    process.exit(1);
+  }
+  const delegated = spawnSync(process.execPath, [m100Guard], {cwd: root, stdio: 'inherit'});
+  if (delegated.error) throw delegated.error;
+  if (delegated.status !== 0) process.exit(delegated.status ?? 1);
+  console.log('M98 M97-certified source guard: PASS (M100 successor authority delegated to M100→M99 source guard)');
+  process.exit(0);
+}
 const m99Target = path.join(root, 'config/stage-i-m99-sidebar-corrective-successor-target.ts');
 const m99Guard = path.join(root, 'scripts/verify-stage-i-m99-m98-source-guard.mjs');
 if (fs.existsSync(m99Target) || fs.existsSync(m99Guard)) {

@@ -62,6 +62,8 @@ export interface BoardItem {
   readonly notes?: string;
   readonly archived?: boolean;
   readonly archived_at?: ISODateTime | null;
+  readonly created_at?: ISODateTime;
+  readonly updated_at?: ISODateTime;
   readonly [key: string]: unknown;
 }
 

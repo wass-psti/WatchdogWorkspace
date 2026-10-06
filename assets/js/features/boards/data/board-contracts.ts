@@ -163,6 +163,8 @@ export function mapBoardItem(value: unknown): BoardItem {
     notes: String(record.notes ?? ''),
     archived: Boolean(record.archived ?? record.archived_at),
     archived_at: optionalString(record, 'archived_at'),
+    ...(optionalString(record, 'created_at') ? { created_at: optionalString(record, 'created_at') as string } : {}),
+    ...(optionalString(record, 'updated_at') ? { updated_at: optionalString(record, 'updated_at') as string } : {}),
   };
 }
 

@@ -141,6 +141,66 @@ const m97AllowedNewProtectedFiles = new Set([
   'src/design-system/workspace-wide-visual-regression-functional-preservation.ts',
 ]);
 
+const m100AuthorityExists = fs.existsSync(path.join(root, 'M100-M99-BASELINE-SOURCE-MANIFEST.json'))
+  && fs.existsSync(path.join(root, 'scripts/verify-stage-i-m100-m99-source-guard.mjs'));
+const m100AllowedProtectedMutations = new Set([
+  'assets/js/features/boards/index.ts',
+  'src/features/boards/contracts/index.ts',
+]);
+const m100AllowedNewProtectedFiles = new Set([
+  'src/features/boards/contracts/import.ts',
+  'src/features/boards/import/board-import-parser.ts',
+  'src/features/boards/import/index.ts',
+]);
+
+const m101AuthorityExists = fs.existsSync(path.join(root, 'M101-M100-BASELINE-SOURCE-MANIFEST.json'))
+  && fs.existsSync(path.join(root, 'scripts/verify-stage-i-m101-m100-source-guard.mjs'));
+const m101AllowedProtectedMutations = new Set([
+  'assets/js/boards-ui.ts',
+  'assets/js/features/boards/index.ts',
+  'assets/js/features/boards/data/board-repository.ts',
+  'assets/js/features/boards/services/board-domain-service.ts',
+  'assets/js/features/boards/views/board-workspace-view.ts',
+  'src/features/boards/contracts/index.ts',
+  'src/features/boards/contracts/repository.ts',
+]);
+const m101AllowedNewProtectedFiles = new Set([
+  'assets/js/features/boards/controllers/board-import-workflow.ts',
+  'src/features/boards/contracts/import-preview.ts',
+  'src/features/boards/import/board-import-preview.ts',
+]);
+
+const m102AuthorityExists = fs.existsSync(path.join(root, 'M102-M101-BASELINE-SOURCE-MANIFEST.json'))
+  && fs.existsSync(path.join(root, 'scripts/verify-stage-i-m102-m101-source-guard.mjs'));
+const m102AllowedProtectedMutations = new Set([
+  'assets/js/boards-ui.ts',
+  'assets/js/features/boards/controllers/board-import-workflow.ts',
+  'assets/js/features/boards/index.ts',
+  'assets/js/features/boards/views/board-workspace-view.ts',
+  'src/features/boards/contracts/index.ts',
+]);
+const m102AllowedNewProtectedFiles = new Set([
+  'assets/js/features/boards/controllers/board-export-workflow.ts',
+  'src/features/boards/contracts/export.ts',
+  'src/features/boards/export/board-export.ts',
+  'src/features/boards/export/index.ts',
+]);
+
+const m103AuthorityExists = fs.existsSync(path.join(root, 'M103-M102-BASELINE-SOURCE-MANIFEST.json'))
+  && fs.existsSync(path.join(root, 'scripts/verify-stage-i-m103-m102-source-guard.mjs'));
+const m103AllowedProtectedMutations = new Set([
+  'assets/js/features/boards/controllers/board-import-workflow.ts',
+  'assets/js/features/boards/data/board-repository.ts',
+  'assets/js/features/boards/data/board-contracts.ts',
+  'src/features/boards/contracts/domain.ts',
+  'src/features/boards/contracts/export.ts',
+  'src/features/boards/contracts/import-preview.ts',
+  'src/features/boards/contracts/import.ts',
+  'src/features/boards/export/board-export.ts',
+  'src/features/boards/import/board-import-preview.ts',
+]);
+const m103AllowedNewProtectedFiles = new Set([]);
+
 const modeFor = (stat) => {
   if (stat.isSymbolicLink()) return '120000';
   return (stat.mode & 0o111) !== 0 ? '100755' : '100644';
@@ -188,7 +248,11 @@ for (const [relative, expected] of expectedByPath) {
     (m92AuthorityExists && m92AllowedProtectedMutations.has(relative)) ||
     (m94AuthorityExists && m94AllowedProtectedMutations.has(relative)) ||
     (m95AuthorityExists && m95AllowedProtectedMutations.has(relative)) ||
-    (m96AuthorityExists && m96AllowedProtectedMutations.has(relative));
+    (m96AuthorityExists && m96AllowedProtectedMutations.has(relative)) ||
+    (m100AuthorityExists && m100AllowedProtectedMutations.has(relative)) ||
+    (m101AuthorityExists && m101AllowedProtectedMutations.has(relative)) ||
+    (m102AuthorityExists && m102AllowedProtectedMutations.has(relative)) ||
+    (m103AuthorityExists && m103AllowedProtectedMutations.has(relative));
   if (!successorAuthorizedMutation) {
     ok(actual.sha256 === expected.sha256, `M77 protected presentation byte drift: ${relative}`);
     ok(actual.size === expected.size, `M77 protected presentation size drift: ${relative}`);
@@ -215,7 +279,11 @@ for (const relative of actualByPath.keys()) {
       (m94AuthorityExists && m94AllowedNewProtectedFiles.has(relative)) ||
       (m95AuthorityExists && m95AllowedNewProtectedFiles.has(relative)) ||
       (m96AuthorityExists && m96AllowedNewProtectedFiles.has(relative)) ||
-      (m97AuthorityExists && m97AllowedNewProtectedFiles.has(relative)),
+      (m97AuthorityExists && m97AllowedNewProtectedFiles.has(relative)) ||
+      (m100AuthorityExists && m100AllowedNewProtectedFiles.has(relative)) ||
+      (m101AuthorityExists && m101AllowedNewProtectedFiles.has(relative)) ||
+      (m102AuthorityExists && m102AllowedNewProtectedFiles.has(relative)) ||
+      (m103AuthorityExists && m103AllowedNewProtectedFiles.has(relative)),
       `new protected presentation file is not successor-authorized: ${relative}`,
     );
   }
@@ -255,4 +323,4 @@ if (failures.length) {
   process.exit(1);
 }
 console.log('M78 protected-presentation no-visual-drift verification: PASS');
-console.log(`Protected files=${actualEntries.length}; aggregate=${aggregate}; Chakra imports remain design-system-owned${m79AuthorityExists ? '; M79 token/theme successor mutations authorized' : ''}${m80AuthorityExists ? '; M80 shared primitive additions authorized' : ''}${m81AuthorityExists ? '; M81 application-shell successor mutations/additions authorized' : ''}${m82AuthorityExists ? '; M82 layout-composition mutations/additions authorized' : ''}${m83AuthorityExists ? '; M83 authentication/account presentation mutations/additions authorized' : ''}${m84AuthorityExists ? '; M84 Boards visual presentation additions authorized' : ''}${m85AuthorityExists ? '; M85 TimeTracker visual presentation mutation/additions authorized' : ''}${m86AuthorityExists ? '; M86 FuelTrack+ visual presentation mutation/additions authorized' : ''}${m87AuthorityExists ? '; M87 TradeLink visual presentation mutation/additions authorized' : ''}${m88AuthorityExists ? '; M88 Users/roles administration presentation mutation/additions authorized' : ''}${m89AuthorityExists ? '; M89 Settings/configuration presentation mutation/additions authorized' : ''}${m90AuthorityExists ? '; M90 data-dense enterprise interaction mutation/additions authorized' : ''}${m91AuthorityExists ? '; M91 overlay/feedback successor mutation/additions authorized' : ''}${m92AuthorityExists ? '; M92 state-system successor mutation/additions authorized' : ''}${m93AuthorityExists ? '; M93 interaction-state successor additions authorized' : ''}${m94AuthorityExists ? '; M94 motion-transition successor mutation/additions authorized' : ''}${m95AuthorityExists ? '; M95 responsive-harmonization successor mutations/additions authorized' : ''}${m96AuthorityExists ? '; M96 legacy styling retirement mutations/removals authorized' : ''}${m97AuthorityExists ? '; M97 workspace-wide visual regression successor additions authorized' : ''}.`);
+console.log(`Protected files=${actualEntries.length}; aggregate=${aggregate}; Chakra imports remain design-system-owned${m79AuthorityExists ? '; M79 token/theme successor mutations authorized' : ''}${m80AuthorityExists ? '; M80 shared primitive additions authorized' : ''}${m81AuthorityExists ? '; M81 application-shell successor mutations/additions authorized' : ''}${m82AuthorityExists ? '; M82 layout-composition mutations/additions authorized' : ''}${m83AuthorityExists ? '; M83 authentication/account presentation mutations/additions authorized' : ''}${m84AuthorityExists ? '; M84 Boards visual presentation additions authorized' : ''}${m85AuthorityExists ? '; M85 TimeTracker visual presentation mutation/additions authorized' : ''}${m86AuthorityExists ? '; M86 FuelTrack+ visual presentation mutation/additions authorized' : ''}${m87AuthorityExists ? '; M87 TradeLink visual presentation mutation/additions authorized' : ''}${m88AuthorityExists ? '; M88 Users/roles administration presentation mutation/additions authorized' : ''}${m89AuthorityExists ? '; M89 Settings/configuration presentation mutation/additions authorized' : ''}${m90AuthorityExists ? '; M90 data-dense enterprise interaction mutation/additions authorized' : ''}${m91AuthorityExists ? '; M91 overlay/feedback successor mutation/additions authorized' : ''}${m92AuthorityExists ? '; M92 state-system successor mutation/additions authorized' : ''}${m93AuthorityExists ? '; M93 interaction-state successor additions authorized' : ''}${m94AuthorityExists ? '; M94 motion-transition successor mutation/additions authorized' : ''}${m95AuthorityExists ? '; M95 responsive-harmonization successor mutations/additions authorized' : ''}${m96AuthorityExists ? '; M96 legacy styling retirement mutations/removals authorized' : ''}${m97AuthorityExists ? '; M97 workspace-wide visual regression successor additions authorized' : ''}${m100AuthorityExists ? '; M100 Boards import protected-source mutations/additions authorized' : ''}${m101AuthorityExists ? '; M101 Boards import preview/atomic-commit protected-source mutations/additions authorized' : ''}${m102AuthorityExists ? '; M102 Boards data-portability protected-source mutations/additions authorized' : ''}${m103AuthorityExists ? '; M103 Prompts 1-4 completion protected-source mutations authorized' : ''}.`);

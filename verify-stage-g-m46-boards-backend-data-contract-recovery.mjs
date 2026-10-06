@@ -62,11 +62,17 @@ assert.equal(contract.capabilities.private_board_realtime,true,'M46 capability c
 const contractNames=new Set(contract.rpcs.map((rpc)=>rpc.name));
 const frontendRpcNames=new Set([...repo.matchAll(/\brpc\('([^']+)'/g)].map((match)=>match[1]));
 const m51SuccessorRpcs=new Set(['wm_set_board_cell_if_current']);
+const m101SuccessorRpcs=new Set(['wm_import_board_items_atomic']);
 const m51Migration=read('supabase/migrations/v1.43.2-stage-g-m51-boards-realtime-concurrency-stabilization.sql');
+const m101Migration=read('supabase/migrations/v1.43.2-stage-i-m101-boards-import-preview-atomic-commit.sql');
 for(const name of frontendRpcNames){
   if(contractNames.has(name)) continue;
-  assert(m51SuccessorRpcs.has(name),`Frontend Board RPC ${name} is missing from the M46 contract and is not a governed successor RPC.`);
-  assert(m51Migration.includes(`function public.${name}`)&&m51Migration.includes(`grant execute on function public.${name}`),`M51 successor RPC ${name} must be migration-defined and authenticated-executable.`);
+  const governedByM51=m51SuccessorRpcs.has(name);
+  const governedByM101=m101SuccessorRpcs.has(name);
+  assert(governedByM51||governedByM101,`Frontend Board RPC ${name} is missing from the M46 contract and is not a governed successor RPC.`);
+  const successorMigration=governedByM51?m51Migration:m101Migration;
+  const successorMilestone=governedByM51?'M51':'M101';
+  assert(successorMigration.includes(`function public.${name}`)&&successorMigration.includes(`grant execute on function public.${name}`),`${successorMilestone} successor RPC ${name} must be migration-defined and authenticated-executable.`);
 }
 assert(!frontendRpcNames.has('wm_create_board'),'Unsafe legacy wm_create_board fallback must remain absent from the frontend repository.');
 for(const rpc of contract.rpcs){

@@ -14,6 +14,7 @@ import type {
   StatusLabel,
 } from '../../../../../src/features/boards/contracts/domain.ts';
 import type { BoardRepository, CreateBoardColumnInput } from '../../../../../src/features/boards/contracts/repository.ts';
+import type { BoardImportCommitRequest, BoardImportCompletionSummary } from '../../../../../src/features/boards/contracts/import-preview.ts';
 import type {
   BoardColumnId,
   BoardGroupId,
@@ -461,6 +462,40 @@ export function createBoardRepository(auth: AuthTransportPort, options: BoardRep
     },
     async deleteItemFile(file: ItemWorkspaceFile) {
       await mutateVoid('boards.file.delete', () => removeItemFile(file));
+    },
+    async importItemsAtomic(request: BoardImportCommitRequest): Promise<BoardImportCompletionSummary> {
+      if (!request.rows.length) return Object.freeze({ created: 0, updated: 0, skipped: request.reviewSummary.skipped, rejected: request.reviewSummary.rejected, affected: 0 });
+      return mutate('boards.import.atomic', async () => {
+        const payload = await rpc('wm_import_board_items_atomic', {
+          p_board_id: request.boardId,
+          p_expected_updated_at: request.expectedBoardVersion,
+          p_rows: request.rows.map((row) => ({
+            source_row: row.sourceRow,
+            operation: row.operation,
+            item_id: row.itemId ?? null,
+            expected_item_updated_at: row.expectedItemUpdatedAt ?? null,
+            item_name: row.itemName,
+            group_id: row.groupId,
+            values: row.values,
+          })),
+        });
+        const record = recordOf(payload);
+        const created = Number(record?.created ?? -1);
+        const updated = Number(record?.updated ?? -1);
+        const serverSkipped = Number(record?.skipped ?? 0);
+        const serverRejected = Number(record?.rejected ?? 0);
+        const affected = Number(record?.affected ?? -1);
+        if (![created, updated, serverSkipped, serverRejected, affected].every((value) => Number.isInteger(value) && value >= 0) || affected !== created + updated) {
+          throw new WorkManagementError('The server returned an invalid Board import summary.', { code: 'WM_BOARD_IMPORT_SUMMARY_INVALID', category: 'internal', operation: 'boards.import.atomic' });
+        }
+        return Object.freeze({
+          created,
+          updated,
+          skipped: request.reviewSummary.skipped + serverSkipped,
+          rejected: request.reviewSummary.rejected + serverRejected,
+          affected,
+        });
+      });
     },
     invalidate: invalidateBoardState,
     clearCache: () => { queries.removeQueries(scope()); },

@@ -909,7 +909,13 @@
     "futuristic-readiness:publish-certified": "bash scripts/publish-stage-i-m98-certified-artifact.sh",
     "verify:m99:sidebar": "node --experimental-strip-types --disable-warning=ExperimentalWarning verify-v1432-shell-section-resize-corrective.mjs",
     "test:m99:sidebar": "node scripts/run-stage-i-m99-sidebar-browser.mjs",
-    "verify:m99:hosted": "node --experimental-strip-types --disable-warning=ExperimentalWarning verify-v1432-m99-hosted-post-publication-corrective.mjs"
+    "verify:m99:hosted": "node --experimental-strip-types --disable-warning=ExperimentalWarning verify-v1432-m99-hosted-post-publication-corrective.mjs",
+    "boards-import-foundation:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning verify-v1432-m100-board-import-foundation.mjs",
+    "boards-import-preview:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning verify-v1432-m101-board-import-preview-atomic-commit.mjs && node scripts/verify-stage-i-m101-m100-source-guard.mjs",
+    "boards-import-preview:database": "node scripts/run-stage-i-m101-database-tests.mjs",
+    "boards-data-portability:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning verify-v1432-m102-board-data-portability.mjs && node scripts/verify-stage-i-m102-m101-source-guard.mjs",
+    "prompts1-4:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning verify-v1432-m103-prompts1-4-completion.mjs && node scripts/verify-stage-i-m103-m102-source-guard.mjs",
+    "prompts1-4:database": "node scripts/run-stage-i-m103-database-tests.mjs"
   },
   "devDependencies": {
     "@types/react": "19.2.18",

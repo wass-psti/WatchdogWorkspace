@@ -10,6 +10,8 @@ const itemWorkflows=read('./assets/js/features/boards/controllers/item-workflows
 const itemWorkspace=read('./assets/js/features/boards/controllers/item-workspace-controller.ts');
 const columnWorkflows=read('./assets/js/features/boards/controllers/column-workflows.ts');
 const migration=read('./supabase/migrations/v1.43.2-stage-g-m51-boards-realtime-concurrency-stabilization.sql');
+const m101Migration=read('./supabase/migrations/v1.43.2-stage-i-m101-boards-import-preview-atomic-commit.sql');
+const m103Migration=read('./supabase/migrations/v1.43.2-stage-i-m103-boards-import-export-contract-reconciliation.sql');
 
 const schema=read('./supabase/schema.sql');
 const target=read('./config/stage-g-m51-boards-realtime-concurrency-stabilization-target.ts');
@@ -49,7 +51,17 @@ assert.match(migration,/if p_column_id is null then/,'CAS migration must support
 
 assert.match(target,/activationState: '(?:implementation-complete-pending-certification|active-certified)'/,'M51 target must be pending certification or active-certified in successor baselines');
 assert.match(target,/semanticsVersion: '1.43.2-m51-v1'/,'M51 target must bind milestone semantics');
-assert.ok(schema.trimEnd().endsWith(migration.trimEnd()),'consolidated Supabase schema must end with the authoritative M51 migration');
+const normalizedSchema=schema.trimEnd();
+const normalizedM51=migration.trimEnd();
+const normalizedM101=m101Migration.trimEnd();
+const normalizedM103=m103Migration.trimEnd();
+const m51Offset=normalizedSchema.indexOf(normalizedM51);
+const m101Offset=normalizedSchema.indexOf(normalizedM101);
+const m103Offset=normalizedSchema.indexOf(normalizedM103);
+assert.ok(m51Offset>=0,'consolidated Supabase schema must retain the authoritative M51 migration');
+assert.ok(m101Offset>m51Offset,'M101 successor migration must follow the preserved authoritative M51 migration');
+assert.ok(m103Offset>m101Offset,'M103 successor migration must follow the preserved M101 atomic-import migration');
+assert.ok(normalizedSchema.endsWith(normalizedM103),'consolidated Supabase schema must end with the governed M103 successor migration');
 assert.match(databaseTest,/select plan\(10\)/,'M51 database suite must retain its complete ten-assertion plan');
 assert.match(databaseTest,/wm_add_board_column\([^\n]*'Concurrent note','text'/,'M51 database suite must use a real custom column for non-overlapping collaborator mutation');
 assert.doesNotMatch(databaseTest,/notes_col/,'M51 database fixture must not depend on a legacy notes system column');

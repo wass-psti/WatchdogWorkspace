@@ -32,6 +32,12 @@ export { createBoardMenuController } from './controllers/board-menu-controller.t
 export { createBoardDomainService as createTypedBoardDomainService } from './services/board-domain-service.ts';
 export { createBoardRealtimeService } from './services/board-realtime-service.ts';
 export { createBoardRealtimeController } from './controllers/board-realtime-controller.ts';
+export { parseBoardImport, BoardImportError } from '../../../../src/features/boards/import/board-import-parser.ts';
+export { createBoardImportCommitRequest, createBoardImportPreview, remapBoardImport } from '../../../../src/features/boards/import/board-import-preview.ts';
+export { exportBoard, createBoardPortableSpecification, createBoardExportService } from '../../../../src/features/boards/export/board-export.ts';
+export { createBoardImportSchema } from '../../../../src/features/boards/contracts/import.ts';
+export type { BoardImportDataset, BoardImportDiagnostic, BoardImportOptions, BoardImportSchema, BoardImportSource } from '../../../../src/features/boards/contracts/import.ts';
+export type { BoardImportPreview, BoardImportPreviewRow, BoardImportCompletionSummary, BoardImportCommitRequest } from '../../../../src/features/boards/contracts/import-preview.ts';
 
 export interface BoardsFeatureOptions extends BoardFeatureViewOptions {
   readonly service?: BoardDomainService | null;
@@ -64,4 +70,7 @@ export const BOARDS_FEATURE = Object.freeze({
   presentation: 'react-board-presentation-facade-v1',
   presentationEngine: 'assets/js/boards-ui.ts',
   architecture: 'react-route-facade-with-typed-rich-item-workspace-v1',
+  importFoundation: 'read-only-csv-xls-xlsx-normalized-ingestion-v1',
+  importWorkflow: 'preview-classification-exclusion-atomic-commit-v1',
+  dataPortability: 'csv-xlsx-export-specification-roundtrip-v1',
 } as const);
