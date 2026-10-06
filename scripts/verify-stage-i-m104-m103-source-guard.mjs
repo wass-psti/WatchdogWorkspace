@@ -3,6 +3,58 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+
+const m105Manifest=path.join(
+  root,
+  'M105-M104-BASELINE-GIT-MANIFEST.json',
+);
+const m105Guard=path.join(
+  root,
+  'scripts/verify-stage-i-m105-m104-source-guard.mjs',
+);
+
+if(
+  fs.existsSync(m105Manifest) ||
+  fs.existsSync(m105Guard)
+){
+  if(
+    !fs.existsSync(m105Manifest) ||
+    !fs.existsSync(m105Guard)
+  ){
+    console.error(
+      'M104 M103-certified source guard: FAIL ' +
+      '(incomplete M105 successor authority)'
+    );
+    process.exit(1);
+  }
+
+  const {spawnSync}=await import(
+    'node:child_process'
+  );
+
+  const delegated=spawnSync(
+    process.execPath,
+    [m105Guard],
+    {
+      cwd:root,
+      stdio:'inherit',
+    },
+  );
+
+  if(delegated.status!==0){
+    process.exit(
+      delegated.status ?? 1
+    );
+  }
+
+  console.log(
+    'M104 M103-certified source guard: PASS ' +
+    '(M105 successor authority delegated to M105→M104 source guard)'
+  );
+
+  process.exit(0);
+}
+
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'M104-M103-BASELINE-SOURCE-MANIFEST.json'),'utf8'));
 const baseline=new Map(manifest.entries.map(e=>[e.path,e]));
 const allowedMutations=new Set([

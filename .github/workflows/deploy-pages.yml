@@ -59,6 +59,71 @@ jobs:
       - name: Validate M38 production backend configuration
         run: npm run backend-preflight:config:production
 
+      - name: Verify M105 production backend parity repository contract
+        run: node verify-v1432-m105-production-backend-parity.mjs
+
+      - name: Verify live production backend deployment contract
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          endpoint="${VITE_SUPABASE_URL%/}/rest/v1/rpc/wm_deployment_contract_attestation"
+
+          curl --fail --silent --show-error --location \
+            --retry 5 \
+            --retry-delay 3 \
+            -H "apikey: ${VITE_SUPABASE_PUBLISHABLE_KEY}" \
+            -H "Content-Type: application/json" \
+            --data '{}' \
+            "$endpoint" \
+            -o /tmp/wm-production-backend-attestation.json
+
+          node -e '
+            const fs=require("fs");
+
+            const raw=JSON.parse(
+              fs.readFileSync(
+                "/tmp/wm-production-backend-attestation.json",
+                "utf8"
+              )
+            );
+
+            const payload=
+              Array.isArray(raw)
+                ? raw[0]
+                : raw;
+
+            if(
+              payload?.schema_version!=="1.43.2-m105-v1"
+            ){
+              throw new Error(
+                "Unexpected M105 backend schema."
+              );
+            }
+
+            if(
+              payload?.required_rpc!==
+              "wm_import_board_items_atomic"
+            ){
+              throw new Error(
+                "Unexpected required RPC."
+              );
+            }
+
+            if(
+              payload?.wm_import_board_items_atomic!==true ||
+              payload?.compatible!==true
+            ){
+              throw new Error(
+                "Production backend contract is incomplete."
+              );
+            }
+
+            console.log(
+              "Production backend deployment contract: PASS"
+            );
+          '
+
       - name: Install exact lockfile dependencies
         run: npm ci
 
@@ -277,6 +342,9 @@ jobs:
     name: Deploy v1.43.2 to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -285,6 +353,54 @@ jobs:
       - name: Deploy GitHub Pages artifact
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Re-verify production backend contract after Pages deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          endpoint="${VITE_SUPABASE_URL%/}/rest/v1/rpc/wm_deployment_contract_attestation"
+
+          curl --fail --silent --show-error --location \
+            --retry 5 \
+            --retry-delay 3 \
+            -H "apikey: ${VITE_SUPABASE_PUBLISHABLE_KEY}" \
+            -H "Content-Type: application/json" \
+            --data '{}' \
+            "$endpoint" \
+            -o /tmp/wm-production-backend-attestation.json
+
+          node -e '
+            const fs=require("fs");
+
+            const raw=JSON.parse(
+              fs.readFileSync(
+                "/tmp/wm-production-backend-attestation.json",
+                "utf8"
+              )
+            );
+
+            const payload=
+              Array.isArray(raw)
+                ? raw[0]
+                : raw;
+
+            if(
+              payload?.schema_version!=="1.43.2-m105-v1" ||
+              payload?.required_rpc!==
+                "wm_import_board_items_atomic" ||
+              payload?.wm_import_board_items_atomic!==true ||
+              payload?.compatible!==true
+            ){
+              throw new Error(
+                "Production backend contract mismatch after deployment."
+              );
+            }
+
+            console.log(
+              "Production backend post-deploy contract: PASS"
+            );
+          '
 
       - name: Production post-deploy HTTP smoke
         shell: bash
