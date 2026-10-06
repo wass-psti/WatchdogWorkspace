@@ -3,6 +3,16 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const m104Manifest = path.join(root, 'M104-M103-BASELINE-SOURCE-MANIFEST.json');
+const m104Guard = path.join(root, 'scripts/verify-stage-i-m104-m103-source-guard.mjs');
+if (fs.existsSync(m104Manifest) || fs.existsSync(m104Guard)) {
+  if (!fs.existsSync(m104Manifest) || !fs.existsSync(m104Guard)) { console.error('M103 M102-certified source guard: FAIL (incomplete M104 successor authority)'); process.exit(1); }
+  const { spawnSync } = await import('node:child_process');
+  const delegated = spawnSync(process.execPath, [m104Guard], { cwd: root, stdio: 'inherit' });
+  if (delegated.status !== 0) process.exit(delegated.status ?? 1);
+  console.log('M103 M102-certified source guard: PASS (M104 successor authority delegated to M104→M103 source guard)');
+  process.exit(0);
+}
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'M103-M102-BASELINE-SOURCE-MANIFEST.json'), 'utf8'));
 const baseline = new Map(manifest.entries.map((entry) => [entry.path, entry]));
 const allowedMutations = new Set([

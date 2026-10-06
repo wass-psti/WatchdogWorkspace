@@ -1,0 +1,37 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
+const root=process.cwd(), failures=[];
+const ok=(c,m)=>{if(!c)failures.push(m)};
+const read=(r)=>fs.readFileSync(path.join(root,r),'utf8');
+
+const lock=JSON.parse(read('package-lock.json'));
+const sourceMapJs=lock.packages?.['node_modules/source-map-js'];
+const postcss=lock.packages?.['node_modules/postcss'];
+ok(sourceMapJs?.version==='1.2.2','package-lock must pin source-map-js 1.2.2');
+ok(sourceMapJs?.resolved==='https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.2.tgz','package-lock must resolve source-map-js 1.2.2 from npm registry');
+ok(sourceMapJs?.integrity==='sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==','package-lock must bind the source-map-js 1.2.2 integrity digest');
+ok(postcss?.dependencies?.['source-map-js']==='^1.2.1','PostCSS must retain its compatible source-map-js semver contract');
+const m30=read('verify-stage-f-m30-modern-testing-stack.mjs');
+ok(m30.includes('m104SecurityRemediatedLockHash'), 'M30 historical verifier must expose bounded M104 lockfile successor authority');
+ok(m30.includes('8a4790f586c86ec1c77d9815df6edc4a0561cc753cf8011bfb28ee78cc5f4667'), 'M30 historical verifier must bind the exact M104 security-remediated lockfile hash');
+ok(m30.includes("lock.packages?.['node_modules/source-map-js']?.version==='1.2.2'"), 'M30 historical verifier must require source-map-js 1.2.2 for M104 successor authority');
+ok(m30.includes("lock.packages?.['node_modules/postcss']?.dependencies?.['source-map-js']==='^1.2.1'"), 'M30 historical verifier must preserve the PostCSS source-map-js compatibility contract');
+const m37Fixture=read('tests/modern/e2e/helpers/m37-supabase-fixture.mjs');
+const m39Fixture=read('tests/modern/e2e/helpers/m39-auth-fixture.mjs');
+const rpcToken="'wm_import_board_items_atomic'";
+const rpcPattern=new RegExp(rpcToken.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g');
+ok((m37Fixture.match(rpcPattern)||[]).length===1,'M37 hosted Board-contract fixture must advertise wm_import_board_items_atomic exactly once');
+ok((m39Fixture.match(rpcPattern)||[]).length===1,'M39 hosted auth fixture must advertise wm_import_board_items_atomic exactly once');
+ok(m37Fixture.includes("missing_rpcs:[]"),'M37 hosted fixture must retain fail-closed runtime capability response shape');
+ok(m39Fixture.includes("missing_rpcs:[]"),'M39 hosted fixture must retain fail-closed runtime capability response shape');
+const m73=read('scripts/verify-stage-h-m73-boards-ui-design-system-migration-execution.mjs');
+ok(m73.includes("M103-M102-BASELINE-SOURCE-MANIFEST.json"),'M73 verifier must bind M103 successor authority to the M103 manifest');
+ok(m73.includes("assets/js/features/boards/data/board-repository.ts"),'M73 verifier must authorize M103 repository runtime extension');
+ok(m73.includes("assets/js/features/boards/services/board-domain-service.ts"),'M73 verifier must authorize M103 domain-service runtime extension');
+ok(m73.includes('m103AllowedM73RuntimeMutations'),'M73 verifier must use a bounded M103 runtime authorization set');
+const m103Guard=read('scripts/verify-stage-i-m103-m102-source-guard.mjs');
+ok(m103Guard.includes('M104-M103-BASELINE-SOURCE-MANIFEST.json'),'M103 guard must delegate to M104 successor authority');
+ok(m103Guard.includes('verify-stage-i-m104-m103-source-guard.mjs'),'M103 guard must invoke the M104 successor guard');
+if(failures.length){console.error('M104 hosted certification synchronization verification: FAIL'); failures.forEach(x=>console.error(`- ${x}`)); process.exit(1)}
+console.log('M104 hosted certification synchronization verification: PASS (source-map-js 1.2.2 lockfile remediation; M30 historical lockfile successor authority; M37/M39 capability fixture parity; M73 successor runtime authority; M103→M104 guard delegation)');

@@ -116,7 +116,18 @@ assert(runbook.includes('modern-tests:coverage')&&runbook.includes('stage-f:cert
 assert(status.includes('implementation-complete-pending-certification')&&status.includes('Architecture 38')&&status.includes('jsdom is exact-pinned at 27.4.0'),'M30 release status must record pending certification, Architecture 38, and the corrective jsdom authority.');
 
 const lockHash=crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'package-lock.json'))).digest('hex');
-assert(lockHash==='22677ed5a0abd2997e57691e200fa80bd9e11ab1a824a6b64b18048adb2f8b84',`M30 must preserve M29 application package-lock; found ${lockHash}.`);
+const m29CertifiedLockHash='22677ed5a0abd2997e57691e200fa80bd9e11ab1a824a6b64b18048adb2f8b84';
+const m104SecurityRemediatedLockHash='8a4790f586c86ec1c77d9815df6edc4a0561cc753cf8011bfb28ee78cc5f4667';
+const m104SecurityAuthorityExists=
+  fs.existsSync(path.join(root,'M104-M103-BASELINE-SOURCE-MANIFEST.json'))&&
+  fs.existsSync(path.join(root,'verify-v1432-m104-hosted-certification-synchronization.mjs'));
+const lock=JSON.parse(read('package-lock.json'));
+const m104SecurityRemediationValid=
+  m104SecurityAuthorityExists&&
+  lockHash===m104SecurityRemediatedLockHash&&
+  lock.packages?.['node_modules/source-map-js']?.version==='1.2.2'&&
+  lock.packages?.['node_modules/postcss']?.dependencies?.['source-map-js']==='^1.2.1';
+assert(lockHash===m29CertifiedLockHash||m104SecurityRemediationValid,`M30 must preserve the certified M29 application package-lock or the bounded M104 source-map-js security-remediated successor lockfile; found ${lockHash}.`);
 for(const name of Object.keys(exact)) {
   assert(!(name in (pkg.devDependencies??{}))&&!(name in (pkg.dependencies??{})),`M30 isolated tool ${name} must not be added to application package dependency authority.`);
 }
