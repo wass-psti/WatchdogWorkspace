@@ -17,6 +17,10 @@ const allowedMutations=new Set([
   'verify-stage-g-m54-functional-production-readiness-certification.mjs',
   'scripts/verify-stage-g-m54-execution.mjs',
   'scripts/verify-stage-i-m105-m104-source-guard.mjs',
+  'scripts/run-database-rls-tests.mjs',
+  'scripts/run-stage-g-m46-database-contract-tests.mjs',
+  'scripts/run-stage-g-m47-database-tests.mjs',
+  'verify-stage-g-m49-boards-kanban-drag-drop-recovery.mjs',
 ]);
 const allowedAdditions=new Set([
   'M106-M105-BASELINE-SOURCE-MANIFEST.json',
@@ -25,6 +29,8 @@ const allowedAdditions=new Set([
   'verify-v1432-m106-deploy-pages-v5-compatibility.mjs',
   'scripts/verify-stage-i-m106-m105-source-guard.mjs',
   'scripts/certify-stage-i-m106-local.sh',
+  'M106-M49-SUPABASE-STACK-CLEANUP-CORRECTIVE-2026-10-06.md',
+  'scripts/lib/supabase-local-stack-cleanup.mjs',
 ]);
 const ignoredRoots=new Set(['.git','node_modules','dist','coverage','test-results','playwright-report']);
 const ignoredNames=new Set(['.DS_Store','Thumbs.db']);

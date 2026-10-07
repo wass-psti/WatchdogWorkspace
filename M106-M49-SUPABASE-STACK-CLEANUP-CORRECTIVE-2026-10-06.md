@@ -46,3 +46,27 @@ M49 static recovery verification now asserts that this cleanup authority exists 
 
 ## Exit criteria
 The corrective loop is exited only when the corrected repository state is pushed to PR #12 and the current-head hosted **Boards Kanban Drag Drop Recovery** workflow passes, followed by the remaining M106 hosted/final certification requirements.
+
+## Hosted corrective follow-up — M106 source-guard synchronization
+
+Corrective commit `99d73ec267f13720f0e336b59b2ec657df97736c` reached GitHub and produced all 26 expected PR workflow runs.
+
+Work Management CI run `37551618096` failed in step `Run complete production release gate` after the broader project verification had passed. The exact failing authority was `scripts/verify-stage-i-m106-m105-source-guard.mjs`.
+
+The guard correctly rejected the intended cleanup delta because its M106 mutation/addition allowlists still described the pre-corrective M106 scope.
+
+The M106 guard now explicitly authorizes only:
+
+Mutations:
+- `scripts/run-database-rls-tests.mjs`
+- `scripts/run-stage-g-m46-database-contract-tests.mjs`
+- `scripts/run-stage-g-m47-database-tests.mjs`
+- `verify-stage-g-m49-boards-kanban-drag-drop-recovery.mjs`
+
+Additions:
+- `M106-M49-SUPABASE-STACK-CLEANUP-CORRECTIVE-2026-10-06.md`
+- `scripts/lib/supabase-local-stack-cleanup.mjs`
+
+The M106 compatibility verifier independently asserts those exact allowlist entries. No wildcard authorization is permitted.
+
+The corrective loop remains open until this successor state passes complete local M106 certification, the complete current-head hosted PR matrix, publication/post-publication validation, artifact integrity, packaging, and final certification.
