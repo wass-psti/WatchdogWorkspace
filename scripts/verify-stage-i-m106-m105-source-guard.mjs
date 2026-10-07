@@ -31,6 +31,8 @@ const allowedAdditions=new Set([
   'scripts/certify-stage-i-m106-local.sh',
   'M106-M49-SUPABASE-STACK-CLEANUP-CORRECTIVE-2026-10-06.md',
   'scripts/lib/supabase-local-stack-cleanup.mjs',
+  'supabase/migrations/20261007024207_stage_i_m106_m54_runtime_capability_m105_parity_corrective.sql',
+  'M106-M54-RUNTIME-CAPABILITY-M105-PARITY-CORRECTIVE-2026-10-07.md',
 ]);
 const ignoredRoots=new Set(['.git','node_modules','dist','coverage','test-results','playwright-report']);
 const ignoredNames=new Set(['.DS_Store','Thumbs.db']);

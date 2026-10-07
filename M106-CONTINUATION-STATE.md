@@ -5,35 +5,29 @@ Authoritative state: STATE B — IMPLEMENTATION COMPLETE — LOCAL VERIFICATION/
 Execution classification: CORRECTIVE LOOP
 
 ## Active scope
-Complete Stage I M106 deploy-pages v5 compatibility certification, including hosted PR validation and correction of every current-head regression that blocks M106 acceptance.
+Close the M106 production-readiness corrective loop exposed by M54 live
+authenticated production certification.
 
-## Current repository state
-The deploy-pages v5 implementation remains intact.
+## Current corrective
+The merged M106 source and initial Pages deployment passed. Dedicated M54 run
+37561869409 then exposed a production capability-advertisement drift:
+`wm_import_board_items_atomic` existed and was required by the active client
+manifest, but `wm_runtime_capabilities()` did not advertise it.
 
-PR #12 first exposed a hosted M49 candidate failure in which the M29 disposable Supabase stack could not bind host port 54322 after preceding disposable database suites.
+Production Supabase has been corrected with migration
+`stage_i_m106_m54_runtime_capability_m105_parity_corrective`.
+This repository now contains the exact corresponding migration and M106
+governance assertions.
 
-The project-scoped Supabase residual-container cleanup correction was implemented for M46, M47, and M29 and passed the affected local M47/M46/M29/M49 candidate sequence.
-
-Corrective head 99d73ec267f13720f0e336b59b2ec657df97736c then exposed a distinct hosted governance defect in Work Management CI run 37551618096: the complete production release gate reached the M106 M105-certified source guard, which rejected the intended cleanup mutations/additions because the M106 allowlists had not yet been synchronized.
-
-The M106 source guard is now explicitly synchronized to authorize only those four corrective mutations and two corrective additions. The M106 compatibility verifier also asserts that this corrective governance authority remains present. No wildcard or directory-wide exemption is introduced.
-
-No application runtime, schema, migration, RBAC, UI, or production deployment behavior is changed by this governance synchronization.
-
-## Verification status
-- Original M106 certification evidence: predecessor evidence only where exact-source identity remains valid.
-- Supabase cleanup corrective local affected-gate chain: PASS.
-- Corrective head 99d73ec267f13720f0e336b59b2ec657df97736c: hosted Work Management CI FAILED at the M106 source guard.
-- Source-guard synchronization implementation: complete in this successor corrective state.
-- Successor local M106 certification: outstanding.
-- Successor current-head hosted PR matrix: outstanding.
-- Merge/publication, Pages verification, and final successor certification: outstanding.
-
-## Exact exit criteria
-1. Execute fail-closed M106 local certification against this exact successor state.
-2. Push the exact locally verified successor state to PR #12.
-3. Require every mandatory current-head PR workflow to PASS on the same commit.
-4. Complete required hosted Pages/production validation.
-5. Complete post-certification, historical-regression, package-hygiene, checksum, and final-checkpoint gates.
-6. Construct and checksum the final certified successor artifact.
-7. Only then emit STATE C / FULLY COMPLETE.
+## Remaining exit criteria
+1. Complete exact-source local M106 certification.
+2. Push this corrective branch and require the full current-head PR matrix.
+3. Merge the exact validated corrective head.
+4. Require all applicable push-to-main workflows and Pages deployment.
+5. Re-run M54 authenticated production-readiness certification and require
+   `certify-build`, `deploy`, and `post-deploy-certify` all to PASS.
+6. Re-run exact-merge local M106 certification.
+7. Build the exact Git-tree ZIP, verify package parity/hygiene/secrets, compute
+   final SHA-256, write PASS/checksum companions, and copy all handoff artifacts
+   to `~/Downloads`.
+8. Only then emit STATE C / FULLY COMPLETE.
