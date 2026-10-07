@@ -16,6 +16,7 @@ const allowedMutations=new Set([
   'verify-stage-f-m36-production-cutover-certification.mjs',
   'verify-stage-g-m54-functional-production-readiness-certification.mjs',
   'scripts/verify-stage-g-m54-execution.mjs',
+  'scripts/finalize-stage-g-m54.sh',
   'scripts/verify-stage-i-m105-m104-source-guard.mjs',
   'scripts/run-database-rls-tests.mjs',
   'scripts/run-stage-g-m46-database-contract-tests.mjs',

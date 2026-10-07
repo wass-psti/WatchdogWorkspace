@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname);const read=(f)=>fs.readFileSync(path.join(root,f),'utf8');const failures=[];const ok=(v,m)=>{if(!v)failures.push(m)};
-const deploy=read('.github/workflows/deploy-pages.yml');const m54=read('.github/workflows/m54-functional-production-readiness.yml');const governed=read('governance-artifacts/github/workflows/deploy-pages.yml');const m36=read('verify-stage-f-m36-production-cutover-certification.mjs');const m54Verifier=read('verify-stage-g-m54-functional-production-readiness-certification.mjs');const m54Execution=read('scripts/verify-stage-g-m54-execution.mjs');const m105Guard=read('scripts/verify-stage-i-m105-m104-source-guard.mjs');const m106Guard=read('scripts/verify-stage-i-m106-m105-source-guard.mjs');const depReview=read('.github/workflows/dependency-review.yml');const m54M105Parity=read('supabase/migrations/20261007024207_stage_i_m106_m54_runtime_capability_m105_parity_corrective.sql');
+const deploy=read('.github/workflows/deploy-pages.yml');const m54=read('.github/workflows/m54-functional-production-readiness.yml');const governed=read('governance-artifacts/github/workflows/deploy-pages.yml');const m36=read('verify-stage-f-m36-production-cutover-certification.mjs');const m54Verifier=read('verify-stage-g-m54-functional-production-readiness-certification.mjs');const m54Execution=read('scripts/verify-stage-g-m54-execution.mjs');const m54Finalizer=read('scripts/finalize-stage-g-m54.sh');const m105Guard=read('scripts/verify-stage-i-m105-m104-source-guard.mjs');const m106Guard=read('scripts/verify-stage-i-m106-m105-source-guard.mjs');const depReview=read('.github/workflows/dependency-review.yml');const m54M105Parity=read('supabase/migrations/20261007024207_stage_i_m106_m54_runtime_capability_m105_parity_corrective.sql');
 for(const [name,source] of [['deploy-pages',deploy],['m54',m54],['governed deploy mirror',governed]]){ok(source.includes('actions/deploy-pages@v5'),`${name} must use actions/deploy-pages@v5`);ok(!source.includes('actions/deploy-pages@v4'),`${name} must not retain deploy-pages@v4`)}
 ok(deploy.includes('path: ./dist'),'Primary Pages deployment must remain dist-only');ok(deploy.includes('Production post-deploy HTTP smoke'),'Primary Pages deployment must retain live HTTP smoke');ok(deploy.includes('Verify live production backend deployment contract')&&deploy.includes('Re-verify production backend contract after Pages deployment'),'M105 pre/post backend parity guards must remain intact');ok(m54.includes('production-readiness:live')&&m54.includes('production-readiness:certify'),'M54 live/certification contract must remain intact');ok(m36.includes("deployPagesAction==='v4'||(deployPagesAction==='v5'&&m106Authority)"),'M36 must bound v5 acceptance to M106 authority');ok(m54Verifier.includes("m54DeployPagesAction==='v4'||(m54DeployPagesAction==='v5'&&m106Authority)"),'M54 static verifier must bound v5 acceptance to M106 authority');ok(m54Execution.includes("deployPagesAction==='v4'||(deployPagesAction==='v5'&&m106Authority)"),'M54 execution verifier must bound v5 acceptance to M106 authority');ok(m105Guard.includes('M106-M105-BASELINE-SOURCE-MANIFEST.json')&&m105Guard.includes('verify-stage-i-m106-m105-source-guard.mjs'),'M105 source authority must delegate to M106');ok(depReview.includes('actions/dependency-review-action@v4')&&depReview.includes('fail-on-severity: high'),'Dependency Review security policy must remain unchanged; repository Dependency Graph is an external setting');
 
@@ -23,6 +23,16 @@ for(const file of [
 ]) ok(
   m106Guard.includes(`'${file}'`),
   `M106 source guard must authorize corrective addition: ${file}`
+);
+
+/* M106_M54_ACTIVE_CERTIFIED_RECERTIFICATION */
+ok(
+  m54Finalizer.includes("activationState: '(implementation-complete-pending-certification|active-certified)'"),
+  'M54 finalizer must support pending first-certification and active-certified successor recertification'
+);
+ok(
+  m106Guard.includes("'scripts/finalize-stage-g-m54.sh'"),
+  'M106 source guard must authorize the M54 successor-recertification finalizer correction'
 );
 
 /* M106_M54_M105_RUNTIME_CAPABILITY_PARITY */

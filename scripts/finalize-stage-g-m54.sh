@@ -6,7 +6,7 @@ TARGET="$ROOT/config/stage-g-m54-functional-production-readiness-certification-t
 STATUS="$ROOT/RELEASE-STATUS-v1.43.2-STAGE-G-M54-FUNCTIONAL-PRODUCTION-READINESS-CERTIFICATION.md"
 ATTEST="$ROOT/m54-live-attestation.json"
 ROLLBACK="$ROOT/release-artifacts/m54/rollback-source/Work-Management-App-v1.43.2-Stage-G-M53-Certified-Baseline.zip"
-grep -q "activationState: 'implementation-complete-pending-certification'" "$TARGET" || { echo 'FAIL: M54 target is not pending certification.' >&2; exit 1; }
+grep -Eq "activationState: '(implementation-complete-pending-certification|active-certified)'" "$TARGET" || { echo 'FAIL: M54 target is neither pending certification nor active-certified for successor recertification.' >&2; exit 1; }
 test -f "$ATTEST" || { echo 'FAIL: M54 live deployment attestation is missing.' >&2; exit 1; }
 node - <<'NODE'
 const a=require('./m54-live-attestation.json');
