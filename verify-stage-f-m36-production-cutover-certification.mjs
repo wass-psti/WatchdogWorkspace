@@ -25,7 +25,10 @@ for(const script of ['cutover:check','cutover:test','cutover:artifact','cutover:
 check(pkg.scripts.check.includes('cutover:check')&&pkg.scripts.check.includes('cutover:test'),'Default verification includes M36');
 check(pkg.scripts['release:check'].includes('cutover:check')&&pkg.scripts['release:check'].includes('cutover:test')&&pkg.scripts['release:check'].includes('cutover:artifact'),'Release verification includes M36 artifact gate');
 for(const text of [ci,deploy]) check(text.includes('Stage F M36 Production cutover certification')&&text.includes('npm run cutover:check')&&text.includes('npm run cutover:test'),'CI/deploy explicitly enforce M36');
-check(deploy.includes('path: ./dist')&&deploy.includes('actions/deploy-pages@v4')&&deploy.includes('Production post-deploy HTTP smoke')&&deploy.includes('service-worker.js'),'Deployment remains dist-only with live HTTP smoke');
+const m106Authority=fs.existsSync(path.join(root,'M106-M105-BASELINE-SOURCE-MANIFEST.json'))&&fs.existsSync(path.join(root,'verify-v1432-m106-deploy-pages-v5-compatibility.mjs'));
+const deployPagesAction=deploy.match(/actions\/deploy-pages@(v\d+)/)?.[1]??'unknown';
+const deployPagesActionAuthorized=deployPagesAction==='v4'||(deployPagesAction==='v5'&&m106Authority);
+check(deploy.includes('path: ./dist')&&deployPagesActionAuthorized&&deploy.includes('Production post-deploy HTTP smoke')&&deploy.includes('service-worker.js'),'Deployment remains dist-only with M36-authorized GitHub Pages action and live HTTP smoke');
 for(const token of ['npm ci','npm run release:check','npm run cutover:artifact','npm run cutover:evidence','actions/upload-artifact@v4']) check(workflow.includes(token),`Production cutover workflow token ${token}`);
 check(policy.architectureVersion===44&&policy.deploymentTarget==='github-pages-dist-only'&&policy.failClosed===true,'Cutover policy is Architecture 44 and fail-closed');
 check(Array.isArray(policy.requiredArtifactGates)&&policy.requiredArtifactGates.includes('sha256-manifest')&&policy.requiredArtifactGates.includes('cutover-provenance')&&policy.requiredArtifactGates.includes('no-executable-source-entry-references'),'Artifact integrity/provenance and executable-source-reference policy');
