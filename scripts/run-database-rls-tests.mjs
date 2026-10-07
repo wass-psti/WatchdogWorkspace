@@ -2,10 +2,15 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { removeResidualSupabaseProjectContainers } from './lib/supabase-local-stack-cleanup.mjs';
 import process from 'node:process';
 
 const CERTIFIED_SUPABASE_CLI = '2.117.0';
 const LOCAL_PROJECT_ID = 'work-management-m29-tests';
+const PREDECESSOR_LOCAL_PROJECT_IDS = Object.freeze([
+  'work-management-m47-table-tests',
+  'work-management-m46-contract-tests',
+]);
 const projectRoot = process.cwd();
 const schemaPath = resolve(projectRoot, 'supabase/schema.sql');
 const testsPath = resolve(projectRoot, 'supabase/tests/database');
@@ -82,6 +87,7 @@ const cleanup = () => {
       shell: false,
       cwd: workdir,
     });
+    removeResidualSupabaseProjectContainers(LOCAL_PROJECT_ID, workdir);
     rmSync(workdir, { recursive: true, force: true });
   } else {
     console.log(`\nM29 local stack retained for diagnostics. Workdir: ${workdir}`);
@@ -95,6 +101,10 @@ try {
     shell: false,
     cwd: workdir,
   });
+  for (const predecessorProjectId of PREDECESSOR_LOCAL_PROJECT_IDS) {
+    removeResidualSupabaseProjectContainers(predecessorProjectId, workdir);
+  }
+  removeResidualSupabaseProjectContainers(LOCAL_PROJECT_ID, workdir);
 
   supabase(workdir, ['start'], 'Start disposable local Supabase stack with migration replay disabled');
 

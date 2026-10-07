@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { removeResidualSupabaseProjectContainers } from './lib/supabase-local-stack-cleanup.mjs';
 
 const CERTIFIED_SUPABASE_CLI='2.117.0';
 const LOCAL_PROJECT_ID='work-management-m47-table-tests';
@@ -37,11 +38,16 @@ const supabaseDir=join(workdir,'supabase');
 mkdirSync(supabaseDir,{recursive:true});
 writeFileSync(join(supabaseDir,'config.toml'),`project_id = "${LOCAL_PROJECT_ID}"\n\n[db.migrations]\nenabled = false\nschema_paths = []\n\n[db.seed]\nenabled = false\nsql_paths = []\n`,'utf8');
 const cleanup=()=>{
-  if(!keep){spawnSync(supabaseCommand,args(['--workdir',workdir,'stop','--project-id',LOCAL_PROJECT_ID,'--no-backup']),{stdio:'inherit',shell:false,cwd:workdir});rmSync(workdir,{recursive:true,force:true});}
+  if(!keep){
+    spawnSync(supabaseCommand,args(['--workdir',workdir,'stop','--project-id',LOCAL_PROJECT_ID,'--no-backup']),{stdio:'inherit',shell:false,cwd:workdir});
+    removeResidualSupabaseProjectContainers(LOCAL_PROJECT_ID, workdir);
+    rmSync(workdir,{recursive:true,force:true});
+  }
   else console.log(`\nM47 local stack retained for diagnostics: ${workdir}`);
 };
 try{
   spawnSync(supabaseCommand,args(['--workdir',workdir,'stop','--project-id',LOCAL_PROJECT_ID,'--no-backup']),{stdio:'ignore',shell:false,cwd:workdir});
+  removeResidualSupabaseProjectContainers(LOCAL_PROJECT_ID, workdir);
   supabase(workdir,['start'],'Start disposable M47 Supabase table/group/item stack');
   const container=`supabase_db_${LOCAL_PROJECT_ID}`;
   const schemaSql=readFileSync(schemaPath,'utf8');
