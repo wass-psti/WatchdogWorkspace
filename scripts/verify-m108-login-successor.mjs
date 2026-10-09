@@ -1,0 +1,120 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+// A successor is compared to a fresh extraction of the pinned M108 archive.
+// An arbitrary directory, mutable manifest, or unverified report is not a baseline.
+const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const archive = process.env.M108_BASELINE_ARCHIVE;
+const rootName = 'Work-Management-App-v1.43.2-Stage-I-M108-Material-Tracker-Security-Corrective-Certified';
+const archiveSha = '7be24ace31dccca32cdcd806d9e1c6f276b266a34b5d12aad0b4de6deefa5735';
+const sha = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const fail = message => { throw new Error(`M108 successor guard: ${message}`); };
+if (!archive || !path.isAbsolute(archive)) fail('M108_BASELINE_ARCHIVE must be an absolute path to the original certified M108 ZIP');
+if (!fs.existsSync(archive) || sha(archive) !== archiveSha) fail('original M108 archive SHA256 mismatch');
+
+const expected = new Map(Object.entries({
+  'assets/js/core/auth.ts': 'b93073bd4b5a37359e5c8d499deb7f63a5e8edf448170ec4bb57aba30c76c511',
+  'verify-stage-i-m83-authentication-account-surfaces.mjs': '8eb3077d7a6feba75cf789263b6c1b5c16eb0a71aca1be50ea46145c574b34f6',
+  'scripts/lib/m108-login-successor-auth-provenance.mjs': '1151b51b22de5aece1ced064f090f8b6f4b9c6ad03a72624a80e7ba1df01ba3a',
+  'verify-m108-login-unsupported-module-corrective.mjs': 'f18429eaf876a0355259534fdcfc01db244f96ad0a6b1e97728a8b912b540a22',
+  'M108-LOGIN-UNSUPPORTED-MODULE-CORRECTIVE.md': 'fff2e806d030458fc89e9c231f74d41f1d442e8eda4a4c260a00bbd2977f6fae',
+  'package.json': '150713f9ec26162d911c0ece6f53f4a1819e4092b7417776e5fa3ee3ce4640d5',
+  'package-lock.json': '8a4790f586c86ec1c77d9815df6edc4a0561cc753cf8011bfb28ee78cc5f4667',
+  'integrations/material-tracker/scripts/check-integration.mjs': '852556d2b6909fbb4402fcaf2664aa4bda2279a093dd26c1e236750c5ca7ad28',
+  'scripts/verify-package-governance.mjs': '8c05bfe07ef5884cba21024de3f36fcd79ad316b6d9bd2b59ae75103090ec66b',
+  'scripts/verify-stage-i-m79-design-tokens-semantic-theme-execution.mjs': '98b9cb909c8fda293d9ca69a19f95bda29bcac756b39ea1f62546bfbb141896c',
+  'scripts/verify-stage-i-m81-application-shell-global-navigation-execution.mjs': 'e76eca77b0370bc532858f60c8cd8793f0734e2b17b2ec75b7886857afb6adfd',
+  'scripts/verify-stage-i-m82-layout-surface-responsive-composition-execution.mjs': '7f8b640f90b7b4926d6a3cf9611c2981f774d736ef441411d4784cf50831f30d',
+  'scripts/verify-stage-i-m83-authentication-account-surfaces-execution.mjs': 'c6948dd45984efd51a0a15662612c14615d12f9681742228fa7426874f6988ec',
+  'scripts/verify-stage-i-m84-boards-visual-migration-execution.mjs': '0243a375037e35bb361155264125385cb93721cbfc95ec320c92b89681aabdb1',
+  'scripts/verify-stage-i-m98-futuristic-minimalist-production-readiness-certification-execution.mjs': 'a237dd12394e42078198b7587aa2e3ee41194d758b99b9fbd2527b473ae9bac3',
+  'scripts/verify-stage-i-m88-users-roles-administration-surfaces-execution.mjs': '4fd0a17acd4e46a852fa6e21d759d4883182944f7472fa6ef3edc3d0317dc27c',
+  'scripts/verify-stage-i-m89-settings-configuration-surfaces-execution.mjs': '97fa5b92aa912f6bf2bfd70d8d8da83168a3366fd46d2f5851a656001faf4fc0',
+  '.github/workflows/boards-backend-data-contract-recovery.yml': '4d090613c258932099adcb51c8ded886183d992f95d83835fc9db837b5c665bf',
+  '.github/workflows/boards-collection-route-recovery.yml': '84753a2e436b414e845e32e4c36445bdc1240ced3a9c316d422ff6b78f5cf583',
+  '.github/workflows/boards-columns-cells-status-system-recovery.yml': 'da4c0d01a5b4bc33c2f841d582dbfad610b94752763cff79651d6c0097164b05',
+  '.github/workflows/boards-kanban-drag-drop-recovery.yml': '7ce7c9881dde3bf018c205fe02f7647e5df24ea81da5a0d9a3b18f913eb71299',
+  '.github/workflows/boards-table-group-item-recovery.yml': '2f1f6f7ba0f894406704a43cfee4bc21391a5b4f4258d891d5f22d85722b31ac',
+  '.github/workflows/management-authority-consolidation.yml': 'f70b30fcaa38fdab738ffdb971de53719c6f1d4619eecf1dfac55266d7431965',
+  '.github/workflows/rich-item-workspace-file-recovery.yml': '5a5ebc44005a0611f18efd2bf2e08900b454ea449317dd1fa0ab1ed48be430cf',
+  '.github/workflows/settings-functional-recovery.yml': 'fbac6736c34f35ade4e9cde7cd3fbc07c37fdbb7f9001a934958230fafc7f14b',
+  '.github/workflows/ci.yml': 'cfb1b17a42c2928838d9fde6f60ef8c1fcab887dd701470da9131a99f02c809c',
+  '.github/workflows/deploy-pages.yml': 'deb4651d837b35f5bc0665d6da3e8bb29459fc300b2c8279e71aa72691c1258a',
+  '.github/workflows/production-cutover.yml': '50dfed343bba77bada9c4277fdeb98af1d62f18a09b3815ab479b132575e67ed',
+  '.github/workflows/m54-functional-production-readiness.yml': '9533442581ad82cb1841a31cf164e187a447be2a65e5c507bcb518ccf019ec97',
+  '.github/workflows/users-rbac-functional-recovery.yml': '463b08f3ad06136b5d9a4df18d3c01a70d1a9da09fecddbccfa240e95d3a62b5',
+  '.github/workflows/final-legacy-deletion.yml': '09afc191799895d9696766e7306e5e7b70670e0c170b3d1ac9b3e1c96121c97c',
+  '.github/actions/prepare-m108-baseline/action.yml': '8ec7e6db1aaee4b92cba29e31805103445eeb860e29869e2412ac59518a49b7a',
+  // Successor shell runner and documentation hashes are filled on implementation.
+  'scripts/certify-m108-login-successor-local.sh': '381fa4adf50e07dd8f6d4966824c15a9ecf2ca0b970bbab6e82cf514d95a38bc',
+  'scripts/test-m108-login-successor.mjs': 'fc03e66fb61247f334470cc8bd76c5d052691e5ceb3b7892f0fcf62401de80cc',
+  'M108-LOGIN-SUCCESSOR-CONTINUATION.md': '06cf1f02db05f80d0531239e5369b7eba87c6c56f6b8b31fb3cfec54dcb41e42',
+}));
+for (const [rel, want] of expected) {
+  const file = path.join(repo, rel);
+  if (!fs.existsSync(file) || sha(file) !== want) fail(`unapproved bytes or missing file: ${rel}`);
+}
+
+// Only reproducible outputs are excluded; historical integration source is guarded.
+const ignoredDir = new Set(['node_modules', '.git']);
+const generatedDirs = new Set([
+  'dist', 'coverage', 'test-results', 'playwright-report',
+  'integrations/material-tracker/dist',
+  'apps/material-tracker',
+]);
+const ignoredFiles = new Set(['.DS_Store', 'Thumbs.db']);
+function inventory(root) {
+  const files = new Map();
+  function walk(directory, parent = '') {
+    for (const item of fs.readdirSync(directory, { withFileTypes: true })) {
+      const rel = parent ? `${parent}/${item.name}` : item.name;
+      const f = path.join(directory, item.name);
+      if (item.isSymbolicLink()) fail(`symlink not allowed: ${rel}`);
+      if (item.isDirectory()) {
+        if (ignoredDir.has(item.name) || generatedDirs.has(rel)) continue;
+        walk(f, rel);
+      } else if (item.isFile()) {
+        if (ignoredFiles.has(item.name)) continue;
+        files.set(rel, sha(f));
+      } else fail(`unsupported filesystem entry: ${rel}`);
+    }
+  }
+  walk(root);
+  return files;
+}
+const permittedModified = new Set(['.github/workflows/boards-backend-data-contract-recovery.yml', '.github/workflows/boards-collection-route-recovery.yml', '.github/workflows/boards-columns-cells-status-system-recovery.yml', '.github/workflows/boards-kanban-drag-drop-recovery.yml', '.github/workflows/boards-table-group-item-recovery.yml', '.github/workflows/management-authority-consolidation.yml', '.github/workflows/rich-item-workspace-file-recovery.yml', '.github/workflows/settings-functional-recovery.yml', '.github/workflows/boards-backend-data-contract-recovery.yml', '.github/workflows/boards-collection-route-recovery.yml', '.github/workflows/boards-columns-cells-status-system-recovery.yml', '.github/workflows/boards-kanban-drag-drop-recovery.yml', '.github/workflows/boards-table-group-item-recovery.yml', '.github/workflows/management-authority-consolidation.yml', '.github/workflows/rich-item-workspace-file-recovery.yml', '.github/workflows/settings-functional-recovery.yml', '.github/workflows/boards-backend-data-contract-recovery.yml', '.github/workflows/boards-collection-route-recovery.yml', '.github/workflows/boards-columns-cells-status-system-recovery.yml', '.github/workflows/boards-kanban-drag-drop-recovery.yml', '.github/workflows/boards-table-group-item-recovery.yml', '.github/workflows/management-authority-consolidation.yml', '.github/workflows/rich-item-workspace-file-recovery.yml', '.github/workflows/settings-functional-recovery.yml', '.github/workflows/boards-backend-data-contract-recovery.yml', '.github/workflows/boards-collection-route-recovery.yml', '.github/workflows/boards-columns-cells-status-system-recovery.yml', '.github/workflows/boards-kanban-drag-drop-recovery.yml', '.github/workflows/boards-table-group-item-recovery.yml', '.github/workflows/management-authority-consolidation.yml', '.github/workflows/rich-item-workspace-file-recovery.yml', '.github/workflows/settings-functional-recovery.yml', '.github/workflows/boards-backend-data-contract-recovery.yml', '.github/workflows/boards-collection-route-recovery.yml', '.github/workflows/boards-columns-cells-status-system-recovery.yml', '.github/workflows/boards-kanban-drag-drop-recovery.yml', '.github/workflows/boards-table-group-item-recovery.yml', '.github/workflows/management-authority-consolidation.yml', '.github/workflows/rich-item-workspace-file-recovery.yml', '.github/workflows/settings-functional-recovery.yml', '.github/workflows/boards-backend-data-contract-recovery.yml', '.github/workflows/boards-collection-route-recovery.yml', '.github/workflows/boards-columns-cells-status-system-recovery.yml', '.github/workflows/boards-kanban-drag-drop-recovery.yml', '.github/workflows/boards-table-group-item-recovery.yml', '.github/workflows/management-authority-consolidation.yml', '.github/workflows/rich-item-workspace-file-recovery.yml', '.github/workflows/settings-functional-recovery.yml', '.github/workflows/boards-backend-data-contract-recovery.yml', '.github/workflows/boards-collection-route-recovery.yml', '.github/workflows/boards-columns-cells-status-system-recovery.yml', '.github/workflows/boards-kanban-drag-drop-recovery.yml', '.github/workflows/boards-table-group-item-recovery.yml', '.github/workflows/management-authority-consolidation.yml', '.github/workflows/rich-item-workspace-file-recovery.yml', '.github/workflows/settings-functional-recovery.yml', '.github/workflows/boards-backend-data-contract-recovery.yml', '.github/workflows/boards-collection-route-recovery.yml', '.github/workflows/boards-columns-cells-status-system-recovery.yml', '.github/workflows/boards-kanban-drag-drop-recovery.yml', '.github/workflows/boards-table-group-item-recovery.yml', '.github/workflows/management-authority-consolidation.yml', '.github/workflows/rich-item-workspace-file-recovery.yml', '.github/workflows/settings-functional-recovery.yml', '.github/workflows/ci.yml', '.github/workflows/deploy-pages.yml', '.github/workflows/production-cutover.yml', '.github/workflows/m54-functional-production-readiness.yml', '.github/workflows/users-rbac-functional-recovery.yml', '.github/workflows/final-legacy-deletion.yml', 'assets/js/core/auth.ts', 'package.json', 'verify-stage-i-m83-authentication-account-surfaces.mjs', 'scripts/verify-stage-i-m79-design-tokens-semantic-theme-execution.mjs', 'scripts/verify-stage-i-m81-application-shell-global-navigation-execution.mjs', 'scripts/verify-stage-i-m82-layout-surface-responsive-composition-execution.mjs', 'scripts/verify-stage-i-m83-authentication-account-surfaces-execution.mjs', 'scripts/verify-stage-i-m84-boards-visual-migration-execution.mjs', 'scripts/verify-stage-i-m98-futuristic-minimalist-production-readiness-certification-execution.mjs', 'scripts/verify-stage-i-m88-users-roles-administration-surfaces-execution.mjs', 'scripts/verify-stage-i-m89-settings-configuration-surfaces-execution.mjs', 'scripts/verify-package-governance.mjs', 'integrations/material-tracker/scripts/check-integration.mjs']);
+const permittedAdded = new Set([
+  'verify-m108-login-unsupported-module-corrective.mjs',
+  'M108-LOGIN-UNSUPPORTED-MODULE-CORRECTIVE.md',
+  'scripts/verify-m108-login-successor.mjs',
+  'scripts/certify-m108-login-successor-local.sh',
+  'scripts/test-m108-login-successor.mjs',
+  'M108-LOGIN-SUCCESSOR-CONTINUATION.md',
+  'scripts/lib/m108-login-successor-auth-provenance.mjs',
+  '.github/actions/prepare-m108-baseline/action.yml',
+]);
+const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'm108-pinned-baseline-'));
+try {
+  execFileSync('unzip', ['-q', archive, '-d', temp], { stdio: 'pipe' });
+  const base = path.join(temp, rootName);
+  if (!fs.statSync(base).isDirectory()) fail('archive repository root missing');
+  const oldFiles = inventory(base);
+  const newFiles = inventory(repo);
+  const errors = [];
+  for (const [f, digest] of oldFiles) {
+    if (!newFiles.has(f)) errors.push(`REMOVED ${f}`);
+    else if (newFiles.get(f) !== digest && !permittedModified.has(f)) errors.push(`MODIFIED ${f}`);
+  }
+  for (const f of newFiles.keys()) if (!oldFiles.has(f) && !permittedAdded.has(f)) errors.push(`ADDED ${f}`);
+  for (const f of permittedModified) if (oldFiles.get(f) === newFiles.get(f)) errors.push(`CORRECTION MISSING ${f}`);
+  for (const f of permittedAdded) if (!newFiles.has(f)) errors.push(`SUCCESSOR FILE MISSING ${f}`);
+  if (errors.length) fail(`unexpected source delta:\n${errors.join('\n')}`);
+  console.log(`PASS: M108 successor baseline ZIP sha256=${archiveSha}; baseline files=${oldFiles.size}; authorized modifications=${permittedModified.size}; additions=${permittedAdded.size}`);
+  console.log(`PASS: Approved login corrective sha256=${expected.get('assets/js/core/auth.ts')}`);
+} finally {
+  fs.rmSync(temp, { recursive: true, force: true });
+}

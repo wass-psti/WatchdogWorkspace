@@ -1,0 +1,11 @@
+Material Tracker v0.2.0 — WatchdogWorkspace Integration Foundation
+
+- Added embedded MaterialTrackerApp boundary.
+- Added WatchdogWorkspace Supabase session/bootstrap integration.
+- Replaced active local REST/JSON transport with protected Supabase RPC compatibility adapter.
+- Moved legacy local server/data under reference-only directory.
+- Converted comments to row-based RPC persistence and presence to protected heartbeat RPC.
+- Scoped aliases and CSS/theme behavior for host embedding.
+- Added app-scoped role bootstrap and read-only top-level tab gating.
+- Added schema provenance guards and deterministic verification/certification tooling.
+- Preserved generated Material Tracker business UI, formulas, exports, filters, and table behavior.

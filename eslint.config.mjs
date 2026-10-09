@@ -13,6 +13,7 @@ export default [
       'dist/**',
       '.vite/**',
       'apps/**',
+      'integrations/material-tracker/**',
       '**/RELEASE-STATUS-*.md',
     ],
   },

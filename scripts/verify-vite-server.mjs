@@ -40,7 +40,7 @@ try {
   const bootstrapPath = mode === 'dev' ? '/assets/js/runtime/module-bootstrap.ts' : '/assets/js/runtime/module-bootstrap.js';
   for (const path of [
     '/', '/manifest.webmanifest', '/assets/icon.svg',
-    '/apps/time-tracker/index.html', '/apps/fueltrack-plus/runtime.html', '/apps/tradelink/runtime.html',
+    '/apps/time-tracker/index.html', '/apps/fueltrack-plus/runtime.html', '/apps/tradelink/runtime.html', '/apps/material-tracker/index.html',
     bootstrapPath,
   ]) {
     const response = await fetch(`${base}${path}`, { cache: 'no-store' });
@@ -71,12 +71,12 @@ try {
   // failure state. The browser is driven through CDP with a real wall-clock deadline,
   // so a wedged Chromium process cannot stall certification indefinitely.
   if (mode === 'preview') {
-    for (const path of ['/apps/time-tracker/index.html', '/apps/fueltrack-plus/runtime.html', '/apps/tradelink/runtime.html']) {
+    for (const path of ['/apps/time-tracker/index.html', '/apps/fueltrack-plus/runtime.html', '/apps/tradelink/runtime.html', '/apps/material-tracker/index.html']) {
       const embedded = await captureBrowserDom(browserBinary, `${base}${path}`, {
         timeoutMs: 20_000,
-        ready: (html) => /could not start|Authenticated .* access is required|Open .* through Work Management/.test(html),
+        ready: (html) => /could not start|Authenticated .* access is required|Authenticated WatchdogWorkspace session is required|Open .* through Work Management/.test(html),
       });
-      if (!/could not start|Authenticated .* access is required|Open .* through Work Management/.test(embedded.dom)) {
+      if (!/could not start|Authenticated .* access is required|Authenticated WatchdogWorkspace session is required|Open .* through Work Management/.test(embedded.dom)) {
         throw new Error(`Embedded preview did not reach an explicit startup state for ${path}; production bootstrap may be non-executable.`);
       }
     }

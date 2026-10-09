@@ -1,0 +1,3 @@
+Material Tracker WatchdogWorkspace Integration Certification
+Version: 0.4.0
+State: FULLY VERIFIED BY REQUIRED LOCAL CERTIFICATION PIPELINE

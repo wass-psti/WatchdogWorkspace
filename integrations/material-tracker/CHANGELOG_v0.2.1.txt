@@ -1,0 +1,7 @@
+Material Tracker v0.2.1 - certification/package-hygiene corrective checkpoint
+
+- Corrects Stage 10 package hygiene so node_modules/ and dist/ may exist during local certification after required install/build stages.
+- Continues to prohibit node_modules/ and dist/ from canonical checksum manifests and checkpoint/certified ZIP artifacts.
+- Continues to fail on an active root server/ runtime or generated legacy db.json.tmp artifact.
+- Preserves all v0.2.0 Work Management integration changes, business behavior, live Material Tracker schema contracts, and regression protections.
+- No application workflow, database schema, RPC, RLS, auth/session, or business-calculation behavior changed.

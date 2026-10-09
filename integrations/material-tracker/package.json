@@ -1,0 +1,57 @@
+{
+  "name": "material-tracker-standalone",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5173",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4173",
+    "check:integration": "node scripts/check-integration.mjs",
+    "test:deterministic": "node scripts/deterministic-tests.mjs",
+    "test:regression": "node scripts/regression-gate.mjs",
+    "check:package": "node scripts/package-hygiene.mjs",
+    "certify": "node scripts/certify.mjs",
+    "check:static": "node scripts/static-verify.mjs",
+    "check:data-clean": "node scripts/check-data-clean.mjs",
+    "test:browser": "node scripts/browser-e2e.mjs",
+    "audit:runtime": "npm audit --omit=dev --audit-level=high",
+    "check:security": "npm run audit:runtime",
+    "audit:all": "npm audit --audit-level=high",
+    "test:exports": "node scripts/export-format-tests.mjs",
+    "test:import-export": "node scripts/import-export-tests.mjs"
+  },
+  "dependencies": {
+    "@radix-ui/react-avatar": "^1.1.10",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-popover": "^1.1.15",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-separator": "^1.1.7",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "fuse.js": "^7.1.0",
+    "lucide-react": "^0.544.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^3.2.1",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.3.1",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
+    "fflate": "^0.8.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@vitejs/plugin-react": "6.1.2",
+    "tailwindcss": "4.3.3",
+    "vite": "8.3.3"
+  },
+  "overrides": {
+    "source-map-js": "1.2.2"
+  }
+}

@@ -1,6 +1,6 @@
 import fs from 'node:fs'; import path from 'node:path'; import process from 'node:process'; import {spawnSync} from 'node:child_process';
 const root=process.cwd(), failures=[]; const read=p=>fs.readFileSync(path.join(root,p),'utf8'); const ok=(c,m)=>{if(!c)failures.push(m)};
-const guard=spawnSync(process.execPath,['scripts/verify-stage-i-m81-m80-source-guard.mjs'],{cwd:root,encoding:'utf8'}); ok(guard.status===0,`M80 source guard failed: ${(guard.stderr||guard.stdout).trim()}`);
+const guard=spawnSync(process.execPath,['scripts/verify-m108-login-successor.mjs'],{cwd:root,encoding:'utf8'}); ok(guard.status===0,`M80 source guard failed: ${(guard.stderr||guard.stdout).trim()}`);
 const css=read('assets/css/shell-navigation.css');
 const m95TargetPath='config/stage-i-m95-cross-module-responsive-harmonization-target.ts';
 const m95ManifestPath='regression-baseline/m95-m94-source-guard.json';

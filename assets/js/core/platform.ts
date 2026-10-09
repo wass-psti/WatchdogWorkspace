@@ -183,9 +183,12 @@ export async function verifyModuleCompatibility(mod: WorkManagementModuleDefinit
 
   const exactKeys = mod.cloudStateKeys;
   const prefixes = mod.cloudStatePrefixes;
+  const dedicatedRpcDomain = mod.storageFormat === 'supabase-rpc-domain';
   checks.push({
-    id: 'storage-contract', label: 'Cloud state contract', ok: exactKeys.length > 0,
-    detail: `${exactKeys.length} exact key${exactKeys.length === 1 ? '' : 's'}${prefixes.length ? ` · ${prefixes.length} prefix${prefixes.length === 1 ? '' : 'es'}` : ''} registered`,
+    id: 'storage-contract', label: 'Cloud state contract', ok: dedicatedRpcDomain || exactKeys.length > 0,
+    detail: dedicatedRpcDomain
+      ? 'Dedicated authenticated Supabase RPC domain'
+      : `${exactKeys.length} exact key${exactKeys.length === 1 ? '' : 's'}${prefixes.length ? ` · ${prefixes.length} prefix${prefixes.length === 1 ? '' : 'es'}` : ''} registered`,
   });
 
   try {

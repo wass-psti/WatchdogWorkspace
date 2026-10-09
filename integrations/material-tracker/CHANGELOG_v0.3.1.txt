@@ -1,0 +1,10 @@
+Material Tracker v0.3.1 — Production Data Hygiene
+
+- Continued exclusively from the certified v0.3.0 baseline.
+- Removed the retired legacy Node/JSON local-server reference tree.
+- Removed all bundled demo users, demo materials, demo forex/history/activity/task records, seed databases and reset tooling.
+- Removed obsolete documentation describing demo-data restoration.
+- Added `npm run check:data-clean` as a fail-closed repository/certification gate.
+- Updated deterministic, integration and package-hygiene guards so demo/seed/test persistence cannot silently return.
+- Preserved legitimate UI placeholder/help text because it is functional presentation content, not persisted data.
+- No production Supabase records were deleted; the live Material Tracker production-data audit found no matching demo/test/sample records.

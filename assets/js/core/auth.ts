@@ -57,7 +57,7 @@ const PROFILE_HYDRATION_RETRIES = 4;
 const PROFILE_HYDRATION_BASE_DELAY_MS = 250;
 const VERIFICATION_TYPES = Object.freeze(['email','signup','invite','recovery','magiclink','email_change']);
 const PLATFORM_ROLES: readonly PlatformRole[] = Object.freeze(['admin_general_manager','hr','supervisor','employee']);
-const PLATFORM_MODULE_IDS: readonly PlatformModuleId[] = Object.freeze(['time-tracker','fueltrack-plus','tradelink']);
+const PLATFORM_MODULE_IDS: readonly PlatformModuleId[] = Object.freeze(['time-tracker','fueltrack-plus','tradelink','material-tracker']);
 const isPlatformModuleId = (value: string): value is PlatformModuleId => (PLATFORM_MODULE_IDS as readonly string[]).includes(value);
 const BOOTSTRAP_ADMIN_EMAIL = 'lmsenagan@watchdogautomation.com.ph';
 const PLATFORM_ROLE_LABELS = Object.freeze({
@@ -70,6 +70,7 @@ const MODULE_ROLES: Readonly<Record<string, readonly string[]>> = Object.freeze(
   'time-tracker': ['Employee', 'OJT', 'Supervisor', 'HR', 'Finance', 'System Admin', 'IT Administrator'],
   'fueltrack-plus': ['User', 'Pump Attendant', 'Admin'],
   'tradelink': ['User', 'Sales Supervisor', 'General Manager'],
+  'material-tracker': ['ADMIN', 'USER', 'VIEWER'],
 });
 
 const isPlatformRole = (value: unknown): value is PlatformRole => PLATFORM_ROLES.includes(value as PlatformRole);
@@ -131,7 +132,26 @@ function parseModuleAssignment(value: unknown): ModuleAssignmentRecord {
 
 function parseModuleAssignments(value: unknown): ModuleAssignmentRecord[] {
   if (!Array.isArray(value)) throw new TypeError('Module assignment response must be an array.');
-  return value.map(parseModuleAssignment);
+  // Future or retired modules must not prevent authentication to this host.
+  // Validate the identity boundary for every row before discarding unsupported IDs.
+  // Never convert unknown modules into a grant for a supported module.
+  const supported: ModuleAssignmentRecord[] = [];
+  for (const valueEntry of value) {
+    const entry = asRecord(valueEntry);
+    const moduleId = stringField(entry, 'module_id').trim();
+    const userId = entry.user_id == null ? null : stringField(entry, 'user_id').trim() || null;
+    if (entry.user_id != null && !userId) throw new TypeError('Module assignment payload contains an invalid user id.');
+    if (!moduleId) throw new TypeError('Module assignment payload is missing a module id.');
+    if (!isPlatformModuleId(moduleId)) {
+      // Unknown grants are not added to assignments or exposed to module hosts.
+      if (typeof entry.enabled !== 'boolean') throw new TypeError('Module assignment payload is missing a boolean enabled flag.');
+      if (entry.role != null && typeof entry.role !== 'string') throw new TypeError('Module assignment payload contains an invalid role.');
+      supported.push(Object.freeze({ ...entry, module_id: moduleId as PlatformModuleId, enabled: entry.enabled, role: entry.role == null ? null : entry.role as string, ...(userId ? { user_id: userId } : {}) }));
+      continue;
+    }
+    supported.push(parseModuleAssignment(valueEntry));
+  }
+  return supported;
 }
 
 function config(): BackendConfig {
@@ -839,7 +859,8 @@ class AuthManager extends EventTarget {
     if (profile.id !== userId) throw new Error('Authentication profile identity does not match the Supabase Auth session.');
     const assignments = parseModuleAssignments(payload.assignments);
     for (const assignment of assignments) if (assignment.user_id && assignment.user_id !== userId) throw new Error(`Module assignment identity mismatch for ${assignment.module_id}.`);
-    return { profile, assignments, revision: stringField(payload, 'revision') || new Date().toISOString() };
+    const supportedAssignments = assignments.filter((assignment) => isPlatformModuleId(assignment.module_id));
+    return { profile, assignments: supportedAssignments, revision: stringField(payload, 'revision') || new Date().toISOString() };
   }
 
   async loadAccessContext(expectedGeneration = this.generation): Promise<void> {

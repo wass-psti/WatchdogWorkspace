@@ -18,7 +18,7 @@ import type {
 import { createSupabaseRealtimeClient } from '../data/supabase-realtime-client.ts';
 
 const BOARD_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const MODULE_IDS = new Set(['time-tracker', 'fueltrack-plus', 'tradelink']);
+const MODULE_IDS = new Set(['time-tracker', 'fueltrack-plus', 'tradelink', 'material-tracker']);
 const PLATFORM_KEY = /^[a-z][a-z0-9-]{0,63}$/;
 const TOKEN_REFRESH_MS = 4 * 60_000;
 const MAX_CHANNELS = 24;

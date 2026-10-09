@@ -201,7 +201,7 @@ const pass = (message) => console.log(`PASS ${message}`);
   assert.equal(hasBoardCapability('owner', CAPABILITIES.BOARD_MANAGE), true);
   assert.equal(hasBoardCapability('viewer', CAPABILITIES.BOARD_EDIT), false);
   assert.equal(canAccessModuleByPolicy({ authenticated: true, accountActive: true, platformRole: 'employee', moduleId: 'time-tracker', assignments: [{ module_id: 'time-tracker', enabled: true }] }), true);
-  assert.deepEqual(Object.keys(moduleDefinitionsById).sort(), ['fueltrack-plus', 'time-tracker', 'tradelink']);
+  assert.deepEqual(Object.keys(moduleDefinitionsById).sort(), ['fueltrack-plus', 'material-tracker', 'time-tracker', 'tradelink']);
   assert.equal(Object.keys(capabilityPolicy.platform).length, 4);
   assert.equal(Object.keys(capabilityPolicy.board).length, 3);
   const result = validateApplicationManifest();

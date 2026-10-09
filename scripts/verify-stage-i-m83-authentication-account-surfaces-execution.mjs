@@ -1,6 +1,6 @@
 import fs from 'node:fs'; import path from 'node:path'; import process from 'node:process'; import {spawnSync} from 'node:child_process';
 const root=process.cwd(), failures=[]; const read=p=>fs.readFileSync(path.join(root,p),'utf8'); const ok=(c,m)=>{if(!c)failures.push(m)};
-const guard=spawnSync(process.execPath,['scripts/verify-stage-i-m83-m82-source-guard.mjs'],{cwd:root,encoding:'utf8'}); ok(guard.status===0,`M83 source guard failed: ${(guard.stderr||guard.stdout).trim()}`);
+const guard=spawnSync(process.execPath,['scripts/verify-m108-login-successor.mjs'],{cwd:root,encoding:'utf8'}); ok(guard.status===0,`M83 source guard failed: ${(guard.stderr||guard.stdout).trim()}`);
 const auth=read('src/app/auth/AuthenticationUI.tsx'), account=read('src/app/management/AuthenticatedManagementUI.tsx'), css=read('assets/css/foundation/authentication-account-system.css');
 for(const view of ['login','register','recovery','disabled']) ok(auth.includes(`runtime.view === '${view}'`),`M83 auth view lost: ${view}`);
 for(const state of ["status === 'processing'","status === 'awaiting-confirmation'","status === 'success'"]) ok(auth.includes(state),`M83 verification state lost: ${state}`);

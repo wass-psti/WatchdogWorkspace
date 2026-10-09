@@ -1,6 +1,6 @@
 import * as z from 'zod';
 
-export const moduleIdSchema = z.enum(['time-tracker', 'fueltrack-plus', 'tradelink']);
+export const moduleIdSchema = z.enum(['time-tracker', 'fueltrack-plus', 'tradelink', 'material-tracker']);
 export const platformRoleSchema = z.enum(['admin_general_manager', 'hr', 'supervisor', 'employee']);
 export const boardRoleSchema = z.enum(['owner', 'editor', 'viewer']);
 export const moduleStateScopeSchema = z.enum(['shared', 'user']);

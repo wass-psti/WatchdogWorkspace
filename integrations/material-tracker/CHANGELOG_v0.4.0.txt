@@ -1,0 +1,31 @@
+Continuation baseline SHA-256: cca5e37b1cecf56175377b74d78b1687c68ddc9e1034b82ffb95585225974779
+
+Material Tracker v0.4.0 — Production CSV/Excel Import/Export
+
+Implementation
+- Added production CSV/Excel import workflow for .csv, .xls and .xlsx files.
+- Added extension/MIME/file-size validation and worksheet selection.
+- Added header detection, configurable column mapping and required mapping enforcement.
+- Added canonical Material Tracker interchange schema with normalization, type/enum/date/numeric/reference validation and field-length/range rules.
+- Added row classifications: valid, invalid, duplicate, conflicting and skipped.
+- Added row exclusion and mapping correction before commit.
+- Added read-only server preflight RPC with optimistic database fingerprint.
+- Added atomic transactional commit RPC with stale-preview rejection and all-or-nothing rollback semantics.
+- Added Create-only and Update-by-Material-ID/upsert modes.
+- Added active workspace Part Number uniqueness index.
+- Added import-compatible CSV and XLSX exports preserving Material IDs and relationship references.
+- Added reusable header-only CSV/XLSX templates with no dummy/seed records.
+- Added formal import/export specification in docs/MATERIAL_IMPORT_SPECIFICATION.md.
+- Added deterministic import/export regression suite and certification gates.
+
+Security / integrity
+- No return to the vulnerable npm xlsx@0.18.5 parser.
+- XLSX parsing uses the existing fflate dependency with constrained OOXML parsing.
+- Legacy .xls supports BIFF/OLE, SpreadsheetML XML and HTML-table workbooks through repository-owned parser code.
+- Import file size and row/commit limits are enforced.
+- VIEWER remains read-only; server import RPCs require write-capable module access.
+- Preflight performs no database mutation; commit re-validates and re-checks fingerprint/conflicts.
+
+Database migration
+- 20261003115017_material_tracker_atomic_file_import.sql
+- 20261003115954_material_tracker_import_payload_bounds.sql

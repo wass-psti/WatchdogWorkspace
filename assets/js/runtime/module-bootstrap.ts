@@ -11,7 +11,7 @@ import { installModuleIdentityBridge } from '../core/module-identity-bridge.ts';
 import { installModuleCloudStore } from '../core/module-cloud-store.ts';
 import { transitionEmbeddedLifecycle } from './module-lifecycle.ts';
 
-const MODULE_IDS = new Set<ModuleId>(['time-tracker', 'fueltrack-plus', 'tradelink']);
+const MODULE_IDS = new Set<ModuleId>(['time-tracker', 'fueltrack-plus', 'tradelink', 'material-tracker']);
 let activeHandle: EmbeddedModuleBootstrapHandle | null = null;
 
 const sanitize = (value: unknown): string => String(value ?? '').replace(/[<>&]/g, '');

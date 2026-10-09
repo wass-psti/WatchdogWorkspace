@@ -1,0 +1,3 @@
+import { spawnSync } from 'node:child_process';
+const stages=[['data clean','npm',['run','check:data-clean']],['security','npm',['run','check:security']],['integration','npm',['run','check:integration']],['static','npm',['run','check:static']],['deterministic','npm',['run','test:deterministic']],['export formats','npm',['run','test:exports']],['import/export subsystem','npm',['run','test:import-export']],['regression','npm',['run','test:regression']],['package','npm',['run','check:package']]];
+for(const [name,cmd,args] of stages){console.log(`\n== ${name} ==`);const r=spawnSync(cmd,args,{stdio:'inherit'});if(r.status!==0)process.exit(r.status||1);}console.log('\nPASS: dedicated repository certification passed.');

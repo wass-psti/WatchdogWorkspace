@@ -57,7 +57,8 @@ assert(app.includes('normalizedData: platformServices.modules.normalizedData'), 
 assert(nativeRegistry.includes('registerNativeModuleAdapter') && nativeRegistry.includes('Native module adapter already registered'), 'Native module registry must provide duplicate-safe adapter registration.');
 
 const assessmentBlocks = [...modules.matchAll(/presentationMode:\s*'([^']+)'[\s\S]*?iframeRetirement:\s*\{[\s\S]*?decision:\s*'([^']+)'[\s\S]*?blockers:\s*\[([\s\S]*?)\][\s\S]*?\}/g)];
-assert(assessmentBlocks.length === 3, `Expected explicit retirement metadata for 3 modules; found ${assessmentBlocks.length}.`);
+const currentRetainedModuleIds = ['time-tracker','fueltrack-plus','tradelink','material-tracker'];
+assert(assessmentBlocks.length === currentRetainedModuleIds.length, `Expected explicit retirement metadata for ${currentRetainedModuleIds.length} current modules; found ${assessmentBlocks.length}.`);
 for (const [, mode, decision, blockers] of assessmentBlocks) {
   assert(mode === 'same-origin-iframe', `No M26 module is justified for native-host yet; found ${mode}.`);
   assert(decision === 'retain-iframe', `No M26 module should claim iframe retirement yet; found ${decision}.`);
@@ -104,4 +105,4 @@ if (execution.stdout) process.stdout.write(execution.stdout);
 if (execution.stderr) process.stderr.write(execution.stderr);
 assert(execution.status === 0, 'M26 module-presentation execution vectors failed.');
 
-console.log(`Stage E Milestone 26 iframe-retirement verification: PASS (state=${state}; architecture=${architectureVersion}; retired=0; retained=3)`);
+console.log(`Stage E Milestone 26 iframe-retirement verification: PASS (state=${state}; architecture=${architectureVersion}; retired=0; historicalRetained=3; currentRetained=${assessmentBlocks.length})`);

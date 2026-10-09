@@ -36,6 +36,11 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
+      # Supply the SHA-256-verified historical M108 archive to the successor
+      # source guard; never bypass or alter historical certification guards.
+      - name: Restore pinned M108 predecessor provenance
+        uses: ./.github/actions/prepare-m108-baseline
+
       - name: Verify npm toolchain
         shell: bash
         run: |

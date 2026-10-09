@@ -1,5 +1,6 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { resolve, relative } from 'node:path';
+import { createHash } from 'node:crypto';
 import process from 'node:process';
 
 const root = resolve(import.meta.dirname, '..');
@@ -70,6 +71,19 @@ for (const name of requiredScripts) {
 if (requiredScripts.every((name) => pkg.scripts?.[name])) pass('governed package scripts are present');
 if (pkg.scripts?.['lint:eslint']?.includes('eslint@10.9.1')) pass('ESLint CI tool version is explicitly pinned'); else fail('lint:eslint must pin eslint@10.9.1');
 
+// GitHub local composite actions use a checked-in path, not a remote @ref.
+// Only this SHA-256-pinned M108 provenance action may use local-path syntax.
+// All remote actions retain the original immutable/versioned-reference policy.
+const localPredecessorAction = './.github/actions/prepare-m108-baseline';
+const localPredecessorActionSha = '8ec7e6db1aaee4b92cba29e31805103445eeb860e29869e2412ac59518a49b7a';
+try {
+  const actionBytes = await readFile(resolve(root, '.github/actions/prepare-m108-baseline/action.yml'));
+  const actualSha = createHash('sha256').update(actionBytes).digest('hex');
+  if (actualSha !== localPredecessorActionSha) fail('M108 local action SHA-256 mismatch');
+} catch {
+  fail('M108 local action missing or unreadable');
+}
+
 const workflowDir = resolve(root, '.github/workflows');
 const workflows = (await readdir(workflowDir)).filter((name) => /\.ya?ml$/.test(name));
 for (const required of ['ci.yml', 'deploy-pages.yml', 'codeql.yml', 'dependency-review.yml', 'database-tests.yml', 'modern-tests.yml', 'performance.yml', 'observability.yml', 'service-worker-updates.yml', 'backup-disaster-recovery.yml', 'final-legacy-deletion.yml', 'production-cutover.yml', 'functional-regression-baseline.yml', 'backend-capability-preflight.yml']) {
@@ -80,12 +94,16 @@ for (const name of workflows) {
   if (/pull_request_target\s*:/.test(text)) fail(`${name} must not use pull_request_target`);
   for (const match of text.matchAll(/uses:\s*([^\s#]+)/g)) {
     const ref = match[1];
+    if (ref.startsWith('./') || ref.startsWith('../')) {
+      if (ref !== localPredecessorAction) fail(`${name} has unapproved local action: ${ref}`);
+      continue;
+    }
     if (!ref.includes('@')) fail(`${name} has unversioned action: ${ref}`);
     if (/@(?:main|master|HEAD)$/.test(ref)) fail(`${name} uses mutable action ref: ${ref}`);
   }
 }
-if (!errors.some((entry) => entry.includes('pull_request_target') || entry.includes('unversioned action') || entry.includes('mutable action'))) {
-  pass('workflow action references are versioned and no pull_request_target is used');
+if (!errors.some((entry) => entry.includes('pull_request_target') || entry.includes('unversioned action') || entry.includes('mutable action') || entry.includes('unapproved local action') || entry.includes('local action SHA-256') || entry.includes('local action missing'))) {
+  pass('workflow remote actions are versioned; local M108 action hash pinned; no pull_request_target');
 }
 
 const swWorkflow = await readText('.github/workflows/service-worker-updates.yml');

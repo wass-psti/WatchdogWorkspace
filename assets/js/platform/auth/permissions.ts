@@ -36,6 +36,7 @@ const PLATFORM_ADMIN_MODULE_ROLE = Object.freeze({
   'time-tracker': 'System Admin',
   'fueltrack-plus': 'Admin',
   tradelink: 'General Manager',
+  'material-tracker': 'ADMIN',
 } as const satisfies Readonly<Record<ModuleId, string>>);
 
 export const isPlatformRole = (value: unknown): value is PlatformRole => platformRoleSchema.safeParse(value).success;

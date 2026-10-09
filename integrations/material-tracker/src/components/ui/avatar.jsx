@@ -1,0 +1,4 @@
+import React from 'react'; import * as AvatarPrimitive from '@radix-ui/react-avatar'; import { cn } from '@material/lib/utils';
+export const Avatar=React.forwardRef(({className,...p},r)=><AvatarPrimitive.Root ref={r} className={cn('relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full',className)} {...p}/>); Avatar.displayName='Avatar';
+export const AvatarImage=React.forwardRef(({className,...p},r)=><AvatarPrimitive.Image ref={r} className={cn('aspect-square h-full w-full',className)} {...p}/>); AvatarImage.displayName='AvatarImage';
+export const AvatarFallback=React.forwardRef(({className,...p},r)=><AvatarPrimitive.Fallback ref={r} className={cn('flex h-full w-full items-center justify-center rounded-full bg-muted',className)} {...p}/>); AvatarFallback.displayName='AvatarFallback';

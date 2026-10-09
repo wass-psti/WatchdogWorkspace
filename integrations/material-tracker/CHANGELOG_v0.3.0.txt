@@ -1,0 +1,16 @@
+Material Tracker v0.3.0 — WatchdogWorkspace integration-preparation completion
+
+- Completed VIEWER read-only presentation across material, row/card, task, comment, drag/drop, bulk and inline-edit mutation surfaces.
+- Added runtime context and client-side write/admin transport guards while preserving Supabase RPC/RLS as the authority.
+- Added remote-aligned 20261003080739 notification write-guard migration so VIEWER cannot invoke notification mutations directly.
+- Removed vulnerable xlsx, jspdf and jspdf-autotable dependency families.
+- Replaced XLSX/PDF dependencies with deterministic internal writers; retained fflate for OOXML ZIP creation.
+- Added functional XLSX/PDF format regression tests.
+- Added required runtime npm audit gate to fail certification on high/critical runtime dependency advisories.
+- Bound standalone Vite development to 127.0.0.1.
+- Scoped remaining module animations, scrollbars and active-tab selectors/keyframes to the Material Tracker module boundary.
+- Formalized local UI primitives as a private module compatibility layer rather than host-global shared primitives.
+- Added namespaced Watchdog mutation/invalidation/notification lifecycle events; standalone polling remains a fallback.
+- Added RBAC, design-system compatibility, runtime lifecycle and dependency-security documentation.
+- Expanded deterministic/integration/static/regression/package-hygiene guards for all v0.3.0 changes.
+- Preserved material workflows, calculations, linked metadata fields, tasks/comments, KPI behavior, saved state and exports.

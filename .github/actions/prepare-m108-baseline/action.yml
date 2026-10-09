@@ -1,0 +1,25 @@
+name: Restore pinned M108 predecessor provenance
+description: Fail-closed restoration of the SHA-256-certified original M108 archive for successor source guards
+runs:
+  using: composite
+  steps:
+    - name: Download and authenticate original predecessor archive
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        M108_PROVENANCE_REPO: ${{ github.repository }}
+      run: |
+        set -Eeuo pipefail
+        mkdir -p "$RUNNER_TEMP/m108-pinned-predecessor"
+        archive="$RUNNER_TEMP/m108-pinned-predecessor/Work-Management-App-v1.43.2-Stage-I-M108-Material-Tracker-Security-Corrective-Certified.zip"
+        gh release download 'm108-certified-predecessor-archive' \
+          --repo "$M108_PROVENANCE_REPO" \
+          --pattern 'Work-Management-App-v1.43.2-Stage-I-M108-Material-Tracker-Security-Corrective-Certified.zip' \
+          --dir "$RUNNER_TEMP/m108-pinned-predecessor" \
+          --clobber
+        printf '%s  %s\n' \
+          '7be24ace31dccca32cdcd806d9e1c6f276b266a34b5d12aad0b4de6deefa5735' \
+          "$archive" | sha256sum --check --status
+        unzip -tqq "$archive"
+        printf 'M108_BASELINE_ARCHIVE=%s\n' "$archive" >> "$GITHUB_ENV"
+        echo 'PASS: original M108 archive authenticated by SHA-256'

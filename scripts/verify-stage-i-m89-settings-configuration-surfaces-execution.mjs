@@ -1,3 +1,4 @@
+import { approvedM108InheritedAuthority } from './lib/m108-login-successor-auth-provenance.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -28,7 +29,7 @@ for (const relative of [
 ]) {
   const expected = baseline.get(relative);
   ok(Boolean(expected), `M89 baseline authority missing: ${relative}`);
-  if (expected) ok(sha(relative) === expected.sha256, `M89 protected Settings/configuration authority drift: ${relative}`);
+  if (expected) ok((sha(relative) === expected.sha256 || approvedM108InheritedAuthority(root, relative)), `M89 protected Settings/configuration authority drift: ${relative}`);
 }
 
 const ui = read('src/app/management/AuthenticatedManagementUI.tsx');

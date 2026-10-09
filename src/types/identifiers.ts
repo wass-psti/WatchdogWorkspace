@@ -6,7 +6,7 @@ export type BoardGroupId = string;
 export type BoardItemId = string;
 export type BoardColumnId = string;
 export type StatusLabelId = string;
-export type ModuleId = 'time-tracker' | 'fueltrack-plus' | 'tradelink';
+export type ModuleId = 'time-tracker' | 'fueltrack-plus' | 'tradelink' | 'material-tracker';
 
 export type ISODate = string;
 export type ISODateTime = string;

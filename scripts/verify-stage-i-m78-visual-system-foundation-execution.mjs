@@ -253,7 +253,17 @@ for (const [relative, expected] of expectedByPath) {
     (m101AuthorityExists && m101AllowedProtectedMutations.has(relative)) ||
     (m102AuthorityExists && m102AllowedProtectedMutations.has(relative)) ||
     (m103AuthorityExists && m103AllowedProtectedMutations.has(relative));
-  if (!successorAuthorizedMutation) {
+  const m108MaterialTrackerBootstrapSuccessor =
+    relative === 'assets/js/runtime/module-bootstrap.ts' &&
+    fs.existsSync(path.join(root, 'M108-MATERIAL-TRACKER-SECURITY-CORRECTIVE.md'));
+  if (m108MaterialTrackerBootstrapSuccessor) {
+    const bootstrapSource = fs.readFileSync(path.join(root, relative), 'utf8');
+    ok(bootstrapSource.includes("'material-tracker'"), 'M78 M108 successor Material Tracker bootstrap registration missing');
+    const normalizedBootstrap = bootstrapSource.replace(", 'material-tracker'", '');
+    const normalizedBytes = Buffer.from(normalizedBootstrap);
+    ok(sha256(normalizedBytes) === expected.sha256, `M77 protected presentation bootstrap drift beyond certified Material Tracker module-id extension: ${relative}`);
+    ok(normalizedBytes.length === expected.size, `M77 protected presentation bootstrap size drift beyond certified Material Tracker module-id extension: ${relative}`);
+  } else if (!successorAuthorizedMutation) {
     ok(actual.sha256 === expected.sha256, `M77 protected presentation byte drift: ${relative}`);
     ok(actual.size === expected.size, `M77 protected presentation size drift: ${relative}`);
   }
