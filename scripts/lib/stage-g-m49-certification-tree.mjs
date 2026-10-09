@@ -7,7 +7,9 @@ const excludedDirectoryNames = new Set([
   '.vite', '.vitest', '.wm-modern-test-toolchain', 'm37-evidence',
   'm49-certified-artifacts-upload',
 ]);
-const excludedRelativeDirectories = new Set(['supabase/.temp']);
+// apps/material-tracker is produced by scripts/build-material-tracker.mjs, not source.
+// Only this exact relative output path is exempt; integration source remains guarded.
+const excludedRelativeDirectories = new Set(['supabase/.temp', 'apps/material-tracker']);
 const excludedRelativeFiles = new Set([
   'CHECKSUMS.sha256',
   'config/stage-g-m49-boards-kanban-drag-drop-recovery-target.ts',

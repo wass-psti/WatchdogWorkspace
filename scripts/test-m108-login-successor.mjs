@@ -101,6 +101,10 @@ try {
   check('successor package guard routing mutation', false, () => replace('package.json', '{}\n'));
   check('M83 successor verifier mutation', false, () => replace('verify-stage-i-m83-authentication-account-surfaces.mjs', '// unauthorized\n'));
   check('M83 successor provenance helper mutation', false, () => replace('scripts/lib/m108-login-successor-auth-provenance.mjs', '// unauthorized\n'));
+  check('M49 guard rejects tampering of scripts/lib/stage-g-m49-certification-tree.mjs', false, () => replace('scripts/lib/stage-g-m49-certification-tree.mjs', '// unauthorized M49 modification\n'));
+  check('M49 guard rejects tampering of scripts/finalize-stage-g-m49.sh', false, () => replace('scripts/finalize-stage-g-m49.sh', '// unauthorized M49 modification\n'));
+  check('M49 guard rejects tampering of tests/modern/e2e/boards-kanban-drag-drop-recovery.spec.mjs', false, () => replace('tests/modern/e2e/boards-kanban-drag-drop-recovery.spec.mjs', '// unauthorized M49 modification\n'));
+  check('M49 guard rejects tampering of scripts/verify-stage-g-m49-finalizer-fail-closed.mjs', false, () => replace('scripts/verify-stage-g-m49-finalizer-fail-closed.mjs', '// unauthorized M49 modification\n'));
   check('dependency lockfile mutation', false, () => replace('package-lock.json', '{}\n'));
   check('package governance verifier mutation', false, () => replace('scripts/verify-package-governance.mjs', '// tampered governance\n'));
   check('unapproved addition', false, () => {

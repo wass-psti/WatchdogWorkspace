@@ -77,6 +77,26 @@ function assertNoNewPass(c){const out=join(c.project,'m49-certified-artifacts-up
 }
 
 {
+  // Regression: the embedded Material Tracker build is generated, not a source
+  // mutation. A real protected-source edit must still change the tree digest.
+  const c=prepare();
+  try {
+    const treeScript=join(c.project,'scripts/lib/stage-g-m49-certification-tree.mjs');
+    const digest=()=>spawnSync(process.execPath,[treeScript,c.project],{encoding:'utf8'});
+    const before=digest();
+    assert.equal(before.status,0,before.stderr);
+    mkdirSync(join(c.project,'apps/material-tracker'),{recursive:true});
+    writeFileSync(join(c.project,'apps/material-tracker/index.html'),'<generated>\n');
+    const generated=digest();
+    assert.equal(generated.status,0,generated.stderr);
+    assert.equal(generated.stdout.trim(),before.stdout.trim(),'M49 must exclude exact generated Material Tracker build output');
+    writeFileSync(join(c.project,'src/m49-certification-source.txt'),'modified-real-source\n');
+    const protectedEdit=digest();
+    assert.equal(protectedEdit.status,0,protectedEdit.stderr);
+    assert.notEqual(protectedEdit.stdout.trim(),before.stdout.trim(),'M49 must reject actual source modification');
+  } finally {rmSync(c.sandbox,{recursive:true,force:true});}
+}
+{
   const finalizer=readFileSync(join(root,'scripts/finalize-stage-g-m49.sh'),'utf8');
   assert.match(finalizer,/WM_M50_PROVENANCE_CONTEXT='m49-certified-artifact-current-source'/,'M49 finalizer must distinguish a current-source historical certification transaction from a reconstructed historical M49-only artifact.');
 }
