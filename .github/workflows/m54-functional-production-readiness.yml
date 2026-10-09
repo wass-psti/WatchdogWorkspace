@@ -48,7 +48,7 @@ jobs:
       - name: Freeze rollback-source checksum
         run: echo '34fde2a39bc3b3a68c0cea300977813e868b96ebf78774d96d3944b9e417b0af  release-artifacts/m54/rollback-source/Work-Management-App-v1.43.2-Stage-G-M53-Certified-Baseline.zip' | sha256sum -c -
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: ./dist
   deploy:
