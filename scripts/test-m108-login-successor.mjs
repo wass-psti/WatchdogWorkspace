@@ -105,6 +105,7 @@ try {
   check('M49 guard rejects tampering of scripts/finalize-stage-g-m49.sh', false, () => replace('scripts/finalize-stage-g-m49.sh', '// unauthorized M49 modification\n'));
   check('M49 guard rejects tampering of tests/modern/e2e/boards-kanban-drag-drop-recovery.spec.mjs', false, () => replace('tests/modern/e2e/boards-kanban-drag-drop-recovery.spec.mjs', '// unauthorized M49 modification\n'));
   check('M49 guard rejects tampering of scripts/verify-stage-g-m49-finalizer-fail-closed.mjs', false, () => replace('scripts/verify-stage-g-m49-finalizer-fail-closed.mjs', '// unauthorized M49 modification\n'));
+  check('M52 atomic embedded identity helper rejects tampering', false, () => replace('tests/modern/e2e/helpers/m52-rbac-fixture.mjs', '// unauthorized M52 identity-boundary change\n'));
   check('dependency lockfile mutation', false, () => replace('package-lock.json', '{}\n'));
   check('package governance verifier mutation', false, () => replace('scripts/verify-package-governance.mjs', '// tampered governance\n'));
   check('unapproved addition', false, () => {
