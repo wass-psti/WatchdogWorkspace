@@ -97,7 +97,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
   const state = createBoardViewState();
   const preferencePatches = createBoardPreferencePatchService();
   const selectors = createBoardSelectors(state);
-  let itemSearchTimer = 0;
+  let itemSearchFrame = 0;
   let boardResizeCleanup: (() => void) | null = null;
   let listMenuController: ReturnType<typeof createBoardMenuController> | null = null;
   let boardMenuController: ReturnType<typeof createBoardMenuController> | null = null;
@@ -1332,13 +1332,13 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       const target = event.target;
       if (!(target instanceof HTMLInputElement) || !target.matches('[data-item-search]')) return;
       state.itemSearch = target.value;
-      // Rendering hundreds of board cells on every keystroke can delay unrelated
-      // dropdown clicks. Preserve the input value immediately, batch only rendering.
-      window.clearTimeout(itemSearchTimer);
-      itemSearchTimer = window.setTimeout(() => {
-        itemSearchTimer = 0;
+      // Coalesce rapid input to one browser rendering opportunity. Preserve the
+      // exact text immediately and avoid blocking dropdowns with sync table work.
+      cancelAnimationFrame(itemSearchFrame);
+      itemSearchFrame = requestAnimationFrame(() => {
+        itemSearchFrame = 0;
         renderBoardViewOnly();
-      }, 85);
+      });
     }, { signal });
 
     root.addEventListener('submit', (event: SubmitEvent) => { void (async () => { if (await itemWorkspace.submitUpdate(event)) return; await itemWorkspace.submitProperty(event); })(); }, { signal });
@@ -1402,7 +1402,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       if (btn.matches('[data-board-redo]')) { await history.redo(); return; }
       if (btn.matches('[data-clear-item-search]')) {
         state.itemSearch = '';
-        window.clearTimeout(itemSearchTimer); itemSearchTimer = 0;
+        cancelAnimationFrame(itemSearchFrame); itemSearchFrame = 0;
         renderBoardData();
         requestAnimationFrame(() => root.querySelector<HTMLInputElement>('[data-item-search]')?.focus());
         return;
@@ -1712,8 +1712,8 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     realtimeSnapshot = Object.freeze({ state:'idle', boardId:null, collaborators:[], lastEventAt:null, lastError:null, fallbackPolling:false });
     boardResizeCleanup?.();
     void preferencePersistence.flushPending();
-    window.clearTimeout(itemSearchTimer);
-    itemSearchTimer = 0;
+    cancelAnimationFrame(itemSearchFrame);
+    itemSearchFrame = 0;
     dragDrop?.dispose();
     tableVirtualization.reset();
     cancelAnimationFrame(virtualizationFrame);

@@ -329,9 +329,7 @@ body{overflow-x:clip}
 
 
 
-/* v1.17.9 — theme-aware launcher controls
-   Launcher actions use semantic control tokens instead of inverting --ink/--bg.
-   This keeps icon buttons visually stable when the active theme changes. */
+/* v1.17.9 — theme-aware launcher controls */
 :root{
   --control-bg:var(--surface2);
   --control-fg:var(--ink);
@@ -510,10 +508,7 @@ body{overflow-x:clip}
 @media(max-width:40rem){.board-item-panel{width:100vw}.item-panel-head{padding:14px 12px 12px;grid-template-columns:34px minmax(0,1fr) auto}.item-panel-body{padding:14px}.item-panel-tabs{padding:0 10px}.item-update-composer>div{align-items:flex-end;flex-direction:column}.item-update-composer .primary-btn{width:100%;justify-content:center}}
 @media(prefers-reduced-motion:reduce){.board-item-panel,.item-panel-scrim{animation:none!important}.item-file-drop{transition:none!important}}
 
-/* v1.22.0 — semantic design-token bridge.
-   Existing selectors keep their stable legacy variable names while the values now
-   originate from the foundation token/theme layers. This lets features migrate
-   incrementally without a visual or behavioral flag day. */
+/* v1.22.0 — semantic design-token bridge. */
 :root:not([data-theme]),
 :root[data-theme] {
   --bg: var(--wm-color-canvas);
@@ -768,11 +763,7 @@ body{overflow-x:clip}
   }
 }
 
-/* v1.32.4 — Item Workspace overlay-layer correction.
-   Item-header actions use the same Board floating-menu infrastructure as row,
-   group, board and card actions. The dedicated overlay layer is a sibling of
-   the drawer inside the motion-static Board root, so the menu is not clipped
-   by drawer overflow or trapped beneath sticky header/tab stacking contexts. */
+/* v1.32.4 — Item Workspace overlay-layer correction. */
 .board-overlay-layer{
   position:fixed;
   inset:0;
@@ -817,9 +808,7 @@ body{overflow-x:clip}
   .item-panel-more-trigger{transition:none!important}
 }
 
-/* v1.32.4 — Board content design and text hierarchy.
-   Presentation-only refinements: clearer long-name handling, readable helper
-   copy, and consistent hierarchy without changing functional identifiers. */
+/* v1.32.4 — Board content design and text hierarchy. */
 .boards-page .boards-intro p{max-width:680px}
 .board-card-main,.board-title-row>div:first-child,.board-group-header>div:first-child,.item-panel-identity{min-width:0}
 .board-card h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -847,9 +836,7 @@ body{overflow-x:clip}
 .board-selection-bar .selection-actions button{white-space:nowrap}
 @media(max-width:52.5rem){.board-selection-bar .selection-actions button{white-space:normal}}
 
-/* v1.32.6 — Board accessibility and readability pass.
-   Board-scoped typography hierarchy, larger touch targets, and resilient wrapping
-   for reduced-vision use without changing data keys, selectors, or interactions. */
+/* v1.32.6 — Board accessibility and readability pass. */
 :root{
   --board-type-xs:10px;
   --board-type-sm:11px;
