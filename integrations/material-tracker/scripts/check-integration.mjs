@@ -1,6 +1,22 @@
 import fs from 'node:fs';
 
+// This is a source-only theme token sheet: importing or fetching any CSS asset
+// (including remote fonts) violates its offline, host-scoped design-token boundary.
+// Reject resource directives outright rather than searching for a URL substring:
+// a hostname can appear inside another origin or elsewhere in a URL.
+const tokenCssIsSelfContained = css => !/(?:@import\b|\b(?:url|image-set)\s*\()/i.test(css);
+
 const checks = [
+  ['token CSS self-containment regression', () => [
+    [':root { --material-primary: #fff; }', true],
+    ['@import "https://fonts.googleapis.com/css2?family=Roboto";', false],
+    ['@import "./local.css";', false],
+    ['.x { background: url(https://fonts.googleapis.com.attacker.test/x); }', false],
+    ['.x { background: url(https://attacker.test/fonts.googleapis.com/x); }', false],
+    ['.x { background: url(//fonts.googleapis.com/x); }', false],
+    ['.x { background: url(data:text/plain,x); }', false],
+    ['.x { background: image-set("./x.png" 1x); }', false],
+  ].every(([css, expected]) => tokenCssIsSelfContained(css) === expected)],
   ['embedded app entry', () => fs.existsSync('src/MaterialTrackerApp.jsx')],
   ['host session bootstrap', () => fs.readFileSync('src/platform/integration/bootstrap.js','utf8').includes('material_tracker_bootstrap')],
   ['Workspace storage keys', () => {
@@ -18,7 +34,7 @@ const checks = [
   ['host-owned embedded theme', () => fs.readFileSync('src/generated/utils/themeManager.js','utf8').includes('isEmbedded')],
   ['scoped Material Tracker CSS', () => {
     const a=fs.readFileSync('src/index.css','utf8'), b=fs.readFileSync('src/generated/theme-tokens.css','utf8');
-    return a.includes('[data-module="material-tracker"]') && b.includes('[data-module="material-tracker"]') && !b.includes('fonts.googleapis.com');
+    return a.includes('[data-module="material-tracker"]') && b.includes('[data-module="material-tracker"]') && tokenCssIsSelfContained(b);
   }],
 
   ['read-only VIEWER presentation boundary', () => {

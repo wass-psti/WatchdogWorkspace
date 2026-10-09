@@ -95,6 +95,7 @@ try {
   check('corrective source mutation', false, () => replace('assets/js/core/auth.ts', '// tampered\n'));
   check('unauthorized source mutation', false, () => replace('verify-auth-backend.mjs', '// tampered\n'));
   check('integration source modification', false, () => replace('integrations/material-tracker/package.json', '{}\n'));
+  check('pinned Material Tracker token-CSS security guard mutation', false, () => replace('integrations/material-tracker/scripts/check-integration.mjs', '// unapproved security-check change\n'));
   check('pinned successor documentation mutation', false, () => replace('M108-LOGIN-SUCCESSOR-CONTINUATION.md', 'tampered\n'));
   check('pinned successor runner mutation', false, () => replace('scripts/certify-m108-login-successor-local.sh', 'tampered\n'));
   check('successor package guard routing mutation', false, () => replace('package.json', '{}\n'));
