@@ -1,4 +1,4 @@
-import { M39_FIXTURE_ORIGIN, installM39Fixture, seedM39Session, waitForM39Identity } from './m39-auth-fixture.mjs';
+import { M39_FIXTURE_ORIGIN, installM39Fixture, seedM39Session, waitForM39Identity, retryM39RuntimeBoundary } from './m39-auth-fixture.mjs';
 
 export const M52_ROLE_MATRIX = Object.freeze({
   admin_general_manager: Object.freeze({
@@ -76,17 +76,31 @@ export async function openM52Route(page, route, options = {}) {
   return context;
 }
 
+/**
+ * Capture and validate embedded identity in ONE main-document evaluation.
+ * Route/iframe swaps between a waitForFunction and page.evaluate previously
+ * yielded null for an otherwise ready module (M52 CI regression). The shared
+ * M39 boundary helper retries only transient document replacements; it never
+ * accepts a mismatched role, disabled account, or another module's identity.
+ */
 export async function waitForEmbeddedIdentity(page, moduleId, expectedRole) {
-  const frame = page.frameLocator('#moduleFrame');
-  await frame.locator('body').waitFor({ state: 'visible' });
-  await page.waitForFunction(({ moduleId, expectedRole }) => {
-    const iframe = document.querySelector('#moduleFrame');
-    const context = iframe?.contentWindow?.WM_IDENTITY_CONTEXT;
-    return context?.moduleId === moduleId && context?.accountStatus === 'active' && context?.module?.enabled === true && context?.module?.role === expectedRole;
-  }, { moduleId, expectedRole });
-  return page.evaluate(() => {
-    const iframe = document.querySelector('#moduleFrame');
-    const context = iframe?.contentWindow?.WM_IDENTITY_CONTEXT;
-    return context ? JSON.parse(JSON.stringify(context)) : null;
-  });
+  const result = await retryM39RuntimeBoundary(
+    () => page.evaluate(({ moduleId, expectedRole }) => {
+      const activeRoute = globalThis.WorkManagementRuntime?.getContext?.()?.moduleId;
+      const iframe = document.querySelector('#moduleFrame');
+      const context = iframe?.contentWindow?.WM_IDENTITY_CONTEXT;
+      if (activeRoute !== moduleId) return { ready: false, reason: 'host-module-route-not-ready' };
+      if (context?.moduleId !== moduleId
+        || context?.accountStatus !== 'active'
+        || context?.module?.enabled !== true
+        || context?.module?.role !== expectedRole
+        || typeof context?.platformRole !== 'string') {
+        return { ready: false, reason: 'embedded-identity-not-hydrated' };
+      }
+      // Copy the validated value before the iframe can be replaced.
+      return { ready: true, snapshot: JSON.parse(JSON.stringify(context)) };
+    }, { moduleId, expectedRole }),
+    { timeout: 12_000, label: `M52 embedded identity for ${moduleId}` },
+  );
+  return result.snapshot;
 }

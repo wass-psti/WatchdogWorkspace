@@ -106,8 +106,9 @@ test('@m49-item-movement keyboard/native lane movement preserves hidden Table or
   await switchView(page,'Kanban');
   const alphaHandle = card(page,'Alpha').locator('[data-kanban-item-drag="item-a1"]');
   await alphaHandle.focus();
-  await page.keyboard.press('ArrowRight');
-  await expect.poll(() => itemState(fixture,'item-a1')?.status).toBe('doing');
+  await expect(alphaHandle).toBeFocused();
+  await alphaHandle.press('ArrowRight');
+  await expect.poll(() => itemState(fixture,'item-a1')?.status, { timeout: 10_000 }).toBe('doing');
   expect(itemState(fixture,'item-a1')?.group_id).toBe(alphaBefore.group_id);
   expect(itemState(fixture,'item-a1')?.position).toBe(alphaBefore.position);
   await expect(card(page,'Alpha')).toBeVisible();
@@ -123,8 +124,9 @@ test('@m49-item-movement keyboard/native lane movement preserves hidden Table or
   fixture.failNext('wm_move_board_item',{ message:'Simulated item move failure' });
   const bravoHandle = card(page,'Bravo').locator('[data-kanban-item-drag="item-a2"]');
   await bravoHandle.focus();
-  await page.keyboard.press('ArrowRight');
-  await expect.poll(() => itemState(fixture,'item-a2')?.status).toBe('doing');
+  await expect(bravoHandle).toBeFocused();
+  await bravoHandle.press('ArrowRight');
+  await expect.poll(() => itemState(fixture,'item-a2')?.status, { timeout: 10_000 }).toBe('doing');
   await expect(card(page,'Bravo')).toBeVisible();
   await expect(page.locator('[data-board-drag-live]')).toContainText('could not be changed');
 

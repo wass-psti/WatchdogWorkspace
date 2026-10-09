@@ -76,7 +76,7 @@ grep -q '\*\*State:\*\* active-certified' "$STAGE_DIR/RELEASE-STATUS-v1.43.2-STA
 [ ! -e "$STAGE_DIR/node_modules" ] || { echo 'FAIL: staged candidate unexpectedly contains node_modules.' >&2; exit 1; }
 ln -s "$ROOT/node_modules" "$STAGE_DIR/node_modules"
 cleanup_stage_runtime(){
-  rm -rf "$STAGE_DIR/node_modules" "$STAGE_DIR/dist" "$STAGE_DIR/coverage" "$STAGE_DIR/test-results" "$STAGE_DIR/playwright-report" "$STAGE_DIR/.vite" "$STAGE_DIR/.vitest" "$STAGE_DIR/.wm-modern-test-toolchain" "$STAGE_DIR/m37-evidence" "$STAGE_DIR/m49-certified-artifacts-upload" "$STAGE_DIR/supabase/.temp"
+  rm -rf "$STAGE_DIR/node_modules" "$STAGE_DIR/dist" "$STAGE_DIR/coverage" "$STAGE_DIR/test-results" "$STAGE_DIR/playwright-report" "$STAGE_DIR/.vite" "$STAGE_DIR/.vitest" "$STAGE_DIR/.wm-modern-test-toolchain" "$STAGE_DIR/m37-evidence" "$STAGE_DIR/m49-certified-artifacts-upload" "$STAGE_DIR/supabase/.temp" "$STAGE_DIR/apps/material-tracker"
 }
 trap 'cleanup_stage_runtime; rm -rf "$STAGE_ROOT"' EXIT
 (
@@ -96,6 +96,7 @@ SOURCE_AFTER_HISTORY="$(node scripts/lib/stage-g-m49-certification-tree.mjs "$RO
 [ "$SOURCE_AFTER_HISTORY" = "$SOURCE_BEFORE" ] || { echo 'FAIL: authoritative pending M49 source changed during post-state gates.' >&2; exit 1; }
 grep -Eq "activationState:[[:space:]]*'implementation-complete-pending-certification'" "$TARGET" || { echo 'FAIL: authoritative M49 source target lost pending state.' >&2; exit 1; }
 
+[ ! -e "$STAGE_DIR/apps/material-tracker" ] || { echo 'FAIL: generated Material Tracker runtime detected in M49 certified payload.' >&2; exit 1; }
 if find "$STAGE_DIR" -type l -print -quit | grep -q .; then echo 'FAIL: symbolic link detected in M49 certified payload.' >&2; exit 1; fi
 if find "$STAGE_DIR" -type d \( -name '.git' -o -name node_modules -o -name dist -o -name coverage -o -name test-results -o -name playwright-report -o -name '.vite' -o -name '.vitest' -o -name '.wm-modern-test-toolchain' -o -name m37-evidence \) -print -quit | grep -q .; then echo 'FAIL: generated/private directory detected in M49 certified payload.' >&2; exit 1; fi
 if find "$STAGE_DIR" -type f -name '.env*' ! -name '*.example' -print -quit | grep -q .; then echo 'FAIL: concrete environment file detected in M49 certified payload.' >&2; exit 1; fi
