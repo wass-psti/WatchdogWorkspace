@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Restore pinned M108 predecessor provenance
         uses: ./.github/actions/prepare-m108-baseline
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22.16.0
           cache: npm
