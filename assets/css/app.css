@@ -1576,3 +1576,20 @@ button:disabled,[aria-disabled="true"]{opacity:.55;cursor:not-allowed;transform:
 
 /* Stage D M15: the dedicated React Board facade stays page-lifetime mounted but must not paint off-route. */
 [data-wm-board-presentation-host][hidden]{display:none!important}
+
+/* M109: menu top-layer escape hatch, preserving board-root click delegation. */
+.board-overlay-layer[popover] {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  overflow: visible;
+  pointer-events: none;
+}
+.board-overlay-layer[popover]::backdrop { background: transparent; pointer-events: none; }
+.board-overlay-layer[popover] > .board-floating-menu { pointer-events: auto; }

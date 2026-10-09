@@ -4585,3 +4585,13 @@ body[data-wm-surface="shell"] .kanban-lane-state {
 @media (prefers-reduced-motion:reduce) {
   body[data-wm-surface="shell"] :is(.kanban-drag-handle,.kanban-column.is-inactive-status) { transition:none!important; }
 }
+
+/* M109: primary title is a fixed identity column, not an optional board field. */
+body[data-wm-surface="shell"] .board-setup-primary {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 12px; margin-bottom: 10px;
+  border: 1px solid var(--board-line); border-radius: var(--board-radius-control);
+  background: var(--board-surface-2);
+}
+body[data-wm-surface="shell"] .board-setup-primary strong { font-weight: 700; }
+body[data-wm-surface="shell"] .board-setup-primary small { color: var(--board-muted-readable); }

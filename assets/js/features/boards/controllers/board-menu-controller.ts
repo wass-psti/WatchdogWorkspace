@@ -12,12 +12,6 @@ interface BoardMenuCloseOptions extends OverlayCloseOptions {}
 
 type InputModality = 'keyboard' | 'pointer';
 
-const cssPixels = (element: Element, name: string, fallback: number): number => {
-  const raw = getComputedStyle(element).getPropertyValue(name).trim();
-  const parsed = Number.parseFloat(raw);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
 const menuItems = (menu: HTMLElement): HTMLElement[] => [...menu.querySelectorAll<HTMLElement>(
   'button:not(:disabled),[role="menuitem"]:not([aria-disabled="true"])',
 )].filter((element) => !element.hidden && element.getClientRects().length > 0);
@@ -42,6 +36,9 @@ export function createBoardMenuController({ root, escapeHtml: _escapeHtml = (val
       overlayLayer = document.createElement('div');
       overlayLayer.className = 'board-overlay-layer';
       overlayLayer.dataset.boardOverlayLayer = 'true';
+      // A manual Popover enters the browser top layer above sidebar, sticky and
+      // transformed ancestors while preserving DOM bubbling to the board root.
+      overlayLayer.setAttribute('popover', 'manual');
       root.appendChild(overlayLayer);
     }
     menu = document.createElement('div');
@@ -79,12 +76,17 @@ export function createBoardMenuController({ root, escapeHtml: _escapeHtml = (val
   const position = (): void => {
     if (!activeTrigger || !menu || menu.hidden || !activeTrigger.isConnected) return;
     const anchor = activeTrigger.getBoundingClientRect();
-    const stylesFrom = root;
-    const gap = cssPixels(stylesFrom, '--wm-board-overlay-gap', 8);
-    const pad = cssPixels(stylesFrom, '--wm-board-overlay-gutter', 12);
-    const minWidth = cssPixels(stylesFrom, '--wm-board-menu-min-width', 216);
-    const maxWidth = cssPixels(stylesFrom, '--wm-board-menu-max-width', 320);
-    const maxMenuHeight = cssPixels(stylesFrom, '--wm-board-menu-max-height', 420);
+    // One computed-style snapshot avoids five redundant style resolutions per placement.
+    const layout = getComputedStyle(root);
+    const metric = (name: string, fallback: number): number => {
+      const parsed = Number.parseFloat(layout.getPropertyValue(name));
+      return Number.isFinite(parsed) ? parsed : fallback;
+    };
+    const gap = metric('--wm-board-overlay-gap', 8);
+    const pad = metric('--wm-board-overlay-gutter', 12);
+    const minWidth = metric('--wm-board-menu-min-width', 216);
+    const maxWidth = metric('--wm-board-menu-max-width', 320);
+    const maxMenuHeight = metric('--wm-board-menu-max-height', 420);
     const rect = menu.getBoundingClientRect();
     const viewportWidth = Math.max(0, window.innerWidth - pad * 2);
     const width = Math.min(Math.max(rect.width || minWidth, minWidth), Math.min(maxWidth, viewportWidth));
@@ -131,6 +133,7 @@ export function createBoardMenuController({ root, escapeHtml: _escapeHtml = (val
       menu.removeAttribute('aria-label');
       menu.removeAttribute('aria-activedescendant');
     }
+    if (overlayLayer?.matches(':popover-open')) overlayLayer.hidePopover();
     if (!fromCoordinator) overlayCoordinator?.release('board-menu');
     if (restoreFocus && previous?.isConnected) previous.focus({ preventScroll: true });
     if (wasActive) onClose?.();
@@ -149,6 +152,10 @@ export function createBoardMenuController({ root, escapeHtml: _escapeHtml = (val
     target.innerHTML = template.innerHTML;
     normalizeMenuMarkup(target);
     target.hidden = false;
+    // Open synchronously on the first click, before any delayed frame or render.
+    if (typeof overlayLayer?.showPopover === 'function' && !overlayLayer.matches(':popover-open')) {
+      overlayLayer.showPopover();
+    }
     target.dataset.menuKind = trigger.dataset.boardMenuTrigger || 'board';
     const menuLabel = trigger.getAttribute('aria-label');
     if (menuLabel) target.setAttribute('aria-label', menuLabel);
@@ -161,8 +168,9 @@ export function createBoardMenuController({ root, escapeHtml: _escapeHtml = (val
     if (nativeDetails) nativeDetails.open = false;
     trigger.setAttribute('aria-expanded', 'true');
     overlayCoordinator?.open({ id: 'board-menu', element: target, trigger, close });
+    position(); // No one-frame delay that can be obscured by a pending render.
     requestAnimationFrame(() => {
-      position();
+      if (activeTrigger !== trigger || target.hidden) return;
       const items = menuItems(target);
       const preferred = items.find((item) => item.matches('.is-selected,[aria-checked="true"]')) ?? items[0];
       if (modality === 'keyboard') preferred?.focus({ preventScroll: true });
