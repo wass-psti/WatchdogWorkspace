@@ -81,6 +81,15 @@ try {
   });
   check('approved candidate', true);
   check('CI predecessor provisioning mutation', false, () => replace('.github/workflows/ci.yml', '# tampered\n'));
+  check('pinned predecessor workflow tamper boards-backend-data-contract-recovery.yml', false, () => replace('.github/workflows/boards-backend-data-contract-recovery.yml', '# tampered\n'));
+  check('pinned predecessor workflow tamper boards-collection-route-recovery.yml', false, () => replace('.github/workflows/boards-collection-route-recovery.yml', '# tampered\n'));
+  check('pinned predecessor workflow tamper boards-columns-cells-status-system-recovery.yml', false, () => replace('.github/workflows/boards-columns-cells-status-system-recovery.yml', '# tampered\n'));
+  check('pinned predecessor workflow tamper boards-kanban-drag-drop-recovery.yml', false, () => replace('.github/workflows/boards-kanban-drag-drop-recovery.yml', '# tampered\n'));
+  check('pinned predecessor workflow tamper boards-table-group-item-recovery.yml', false, () => replace('.github/workflows/boards-table-group-item-recovery.yml', '# tampered\n'));
+  check('pinned predecessor workflow tamper management-authority-consolidation.yml', false, () => replace('.github/workflows/management-authority-consolidation.yml', '# tampered\n'));
+  check('pinned predecessor workflow tamper rich-item-workspace-file-recovery.yml', false, () => replace('.github/workflows/rich-item-workspace-file-recovery.yml', '# tampered\n'));
+  check('pinned predecessor workflow tamper settings-functional-recovery.yml', false, () => replace('.github/workflows/settings-functional-recovery.yml', '# tampered\n'));
+
   check('Pages predecessor provisioning mutation', false, () => replace('.github/workflows/deploy-pages.yml', '# tampered\n'));
   check('predecessor acquisition composite action mutation', false, () => replace('.github/actions/prepare-m108-baseline/action.yml', '# tampered\n'));
   check('corrective source mutation', false, () => replace('assets/js/core/auth.ts', '// tampered\n'));
