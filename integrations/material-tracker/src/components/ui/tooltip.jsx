@@ -1,0 +1,3 @@
+import React from 'react'; import * as TooltipPrimitive from '@radix-ui/react-tooltip'; import { cn } from '@material/lib/utils';
+export const TooltipProvider=({delayDuration=200,...p})=><TooltipPrimitive.Provider delayDuration={delayDuration} {...p}/>; export const Tooltip=TooltipPrimitive.Root; export const TooltipTrigger=TooltipPrimitive.Trigger;
+export const TooltipContent=React.forwardRef(({className,sideOffset=4,...p},r)=><TooltipPrimitive.Portal><TooltipPrimitive.Content ref={r} sideOffset={sideOffset} className={cn('z-[100] overflow-hidden rounded-md bg-foreground px-3 py-1.5 text-xs text-background shadow-md animate-in fade-in-0 zoom-in-95',className)} {...p}/></TooltipPrimitive.Portal>); TooltipContent.displayName='TooltipContent';

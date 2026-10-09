@@ -3,6 +3,20 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+
+const m107Manifest = path.join(root, 'M107-M106-BASELINE-SOURCE-MANIFEST.json');
+const m107Guard = path.join(root, 'scripts/verify-stage-i-m107-m106-source-guard.mjs');
+if (fs.existsSync(m107Manifest) || fs.existsSync(m107Guard)) {
+  if (!fs.existsSync(m107Manifest) || !fs.existsSync(m107Guard)) {
+    console.error('M106 M105-certified source guard: FAIL (incomplete M107 successor authority)');
+    process.exit(1);
+  }
+  const { spawnSync } = await import('node:child_process');
+  const delegated = spawnSync(process.execPath, [m107Guard], { cwd: root, stdio: 'inherit' });
+  if (delegated.status !== 0) process.exit(delegated.status ?? 1);
+  console.log('M106 M105-certified source guard: PASS (M107 successor authority delegated to M107→M106 source guard)');
+  process.exit(0);
+}
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'M106-M105-BASELINE-SOURCE-MANIFEST.json'),'utf8'));
 if(manifest.checkpoint!=='M105'||manifest.commit!=='f448782a34d3115cf11b78aa4bc63e223ddc071a'||manifest.artifactSha256!=='7a151622fbdd5fcce8ce238ce67e9f51529bd032ae4a86a770851d0183411374'){
   console.error('M106 M105-certified source guard: FAIL (invalid M105 baseline authority)');process.exit(1);

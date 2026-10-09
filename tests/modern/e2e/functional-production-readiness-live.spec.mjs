@@ -21,7 +21,7 @@ test('@m54-live authenticated production administrator can traverse certified ho
   await expect(page.locator('[data-wm-management-view="users"]')).toBeVisible();
   await go(page,'boards');
   await expect(page.getByRole('heading',{name:'Boards',level:1})).toBeVisible();
-  for(const moduleId of ['time-tracker','fueltrack-plus','tradelink']){
+  for(const moduleId of ['time-tracker','fueltrack-plus','tradelink','material-tracker']){
     await go(page,`app/${moduleId}`);
     const frame=page.locator('#moduleFrame');
     await expect(frame).toBeVisible({timeout:15000});
@@ -41,5 +41,9 @@ test('@m54-live authenticated production administrator can traverse certified ho
     expect(identity?.module?.role).toBeTruthy();
     expect(access?.allowed).toBe(true);
     expect(access?.role).toBe(identity?.module?.role);
+    if(moduleId==='material-tracker'){
+      await expect(moduleFrame.locator('[data-module="material-tracker"]')).toBeVisible({timeout:20000});
+      await expect(moduleFrame.locator('body')).not.toContainText('Material Tracker could not initialize:',{timeout:20000});
+    }
   }
 });

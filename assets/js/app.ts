@@ -1212,7 +1212,7 @@ featureRegistry.register('module-host', modulePresentationHost, { kind: 'hybrid-
 const featureValidation = featureRegistry.validate();
 if (!featureValidation.valid) console.error('[Work Management] Runtime feature registry is incomplete', featureValidation.missing);
 
-function moduleIcon(mod: WorkManagementModuleDefinition | null | undefined): string { if (mod?.icon === 'fuel') return icons.fuel; if (mod?.icon === 'trade') return icons.trade; return icons.clock; }
+function moduleIcon(mod: WorkManagementModuleDefinition | null | undefined): string { if (mod?.icon === 'fuel') return icons.fuel; if (mod?.icon === 'trade') return icons.trade; if (mod?.icon === 'material') return icons.grid; return icons.clock; }
 
 function moduleBrowserPermissions(mod: WorkManagementModuleDefinition): string {
   return (mod.browserPermissions || []).join('; ');

@@ -1,0 +1,3 @@
+import React from 'react'; import * as PopoverPrimitive from '@radix-ui/react-popover'; import { cn } from '@material/lib/utils';
+export const Popover=PopoverPrimitive.Root; export const PopoverTrigger=PopoverPrimitive.Trigger;
+export const PopoverContent=React.forwardRef(({className,align='center',sideOffset=4,...p},r)=><PopoverPrimitive.Portal><PopoverPrimitive.Content ref={r} align={align} sideOffset={sideOffset} className={cn('z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none',className)} {...p}/></PopoverPrimitive.Portal>); PopoverContent.displayName='PopoverContent';

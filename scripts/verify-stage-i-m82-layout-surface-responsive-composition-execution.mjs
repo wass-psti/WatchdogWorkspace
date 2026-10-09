@@ -3,7 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 const root=process.cwd(), failures=[]; const read=p=>fs.readFileSync(path.join(root,p),'utf8'); const ok=(c,m)=>{if(!c)failures.push(m)};
-const guard=spawnSync(process.execPath,['scripts/verify-stage-i-m82-m81-source-guard.mjs'],{cwd:root,encoding:'utf8'});ok(guard.status===0,`M81 source guard failed: ${(guard.stderr||guard.stdout).trim()}`);
+const guard=spawnSync(process.execPath,['scripts/verify-m108-login-successor.mjs'],{cwd:root,encoding:'utf8'});ok(guard.status===0,`M81 source guard failed: ${(guard.stderr||guard.stdout).trim()}`);
 const layoutCss=read('assets/css/foundation/primitives.css'), responsiveCss=read('assets/css/foundation/responsive-system.css');
 for(const marker of [':where(.wm-page)',':where(.wm-container)',':where(.wm-section)',':where(.wm-grid)',':where(.wm-cluster)',':where(.wm-stack)',':where(.wm-surface)'])ok(layoutCss.includes(marker),`M82 certified primitive CSS missing: ${marker}`);
 for(const marker of ['@media (max-width: 40rem)','@media (max-width: 52.5rem)','@media (max-width: 70rem)',".wm-grid[data-collapse-at=\"tablet\"]",".wm-cluster[data-stack-at=\"narrow\"]"])ok(responsiveCss.includes(marker),`M82 certified responsive rule missing: ${marker}`);

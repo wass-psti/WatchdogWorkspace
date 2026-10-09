@@ -1,0 +1,16 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@config "../tailwind.config.js";
+@source "../index.html";
+@source "./**/*.{js,jsx,ts,tsx}";
+
+[data-module="material-tracker"],
+[data-module="material-tracker"] * { box-sizing: border-box; }
+[data-module="material-tracker"] { min-width: 0; min-height: 100%; background: hsl(var(--background)); color: hsl(var(--foreground)); }
+[data-module="material-tracker"] button,
+[data-module="material-tracker"] input,
+[data-module="material-tracker"] textarea,
+[data-module="material-tracker"] select { font: inherit; }
+[data-module="material-tracker"] button { -webkit-tap-highlight-color: transparent; }
+[data-module="material-tracker"] * { border-color: hsl(var(--border)); }

@@ -2,7 +2,7 @@ import {spawnSync} from 'node:child_process';
 import process from 'node:process';
 
 const gates = [
-  ['scripts/verify-stage-i-m98-m97-source-guard.mjs'],
+  ['scripts/verify-m108-login-successor.mjs'],
   ['verify-stage-h-m77-final-ui-production-certification.mjs'],
   ['scripts/verify-stage-h-m77-final-ui-production-certification-execution.mjs'],
   ['verify-stage-i-m78-visual-system-foundation.mjs'],

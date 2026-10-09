@@ -30,9 +30,10 @@ assert.match(distVerifier, /startEmbeddedModule\\b/, 'dist verification must req
 assert.doesNotMatch(distVerifier, /await\s+import\(bootstrapUrl\)/, 'Node dist verification must not execute-import browser-only runtime chunks');
 
 const previewVerifier = read('scripts/verify-vite-server.mjs');
-for (const path of ['/apps/time-tracker/index.html', '/apps/fueltrack-plus/runtime.html', '/apps/tradelink/runtime.html']) {
+for (const path of ['/apps/time-tracker/index.html', '/apps/fueltrack-plus/runtime.html', '/apps/tradelink/runtime.html', '/apps/material-tracker/index.html']) {
   assert.ok(previewVerifier.includes(path), `preview smoke must exercise ${path}`);
 }
-assert.match(previewVerifier, /could not start|Authenticated .* access is required|Open .* through Work Management/, 'preview embedded-runtime smoke must require an explicit startup/failure state');
+assert.match(previewVerifier, /could not start|Authenticated .* access is required|Authenticated WatchdogWorkspace session is required|Open .* through Work Management/, 'preview embedded-runtime smoke must require an explicit startup/failure state');
+assert.ok(read('scripts/build-material-tracker.mjs').includes('apps/material-tracker'), 'Material Tracker nested runtime must build into the same-origin apps route');
 
 console.log('v1.43.2 production embedded-runtime compatibility verification: PASS');

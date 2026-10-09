@@ -52,6 +52,6 @@ assert.equal(sdk.hasService('math'), true, 'Runtime service registry failed');
 const { applicationManifest, validateApplicationManifest } = await import('./config/application-manifest.ts');
 const validation = validateApplicationManifest(applicationManifest);
 assert.equal(validation.valid, true, validation.errors.join('; '));
-assert.equal(applicationManifest.modules.length, 3, 'Registered module inventory changed unexpectedly');
+assert.deepEqual(applicationManifest.modules.map((module) => module.id).sort(), ['fueltrack-plus', 'material-tracker', 'time-tracker', 'tradelink'], 'Registered module inventory changed unexpectedly');
 
 console.log('v1.22.0 architecture restructuring verification: PASS');

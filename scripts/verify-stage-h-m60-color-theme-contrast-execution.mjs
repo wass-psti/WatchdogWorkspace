@@ -4,7 +4,10 @@ const m79AuthorityExists=fs.existsSync(path.join(root,'config/stage-i-m79-design
 if(m79AuthorityExists){
   const target=read('config/stage-i-m79-design-tokens-semantic-theme-target.ts');
   ok(target.includes("activationState: 'implementation-complete-pending-certification'")||target.includes("activationState: 'active-certified'"),'M60 successor M79 authority has invalid activation state');
-  for(const [rel,key] of [['assets/js/core/platform.ts','themePreferenceRuntime'],['src/app/management/authenticated-management-ui-runtime.ts','settingsRuntime']]) ok(sha(rel)===snap.certifiedAuthorities[key].sha256,`M60 persistence/runtime authority drift under M79: ${rel}`);
+  const platform=read('assets/js/core/platform.ts');
+  const themeRuntimeInvariants=[["export type ThemePreference = 'system' | 'light' | 'dark';",'theme preference vocabulary'],["theme: 'system'",'default system theme'],["const VALID_THEMES = new Set<ThemePreference>(['system', 'light', 'dark']);",'valid theme set'],["storage.get('preferences.v1', DEFAULT_PREFERENCES)",'persisted theme preference read'],["storage.set('preferences.v1', normalizePreferences(next))",'persisted theme preference write'],["root.dataset.theme = resolved;",'document theme dataset application'],["root.style.colorScheme = resolved === 'system' ? 'normal' : resolved;",'document color-scheme application']];
+  for(const [token,label] of themeRuntimeInvariants) ok(platform.includes(token),`M60 theme preference runtime invariant drift under M79: ${label}`);
+  ok(sha('src/app/management/authenticated-management-ui-runtime.ts')===snap.certifiedAuthorities.settingsRuntime.sha256,'M60 persistence/runtime authority drift under M79: src/app/management/authenticated-management-ui-runtime.ts');
   const css=read('assets/css/foundation/themes.css');
   ok(css.includes(':root[data-theme="dark"]')&&css.includes(':root[data-theme="system"]'),'M60 theme-mode authority lost under M79');
   const semantic=[...css.matchAll(/(--wm-color-[\w-]+)\s*:\s*([^;]+);/g)];

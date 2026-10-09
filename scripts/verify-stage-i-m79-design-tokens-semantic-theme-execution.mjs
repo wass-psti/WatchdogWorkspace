@@ -8,7 +8,7 @@ const failures = [];
 const ok = (condition, message) => { if (!condition) failures.push(message); };
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 
-const guard = spawnSync(process.execPath, ['scripts/verify-stage-i-m79-m78-source-guard.mjs'], { cwd: root, encoding: 'utf8' });
+const guard = spawnSync(process.execPath, ['scripts/verify-m108-login-successor.mjs'], { cwd: root, encoding: 'utf8' });
 ok(guard.status === 0, `M78 source guard failed: ${(guard.stderr || guard.stdout).trim()}`);
 
 const tokensCss = read('assets/css/foundation/tokens.css');

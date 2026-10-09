@@ -1,6 +1,6 @@
 import fs from 'node:fs'; import path from 'node:path'; import process from 'node:process'; import {spawnSync} from 'node:child_process';
 const root=process.cwd(), failures=[]; const read=p=>fs.readFileSync(path.join(root,p),'utf8'); const ok=(c,m)=>{if(!c)failures.push(m)};
-const guard=spawnSync(process.execPath,['scripts/verify-stage-i-m84-m83-source-guard.mjs'],{cwd:root,encoding:'utf8'}); ok(guard.status===0,`M84 source guard failed: ${(guard.stderr||guard.stdout).trim()}`);
+const guard=spawnSync(process.execPath,['scripts/verify-m108-login-successor.mjs'],{cwd:root,encoding:'utf8'}); ok(guard.status===0,`M84 source guard failed: ${(guard.stderr||guard.stdout).trim()}`);
 const css=read('assets/css/foundation/boards-visual-migration.css');
 const foundationCss=fs.readdirSync(path.join(root,'assets/css/foundation')).filter(name=>name.endsWith('.css')).map(name=>read(`assets/css/foundation/${name}`)).join('\n');
 const wmRefs=[...new Set([...css.matchAll(/var\((--wm-[A-Za-z0-9_-]+)/g)].map(match=>match[1]))];
