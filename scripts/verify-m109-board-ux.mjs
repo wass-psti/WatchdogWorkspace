@@ -33,5 +33,16 @@ const css=text('assets/css/app.css');
 assert(css.includes('.board-overlay-layer[popover]') && css.includes('pointer-events: none;'));
 assert(form.includes('let itemSearchFrame = 0;') && /itemSearchFrame = requestAnimationFrame\(\(\) => \{[\s\S]*?itemSearchFrame = 0;[\s\S]*?renderBoardViewOnly\(\);[\s\S]*?\}\);/.test(form), 'Board search must preserve inherited animation-frame coalescing');
 assert(!form.includes('itemSearchTimer') && !form.includes('}, 85);'), 'Disallow timer debounce that violates the certified interaction contract');
+// Historical M77/M78 no-drift remains enforceable except for four exact M109 source hashes.
+const protectedGuard = text('scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs');
+for (const [relative, approvedHash] of [
+  ['assets/js/features/boards/board-schema.ts', '9b7d0a55bb47a85436d29801d7fd62beea44cb0944a016843b6a33994e61cce1'],
+  ['assets/js/features/boards/controllers/board-menu-controller.ts', '303c39ff27de01d112dbd5f0a541ee51ee2a24acd50feee7312c97d11670449b'],
+  ['assets/js/features/boards/controllers/column-workflows.ts', 'd86b8ca16a694c699cca7a7fe211aa6e3d581601f20bf1897ab17fbcb8fbd36d'],
+  ['assets/js/features/boards/views/table-view.ts', '575a944f918d4134b456671dc7b88e65e309e64c0d7764900afaf2aad00f8076'],
+]) {
+  assert.equal(s(relative), approvedHash, `M109 protected source mutation drift: ${relative}`);
+  assert(protectedGuard.includes(approvedHash) && protectedGuard.includes(relative), `M78 guard lacks exact successor authorization: ${relative}`);
+}
 assert.equal(s('assets/js/core/auth.ts'),'b93073bd4b5a37359e5c8d499deb7f63a5e8edf448170ec4bb57aba30c76c511');
 console.log('PASS M109: both board-creation paths, nonduplicated immutable identity, first-column table order, top-layer dropdown, immediate placement, frame-coalesced search, approved auth hash');
