@@ -18,6 +18,11 @@ export const BOARD_TAB_LABELS = Object.freeze({ active: 'Boards', archived: 'Arc
 export const BOARD_ROLE_LABELS = Object.freeze({ owner: 'Owner', editor: 'Editor', viewer: 'Viewer' } satisfies Record<BoardRole, string>);
 
 export const COLUMN_TYPES = boardColumnTypeMap();
+/** The first logical data column is the non-deletable item identity.
+ * Its value is stored in work_board_items.title, NOT in the optional column schema.
+ * Adding a second work_board_columns entry would duplicate item identity and corrupt imports.
+ */
+export const PRIMARY_ITEM_COLUMN = Object.freeze({ key: '__item', name: 'Item Name', required: true, position: 0 });
 
 function asSupportedColumnType(value: string): BoardColumnType {
   const meta = getBoardColumnType(value);

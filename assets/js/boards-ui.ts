@@ -6,7 +6,7 @@ import type { BoardRealtimeService, BoardRealtimeSnapshot } from '../../src/feat
 import type { BoardHistorySnapshot } from './features/boards/controllers/history-controller.ts';
 import type { UiAuthPort, WorkspaceRenderer, TopbarRenderer, ToastRenderer, Navigate, IconSet } from '../../src/platform/contracts/ui.ts';
 import { normalizeAppError } from './platform/errors/app-error.ts';
-import { COLUMN_TYPES, startingColumns } from './features/boards/board-schema.ts';
+import { COLUMN_TYPES, PRIMARY_ITEM_COLUMN, startingColumns } from './features/boards/board-schema.ts';
 import { createBoardViewState, resetBoardInteractionState } from './features/boards/board-state.ts';
 import { renderBoardToolbar, renderBoardListState } from './features/boards/views/board-list-view.ts';
 import { renderItemWorkspace } from './features/boards/views/item-workspace-view.ts';
@@ -346,7 +346,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     const typeChoices = Object.entries(COLUMN_TYPES).map(([type, meta]) => `<label class="board-setup-column"><input type="checkbox" name="setup_column" value="${type}"><span class="column-type-icon">${esc(meta.icon)}</span><span><strong>${esc(meta.label)}</strong><small>${esc(meta.hint)}</small></span></label>`).join('');
     const modal = dialog({
       title: 'Create a board',
-      body: `<label class="field-label" for="boardCreateName">Board name<input id="boardCreateName" data-board-create-name name="name" required maxlength="120" value="New board" placeholder="For example, Project delivery plan" autocomplete="off"></label><label class="field-label" for="boardCreateDescription">Description<textarea id="boardCreateDescription" data-board-create-description name="description" maxlength="1200" rows="3" placeholder="Describe the purpose of this board"></textarea></label><fieldset class="board-setup-fieldset"><legend>Starting setup</legend><label class="choice-card"><input type="radio" name="setup_mode" value="empty" checked><span><strong>Start empty</strong><small>Create the board without custom columns. Add them whenever you need them.</small></span></label><label class="choice-card"><input type="radio" name="setup_mode" value="custom"><span><strong>Choose starting columns</strong><small>Choose the columns you want to start with. You can change or remove them later.</small></span></label><div class="board-setup-columns" data-board-setup-columns hidden>${typeChoices}</div></fieldset><p class="field-help">Your board stays flexible. Add, rename, reorder, configure, duplicate, hide, or delete columns as your workflow changes.</p>`,
+      body: `<label class="field-label" for="boardCreateName">Board name<input id="boardCreateName" data-board-create-name name="name" required maxlength="120" value="New board" placeholder="For example, Project delivery plan" autocomplete="off"></label><label class="field-label" for="boardCreateDescription">Description<textarea id="boardCreateDescription" data-board-create-description name="description" maxlength="1200" rows="3" placeholder="Describe the purpose of this board"></textarea></label><fieldset class="board-setup-fieldset"><legend>Starting setup</legend><div class="board-setup-primary" data-board-primary-column aria-label="Required primary column"><strong>1 · ${PRIMARY_ITEM_COLUMN.name}</strong><small>Primary column · always first · required on every board. Cannot be removed.</small></div><label class="choice-card"><input type="radio" name="setup_mode" value="empty" checked><span><strong>Start empty</strong><small>Keep the required Item Name column; add optional columns later.</small></span></label><label class="choice-card"><input type="radio" name="setup_mode" value="custom"><span><strong>Choose starting columns</strong><small>Item Name stays first. Choose additional columns to follow it.</small></span></label><div class="board-setup-columns" data-board-setup-columns hidden>${typeChoices}</div></fieldset><p class="field-help">Your board stays flexible. Add, rename, reorder, configure, duplicate, hide, or delete columns as your workflow changes.</p>`,
       submitLabel: 'Create board',
       onSubmit: async (fd) => {
         const nameControl = modal.wrap.querySelector<HTMLInputElement>('[data-board-create-name]');
@@ -371,7 +371,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
         });
         state.status = 'active';
         await loadBoards('active');
-        toast(columns.length ? `Board created with ${columns.length} starting column${columns.length === 1 ? '' : 's'}.` : 'Board created. Add columns whenever you need them.');
+        toast(columns.length ? `Board created: Item Name first, plus ${columns.length} additional column${columns.length === 1 ? '' : 's'}.` : 'Board created with Item Name as the primary column.');
         navigate(`boards/${id}`);
       },
     });
@@ -1332,6 +1332,8 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       const target = event.target;
       if (!(target instanceof HTMLInputElement) || !target.matches('[data-item-search]')) return;
       state.itemSearch = target.value;
+      // Coalesce rapid input to one browser rendering opportunity. Preserve the
+      // exact text immediately and avoid blocking dropdowns with sync table work.
       cancelAnimationFrame(itemSearchFrame);
       itemSearchFrame = requestAnimationFrame(() => {
         itemSearchFrame = 0;
@@ -1400,6 +1402,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
       if (btn.matches('[data-board-redo]')) { await history.redo(); return; }
       if (btn.matches('[data-clear-item-search]')) {
         state.itemSearch = '';
+        cancelAnimationFrame(itemSearchFrame); itemSearchFrame = 0;
         renderBoardData();
         requestAnimationFrame(() => root.querySelector<HTMLInputElement>('[data-item-search]')?.focus());
         return;

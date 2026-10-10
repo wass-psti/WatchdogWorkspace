@@ -112,6 +112,12 @@ test('@m49-item-movement keyboard/native lane movement preserves hidden Table or
   expect(itemState(fixture,'item-a1')?.group_id).toBe(alphaBefore.group_id);
   expect(itemState(fixture,'item-a1')?.position).toBe(alphaBefore.position);
   await expect(card(page,'Alpha')).toBeVisible();
+  // The status change is optimistic. Wait for its authoritative RPC AND for
+  // the board to leave its mutation-pending state before starting a new drag.
+  // Otherwise the deliberate overlapping-mutation guard correctly drops that
+  // second gesture; this test exercises two *sequential* successful moves.
+  await expect.poll(() => fixture.calls('wm_move_board_item').at(-1)?.body.p_item_id).toBe('item-a1');
+  await expect(page.locator('.board-detail-page')).not.toHaveAttribute('aria-busy', 'true');
 
   const delta = card(page,'Delta');
   await nativeDrag(delta, lane(page,'Done'));
@@ -120,6 +126,7 @@ test('@m49-item-movement keyboard/native lane movement preserves hidden Table or
   await expect.poll(() => itemState(fixture,'item-b1')?.status).toBe('done_custom');
   expect(itemState(fixture,'item-b1')?.group_id).toBe('group-b');
   expect(itemState(fixture,'item-b1')?.position).toBe(0);
+  await expect(page.locator('.board-detail-page')).not.toHaveAttribute('aria-busy', 'true');
 
   fixture.failNext('wm_move_board_item',{ message:'Simulated item move failure' });
   const bravoHandle = card(page,'Bravo').locator('[data-kanban-item-drag="item-a2"]');

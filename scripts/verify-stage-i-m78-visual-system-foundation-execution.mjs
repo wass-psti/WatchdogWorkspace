@@ -201,6 +201,16 @@ const m103AllowedProtectedMutations = new Set([
 ]);
 const m103AllowedNewProtectedFiles = new Set([]);
 
+// M109 successor authorization is deliberately hash-pinned, not blanket permission.
+// The M77/M78 baseline is immutable for every other protected presentation file.
+const m109BoardAuthorityExists = fs.existsSync(path.join(root, 'scripts/verify-m109-board-ux.mjs'));
+const m109ExactProtectedPresentationHashes = new Map([
+  ['assets/js/features/boards/board-schema.ts', '9b7d0a55bb47a85436d29801d7fd62beea44cb0944a016843b6a33994e61cce1'],
+  ['assets/js/features/boards/controllers/board-menu-controller.ts', '303c39ff27de01d112dbd5f0a541ee51ee2a24acd50feee7312c97d11670449b'],
+  ['assets/js/features/boards/controllers/column-workflows.ts', 'd86b8ca16a694c699cca7a7fe211aa6e3d581601f20bf1897ab17fbcb8fbd36d'],
+  ['assets/js/features/boards/views/table-view.ts', '575a944f918d4134b456671dc7b88e65e309e64c0d7764900afaf2aad00f8076'],
+]);
+
 const modeFor = (stat) => {
   if (stat.isSymbolicLink()) return '120000';
   return (stat.mode & 0o111) !== 0 ? '100755' : '100644';
@@ -263,7 +273,11 @@ for (const [relative, expected] of expectedByPath) {
     const normalizedBytes = Buffer.from(normalizedBootstrap);
     ok(sha256(normalizedBytes) === expected.sha256, `M77 protected presentation bootstrap drift beyond certified Material Tracker module-id extension: ${relative}`);
     ok(normalizedBytes.length === expected.size, `M77 protected presentation bootstrap size drift beyond certified Material Tracker module-id extension: ${relative}`);
-  } else if (!successorAuthorizedMutation) {
+  } else if (!(successorAuthorizedMutation || (
+    m109BoardAuthorityExists &&
+    m109ExactProtectedPresentationHashes.get(relative) === actual.sha256 &&
+    actual.sha256 !== expected.sha256
+  ))) {
     ok(actual.sha256 === expected.sha256, `M77 protected presentation byte drift: ${relative}`);
     ok(actual.size === expected.size, `M77 protected presentation size drift: ${relative}`);
   }
@@ -333,4 +347,4 @@ if (failures.length) {
   process.exit(1);
 }
 console.log('M78 protected-presentation no-visual-drift verification: PASS');
-console.log(`Protected files=${actualEntries.length}; aggregate=${aggregate}; Chakra imports remain design-system-owned${m79AuthorityExists ? '; M79 token/theme successor mutations authorized' : ''}${m80AuthorityExists ? '; M80 shared primitive additions authorized' : ''}${m81AuthorityExists ? '; M81 application-shell successor mutations/additions authorized' : ''}${m82AuthorityExists ? '; M82 layout-composition mutations/additions authorized' : ''}${m83AuthorityExists ? '; M83 authentication/account presentation mutations/additions authorized' : ''}${m84AuthorityExists ? '; M84 Boards visual presentation additions authorized' : ''}${m85AuthorityExists ? '; M85 TimeTracker visual presentation mutation/additions authorized' : ''}${m86AuthorityExists ? '; M86 FuelTrack+ visual presentation mutation/additions authorized' : ''}${m87AuthorityExists ? '; M87 TradeLink visual presentation mutation/additions authorized' : ''}${m88AuthorityExists ? '; M88 Users/roles administration presentation mutation/additions authorized' : ''}${m89AuthorityExists ? '; M89 Settings/configuration presentation mutation/additions authorized' : ''}${m90AuthorityExists ? '; M90 data-dense enterprise interaction mutation/additions authorized' : ''}${m91AuthorityExists ? '; M91 overlay/feedback successor mutation/additions authorized' : ''}${m92AuthorityExists ? '; M92 state-system successor mutation/additions authorized' : ''}${m93AuthorityExists ? '; M93 interaction-state successor additions authorized' : ''}${m94AuthorityExists ? '; M94 motion-transition successor mutation/additions authorized' : ''}${m95AuthorityExists ? '; M95 responsive-harmonization successor mutations/additions authorized' : ''}${m96AuthorityExists ? '; M96 legacy styling retirement mutations/removals authorized' : ''}${m97AuthorityExists ? '; M97 workspace-wide visual regression successor additions authorized' : ''}${m100AuthorityExists ? '; M100 Boards import protected-source mutations/additions authorized' : ''}${m101AuthorityExists ? '; M101 Boards import preview/atomic-commit protected-source mutations/additions authorized' : ''}${m102AuthorityExists ? '; M102 Boards data-portability protected-source mutations/additions authorized' : ''}${m103AuthorityExists ? '; M103 Prompts 1-4 completion protected-source mutations authorized' : ''}.`);
+console.log(`Protected files=${actualEntries.length}; aggregate=${aggregate}; Chakra imports remain design-system-owned${m79AuthorityExists ? '; M79 token/theme successor mutations authorized' : ''}${m80AuthorityExists ? '; M80 shared primitive additions authorized' : ''}${m81AuthorityExists ? '; M81 application-shell successor mutations/additions authorized' : ''}${m82AuthorityExists ? '; M82 layout-composition mutations/additions authorized' : ''}${m83AuthorityExists ? '; M83 authentication/account presentation mutations/additions authorized' : ''}${m84AuthorityExists ? '; M84 Boards visual presentation additions authorized' : ''}${m85AuthorityExists ? '; M85 TimeTracker visual presentation mutation/additions authorized' : ''}${m86AuthorityExists ? '; M86 FuelTrack+ visual presentation mutation/additions authorized' : ''}${m87AuthorityExists ? '; M87 TradeLink visual presentation mutation/additions authorized' : ''}${m88AuthorityExists ? '; M88 Users/roles administration presentation mutation/additions authorized' : ''}${m89AuthorityExists ? '; M89 Settings/configuration presentation mutation/additions authorized' : ''}${m90AuthorityExists ? '; M90 data-dense enterprise interaction mutation/additions authorized' : ''}${m91AuthorityExists ? '; M91 overlay/feedback successor mutation/additions authorized' : ''}${m92AuthorityExists ? '; M92 state-system successor mutation/additions authorized' : ''}${m93AuthorityExists ? '; M93 interaction-state successor additions authorized' : ''}${m94AuthorityExists ? '; M94 motion-transition successor mutation/additions authorized' : ''}${m95AuthorityExists ? '; M95 responsive-harmonization successor mutations/additions authorized' : ''}${m96AuthorityExists ? '; M96 legacy styling retirement mutations/removals authorized' : ''}${m97AuthorityExists ? '; M97 workspace-wide visual regression successor additions authorized' : ''}${m100AuthorityExists ? '; M100 Boards import protected-source mutations/additions authorized' : ''}${m101AuthorityExists ? '; M101 Boards import preview/atomic-commit protected-source mutations/additions authorized' : ''}${m102AuthorityExists ? '; M102 Boards data-portability protected-source mutations/additions authorized' : ''}${m103AuthorityExists ? '; M103 Prompts 1-4 completion protected-source mutations authorized' : ''}${m109BoardAuthorityExists ? '; M109 four exact hash-pinned Board presentation mutations authorized' : ''}.`);
