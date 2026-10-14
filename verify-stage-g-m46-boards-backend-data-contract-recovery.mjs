@@ -63,13 +63,29 @@ const contractNames=new Set(contract.rpcs.map((rpc)=>rpc.name));
 const frontendRpcNames=new Set([...repo.matchAll(/\brpc\('([^']+)'/g)].map((match)=>match[1]));
 const m51SuccessorRpcs=new Set(['wm_set_board_cell_if_current']);
 const m101SuccessorRpcs=new Set(['wm_import_board_items_atomic']);
+const m143SuccessorRpcs=new Set(['wm_import_board_wizard_atomic']);
+const m143SuccessorSql=read('supabase/m143/board_import_wizard_atomic_DRAFT.sql');
+const m143SuccessorSha256='b883b3c432ae5ebcadd9fda2f15b5bcdeb0cff9448ace4862c6fb88fd5fd37fc';
 const m51Migration=read('supabase/migrations/v1.43.2-stage-g-m51-boards-realtime-concurrency-stabilization.sql');
 const m101Migration=read('supabase/migrations/v1.43.2-stage-i-m101-boards-import-preview-atomic-commit.sql');
 for(const name of frontendRpcNames){
   if(contractNames.has(name)) continue;
   const governedByM51=m51SuccessorRpcs.has(name);
   const governedByM101=m101SuccessorRpcs.has(name);
-  assert(governedByM51||governedByM101,`Frontend Board RPC ${name} is missing from the M46 contract and is not a governed successor RPC.`);
+  const governedByM143=m143SuccessorRpcs.has(name);
+  assert(governedByM51||governedByM101||governedByM143,`Frontend Board RPC ${name} is missing from the M46 contract and is not a governed successor RPC.`);
+  if(governedByM143){
+    assert.equal(createHash('sha256').update(m143SuccessorSql).digest('hex'),m143SuccessorSha256,'M143 wizard RPC successor draft SHA-256 changed.');
+    for(const fragment of [
+      `create or replace function public.${name}(`,
+      'security definer',
+      'set search_path = pg_catalog, public',
+      'auth.uid()',
+      `revoke all on function public.${name}(uuid,timestamptz,jsonb) from public,anon,authenticated;`,
+      `grant execute on function public.${name}(uuid,timestamptz,jsonb) to authenticated;`,
+    ]) assert(m143SuccessorSql.includes(fragment),`M143 successor RPC ${name} missing guarded SQL fragment ${fragment}`);
+    continue; // M46 certified 40-RPC predecessor contract/digest stays unchanged.
+  }
   const successorMigration=governedByM51?m51Migration:m101Migration;
   const successorMilestone=governedByM51?'M51':'M101';
   assert(successorMigration.includes(`function public.${name}`)&&successorMigration.includes(`grant execute on function public.${name}`),`${successorMilestone} successor RPC ${name} must be migration-defined and authenticated-executable.`);
