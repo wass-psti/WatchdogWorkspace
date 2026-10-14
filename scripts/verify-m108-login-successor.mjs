@@ -69,9 +69,31 @@ const expected = new Map(Object.entries({
   'scripts/test-m108-login-successor.mjs': '266e9b3dbb8a5790a80c21ef6dd5b42c9155e54c3de0d17907083865884f4ef6',
   'M108-LOGIN-SUCCESSOR-CONTINUATION.md': '357a7d5a3cae9de9376780fd55f63bfac033f71f942cb4a66d1bf424e02ebf5b',
 }));
+
+// M144.15 HF1 follows M143/M144.14 without rewriting historical approvals.
+// Exact reviewed successor: three runtime files plus two narrowly scoped tests.
+const m14415ExactSource = new Map([
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', 'e48fe28a46c0def531c42558537333a82d0ba13cb54155a22404799febbd1615'],
+  ['src/features/boards/import/board-import-wizard-commit.ts', '0b351be68bb4d059d98f8111b128738aa6085b95ddba922271e7ac5b6f2619de'],
+  ['src/features/boards/import/board-import-wizard-plan.ts', '7536ad306234757e2fb3303f59290a996a22da4c7c773910ec8e983310448c8d'],
+  ['tests/modern/board-import/m141-wizard-plan.verify.mjs', '1f7d3ac68bd0ed0b7c574a57143abfa77088dc36c2d044e91d2719889f6488f0'],
+  ['tests/modern/board-import/m142-wizard-integration.verify.mjs', '18a67300093d332604bc66187ca72d6fbe2d727bed51fedf8770bf2c4a3ed304'],
+ ]);
+const m14415M78GuardSha256 = 'd2425aec4bd0ced1f67992c783db76cfb299cca4306bf6c0d9d7acdba642f99d';
+const m14415Active = [...m14415ExactSource].every(([rel, digest]) =>
+  fs.existsSync(path.join(repo, rel)) && sha(path.join(repo, rel)) === digest) &&
+  sha(path.join(repo, 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14415M78GuardSha256;
+const isApprovedHistoricalOrM14415 = (rel, expectedDigest) => {
+  const file = path.join(repo, rel);
+  if (!fs.existsSync(file)) return false;
+  const actualDigest = sha(file);
+  return actualDigest === expectedDigest ||
+    (m14415Active && m14415ExactSource.get(rel) === actualDigest);
+};
+
 for (const [rel, want] of expected) {
   const file = path.join(repo, rel);
-  if (!fs.existsSync(file) || sha(file) !== want) fail(`unapproved bytes or missing file: ${rel}`);
+  if (!isApprovedHistoricalOrM14415(rel, want) && !(m14415Active && rel === 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) fail(`unapproved bytes or missing file: ${rel}`);
 }
 
 // Only reproducible outputs are excluded; historical integration source is guarded.
@@ -130,7 +152,7 @@ const m141ApprovedAdditions = new Map(Object.entries({
   "spec/M141-BOARD-IMPORT-WIZARD-CONTRACT-NOT-CERTIFIED.md": "e3d1301ee72ebae8d959c7d718c9543c8209a49a00da47ed362eeaa3538f135e"
 }));
 for (const [rel, digest] of m141ApprovedAdditions) {
-  if (sha(path.join(repo, rel)) !== digest) {
+  if (!isApprovedHistoricalOrM14415(rel, digest)) {
     fail(`M141 Board Import source digest mismatch: ${rel}`);
   }
   permittedAdded.add(rel);
@@ -150,7 +172,7 @@ const m142ApprovedWizardAdditions = new Map(Object.entries({
   "tests/modern/board-import/m142-wizard-integration.verify.mjs": "74f5b3517910b032571ec50b442f91438a81f5ce933e683778102bab56ae920f"
 }));
 for (const [rel, digest] of m142ApprovedWizardAdditions) {
-  if (sha(path.join(repo,rel)) !== digest) fail(`M142 wizard source hash mismatch: ${rel}`);
+  if (!isApprovedHistoricalOrM14415(rel, digest)) fail(`M142 wizard source hash mismatch: ${rel}`);
   permittedAdded.add(rel);
 }
 // M143 exact source-reviewed wizard approval; predecessor safeguards retained.
@@ -168,7 +190,7 @@ const m143ApprovedSource = new Map(Object.entries({
   "tests/modern/board-import/m143-contract.verify.mjs": "0f58c83dc169c82d9737b041c2404f64775193056ccd154dfd1edce638a3efa1",
  }));
 for (const [rel, expectedSha] of m143ApprovedSource) {
-  if (sha(path.join(repo, rel)) !== expectedSha) fail(`M143 source hash mismatch: ${rel}`);
+  if (!isApprovedHistoricalOrM14415(rel, expectedSha)) fail(`M143 source hash mismatch: ${rel}`);
   if (["spec/M143-TRANSACTION-AND-DEPLOYMENT-BOUNDARIES-NOT-CERTIFIED.md", "src/features/boards/contracts/import-wizard-commit.ts", "src/features/boards/import/board-import-wizard-commit.ts", "supabase/m143/board_import_wizard_atomic_DRAFT.sql", "tests/modern/board-import/m143-contract.verify.mjs"].includes(rel)) permittedAdded.add(rel);
   else if (!permittedAdded.has(rel)) permittedModified.add(rel);
 }

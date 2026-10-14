@@ -222,6 +222,15 @@ const m143WizardExactNewProtectedHashes = new Map([
   ['src/features/boards/import/board-import-wizard-plan.ts', '9abda2153f22868e3685c994cb2dbc0bae91da42b5ee737cbe15a410c4c366b1'],
 ]);
 
+
+// M144.15 HF1: preserve the immutable M143 hashes; authorize only three
+// separately reviewed successor bytes when the whole triplet is unchanged.
+const m14415WizardExactProtectedHashes = new Map([
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', 'e48fe28a46c0def531c42558537333a82d0ba13cb54155a22404799febbd1615'],
+  ['src/features/boards/import/board-import-wizard-commit.ts', '0b351be68bb4d059d98f8111b128738aa6085b95ddba922271e7ac5b6f2619de'],
+  ['src/features/boards/import/board-import-wizard-plan.ts', '7536ad306234757e2fb3303f59290a996a22da4c7c773910ec8e983310448c8d'],
+]);
+
 const modeFor = (stat) => {
   if (stat.isSymbolicLink()) return '120000';
   return (stat.mode & 0o111) !== 0 ? '100755' : '100644';
@@ -255,6 +264,14 @@ actualEntries.sort((a, b) => a.path.localeCompare(b.path));
 
 const expectedByPath = new Map(manifest.entries.map((entry) => [entry.path, entry]));
 const actualByPath = new Map(actualEntries.map((entry) => [entry.path, entry]));
+
+// A partial successor edit does not authorize any one of the three files.
+// The reviewed M143 SQL and strict regular-file modes are still required.
+const m14415WizardAuthorityExists = m143WizardAuthorityExists &&
+  [...m14415WizardExactProtectedHashes].every(([relative, digest]) => {
+    const entry = actualByPath.get(relative);
+    return entry?.sha256 === digest && entry.mode === '100644';
+  });
 
 for (const [relative, expected] of expectedByPath) {
   const actual = actualByPath.get(relative);
@@ -310,7 +327,7 @@ if (m143WizardAuthorityExists) {
     ok(Boolean(actual), `M143 protected wizard successor file missing: ${relative}`);
     if (!actual) continue;
     ok(actual.mode === '100644', `M143 protected wizard successor file mode drift: ${relative}`);
-    ok(actual.sha256 === expectedSha, `M143 protected wizard successor SHA-256 drift: ${relative}`);
+    ok(actual.sha256 === expectedSha || (m14415WizardAuthorityExists && m14415WizardExactProtectedHashes.get(relative) === actual.sha256), `M143 protected wizard successor SHA-256 drift: ${relative}`);
   }
 }
 for (const relative of actualByPath.keys()) {
@@ -340,7 +357,8 @@ for (const relative of actualByPath.keys()) {
       (m102AuthorityExists && m102AllowedNewProtectedFiles.has(relative)) ||
       (m103AuthorityExists && m103AllowedNewProtectedFiles.has(relative)) ||
       (m143WizardAuthorityExists &&
-        m143WizardExactNewProtectedHashes.get(relative) === actualByPath.get(relative)?.sha256 &&
+        (m143WizardExactNewProtectedHashes.get(relative) === actualByPath.get(relative)?.sha256 ||
+         (m14415WizardAuthorityExists && m14415WizardExactProtectedHashes.get(relative) === actualByPath.get(relative)?.sha256)) &&
         actualByPath.get(relative)?.mode === '100644'),
       `new protected presentation file is not successor-authorized: ${relative}`,
     );
