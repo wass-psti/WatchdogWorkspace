@@ -211,11 +211,31 @@ const m109ExactProtectedPresentationHashes = new Map([
   ['assets/js/features/boards/views/table-view.ts', '575a944f918d4134b456671dc7b88e65e309e64c0d7764900afaf2aad00f8076'],
 ]);
 
+// M143 Board Import wizard successor: six exact SHA-256-pinned additions only.
+// The M77/M78 baseline and all other successor authorities remain unchanged.
+const m143WizardExactNewProtectedHashes = new Map([
+  ['assets/css/board-import-wizard.css', '3ee1ab4e968421eb98dbd67f8b543d6120a4d3413d440e2abfc4f07d6a34a0e6'],
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', '7fd7b09b9cccd4eb0bc36827d54cc845222e15c3dce676ae486669506c1fce81'],
+  ['src/features/boards/contracts/import-wizard-commit.ts', '8222931e5e97f9f383a7d1ec72c55a43ef28f406efcb5f2434de205f3007f961'],
+  ['src/features/boards/contracts/import-wizard.ts', 'f126606d8a2b26177d4731130562aa17e0c22823e8ad2ad28017c019fa20405d'],
+  ['src/features/boards/import/board-import-wizard-commit.ts', '877cb6cb3aaeec46006a369a2fadee99371af07dcdbd31c4eab2c5799de237e1'],
+  ['src/features/boards/import/board-import-wizard-plan.ts', '9abda2153f22868e3685c994cb2dbc0bae91da42b5ee737cbe15a410c4c366b1'],
+]);
+
 const modeFor = (stat) => {
   if (stat.isSymbolicLink()) return '120000';
   return (stat.mode & 0o111) !== 0 ? '100755' : '100644';
 };
 const sha256 = (buffer) => crypto.createHash('sha256').update(buffer).digest('hex');
+
+// Refuse M143 visual authority unless the exact reviewed atomic RPC source
+// and the documented M143 contract are both present. This does not execute SQL.
+const m143WizardSqlPath = path.join(root, 'supabase/m143/board_import_wizard_atomic_DRAFT.sql');
+const m143WizardAuthorityExists =
+  fs.existsSync(path.join(root, 'spec/M143-TRANSACTION-AND-DEPLOYMENT-BOUNDARIES-NOT-CERTIFIED.md')) &&
+  fs.existsSync(path.join(root, 'tests/modern/board-import/m143-contract.verify.mjs')) &&
+  fs.existsSync(m143WizardSqlPath) &&
+  sha256(fs.readFileSync(m143WizardSqlPath)) === 'b883b3c432ae5ebcadd9fda2f15b5bcdeb0cff9448ace4862c6fb88fd5fd37fc';
 
 const actualEntries = [];
 const walk = (relative) => {
@@ -282,6 +302,17 @@ for (const [relative, expected] of expectedByPath) {
     ok(actual.size === expected.size, `M77 protected presentation size drift: ${relative}`);
   }
 }
+// Unlike a folder-level allowlist, every approved new file must exist at
+// its reviewed bytes and non-executable regular-file mode.
+if (m143WizardAuthorityExists) {
+  for (const [relative, expectedSha] of m143WizardExactNewProtectedHashes) {
+    const actual = actualByPath.get(relative);
+    ok(Boolean(actual), `M143 protected wizard successor file missing: ${relative}`);
+    if (!actual) continue;
+    ok(actual.mode === '100644', `M143 protected wizard successor file mode drift: ${relative}`);
+    ok(actual.sha256 === expectedSha, `M143 protected wizard successor SHA-256 drift: ${relative}`);
+  }
+}
 for (const relative of actualByPath.keys()) {
   if (!expectedByPath.has(relative)) {
     ok(
@@ -307,7 +338,10 @@ for (const relative of actualByPath.keys()) {
       (m100AuthorityExists && m100AllowedNewProtectedFiles.has(relative)) ||
       (m101AuthorityExists && m101AllowedNewProtectedFiles.has(relative)) ||
       (m102AuthorityExists && m102AllowedNewProtectedFiles.has(relative)) ||
-      (m103AuthorityExists && m103AllowedNewProtectedFiles.has(relative)),
+      (m103AuthorityExists && m103AllowedNewProtectedFiles.has(relative)) ||
+      (m143WizardAuthorityExists &&
+        m143WizardExactNewProtectedHashes.get(relative) === actualByPath.get(relative)?.sha256 &&
+        actualByPath.get(relative)?.mode === '100644'),
       `new protected presentation file is not successor-authorized: ${relative}`,
     );
   }
@@ -347,4 +381,4 @@ if (failures.length) {
   process.exit(1);
 }
 console.log('M78 protected-presentation no-visual-drift verification: PASS');
-console.log(`Protected files=${actualEntries.length}; aggregate=${aggregate}; Chakra imports remain design-system-owned${m79AuthorityExists ? '; M79 token/theme successor mutations authorized' : ''}${m80AuthorityExists ? '; M80 shared primitive additions authorized' : ''}${m81AuthorityExists ? '; M81 application-shell successor mutations/additions authorized' : ''}${m82AuthorityExists ? '; M82 layout-composition mutations/additions authorized' : ''}${m83AuthorityExists ? '; M83 authentication/account presentation mutations/additions authorized' : ''}${m84AuthorityExists ? '; M84 Boards visual presentation additions authorized' : ''}${m85AuthorityExists ? '; M85 TimeTracker visual presentation mutation/additions authorized' : ''}${m86AuthorityExists ? '; M86 FuelTrack+ visual presentation mutation/additions authorized' : ''}${m87AuthorityExists ? '; M87 TradeLink visual presentation mutation/additions authorized' : ''}${m88AuthorityExists ? '; M88 Users/roles administration presentation mutation/additions authorized' : ''}${m89AuthorityExists ? '; M89 Settings/configuration presentation mutation/additions authorized' : ''}${m90AuthorityExists ? '; M90 data-dense enterprise interaction mutation/additions authorized' : ''}${m91AuthorityExists ? '; M91 overlay/feedback successor mutation/additions authorized' : ''}${m92AuthorityExists ? '; M92 state-system successor mutation/additions authorized' : ''}${m93AuthorityExists ? '; M93 interaction-state successor additions authorized' : ''}${m94AuthorityExists ? '; M94 motion-transition successor mutation/additions authorized' : ''}${m95AuthorityExists ? '; M95 responsive-harmonization successor mutations/additions authorized' : ''}${m96AuthorityExists ? '; M96 legacy styling retirement mutations/removals authorized' : ''}${m97AuthorityExists ? '; M97 workspace-wide visual regression successor additions authorized' : ''}${m100AuthorityExists ? '; M100 Boards import protected-source mutations/additions authorized' : ''}${m101AuthorityExists ? '; M101 Boards import preview/atomic-commit protected-source mutations/additions authorized' : ''}${m102AuthorityExists ? '; M102 Boards data-portability protected-source mutations/additions authorized' : ''}${m103AuthorityExists ? '; M103 Prompts 1-4 completion protected-source mutations authorized' : ''}${m109BoardAuthorityExists ? '; M109 four exact hash-pinned Board presentation mutations authorized' : ''}.`);
+console.log(`Protected files=${actualEntries.length}; aggregate=${aggregate}; Chakra imports remain design-system-owned${m79AuthorityExists ? '; M79 token/theme successor mutations authorized' : ''}${m80AuthorityExists ? '; M80 shared primitive additions authorized' : ''}${m81AuthorityExists ? '; M81 application-shell successor mutations/additions authorized' : ''}${m82AuthorityExists ? '; M82 layout-composition mutations/additions authorized' : ''}${m83AuthorityExists ? '; M83 authentication/account presentation mutations/additions authorized' : ''}${m84AuthorityExists ? '; M84 Boards visual presentation additions authorized' : ''}${m85AuthorityExists ? '; M85 TimeTracker visual presentation mutation/additions authorized' : ''}${m86AuthorityExists ? '; M86 FuelTrack+ visual presentation mutation/additions authorized' : ''}${m87AuthorityExists ? '; M87 TradeLink visual presentation mutation/additions authorized' : ''}${m88AuthorityExists ? '; M88 Users/roles administration presentation mutation/additions authorized' : ''}${m89AuthorityExists ? '; M89 Settings/configuration presentation mutation/additions authorized' : ''}${m90AuthorityExists ? '; M90 data-dense enterprise interaction mutation/additions authorized' : ''}${m91AuthorityExists ? '; M91 overlay/feedback successor mutation/additions authorized' : ''}${m92AuthorityExists ? '; M92 state-system successor mutation/additions authorized' : ''}${m93AuthorityExists ? '; M93 interaction-state successor additions authorized' : ''}${m94AuthorityExists ? '; M94 motion-transition successor mutation/additions authorized' : ''}${m95AuthorityExists ? '; M95 responsive-harmonization successor mutations/additions authorized' : ''}${m96AuthorityExists ? '; M96 legacy styling retirement mutations/removals authorized' : ''}${m97AuthorityExists ? '; M97 workspace-wide visual regression successor additions authorized' : ''}${m100AuthorityExists ? '; M100 Boards import protected-source mutations/additions authorized' : ''}${m101AuthorityExists ? '; M101 Boards import preview/atomic-commit protected-source mutations/additions authorized' : ''}${m102AuthorityExists ? '; M102 Boards data-portability protected-source mutations/additions authorized' : ''}${m103AuthorityExists ? '; M103 Prompts 1-4 completion protected-source mutations authorized' : ''}${m109BoardAuthorityExists ? '; M109 four exact hash-pinned Board presentation mutations authorized' : ''}${m143WizardAuthorityExists ? '; M143 six exact hash-pinned Board Import wizard additions authorized' : ''}.`);

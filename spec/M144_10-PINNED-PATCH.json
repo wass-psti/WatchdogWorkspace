@@ -1,0 +1,128 @@
+{
+  "added": [
+    {
+      "candidate_git_sha1": "c9ad3d5f3eaff4604788c310f76acadfd683b495",
+      "path": "assets/css/board-import-wizard.css"
+    },
+    {
+      "candidate_git_sha1": "36b29e86605b47ca254abe032fa21f9bbacc12f8",
+      "path": "assets/js/features/boards/controllers/board-import-wizard-ui.ts"
+    },
+    {
+      "candidate_git_sha1": "4e1821f36081653d17b8f5370cbb82965359a037",
+      "path": "scripts/run-m144-wizard-browser.mjs"
+    },
+    {
+      "candidate_git_sha1": "3f5deeddc46f4ab5c1309fb48f1304ef339ef49c",
+      "path": "spec/M141-BOARD-IMPORT-WIZARD-CONTRACT-NOT-CERTIFIED.md"
+    },
+    {
+      "candidate_git_sha1": "4a90eeaff24ef7556b0800b2d4f8c96eeb157261",
+      "path": "spec/M142-WIZARD-IMPLEMENTATION-READINESS-NOT-CERTIFIED.md"
+    },
+    {
+      "candidate_git_sha1": "dd2d9d717c7b9ffe3d7bb377a4f1edc7babcab00",
+      "path": "spec/M143-TRANSACTION-AND-DEPLOYMENT-BOUNDARIES-NOT-CERTIFIED.md"
+    },
+    {
+      "candidate_git_sha1": "816c91239c82479e332131ae1384ec514d5eff15",
+      "path": "spec/M144-BROWSER-ACCEPTANCE-BOUNDARY-NOT-RELEASE-CERTIFIED.md"
+    },
+    {
+      "candidate_git_sha1": "b122e21fca7cc420016f913295340141e7a1edbe",
+      "path": "src/features/boards/contracts/import-wizard-commit.ts"
+    },
+    {
+      "candidate_git_sha1": "83ef6440ab5f615bce0b3af344d343fcc04d60dc",
+      "path": "src/features/boards/contracts/import-wizard.ts"
+    },
+    {
+      "candidate_git_sha1": "3d2339b8c304512671fcd97873db4545280922f0",
+      "path": "src/features/boards/import/board-import-wizard-commit.ts"
+    },
+    {
+      "candidate_git_sha1": "579128fb6e9cff0c9a05c04cb58f71f3927424d2",
+      "path": "src/features/boards/import/board-import-wizard-plan.ts"
+    },
+    {
+      "candidate_git_sha1": "a40892d6c16389a8420ba039c5aee7c95a01cb05",
+      "path": "supabase/m143/board_import_wizard_atomic_DRAFT.sql"
+    },
+    {
+      "candidate_git_sha1": "a75fec60a86974184750bb01f8da5f519c77fc47",
+      "path": "supabase/tests/m143/m1432_atomic_behavior.test.sql"
+    },
+    {
+      "candidate_git_sha1": "ad6130d537b7c4793540bd03c8e46b87b5842ced",
+      "path": "supabase/tests/m143/m1432_isolated_postgresql_fixture.sql"
+    },
+    {
+      "candidate_git_sha1": "ef317b9739caeeddfdfbad3517914962ca954670",
+      "path": "tests/modern/board-import/m141-wizard-plan.verify.mjs"
+    },
+    {
+      "candidate_git_sha1": "54d73be59feb7efac33f62ec04491d1e71458042",
+      "path": "tests/modern/board-import/m142-wizard-integration.verify.mjs"
+    },
+    {
+      "candidate_git_sha1": "b3f6b199fffb40109eb365b4f24328446c912943",
+      "path": "tests/modern/board-import/m143-contract.verify.mjs"
+    },
+    {
+      "candidate_git_sha1": "f04f5ee4cf92bbca44e73aca0e7d74f5a2068cec",
+      "path": "tests/modern/e2e/m144-wizard-acceptance.spec.mjs"
+    },
+    {
+      "candidate_git_sha1": "53f7e495de46818a225a604786089a04c0723a1e",
+      "path": "tests/modern/e2e/m144-wizard-harness.html"
+    },
+    {
+      "candidate_git_sha1": "69a1e3fbb0a9982556b78e47fc2664c71b009ec4",
+      "path": "tests/modern/e2e/m144-wizard-harness.ts"
+    }
+  ],
+  "branch": "m1449/board-import-qa",
+  "commit": "ed390940b56be6c4495347aae37593e9a34b4446",
+  "expected_excluded_later_governance": 19,
+  "expected_identical_count": 2784,
+  "expected_minimal_count": 2810,
+  "expected_remote_count": 2790,
+  "git_push_approved": false,
+  "main_branch": "main",
+  "main_deployment_approved": false,
+  "modified": [
+    {
+      "candidate_git_sha1": "56449d886ba57872e460650733344f643adf0ead",
+      "path": "assets/js/boards-ui.ts",
+      "remote_git_sha1": "c66d9917274ed15944fbacdd4184ad29c525036d"
+    },
+    {
+      "candidate_git_sha1": "902d21bfea2ce155c89da632a93ea734f4be8d90",
+      "path": "assets/js/features/boards/data/board-repository.ts",
+      "remote_git_sha1": "b2c9fc9d768283a800a4dab4451aacb09f5c6989"
+    },
+    {
+      "candidate_git_sha1": "2d43e4455df3c73d03a35779bc5784fab1c63783",
+      "path": "assets/js/features/boards/services/board-domain-service.ts",
+      "remote_git_sha1": "26bf6642c0d4ce7c2bdb3b5ea9b79f03f6a8f068"
+    },
+    {
+      "candidate_git_sha1": "1f7166a785b901cbaa846049a3cb2b9c3f6a5433",
+      "path": "scripts/verify-m108-login-successor.mjs",
+      "remote_git_sha1": "d9118569643c5b89ac3ddd933ad7dfc6451e189b"
+    },
+    {
+      "candidate_git_sha1": "ee87207c4799285b0c41a8ba48ada5fff1787103",
+      "path": "scripts/verify-stage-i-m108-m107-source-guard.mjs",
+      "remote_git_sha1": "7d57268dd20b6d12b60a3dc8effbc93f3063b547"
+    },
+    {
+      "candidate_git_sha1": "d26faa06ef8c14e982f9d63c3a44423b50322927",
+      "path": "src/features/boards/contracts/repository.ts",
+      "remote_git_sha1": "cbb9feaece060245013ef5e2e96c4feb4f812def"
+    }
+  ],
+  "repo": "wass-psti/WatchdogWorkspace",
+  "schema": "watchdogworkspace.m14410.minimal-board-import-patch.v1",
+  "shared_supabase_writes_approved": false
+}

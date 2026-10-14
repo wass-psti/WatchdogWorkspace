@@ -1,0 +1,17 @@
+{
+  "approval_to_change_main": false,
+  "branch": "m1449/board-import-qa",
+  "branch_code_pushed": false,
+  "created_with_connected_github": true,
+  "github_main_sha": "ed390940b56be6c4495347aae37593e9a34b4446",
+  "github_pages_preview_deployed": false,
+  "github_repository": "wass-psti/WatchdogWorkspace",
+  "github_test_branch_sha": "ed390940b56be6c4495347aae37593e9a34b4446",
+  "main_unchanged": true,
+  "next_action": "Reconcile full Git tracked tree, review controlled delta, run CI and hosted test-board acceptance before any main push",
+  "observation_date": "2026-10-14",
+  "schema": "watchdogworkspace.m1449.github-branch-snapshot.v1",
+  "shared_supabase_project_id": "jtlusodorfnyzgyuewkz",
+  "shared_supabase_wizard_rpc_body_sha256": "e193008098c5b0aac663dc14cd1276c72d7b0f88980970dc530d385683cc3eed",
+  "shared_supabase_write_tests_performed": false
+}

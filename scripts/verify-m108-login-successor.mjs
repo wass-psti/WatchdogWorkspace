@@ -18,7 +18,7 @@ if (!fs.existsSync(archive) || sha(archive) !== archiveSha) fail('original M108 
 
 const expected = new Map(Object.entries({
   'assets/js/core/auth.ts': 'b93073bd4b5a37359e5c8d499deb7f63a5e8edf448170ec4bb57aba30c76c511',
-  'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs': '942b332caedbd87fbd2332475d979d8350edba0c40c315b4b9afa1c1f46bf487',
+  'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs': '64bddafb64cb577aa9cb51605a86c5e7593597dcde521ee847cf037387a1683d',
   'assets/js/features/boards/board-schema.ts': '9b7d0a55bb47a85436d29801d7fd62beea44cb0944a016843b6a33994e61cce1',
   'assets/js/features/boards/controllers/board-menu-controller.ts': '303c39ff27de01d112dbd5f0a541ee51ee2a24acd50feee7312c97d11670449b',
   'assets/js/features/boards/controllers/column-workflows.ts': 'd86b8ca16a694c699cca7a7fe211aa6e3d581601f20bf1897ab17fbcb8fbd36d',
@@ -191,6 +191,55 @@ const m144ApprovedSource = new Map(Object.entries({
 }));
 for (const [rel, expectedSha] of m144ApprovedSource) {
   if (sha(path.join(repo, rel)) !== expectedSha) fail(`M144 source SHA256 mismatch: ${rel}`);
+  permittedAdded.add(rel);
+}
+// M144.14 — reconcile the exact M144.4–M144.12 governed successor inventory.
+// This is an explicit, SHA-256-pinned and operation-typed extension to M108.
+// The original certified archive must still authenticate; unlisted mutations,
+// additions, removals, symlinks and different bytes remain rejected.
+const m14414ExactModified = new Map(Object.entries({
+  "scripts/verify-performance-budgets.mjs": "c03b656615a5bbd6e8eedc8e35df923493c9e8a341226f5bb959286ec12b2d38",
+  "verify-stage-g-m38-runtime-configuration-backend-preflight.mjs": "70ccabd7de336a98fb61966c098e0aa68b24dc31ec2d268a4f66d0471c0871eb",
+  "verify-stage-g-m46-boards-backend-data-contract-recovery.mjs": "0120bb601f5635e47c8bd86f1fb45adc2c9cb3a78382ddd7e7bdcbaa5def3078",
+}));
+const m14414ExactAdded = new Map(Object.entries({
+  "M144_11-HF1-BOARD-IMPORT-ADAPTIVE-PERFORMANCE-BUDGET.md": "3d9f5ef92e38fefc5a370ec92ab537637ce623b2679162365d0ce86cf45c6934",
+  "M144_4-GOVERNANCE-AND-STAGING-BOUNDARIES.md": "90195aefaf001ba5497eda95fae6db66eb0e6f367b64cebc66c7b8d3b8b7d0ad",
+  "M144_5-DISPOSABLE-DB-AND-SECURITY-BOUNDARY.md": "8615c7ef22f53c65a58f1e84e5f70e814340bc90d702cb05dc33071f9c643f27",
+  "M144_6-STAGING-READINESS-BOUNDARY.md": "1a7a99c1cde3f6241d76532531dd4b041522a8ac962ab1702f41b0253dab7108",
+  "M144_7-DEPLOYMENT-READINESS-BOUNDARY.md": "f145366b7e89abc7fffad706a5e0e743f27f2a69aa9af0dd7487d6bc2ccef95a",
+  "scripts/m14410_minimal_patch.py": "ae62a0967e7a69d4c2f4b546fb3476be9161b952ef0a687e820224df94d058fa",
+  "scripts/m1444_source_governance.py": "1f48bd8a55e677702761c4708872f491f53f752b54e24f73746dfda8746da33c",
+  "scripts/m1445_disposable_pg_qa.sh": "5ce1cd312f56396c5a2e4d2d1e0fbc22ac442d9936e6d77ea2f01ae24b4e2614",
+  "scripts/m1445_source_governance.py": "646e8eacb217a08b9fd120176b070310e6c05081543f71bbef1729733c42cfd8",
+  "scripts/m1446_source_governance.py": "57724d761c94dfc518c56b76e483dda9e9258f374ac4faf49ee743c863e52986",
+  "scripts/m1446_staging_readiness.py": "f428a8cb09a5263bb5a8b6077a564f937cfc33996ec53568cd8475e785cf37a2",
+  "scripts/m1447_deployment_gate.py": "96eb005b0d7bf4fd5e5122cafc97fdb702f1babd61f2ecc2da10954ca1420c88",
+  "scripts/m1448_hosted_parity_gate.py": "871f5e5f79e2a1e25c5f7a57738c720a1ab0d969d607828459ca44e3751d3ae9",
+  "scripts/m1449_branch_reconcile.py": "3bfe1bf796c2235d20dbb8bf2832fc28cf0c5233c608720f4c4f4c14691e9745",
+  "spec/M144_10-MINIMAL-BRANCH-PATCH-REVIEW.md": "133357fc2c3325e565618c8b4e20c169d7168e15bb1d3b4a3d3667c8dc8814db",
+  "spec/M144_10-PINNED-PATCH.json": "b6ff9c7d80c021312d807922846442ec0b370dd4cdab4e906c09ace884d9f3ef",
+  "spec/M144_12-M78-BOARD-WIZARD-SUCCESSOR-BOUNDARY.md": "3444bf8d1163630c6b3001a73690d43d2997d746f22c495c498c9df30b03c942",
+  "spec/M144_8-HOSTED-OBSERVATION.json": "ab5d3b169fe9c915d6b86febcfa38747c6f079837450e20f14236ad58f46c6c2",
+  "spec/M144_8-SHARED-SUPABASE-GITHUB-BOUNDARY.md": "f7bde04065f295781773bca144fd539d42b0909f9b0c8cd0e663071e2be55473",
+  "spec/M144_9-GITHUB-BRANCH-SNAPSHOT.json": "5fc92e435b6d6a015f0e55c8fa3665a32058cfcf94205353247a63190333c500",
+  "spec/M144_9-TEST-BRANCH-RECONCILIATION-BOUNDARY.md": "6b98cb52acd835db112a6d74b1124e20c1d29963be6ce1419e0f4a8a839d7aac",
+  "supabase/m1446/staging_catalog_READ_ONLY.sql": "afb1c3aff769a3887f3a75d36d82e05a48c83e783615b69b0decd44c1658e6a2",
+  "supabase/m1448/wizard_rpc_catalog_READ_ONLY.sql": "14b61d234d4d7d0ba66f5292c9260199c1093a7b67b13d285e0de556ea91f289",
+  "tests/modern/board-import/m14410-minimal-patch.verify.py": "c951793d4b9379921795b94e8f84134c99cc22625f9b1b1be6f07cdeb28f0e51",
+  "tests/modern/board-import/m14412-m78-guard.verify.py": "90a420ecc6a3631e36fb1a058ec67a7869e1ec7bfe5a010b997f82202ffbc1a0",
+  "tests/modern/board-import/m1449-reconcile.verify.py": "25cb204bd38b60d1e63f621e0739b9c7d51a416b662c516490a26bb5f1376bdf",
+}));
+for (const [rel, digest] of m14414ExactModified) {
+  const file = path.join(repo, rel);
+  if (!fs.existsSync(file) || sha(file) !== digest) fail(`M144.14 modified successor SHA256 mismatch: ${rel}`);
+  if (permittedAdded.has(rel)) fail(`M144.14 invalid modified classification: ${rel}`);
+  permittedModified.add(rel);
+}
+for (const [rel, digest] of m14414ExactAdded) {
+  const file = path.join(repo, rel);
+  if (!fs.existsSync(file) || sha(file) !== digest) fail(`M144.14 added successor SHA256 mismatch: ${rel}`);
+  if (permittedModified.has(rel)) fail(`M144.14 invalid added classification: ${rel}`);
   permittedAdded.add(rel);
 }
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'm108-pinned-baseline-'));

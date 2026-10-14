@@ -1,0 +1,104 @@
+{
+  "anon_execute": false,
+  "authenticated_execute": true,
+  "conflict_pt409_branches": 9,
+  "db_engine": "PostgreSQL 17",
+  "function": "public.wm_import_board_wizard_atomic",
+  "function_args": "p_board_id uuid, p_expected_updated_at timestamp with time zone, p_payload jsonb",
+  "function_body_bytes": 15871,
+  "function_body_md5": "7a31bd759e5b88b3bc81c8257fb25ce1",
+  "function_body_sha256": "e193008098c5b0aac663dc14cd1276c72d7b0f88980970dc530d385683cc3eed",
+  "function_migration_ledger_entry_observed": false,
+  "function_owner": "postgres",
+  "git_blob_verification": {
+    ".github/workflows/ci.yml": {
+      "candidate_sha": "6b75db185c274914e65486281702bf3d7b6798ac",
+      "remote": "6b75db185c274914e65486281702bf3d7b6798ac",
+      "status": "identical"
+    },
+    ".github/workflows/deploy-pages.yml": {
+      "candidate_sha": "6a7bc9c43308ea1a40dc74ba645507bd93802956",
+      "remote": "6a7bc9c43308ea1a40dc74ba645507bd93802956",
+      "status": "identical"
+    },
+    "assets/js/features/boards/controllers/board-import-wizard-ui.ts": {
+      "candidate_sha": "36b29e86605b47ca254abe032fa21f9bbacc12f8",
+      "remote": null,
+      "status": "absent_on_main"
+    },
+    "assets/js/features/boards/data/board-repository.ts": {
+      "candidate_sha": "902d21bfea2ce155c89da632a93ea734f4be8d90",
+      "remote": "b2c9fc9d768283a800a4dab4451aacb09f5c6989",
+      "status": "different"
+    },
+    "index.html": {
+      "candidate_sha": "2bfffebb9f31bf23db0a7b4e772528025c6ed229",
+      "remote": "2bfffebb9f31bf23db0a7b4e772528025c6ed229",
+      "status": "identical"
+    },
+    "package-lock.json": {
+      "candidate_sha": "1555dc43232411f62efb1030843a5c885e956208",
+      "remote": "1555dc43232411f62efb1030843a5c885e956208",
+      "status": "identical"
+    },
+    "package.json": {
+      "candidate_sha": "04387069c9c0e21d81af41dbcd1fc9929832d0f4",
+      "remote": "04387069c9c0e21d81af41dbcd1fc9929832d0f4",
+      "status": "identical"
+    },
+    "src/features/boards/import/board-import-wizard-commit.ts": {
+      "candidate_sha": "3d2339b8c304512671fcd97873db4545280922f0",
+      "remote": null,
+      "status": "absent_on_main"
+    },
+    "src/features/boards/import/board-import-wizard-plan.ts": {
+      "candidate_sha": "579128fb6e9cff0c9a05c04cb58f71f3927424d2",
+      "remote": null,
+      "status": "absent_on_main"
+    },
+    "supabase/migrations/20261006041529_stage_i_m105_production_board_import_contract_parity.sql": {
+      "candidate_sha": "bc531814f2ef04ce728478a8b787806567e12ebb",
+      "remote": "bc531814f2ef04ce728478a8b787806567e12ebb",
+      "status": "identical"
+    }
+  },
+  "github_main_auto_pages_deploy": true,
+  "github_main_commit": "ed390940b56be6c4495347aae37593e9a34b4446",
+  "github_modified": false,
+  "github_repository": "wass-psti/WatchdogWorkspace",
+  "hosted_database_modified": false,
+  "hosted_write_tests_executed": false,
+  "observation_type": "read-only Supabase and GitHub connector observations; not ongoing monitoring",
+  "observed_date_utc": "2026-10-14",
+  "release_certification": "WITHHELD",
+  "schema": "watchdogworkspace.m1448.hosted-observation.v1",
+  "search_path": [
+    "pg_catalog",
+    "public"
+  ],
+  "security_definer": true,
+  "shared_module_rls_observation": {
+    "boards": {
+      "rls_enabled": 9,
+      "tables": 9
+    },
+    "fueltrans": {
+      "rls_enabled": 8,
+      "tables": 8
+    },
+    "fund_release": {
+      "rls_enabled": 10,
+      "tables": 10
+    },
+    "materials": {
+      "rls_enabled": 16,
+      "tables": 16
+    },
+    "tool_traceability_or_toolbox": {
+      "rls_enabled": 26,
+      "tables": 26
+    }
+  },
+  "supabase_project_id": "jtlusodorfnyzgyuewkz",
+  "supabase_project_name": "WatchdogWorkspace"
+}
