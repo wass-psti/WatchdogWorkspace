@@ -15,6 +15,7 @@ import type {
 } from '../../../../../src/features/boards/contracts/domain.ts';
 import type { BoardRepository, CreateBoardColumnInput } from '../../../../../src/features/boards/contracts/repository.ts';
 import type { BoardImportCommitRequest, BoardImportCompletionSummary } from '../../../../../src/features/boards/contracts/import-preview.ts';
+import type { BoardImportWizardRpcRequest, BoardImportWizardCompletion } from '../../../../../src/features/boards/contracts/import-wizard-commit.ts';
 import type {
   BoardColumnId,
   BoardGroupId,
@@ -495,6 +496,32 @@ export function createBoardRepository(auth: AuthTransportPort, options: BoardRep
           rejected: request.reviewSummary.rejected + serverRejected,
           affected,
         });
+      });
+    },
+    async importWizardAtomic(request: BoardImportWizardRpcRequest): Promise<BoardImportWizardCompletion> {
+      // One server-owned RPC; never fall back to item-by-item mutations.
+      return mutate('boards.import.wizard.atomic', async () => {
+        const response = await rpc('wm_import_board_wizard_atomic', {
+          p_board_id: request.boardId,
+          p_expected_updated_at: request.expectedBoardVersion,
+          p_payload: request.payload,
+        });
+        const record=recordOf(response);
+        const created=Number(record?.created ?? -1);
+        const updated=Number(record?.updated ?? -1);
+        const skipped=Number(record?.skipped ?? -1);
+        const rejected=Number(record?.rejected ?? -1);
+        const affected=Number(record?.affected ?? -1);
+        const columnsCreated=Number(record?.columnsCreated ?? -1);
+        const groupsCreated=Number(record?.groupsCreated ?? -1);
+        if (![created,updated,skipped,rejected,affected,columnsCreated,groupsCreated].every(n=>Number.isSafeInteger(n)&&n>=0)
+            || affected !== created+updated || created+updated+skipped+rejected !== request.payload.rows.length
+            || columnsCreated > request.payload.newColumns.length || groupsCreated>1) {
+          throw new WorkManagementError('The server returned an invalid wizard import result.',{
+            code:'WM_BOARD_WIZARD_IMPORT_RESULT_INVALID',category:'internal',operation:'boards.import.wizard.atomic',
+          });
+        }
+        return Object.freeze({created,updated,skipped,rejected,affected,columnsCreated,groupsCreated});
       });
     },
     invalidate: invalidateBoardState,

@@ -60,7 +60,7 @@ const expected = new Map(Object.entries({
   '.github/workflows/users-rbac-functional-recovery.yml': '463b08f3ad06136b5d9a4df18d3c01a70d1a9da09fecddbccfa240e95d3a62b5',
   '.github/workflows/final-legacy-deletion.yml': '09afc191799895d9696766e7306e5e7b70670e0c170b3d1ac9b3e1c96121c97c',
   '.github/actions/prepare-m108-baseline/action.yml': '8ec7e6db1aaee4b92cba29e31805103445eeb860e29869e2412ac59518a49b7a',
-  'assets/js/boards-ui.ts': '2afada75df7439ffb0d8b383f83a896cb6357fcf389f38738c4512e34ad2cce5',
+  'assets/js/boards-ui.ts': '86063248c13bd959fcc0d4ca626dfbec82e1b0f5ba1e2e8ccd8ef1142b769739',
   'assets/css/app.css': 'a67330e1eb590f01e1e3c3ce7632464dbb54ffa4d503687d2d97c4741ba79488',
   'assets/css/boards-monday.css': 'dfc0560f8d14dc19d3291291514a098b0ae8bbdaab413d4b4eae0f2cccb37dcd',
   'scripts/verify-m109-board-ux.mjs': '147375ee0eec195cc5a17c5135ade806143d2e2b88f49db97dd92e0d465389f3',
@@ -121,6 +121,78 @@ const permittedAdded = new Set([
   'scripts/verify-m109-board-ux.mjs',
   '.github/actions/prepare-m108-baseline/action.yml',
 ]);
+// M141: exact, non-mutating Board Import wizard contract additions.
+// These are authorized successor additions only; preserve all M108 guards.
+const m141ApprovedAdditions = new Map(Object.entries({
+  "src/features/boards/contracts/import-wizard.ts": "f126606d8a2b26177d4731130562aa17e0c22823e8ad2ad28017c019fa20405d",
+  "src/features/boards/import/board-import-wizard-plan.ts": "9abda2153f22868e3685c994cb2dbc0bae91da42b5ee737cbe15a410c4c366b1",
+  "tests/modern/board-import/m141-wizard-plan.verify.mjs": "8fed6c729f89858e34b29edac7b6b903fb063e983150e0072e33e903892e60df",
+  "spec/M141-BOARD-IMPORT-WIZARD-CONTRACT-NOT-CERTIFIED.md": "e3d1301ee72ebae8d959c7d718c9543c8209a49a00da47ed362eeaa3538f135e"
+}));
+for (const [rel, digest] of m141ApprovedAdditions) {
+  if (sha(path.join(repo, rel)) !== digest) {
+    fail(`M141 Board Import source digest mismatch: ${rel}`);
+  }
+  permittedAdded.add(rel);
+}
+// M141.2 — accept only the exact successor-aware M108 historical guard.
+const m1412ExactHistoricalGuard = 'scripts/verify-stage-i-m108-m107-source-guard.mjs';
+if (sha(path.join(repo,m1412ExactHistoricalGuard)) !== '201b0d5864f7487bb4f2f34261e69c6c3801e49918737bc3c675fd4d2fdb9e79') {
+  fail('M141.2 historical guard bytes differ from approved delegation');
+}
+permittedModified.add(m1412ExactHistoricalGuard);
+// M142: exact approved three-step wizard extension only.
+// Historical M108 predecessor identity and M141.2 delegation remain intact.
+const m142ApprovedWizardAdditions = new Map(Object.entries({
+  "assets/css/board-import-wizard.css": "3ee1ab4e968421eb98dbd67f8b543d6120a4d3413d440e2abfc4f07d6a34a0e6",
+  "assets/js/features/boards/controllers/board-import-wizard-ui.ts": "7fd7b09b9cccd4eb0bc36827d54cc845222e15c3dce676ae486669506c1fce81",
+  "spec/M142-WIZARD-IMPLEMENTATION-READINESS-NOT-CERTIFIED.md": "60fdf4b85d3cf1bd10ad08d95fe372f8f21dad85e488fcc3aef05853a53344ad",
+  "tests/modern/board-import/m142-wizard-integration.verify.mjs": "74f5b3517910b032571ec50b442f91438a81f5ce933e683778102bab56ae920f"
+}));
+for (const [rel, digest] of m142ApprovedWizardAdditions) {
+  if (sha(path.join(repo,rel)) !== digest) fail(`M142 wizard source hash mismatch: ${rel}`);
+  permittedAdded.add(rel);
+}
+// M143 exact source-reviewed wizard approval; predecessor safeguards retained.
+const m143ApprovedSource = new Map(Object.entries({
+  'assets/js/features/boards/services/board-domain-service.ts': '1f6303fbc8784a4c1158d698fac1b96f6dfb44786fc4c0bee5863eb6b6015dff',
+  "assets/js/boards-ui.ts": "86063248c13bd959fcc0d4ca626dfbec82e1b0f5ba1e2e8ccd8ef1142b769739",
+  "assets/js/features/boards/controllers/board-import-wizard-ui.ts": "7fd7b09b9cccd4eb0bc36827d54cc845222e15c3dce676ae486669506c1fce81",
+  "assets/js/features/boards/data/board-repository.ts": "328808ebf9acc2a6d230c3b07b8be5fff4cdcc0dc1c05e9fccd691eaf7da8464",
+  "spec/M143-TRANSACTION-AND-DEPLOYMENT-BOUNDARIES-NOT-CERTIFIED.md": "56454d774a5cb3098aa1bda0b4b867849717e59d0b84ed98eb05fbfaf42a5f0d",
+  "src/features/boards/contracts/import-wizard-commit.ts": "8222931e5e97f9f383a7d1ec72c55a43ef28f406efcb5f2434de205f3007f961",
+  "src/features/boards/contracts/repository.ts": "41a4a63cb5f47a1982e784ba547b57c31684aeddd51332ef6b19bb6bae7e217e",
+  "src/features/boards/import/board-import-wizard-commit.ts": "877cb6cb3aaeec46006a369a2fadee99371af07dcdbd31c4eab2c5799de237e1",
+  "src/features/boards/import/board-import-wizard-plan.ts": "9abda2153f22868e3685c994cb2dbc0bae91da42b5ee737cbe15a410c4c366b1",
+  "supabase/m143/board_import_wizard_atomic_DRAFT.sql": "b883b3c432ae5ebcadd9fda2f15b5bcdeb0cff9448ace4862c6fb88fd5fd37fc",
+  "tests/modern/board-import/m143-contract.verify.mjs": "0f58c83dc169c82d9737b041c2404f64775193056ccd154dfd1edce638a3efa1",
+ }));
+for (const [rel, expectedSha] of m143ApprovedSource) {
+  if (sha(path.join(repo, rel)) !== expectedSha) fail(`M143 source hash mismatch: ${rel}`);
+  if (["spec/M143-TRANSACTION-AND-DEPLOYMENT-BOUNDARIES-NOT-CERTIFIED.md", "src/features/boards/contracts/import-wizard-commit.ts", "src/features/boards/import/board-import-wizard-commit.ts", "supabase/m143/board_import_wizard_atomic_DRAFT.sql", "tests/modern/board-import/m143-contract.verify.mjs"].includes(rel)) permittedAdded.add(rel);
+  else if (!permittedAdded.has(rel)) permittedModified.add(rel);
+}
+// M143.2 exact isolated PostgreSQL fixture/test-source approval.
+const m1432ApprovedSource = new Map(Object.entries({
+  "supabase/tests/m143/m1432_atomic_behavior.test.sql": "c9d8b05224989b27a9e8a8f79dd01033f913daa4bd6322333e212c2398584b5b",
+  "supabase/tests/m143/m1432_isolated_postgresql_fixture.sql": "4666aeab87dbfdf11fb7c15fdad72fbf95fa4db68cfd19d471504c0d086cd1a2",
+}));
+for (const [rel, expectedSha] of m1432ApprovedSource) {
+  if (sha(path.join(repo, rel)) !== expectedSha) fail(`M143.2 SQL test source mismatch: ${rel}`);
+  permittedAdded.add(rel);
+}
+// M144 exact source-reviewed real-browser acceptance additions and UI hardening.
+const m144ApprovedSource = new Map(Object.entries({
+  "scripts/run-m144-wizard-browser.mjs": "c2e053bebb6ca8dd391aac58c306b6a61674dcee743785d99bc9128ee29a75dd",
+  "spec/M144-BROWSER-ACCEPTANCE-BOUNDARY-NOT-RELEASE-CERTIFIED.md": "0d95514cba353d54d8e62b3d2095d2ee815f1c6e928754724606325cc3bfeaef",
+  "tests/modern/e2e/m144-wizard-acceptance.spec.mjs": "847943b7ac5d3f2aee5075771a7b4e2975b4051ce2cf710bc18a88d19dd77417",
+  "tests/modern/e2e/m144-wizard-harness.html": "f7fb477a2993e7541d72beefe24898e4be51e6392158d2b9b91c9296fe9c22d8",
+  "tests/modern/e2e/m144-wizard-harness.ts": "6bcbb12e588a12cf5f18f44af2dec07bdca7c4e72f4563946a14b295ddd2e21f",
+}));
+for (const [rel, expectedSha] of m144ApprovedSource) {
+  if (sha(path.join(repo, rel)) !== expectedSha) fail(`M144 source SHA256 mismatch: ${rel}`);
+  permittedAdded.add(rel);
+}
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'm108-pinned-baseline-'));
 try {
   execFileSync('unzip', ['-q', archive, '-d', temp], { stdio: 'pipe' });

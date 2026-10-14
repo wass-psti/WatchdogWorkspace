@@ -36,6 +36,7 @@ import { createBoardTableVirtualizationController } from './features/boards/cont
 import { createBoardRealtimeController } from './features/boards/controllers/board-realtime-controller.ts';
 import { createBoardViewSwitchController } from './features/boards/controllers/view-switch-controller.ts';
 import { createBoardImportWorkflow } from './features/boards/controllers/board-import-workflow.ts';
+import { createBoardImportWizardUi } from './features/boards/controllers/board-import-wizard-ui.ts';
 import { createBoardExportWorkflow } from './features/boards/controllers/board-export-workflow.ts';
 import { statusConfig } from './features/boards/status-labels.ts';
 import { createBoardPreferencePatchService } from './features/boards/services/board-preferences-service.ts';
@@ -137,6 +138,16 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
     dialog,
     toast,
     escapeHtml: esc,
+    reloadBoard: async () => { const boardId=state.board?.board?.id; if (boardId) await loadBoard(boardId, { quiet:true }); },
+  });
+  const importWizard = createBoardImportWizardUi({
+    getBoard: () => state.board,
+    canEdit: () => canEdit(),
+    toast,
+    escapeHtml: esc,
+    overlayCoordinator,
+    openExistingImporter: () => importWorkflow.open(),
+    commitWizard: (request) => api.importWizardAtomic(request),
     reloadBoard: async () => { const boardId=state.board?.board?.id; if (boardId) await loadBoard(boardId, { quiet:true }); },
   });
   const exportWorkflow = createBoardExportWorkflow({ getBoard: () => state.board, dialog, toast, escapeHtml: esc });
@@ -1554,7 +1565,7 @@ export function createBoardsFeature({ auth, renderWorkspace, topbar, toast, navi
         if (column) columnWorkflows.openDelete(column);
         return;
       }
-      if (btn.matches('[data-board-import]')) { importWorkflow.open(); return; }
+      if (btn.matches('[data-board-import]')) { importWizard.open(); return; }
       if (btn.matches('[data-board-export]')) { const format=btn.getAttribute('data-board-export'); if(format==='csv'||format==='xlsx') exportWorkflow.perform(format); return; }
       if (btn.matches('[data-board-template]')) { const format=btn.getAttribute('data-board-template'); if(format==='csv'||format==='xlsx') exportWorkflow.perform(format,true); return; }
       if (btn.matches('[data-board-import-spec]')) { exportWorkflow.openSpecification(); return; }
