@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { planBoardImportWizard } from '../../../src/features/boards/import/board-import-wizard-plan.ts';
+import { blankWizardItemRows, excludeBlankWizardItemRows, planBoardImportWizard } from '../../../src/features/boards/import/board-import-wizard-plan.ts';
 
 const columns = Object.freeze([
   {id:'c-location',name:'Location', data_type:'text',config:{},position:0},
@@ -91,5 +91,42 @@ check('blank item name blocks row',()=>{
  const x=planBoardImportWizard(d,board,mk());
  assert(x.errors.some(e=>e.code==='WIZARD_ITEM_NAME_INVALID'));
  assert.equal(x.decisions[0].decision,'blocked');
+});
+check('blank names report actual source rows without duplicating a generic error',()=>{
+ const d={...dataset,rows:[
+  {sourceRow:2,raw:['Valid name','Done','Manila']},
+  {sourceRow:3,raw:[null,'Open','Quezon']},
+  {sourceRow:7,raw:['  ','Done','Cebu']},
+ ]};
+ assert.deepEqual([...blankWizardItemRows(d,mk().mappings)],[3,7]);
+ const x=planBoardImportWizard(d,board,mk());
+ assert.equal(x.configurationValid,false);
+ const issues=x.errors.filter(e=>e.code==='WIZARD_ITEM_NAME_INVALID');
+ assert.deepEqual(issues.map(e=>e.sourceRow),[3,7]);
+ assert(issues.every(e=>e.message.includes(`row ${e.sourceRow}`)&&e.message.includes('blank')));
+ assert.equal(x.decisions[0].decision,'create');
+});
+check('explicit blank-name exclusion preserves original source and nonblank rows',()=>{
+ const d={...dataset,rows:[{sourceRow:2,raw:['Valid name','Done','Manila']},{sourceRow:3,raw:[null,'Open','Quezon']}]};
+ const filtered=excludeBlankWizardItemRows(d,mk().mappings);
+ assert.equal(d.rows.length,2);
+ assert.deepEqual(filtered.rows.map(row=>row.sourceRow),[2]);
+ const x=planBoardImportWizard(filtered,board,mk());
+ assert.equal(x.configurationValid,true);
+ assert.deepEqual(x.decisions.map(row=>row.decision),['create']);
+});
+check('excluding every blank row cannot create an empty import',()=>{
+ const d={...dataset,rows:[{sourceRow:6,raw:[null,'Open','Quezon']}]};
+ const filtered=excludeBlankWizardItemRows(d,mk().mappings);
+ const x=planBoardImportWizard(filtered,board,mk());
+ assert.equal(x.configurationValid,false);
+ assert(x.errors.some(e=>e.code==='WIZARD_NO_ROWS'));
+});
+check('overlength Item names must never be excluded as blank',()=>{
+ const d={...dataset,rows:[{sourceRow:8,raw:['X'.repeat(241),'Done','Manila']}]};
+ const filtered=excludeBlankWizardItemRows(d,mk().mappings);
+ assert.equal(filtered.rows.length,1);
+ const x=planBoardImportWizard(filtered,board,mk());
+ assert(x.errors.some(e=>e.code==='WIZARD_ITEM_NAME_INVALID'&&e.message.includes('241')));
 });
 console.log(`M141 pure-plan deterministic tests: ${checks} PASS`);

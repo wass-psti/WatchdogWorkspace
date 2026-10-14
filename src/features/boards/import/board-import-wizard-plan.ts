@@ -13,6 +13,21 @@ const keyOf = (value: unknown): string => value == null || String(value).trim() 
   ? '' : typeof value === 'boolean' ? `b:${value}` : `v:${normalize(value)}`;
 const RESERVED = new Set(['item id', 'item updated at', 'group id']);
 
+/** Preserve source-row numbers; never discard a blank Item row without explicit UI consent. */
+export function blankWizardItemRows(dataset: BoardImportDataset, mappings: readonly BoardImportWizardColumnChoice[]): readonly number[] {
+  const source = mappings.find((mapping) => mapping.action === 'item')?.source;
+  const index = source === undefined ? -1 : dataset.headers.findIndex((header) => normalize(header) === normalize(source));
+  if (index < 0) return Object.freeze([]);
+  return Object.freeze(dataset.rows.filter((row) => String(row.raw[index] ?? '').trim() === '').map((row) => row.sourceRow));
+}
+
+export function excludeBlankWizardItemRows(dataset: BoardImportDataset, mappings: readonly BoardImportWizardColumnChoice[]): BoardImportDataset {
+  const excluded = new Set(blankWizardItemRows(dataset, mappings));
+  if (!excluded.size) return dataset;
+  return Object.freeze({ ...dataset, rows: Object.freeze(dataset.rows.filter((row) => !excluded.has(row.sourceRow))) });
+}
+
+
 function cellFor(board: BoardEnvelope, itemId: string, column: BoardColumn): unknown {
   if (column.system_key === 'title') return board.items.find((item) => String(item.id) === itemId)?.title;
   if (column.system_key === 'status') return board.items.find((item) => String(item.id) === itemId)?.status;
@@ -95,6 +110,7 @@ export function planBoardImportWizard(
     if (!mappingByHeader.has(normalize(header))) error('WIZARD_UNMAPPED_SOURCE', `Choose a mapping, new column, or exclusion for “${header}”.`, undefined, header);
   }
   if (board.columns.length + created > 30) error('WIZARD_COLUMN_LIMIT', 'Board supports at most 30 total columns.');
+  if (!dataset.rows.length) error('WIZARD_NO_ROWS', 'No source rows remain to import. Review the Item mapping or the excluded rows.');
   if (dataset.rows.length > 5000) error('WIZARD_ROW_LIMIT', 'Wizard import supports at most 5,000 rows.');
   if (itemMapped !== 1) error('WIZARD_PRIMARY_ITEM_REQUIRED', 'Select exactly one source column for the primary Item field.');
 
@@ -141,8 +157,11 @@ export function planBoardImportWizard(
     const itemIndex = sourceItemMapping ? dataset.headers.findIndex((h) => normalize(h) === normalize(sourceItemMapping.source)) : -1;
     const title = itemIndex < 0 ? '' : String(row.raw[itemIndex] ?? '').trim();
     if (!title || title.length > 240) {
-      error('WIZARD_ITEM_NAME_INVALID', 'Item names must contain 1–240 characters.', row.sourceRow);
-      decisions.push(Object.freeze({ sourceRow: row.sourceRow, decision: 'blocked', reason: 'Item name invalid' }));
+      const message = !title
+        ? `Spreadsheet row ${row.sourceRow}: the mapped Item name is blank. Fill this source cell or explicitly exclude blank-name rows.`
+        : `Spreadsheet row ${row.sourceRow}: Item name has ${title.length} characters (maximum 240).`;
+      error('WIZARD_ITEM_NAME_INVALID', message, row.sourceRow, sourceItemMapping?.source);
+      decisions.push(Object.freeze({ sourceRow: row.sourceRow, decision: 'blocked', reason: !title ? 'Blank Item name' : 'Item name too long' }));
       continue;
     }
     if (matched.behavior === 'add-new') {

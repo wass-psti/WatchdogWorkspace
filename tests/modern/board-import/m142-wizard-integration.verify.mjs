@@ -21,7 +21,9 @@ const checks=[
  ['main Board imports wizard',board.includes('createBoardImportWizardUi')&&board.includes('importWizard.open()')],
  ['original importer preserved',board.includes('createBoardImportWorkflow')&&board.includes('openExistingImporter: () => importWorkflow.open()')],
  ['new stylesheet scoped',css.includes('.wm-import-wizard-backdrop')&&css.includes('prefers-reduced-motion')],
- ['planner invoked for validation',ui.includes('planBoardImportWizard(dataset,currentBoard,draft())')],
+ ['planner invoked for validation',ui.includes('planBoardImportWizard(reviewedDataset(),currentBoard,draft())')],
+ ['reviewed rows passed unchanged to commit path',ui.includes('createBoardImportWizardRpcRequest(reviewedDataset(),latest,draft())')],
+ ['explicit blank-name row exclusion opt-in',ui.includes('data-wizard-skip-blank')&&ui.includes('state.skipBlankItemRows=target.checked')],
  ['nonmutating planner',plan.includes('mutationAllowed: false as const')],
 ];
 for(const [name,yes] of checks){assert.equal(yes,true,name);console.log(`PASS: ${name}`);}

@@ -65,10 +65,10 @@ export function createBoardImportWizardRpcRequest(
   board: BoardEnvelope,
   draft: BoardImportWizardDraft,
 ): BoardImportWizardRpcRequest {
+  if (!dataset.rows.length || dataset.rows.length > 5000) throw new Error('A reviewed wizard import must contain 1–5,000 rows.');
   const plan = planBoardImportWizard(dataset, board, draft);
   if (!plan.configurationValid || plan.errors.length || !board.board) throw new Error('Correct import mapping, matching and row validation errors before committing.');
   if (board.columns.length + plan.plannedColumnCount > 30) throw new Error('Board column limit is 30; exclude excess columns.');
-  if (!dataset.rows.length || dataset.rows.length > 5000) throw new Error('A reviewed wizard import must contain 1–5,000 rows.');
   const byId = new Map(board.columns.map(column => [String(column.id), column]));
   const columns: WizardWireColumn[] = [];
   for (const mapping of draft.mappings) {
