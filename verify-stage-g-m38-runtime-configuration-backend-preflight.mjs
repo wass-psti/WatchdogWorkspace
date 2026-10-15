@@ -22,6 +22,23 @@ for(const rpc of boardRpcs){
       `M143 successor RPC source-governed (deployment separately accepted): ${rpc}`);
     continue;
   }
+  if(rpc==='wm_import_board_wizard_groups_atomic'){
+    // M144.17: successor is source-reviewed only. Do NOT add it to the certified
+    // M38 runtime capabilities or claim the grouped SQL is deployed.
+    const groupedSql=read('supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql');
+    const groupedDigest=await import('node:crypto').then(({createHash})=>createHash('sha256').update(groupedSql).digest('hex'));
+    check(groupedDigest==='dae7ef40f0b1d6196b7ab339b897d9fbe180cd1d1cd1eccb3900095ca6ce0206'
+      && groupedSql.includes('create or replace function public.wm_import_board_wizard_groups_atomic(')
+      && groupedSql.includes('security definer')
+      && groupedSql.includes('set search_path = pg_catalog, public')
+      && groupedSql.includes('auth.uid()')
+      && groupedSql.includes("public.work_board_access(p_board_id,'edit')")
+      && groupedSql.includes('public.wm_import_board_wizard_atomic(')
+      && groupedSql.includes('revoke all on function public.wm_import_board_wizard_groups_atomic(uuid,timestamptz,jsonb) from public, anon, authenticated;')
+      && groupedSql.includes('grant execute on function public.wm_import_board_wizard_groups_atomic(uuid,timestamptz,jsonb) to authenticated;'),
+      `M144.17 grouped successor RPC source-governed (review only; deployment not inferred): ${rpc}`);
+    continue;
+  }
   check(cap.includes(`'${rpc}'`),`Board repository RPC covered: ${rpc}`);
 }
 check(migration.includes("'1.43.2-m38-v2'")&&migration.includes("has_function_privilege('authenticated'")&&migration.includes("public=false")&&migration.includes("pg_policies")&&migration.includes('required_triggers'),'Database capability report verifies executable RPCs, private storage, Realtime policies and triggers');check(schema.includes('function public.wm_runtime_capabilities()')&&schema.includes("'1.43.2-m38-v2'"),'Authoritative schema contains M38 capability RPC');

@@ -109,6 +109,14 @@ const m14417Active = [...m14417ExactFiles].every(([rel,digest]) =>
   fs.existsSync(path.join(repo,rel)) && sha(path.join(repo,rel)) === digest) &&
   sha(path.join(repo,'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14417M78GuardSha256;
 
+// M144.17 targeted M38 successor: an unchanged, reviewed grouped SQL source,
+// all M144.17 implementation hashes, and the exact M38 verifier bytes are required.
+// The original M38 capability baseline is *not* enlarged by this authorization.
+const m14417M38Path = 'verify-stage-g-m38-runtime-configuration-backend-preflight.mjs';
+const m14417M38Sha256 = '4e54e6cebef61ab708502ed381cd185aec23ec4283b29d5b5d3fb7f02321ce7f';
+const m14417M38Active = m14417Active && fs.existsSync(path.join(repo,m14417M38Path)) &&
+  sha(path.join(repo,m14417M38Path)) === m14417M38Sha256;
+
 const m14415ReviewedHash = (rel, actual, prior) => actual === prior ||
   (m14417Active && m14417ExactFiles.get(rel) === actual) ||
   (rel === m14415Hf3WizardUiPath && actual === m14415Hf3WizardUiSha256) ||
@@ -123,7 +131,8 @@ const isApprovedHistoricalOrM14415 = (rel, expectedDigest) => {
   const actualDigest = sha(file);
   return actualDigest === expectedDigest ||
     (m14415Active && m14415ExactSource.has(rel) && m14415ReviewedHash(rel, actualDigest, m14415ExactSource.get(rel))) ||
-    (m14417Active && m14417ExactFiles.get(rel) === actualDigest);
+    (m14417Active && m14417ExactFiles.get(rel) === actualDigest) ||
+    (m14417M38Active && rel === m14417M38Path);
 };
 
 for (const [rel, want] of expected) {
@@ -289,7 +298,7 @@ const m14414ExactAdded = new Map(Object.entries({
 }));
 for (const [rel, digest] of m14414ExactModified) {
   const file = path.join(repo, rel);
-  if (!fs.existsSync(file) || sha(file) !== digest) fail(`M144.14 modified successor SHA256 mismatch: ${rel}`);
+  if (!fs.existsSync(file) || (sha(file) !== digest && !(m14417M38Active && rel === m14417M38Path))) fail(`M144.14 modified successor SHA256 mismatch: ${rel}`);
   if (permittedAdded.has(rel)) fail(`M144.14 invalid modified classification: ${rel}`);
   permittedModified.add(rel);
 }
