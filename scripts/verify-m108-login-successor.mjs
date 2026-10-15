@@ -82,12 +82,22 @@ const m14415ExactSource = new Map([
 // M144.15 HF3 permits only the reviewed UI bytes, never a blanket UI-file exemption.
 const m14415Hf3WizardUiPath = 'assets/js/features/boards/controllers/board-import-wizard-ui.ts';
 const m14415Hf3WizardUiSha256 = 'e1c615bc73335e448c2a4aa4ddcea2b7380866cdf605ba941e41e4f8ec9986cc';
+// M144.16: exact dual-file successor bound to the exact updated M78 guard.
+const m14416ExactSource = new Map([
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', 'f34a2b923b89ef8e25892b67571a3961e606b002c144254b50d9a319ac37ce37'],
+  ['src/features/boards/import/board-import-wizard-commit.ts', 'fe8e8d4b85db38abd40daa2e5ac26d534e94e11314f6f3d13e58107945dde14d'],
+ ]);
+const m14416M78GuardSha256 = '3417d0d68074a0c16a6c78f29fe2caf686e14613dce45c5316cab50b0ac71ef3';
+const m14416Active = [...m14416ExactSource].every(([rel, digest]) =>
+  fs.existsSync(path.join(repo, rel)) && sha(path.join(repo, rel)) === digest) &&
+  sha(path.join(repo, 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14416M78GuardSha256;
 const m14415ReviewedHash = (rel, actual, prior) => actual === prior ||
-  (rel === m14415Hf3WizardUiPath && actual === m14415Hf3WizardUiSha256);
+  (rel === m14415Hf3WizardUiPath && actual === m14415Hf3WizardUiSha256) ||
+  (m14416Active && m14416ExactSource.get(rel) === actual);
 const m14415M78GuardSha256 = '668718f030a43e73fe933bb3f07a9fe382eea4ca956478f014485c8b3223ca58';
 const m14415Active = [...m14415ExactSource].every(([rel, digest]) =>
   fs.existsSync(path.join(repo, rel)) && m14415ReviewedHash(rel, sha(path.join(repo, rel)), digest)) &&
-  sha(path.join(repo, 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14415M78GuardSha256;
+  (sha(path.join(repo, 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14415M78GuardSha256 || m14416Active);
 const isApprovedHistoricalOrM14415 = (rel, expectedDigest) => {
   const file = path.join(repo, rel);
   if (!fs.existsSync(file)) return false;

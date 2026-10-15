@@ -7,6 +7,46 @@ import { planBoardImportWizard } from './board-import-wizard-plan.ts';
 const normalize = (value: unknown): string => String(value ?? '').trim();
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const EXCEL_DAY_MS = 86_400_000;
+/** Excel 1900 dates contain a fictitious 1900-02-29 (serial 60).
+ * Accept calendar-day serials only; never round a fractional time into another day. */
+function excelDate(raw: unknown): string | null {
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) return null;
+  const serial = Math.floor(raw);
+  if (serial < 1 || serial === 60 || serial > 2_958_465) throw new Error(`Invalid Excel calendar serial: ${raw}`);
+  const ms = Date.UTC(1899, 11, 30) + (serial < 60 ? serial + 1 : serial) * EXCEL_DAY_MS;
+  const parsed = new Date(ms);
+  if (!Number.isFinite(parsed.getTime())) throw new Error(`Invalid Excel calendar serial: ${raw}`);
+  return parsed.toISOString().slice(0, 10);
+}
+
+/** Reuse the Board's configured choice IDs/options, never introduce unapproved values. */
+function choiceValue(text: string, type: 'status' | 'dropdown', column: BoardColumn | undefined): string {
+  if (!column) throw new Error(`New ${type} columns require approved options in the backend import contract.`);
+  const key = text.toLocaleLowerCase();
+  if (type === 'status' && column.system_key === 'status') {
+    const ids = ['not_started', 'in_progress', 'blocked', 'done'];
+    const matches = ids.filter(id => id === key || id.replaceAll('_', ' ') === key);
+    if (matches.length === 1) return matches[0]!;
+    throw new Error(`Unsupported Status label: ${text}`);
+  }
+  if (type === 'status') {
+    const config = column.config as { readonly labels?: readonly { id: string; name: string; active?: boolean }[] };
+    const labels = Array.isArray(config?.labels) ? config.labels : [];
+    const matches = labels.filter(label => label.active !== false &&
+      (label.name.trim().toLocaleLowerCase() === key || label.id.toLocaleLowerCase() === key));
+    if (matches.length === 1) return matches[0]!.id;
+    if (matches.length > 1) throw new Error(`Ambiguous Status label: ${text}`);
+    throw new Error(`Unsupported Status label: ${text}`);
+  }
+  const config = column.config as { readonly options?: readonly string[] };
+  const options = Array.isArray(config?.options) ? config.options : [];
+  const matches = options.filter(option => option.trim().toLocaleLowerCase() === key);
+  if (matches.length === 1) return matches[0]!;
+  if (matches.length > 1) throw new Error(`Ambiguous Dropdown option: ${text}`);
+  throw new Error(`Unsupported Dropdown option: ${text}`);
+}
+
 const date = (value: string): boolean => {
   if (!ISO_DATE.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00.000Z`);
@@ -25,11 +65,11 @@ function normalizeCell(raw: unknown, type: BoardColumnType, column: BoardColumn 
     }
     case 'checkbox': {
       if (typeof raw === 'boolean') return raw;
-      if (['true','yes','1'].includes(text.toLowerCase())) return true;
-      if (['false','no','0'].includes(text.toLowerCase())) return false;
+      if (['true','yes','1','v','x','checked','✓','✔'].includes(text.toLowerCase())) return true;
+      if (['false','no','0','unchecked'].includes(text.toLowerCase())) return false;
       throw new Error(`Invalid checkbox value: ${text}`);
     }
-    case 'date': if (!date(text)) throw new Error(`Invalid calendar date: ${text}`); return text;
+    case 'date': { const day = excelDate(raw) ?? text; if (!date(day)) throw new Error(`Invalid calendar date: ${text} (expected YYYY-MM-DD or Excel date serial)`); return day; }
     case 'timeline': {
       const match = /^(\d{4}-\d{2}-\d{2})\s*\/\s*(\d{4}-\d{2}-\d{2})$/.exec(text);
       if (!match || !date(match[1]!) || !date(match[2]!) || match[2]! < match[1]!) throw new Error(`Invalid timeline: ${text}`);
@@ -46,14 +86,7 @@ function normalizeCell(raw: unknown, type: BoardColumnType, column: BoardColumn 
       catch { throw new Error(`Invalid HTTP/HTTPS URL: ${text}`); }
       return text;
     }
-    case 'status': case 'dropdown': {
-      const configured = column?.config as { options?: readonly string[]; labels?: readonly { id: string; name: string }[] } | undefined;
-      const options = column?.data_type === 'status'
-        ? (column.system_key === 'status' ? ['not_started','in_progress','blocked','done'] : configured?.options ?? configured?.labels?.flatMap(label=>[label.id,label.name]) ?? [])
-        : column?.data_type === 'dropdown' ? configured?.options ?? [] : [];
-      if (!options.includes(text)) throw new Error(`Unsupported ${type} option: ${text}`);
-      return text;
-    }
+    case 'status': case 'dropdown': return choiceValue(text, type, column);
     case 'long_text': if (text.length > 5000) throw new Error('Long text exceeds 5000 characters.'); return text;
     case 'text': if (text.length > 1000) throw new Error('Text exceeds 1000 characters.'); return text;
   }

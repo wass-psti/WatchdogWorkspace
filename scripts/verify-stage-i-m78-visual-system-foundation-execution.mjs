@@ -234,8 +234,15 @@ const m14415WizardExactProtectedHashes = new Map([
 // M144.15 HF3: one additional reviewed wizard UI successor; every other hash is unchanged.
 const m14415Hf3WizardUiSha256 = 'e1c615bc73335e448c2a4aa4ddcea2b7380866cdf605ba941e41e4f8ec9986cc';
 const m14415Hf3WizardUiPath = 'assets/js/features/boards/controllers/board-import-wizard-ui.ts';
+// M144.16: both type-aware successor files must match simultaneously.
+// No blanket exemption and no relaxation of the M143 SQL or file-mode checks.
+const m14416ExactWizardHashes = new Map([
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', 'f34a2b923b89ef8e25892b67571a3961e606b002c144254b50d9a319ac37ce37'],
+  ['src/features/boards/import/board-import-wizard-commit.ts', 'fe8e8d4b85db38abd40daa2e5ac26d534e94e11314f6f3d13e58107945dde14d'],
+ ]);
 const isReviewedWizardHash = (relative, actual, historical) => actual === historical ||
-  (relative === m14415Hf3WizardUiPath && actual === m14415Hf3WizardUiSha256);
+  (relative === m14415Hf3WizardUiPath && actual === m14415Hf3WizardUiSha256) ||
+  (m14416WizardAuthorityExists && m14416ExactWizardHashes.get(relative) === actual);
 
 const modeFor = (stat) => {
   if (stat.isSymbolicLink()) return '120000';
@@ -270,6 +277,12 @@ actualEntries.sort((a, b) => a.path.localeCompare(b.path));
 
 const expectedByPath = new Map(manifest.entries.map((entry) => [entry.path, entry]));
 const actualByPath = new Map(actualEntries.map((entry) => [entry.path, entry]));
+
+const m14416WizardAuthorityExists = m143WizardAuthorityExists &&
+  [...m14416ExactWizardHashes].every(([relative, digest]) => {
+    const entry = actualByPath.get(relative);
+    return Boolean(entry) && entry.mode === '100644' && entry.sha256 === digest;
+  });
 
 // A partial successor edit does not authorize any one of the three files.
 // The reviewed M143 SQL and strict regular-file modes are still required.

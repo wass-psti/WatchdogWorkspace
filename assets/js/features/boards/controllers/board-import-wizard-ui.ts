@@ -40,6 +40,24 @@ const TYPES: readonly BoardColumnType[] = ['text','long_text','number','status',
 const canonical = (s: string) => s.trim().replace(/\s+/g,' ').toLowerCase();
 const fileSource = (file: File): BoardImportSource => ({ name:file.name, type:file.type, size:file.size, arrayBuffer:()=>file.arrayBuffer() });
 const escapeAttribute = (esc: EscapeHtml, s: unknown): string => esc(s);
+/** Typed suggestion only when the user explicitly requests a NEW column.
+ * The choice is visible and editable; no existing Board column is changed. */
+export function suggestWizardColumnType(source: string, dataset: BoardImportDataset): BoardColumnType {
+  const label = canonical(source);
+  const index = dataset.headers.findIndex(header => canonical(header) === label);
+  const samples = index < 0 ? [] : dataset.rows.map(row => row.raw[index]).filter(value => value !== null && value !== undefined && String(value).trim() !== '').slice(0, 40);
+  const matches = (test: (value: unknown) => boolean) => samples.length > 0 && samples.every(test);
+  if (/^(date|date updated|updated date|due date|start date|end date|deadline)$/.test(label) &&
+      (!samples.length || matches(value => typeof value === 'number' && value >= 1 && value <= 2_958_465 || /^\d{4}-\d{2}-\d{2}$/.test(String(value))))) return 'date';
+  if (/^(checkbox|checked|complete\?|completed\?|is complete|verified)$/.test(label) &&
+      (!samples.length || matches(value => typeof value === 'boolean' || ['v','x','✓','✔','true','false','yes','no','0','1','checked','unchecked'].includes(String(value).trim().toLowerCase())))) return 'checkbox';
+  if (/^(status|stage|progress)$/.test(label)) return 'status';
+  if (/^(email|email address)$/.test(label)) return 'email';
+  if (/^(url|website|link)$/.test(label)) return 'url';
+  if (/^(amount|quantity|number|cost|price|total)$/.test(label) && matches(value => Number.isFinite(Number(value)))) return 'number';
+  return 'text';
+}
+
 
 /** Unmapped columns default to Skip; users explicitly opt in to creating columns. */
 export function defaultWizardMappings(dataset: BoardImportDataset): WizardMapping[] {
@@ -149,10 +167,10 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
       // HF3: A matching-policy change cannot resolve column-type restrictions.
       // Offer an explicit, value-preserving conversion for NEW columns only.
       // Existing Board fields and the primary Item mapping are never altered.
-      const newTypedColumns=state.mappings.filter(mapping=>mapping.action==='create' && mapping.columnType!=='text');
+      const newTypedColumns=state.mappings.filter(mapping=>mapping.action==='create' && (mapping.columnType==='status'||mapping.columnType==='dropdown'));
       const needsChoiceApproval=newTypedColumns.some(mapping=>mapping.action==='create' && (mapping.columnType==='status'||mapping.columnType==='dropdown'));
       const textResolution=newTypedColumns.length && !state.commitFailed && canEdit() && (needsChoiceApproval || Boolean(commitIssue))
-        ? `<section class="wm-import-wizard-diagnostics" role="alert"><h2>Resolve column-type blockers</h2><p>Import Now cannot proceed while a proposed column fails validation. The current backend cannot create Status/Dropdown columns without configured options; other typed columns may also reject spreadsheet values.</p><button type="button" class="secondary-btn" data-wizard-new-columns-as-text>Use Text for ${newTypedColumns.length} proposed column${newTypedColumns.length===1?'':'s'}</button><p>This is optional and affects only NEW columns. It preserves their names and spreadsheet values as text; it does not change existing Board columns. To keep native column types, use Back and correct the mappings instead.</p></section>`
+        ? `<section class="wm-import-wizard-diagnostics" role="alert"><h2>Resolve column-type blockers</h2><p>Import Now cannot proceed while a proposed column fails validation. The current backend cannot create Status/Dropdown columns without configured options. Date, Checkbox, Number and other supported column types retain their selected behavior.</p><button type="button" class="secondary-btn" data-wizard-new-columns-as-text>Use Text for ${newTypedColumns.length} proposed column${newTypedColumns.length===1?'':'s'}</button><p>This is optional and affects only NEW columns. It preserves their names and spreadsheet values as text; it does not change existing Board columns. To keep native column types, use Back and correct the mappings instead.</p></section>`
         : '';
       screen(`<section class="wm-import-wizard-content wm-import-wizard-matches"><h1>Handle matches</h1><p>Decide how rows that already exist in this group should be treated.</p><fieldset class="wm-import-wizard-match-policy"><legend>Matching policy</legend><label><input type="radio" name="wizard-behavior" value="add-new" ${behavior==='add-new'?'checked':''}><span><strong>Add as new items</strong><small>Propose new items even when values match existing records.</small></span></label><label><input type="radio" name="wizard-behavior" value="skip" ${behavior==='skip'?'checked':''}><span><strong>Skip</strong><small>Skip matching rows and create only unmatched rows.</small></span></label><label><input type="radio" name="wizard-behavior" value="update" ${behavior==='update'?'checked':''}><span><strong>Update</strong><small>Match a unique existing row; unmatched rows are skipped.</small></span></label></fieldset>${behavior!=='add-new'?`<label class="wm-import-wizard-match-select">Match using<select data-wizard-match-column>${options}</select></label>`:''}<div class="wm-import-wizard-summary" role="status"><span>${counts.create} to create</span><span>${counts.update} to update</span><span>${counts.skip} skipped</span><span>${counts.blocked} blocked</span></div>${validation}${cautions}${textResolution}${commitIssue?`<div class="wm-import-wizard-error" role="alert">${esc(commitIssue)}</div>`:''}<p class="wm-import-wizard-backend-note">Import commits as one transaction. If the M143 RPC is not installed, the server rejects the request without writes. Review the preview before importing.</p></section>`,'Import Now',!plan.configurationValid||Boolean(commitIssue));
     };
@@ -185,7 +203,7 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
       if(target.closest('[data-wizard-classic]')){close(false);openExistingImporter();return;}
       if(target.closest('[data-wizard-new-columns-as-text]') && state.step==='handle-matches'){
         // Requires an intentional click; never change existing columns or coerce silently.
-        state.mappings=state.mappings.map(mapping=>mapping.action==='create' && mapping.columnType!=='text'
+        state.mappings=state.mappings.map(mapping=>mapping.action==='create' && (mapping.columnType==='status'||mapping.columnType==='dropdown')
           ? {...mapping,columnType:'text'} : mapping);
         state.error='';render();return;
       }
@@ -242,12 +260,12 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
         state.group={action:'create',name:target.value};
       }else if(target instanceof HTMLSelectElement && target.matches('[data-wizard-bulk]')&&target.value){
         state.mappings=state.mappings.map(m=>m.action==='skip'||m.action==='create'
-          ?target.value==='skip'?{source:m.source,action:'skip'}:{source:m.source,action:'create',name:m.source,columnType:'text'}:m);
+          ?target.value==='skip'?{source:m.source,action:'skip'}:{source:m.source,action:'create',name:m.source,columnType:state.dataset?suggestWizardColumnType(m.source,state.dataset):'text'}:m);
       }else if(target instanceof HTMLSelectElement && target.matches('[data-wizard-mapping]')){
         const index=Number(target.dataset.wizardMapping);const old=state.mappings[index];if(!old)return;
         const val=target.value;
         state.skipBlankItemRows=false; // Changed primary mapping requires renewed row-exclusion consent.
-        state.mappings[index]=val==='item'?{source:old.source,action:'item'}:val==='create'?{source:old.source,action:'create',name:old.source,columnType:'text'}:val.startsWith('existing:')?{source:old.source,action:'existing',columnId:val.slice(9)}:{source:old.source,action:'skip'};
+        state.mappings[index]=val==='item'?{source:old.source,action:'item'}:val==='create'?{source:old.source,action:'create',name:old.source,columnType:state.dataset?suggestWizardColumnType(old.source,state.dataset):'text'}:val.startsWith('existing:')?{source:old.source,action:'existing',columnId:val.slice(9)}:{source:old.source,action:'skip'};
       }else if(target instanceof HTMLInputElement&&target.matches('[data-wizard-new-name]')){
         const index=Number(target.dataset.wizardNewName),old=state.mappings[index];if(old?.action==='create')state.mappings[index]={...old,name:target.value};
       }else if(target instanceof HTMLSelectElement&&target.matches('[data-wizard-new-type]')){
