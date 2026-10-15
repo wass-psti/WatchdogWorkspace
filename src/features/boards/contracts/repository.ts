@@ -1,6 +1,7 @@
 import type { BoardColumnId, BoardGroupId, BoardId, BoardItemId, StatusLabelId, UserId } from '../../../types/identifiers.ts';
 import type { BoardRole } from '../../../types/auth.ts';
 import type { BoardImportCommitRequest, BoardImportCompletionSummary } from './import-preview.ts';
+import type { BoardImportWizardRpcRequest, BoardImportWizardCompletion } from './import-wizard-commit.ts';
 import type { QueryClient } from '../../../platform/contracts/query.ts';
 import type {
   BoardCellValue,
@@ -66,6 +67,7 @@ export interface BoardRepository {
   downloadItemFile(file: ItemWorkspaceFile): Promise<void>;
   deleteItemFile(file: ItemWorkspaceFile): Promise<void>;
   importItemsAtomic(request: BoardImportCommitRequest): Promise<BoardImportCompletionSummary>;
+  importWizardAtomic(request: BoardImportWizardRpcRequest): Promise<BoardImportWizardCompletion>;
   invalidate(): void;
   clearCache(): void;
 }

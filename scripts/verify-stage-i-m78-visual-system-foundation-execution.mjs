@@ -211,11 +211,54 @@ const m109ExactProtectedPresentationHashes = new Map([
   ['assets/js/features/boards/views/table-view.ts', '575a944f918d4134b456671dc7b88e65e309e64c0d7764900afaf2aad00f8076'],
 ]);
 
+// M143 Board Import wizard successor: six exact SHA-256-pinned additions only.
+// The M77/M78 baseline and all other successor authorities remain unchanged.
+const m143WizardExactNewProtectedHashes = new Map([
+  ['assets/css/board-import-wizard.css', '3ee1ab4e968421eb98dbd67f8b543d6120a4d3413d440e2abfc4f07d6a34a0e6'],
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', '7fd7b09b9cccd4eb0bc36827d54cc845222e15c3dce676ae486669506c1fce81'],
+  ['src/features/boards/contracts/import-wizard-commit.ts', '8222931e5e97f9f383a7d1ec72c55a43ef28f406efcb5f2434de205f3007f961'],
+  ['src/features/boards/contracts/import-wizard.ts', 'f126606d8a2b26177d4731130562aa17e0c22823e8ad2ad28017c019fa20405d'],
+  ['src/features/boards/import/board-import-wizard-commit.ts', '877cb6cb3aaeec46006a369a2fadee99371af07dcdbd31c4eab2c5799de237e1'],
+  ['src/features/boards/import/board-import-wizard-plan.ts', '9abda2153f22868e3685c994cb2dbc0bae91da42b5ee737cbe15a410c4c366b1'],
+]);
+
+
+// M144.15 HF1: preserve the immutable M143 hashes; authorize only three
+// separately reviewed successor bytes when the whole triplet is unchanged.
+const m14415WizardExactProtectedHashes = new Map([
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', 'e48fe28a46c0def531c42558537333a82d0ba13cb54155a22404799febbd1615'],
+  ['src/features/boards/import/board-import-wizard-commit.ts', '0b351be68bb4d059d98f8111b128738aa6085b95ddba922271e7ac5b6f2619de'],
+  ['src/features/boards/import/board-import-wizard-plan.ts', '7536ad306234757e2fb3303f59290a996a22da4c7c773910ec8e983310448c8d'],
+]);
+
+// M144.15 HF3: one additional reviewed wizard UI successor; every other hash is unchanged.
+const m14415Hf3WizardUiSha256 = 'e1c615bc73335e448c2a4aa4ddcea2b7380866cdf605ba941e41e4f8ec9986cc';
+const m14415Hf3WizardUiPath = 'assets/js/features/boards/controllers/board-import-wizard-ui.ts';
+// M144.16: both type-aware successor files must match simultaneously.
+// No blanket exemption and no relaxation of the M143 SQL or file-mode checks.
+const m14416ExactWizardHashes = new Map([
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', '973d3cef0ecf594e85d04f076d3e51404d40c9188e5741084e7dab7b0e376400'],
+  ['src/features/boards/import/board-import-wizard-commit.ts', 'fe8e8d4b85db38abd40daa2e5ac26d534e94e11314f6f3d13e58107945dde14d'],
+ ]);
+const isReviewedWizardHash = (relative, actual, historical) => actual === historical ||
+  (m14417WizardAuthorityExists && m14417ExactFiles.get(relative) === actual) ||
+  (relative === m14415Hf3WizardUiPath && actual === m14415Hf3WizardUiSha256) ||
+  (m14416WizardAuthorityExists && m14416ExactWizardHashes.get(relative) === actual);
+
 const modeFor = (stat) => {
   if (stat.isSymbolicLink()) return '120000';
   return (stat.mode & 0o111) !== 0 ? '100755' : '100644';
 };
 const sha256 = (buffer) => crypto.createHash('sha256').update(buffer).digest('hex');
+
+// Refuse M143 visual authority unless the exact reviewed atomic RPC source
+// and the documented M143 contract are both present. This does not execute SQL.
+const m143WizardSqlPath = path.join(root, 'supabase/m143/board_import_wizard_atomic_DRAFT.sql');
+const m143WizardAuthorityExists =
+  fs.existsSync(path.join(root, 'spec/M143-TRANSACTION-AND-DEPLOYMENT-BOUNDARIES-NOT-CERTIFIED.md')) &&
+  fs.existsSync(path.join(root, 'tests/modern/board-import/m143-contract.verify.mjs')) &&
+  fs.existsSync(m143WizardSqlPath) &&
+  sha256(fs.readFileSync(m143WizardSqlPath)) === 'b883b3c432ae5ebcadd9fda2f15b5bcdeb0cff9448ace4862c6fb88fd5fd37fc';
 
 const actualEntries = [];
 const walk = (relative) => {
@@ -235,6 +278,41 @@ actualEntries.sort((a, b) => a.path.localeCompare(b.path));
 
 const expectedByPath = new Map(manifest.entries.map((entry) => [entry.path, entry]));
 const actualByPath = new Map(actualEntries.map((entry) => [entry.path, entry]));
+
+// M144.17 separate-group successor: exact runtime, contract, SQL and focused-test bytes.
+// No M143 archive hash is removed and no broad directory/file exemption exists.
+const m14417ExactFiles = new Map([
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', '82e0e1fd8eacb0baac9e1466d72b03c6d08e4154998d02964d0ab775f5a9e8f1'],
+  ['assets/js/features/boards/data/board-repository.ts', '7df9ca80fe96e8c20121171cdb06fd65b4919f030235f91c805715ac736a6a1f'],
+  ['src/features/boards/contracts/import.ts', 'e78d770f301b382dd41dc549e8be20798e8868cb6d8d11c8f50606ee8b875da8'],
+  ['src/features/boards/contracts/import-wizard.ts', '719f86f57c70887bc8bcda07641f34765085463f1b5aeee27f5f7b0735be5957'],
+  ['src/features/boards/contracts/import-wizard-commit.ts', '1f6c5ad48be7b3d8e471aa23a58aed9c0885c00094e31fc6f087e8d496d38dab'],
+  ['src/features/boards/import/board-import-parser.ts', 'eb4179729124020b23b7a04fda014c65d1ffcede4c8e3be9144b3026ebd3b9cb'],
+  ['src/features/boards/import/board-import-wizard-commit.ts', '274fdfaf669c57b7630317b647d4360d8608fe1e2f28166b2dfca595073fe8ea'],
+  ['supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql', '6ad80ef226fe6e711f4d82fe572dc42267531d2db5d5c234489370e6f7b16d54'],
+  ['tests/modern/board-import/m14417-grouped-monday.verify.mjs', 'd70e90ea308f66514edb83db7d27f927250723461fe40b1a12ed234fdf4b15cd'],
+]);
+const m14417WizardAuthorityExists = m143WizardAuthorityExists &&
+  [...m14417ExactFiles].every(([rel, digest]) => {
+    const absolute = path.join(root, rel);
+    if (!fs.existsSync(absolute)) return false;
+    const stat = fs.lstatSync(absolute);
+    return stat.isFile() && modeFor(stat) === '100644' && sha256(fs.readFileSync(absolute)) === digest;
+  });
+
+const m14416WizardAuthorityExists = m143WizardAuthorityExists &&
+  [...m14416ExactWizardHashes].every(([relative, digest]) => {
+    const entry = actualByPath.get(relative);
+    return Boolean(entry) && entry.mode === '100644' && entry.sha256 === digest;
+  });
+
+// A partial successor edit does not authorize any one of the three files.
+// The reviewed M143 SQL and strict regular-file modes are still required.
+const m14415WizardAuthorityExists = m143WizardAuthorityExists &&
+  [...m14415WizardExactProtectedHashes].every(([relative, digest]) => {
+    const entry = actualByPath.get(relative);
+    return Boolean(entry) && isReviewedWizardHash(relative, entry.sha256, digest) && entry.mode === '100644';
+  });
 
 for (const [relative, expected] of expectedByPath) {
   const actual = actualByPath.get(relative);
@@ -282,6 +360,17 @@ for (const [relative, expected] of expectedByPath) {
     ok(actual.size === expected.size, `M77 protected presentation size drift: ${relative}`);
   }
 }
+// Unlike a folder-level allowlist, every approved new file must exist at
+// its reviewed bytes and non-executable regular-file mode.
+if (m143WizardAuthorityExists) {
+  for (const [relative, expectedSha] of m143WizardExactNewProtectedHashes) {
+    const actual = actualByPath.get(relative);
+    ok(Boolean(actual), `M143 protected wizard successor file missing: ${relative}`);
+    if (!actual) continue;
+    ok(actual.mode === '100644', `M143 protected wizard successor file mode drift: ${relative}`);
+    ok(actual.sha256 === expectedSha || (m14415WizardAuthorityExists && isReviewedWizardHash(relative, actual.sha256, m14415WizardExactProtectedHashes.get(relative))) || (m14417WizardAuthorityExists && m14417ExactFiles.get(relative) === actual.sha256), `M143 protected wizard successor SHA-256 drift: ${relative}`);
+  }
+}
 for (const relative of actualByPath.keys()) {
   if (!expectedByPath.has(relative)) {
     ok(
@@ -307,7 +396,11 @@ for (const relative of actualByPath.keys()) {
       (m100AuthorityExists && m100AllowedNewProtectedFiles.has(relative)) ||
       (m101AuthorityExists && m101AllowedNewProtectedFiles.has(relative)) ||
       (m102AuthorityExists && m102AllowedNewProtectedFiles.has(relative)) ||
-      (m103AuthorityExists && m103AllowedNewProtectedFiles.has(relative)),
+      (m103AuthorityExists && m103AllowedNewProtectedFiles.has(relative)) ||
+      (m143WizardAuthorityExists &&
+        (m143WizardExactNewProtectedHashes.get(relative) === actualByPath.get(relative)?.sha256 ||
+         (m14415WizardAuthorityExists && isReviewedWizardHash(relative, actualByPath.get(relative)?.sha256, m14415WizardExactProtectedHashes.get(relative))) || (m14417WizardAuthorityExists && m14417ExactFiles.get(relative) === actualByPath.get(relative)?.sha256)) &&
+        actualByPath.get(relative)?.mode === '100644'),
       `new protected presentation file is not successor-authorized: ${relative}`,
     );
   }
@@ -347,4 +440,4 @@ if (failures.length) {
   process.exit(1);
 }
 console.log('M78 protected-presentation no-visual-drift verification: PASS');
-console.log(`Protected files=${actualEntries.length}; aggregate=${aggregate}; Chakra imports remain design-system-owned${m79AuthorityExists ? '; M79 token/theme successor mutations authorized' : ''}${m80AuthorityExists ? '; M80 shared primitive additions authorized' : ''}${m81AuthorityExists ? '; M81 application-shell successor mutations/additions authorized' : ''}${m82AuthorityExists ? '; M82 layout-composition mutations/additions authorized' : ''}${m83AuthorityExists ? '; M83 authentication/account presentation mutations/additions authorized' : ''}${m84AuthorityExists ? '; M84 Boards visual presentation additions authorized' : ''}${m85AuthorityExists ? '; M85 TimeTracker visual presentation mutation/additions authorized' : ''}${m86AuthorityExists ? '; M86 FuelTrack+ visual presentation mutation/additions authorized' : ''}${m87AuthorityExists ? '; M87 TradeLink visual presentation mutation/additions authorized' : ''}${m88AuthorityExists ? '; M88 Users/roles administration presentation mutation/additions authorized' : ''}${m89AuthorityExists ? '; M89 Settings/configuration presentation mutation/additions authorized' : ''}${m90AuthorityExists ? '; M90 data-dense enterprise interaction mutation/additions authorized' : ''}${m91AuthorityExists ? '; M91 overlay/feedback successor mutation/additions authorized' : ''}${m92AuthorityExists ? '; M92 state-system successor mutation/additions authorized' : ''}${m93AuthorityExists ? '; M93 interaction-state successor additions authorized' : ''}${m94AuthorityExists ? '; M94 motion-transition successor mutation/additions authorized' : ''}${m95AuthorityExists ? '; M95 responsive-harmonization successor mutations/additions authorized' : ''}${m96AuthorityExists ? '; M96 legacy styling retirement mutations/removals authorized' : ''}${m97AuthorityExists ? '; M97 workspace-wide visual regression successor additions authorized' : ''}${m100AuthorityExists ? '; M100 Boards import protected-source mutations/additions authorized' : ''}${m101AuthorityExists ? '; M101 Boards import preview/atomic-commit protected-source mutations/additions authorized' : ''}${m102AuthorityExists ? '; M102 Boards data-portability protected-source mutations/additions authorized' : ''}${m103AuthorityExists ? '; M103 Prompts 1-4 completion protected-source mutations authorized' : ''}${m109BoardAuthorityExists ? '; M109 four exact hash-pinned Board presentation mutations authorized' : ''}.`);
+console.log(`Protected files=${actualEntries.length}; aggregate=${aggregate}; Chakra imports remain design-system-owned${m79AuthorityExists ? '; M79 token/theme successor mutations authorized' : ''}${m80AuthorityExists ? '; M80 shared primitive additions authorized' : ''}${m81AuthorityExists ? '; M81 application-shell successor mutations/additions authorized' : ''}${m82AuthorityExists ? '; M82 layout-composition mutations/additions authorized' : ''}${m83AuthorityExists ? '; M83 authentication/account presentation mutations/additions authorized' : ''}${m84AuthorityExists ? '; M84 Boards visual presentation additions authorized' : ''}${m85AuthorityExists ? '; M85 TimeTracker visual presentation mutation/additions authorized' : ''}${m86AuthorityExists ? '; M86 FuelTrack+ visual presentation mutation/additions authorized' : ''}${m87AuthorityExists ? '; M87 TradeLink visual presentation mutation/additions authorized' : ''}${m88AuthorityExists ? '; M88 Users/roles administration presentation mutation/additions authorized' : ''}${m89AuthorityExists ? '; M89 Settings/configuration presentation mutation/additions authorized' : ''}${m90AuthorityExists ? '; M90 data-dense enterprise interaction mutation/additions authorized' : ''}${m91AuthorityExists ? '; M91 overlay/feedback successor mutation/additions authorized' : ''}${m92AuthorityExists ? '; M92 state-system successor mutation/additions authorized' : ''}${m93AuthorityExists ? '; M93 interaction-state successor additions authorized' : ''}${m94AuthorityExists ? '; M94 motion-transition successor mutation/additions authorized' : ''}${m95AuthorityExists ? '; M95 responsive-harmonization successor mutations/additions authorized' : ''}${m96AuthorityExists ? '; M96 legacy styling retirement mutations/removals authorized' : ''}${m97AuthorityExists ? '; M97 workspace-wide visual regression successor additions authorized' : ''}${m100AuthorityExists ? '; M100 Boards import protected-source mutations/additions authorized' : ''}${m101AuthorityExists ? '; M101 Boards import preview/atomic-commit protected-source mutations/additions authorized' : ''}${m102AuthorityExists ? '; M102 Boards data-portability protected-source mutations/additions authorized' : ''}${m103AuthorityExists ? '; M103 Prompts 1-4 completion protected-source mutations authorized' : ''}${m109BoardAuthorityExists ? '; M109 four exact hash-pinned Board presentation mutations authorized' : ''}${m143WizardAuthorityExists ? '; M143 six exact hash-pinned Board Import wizard additions authorized' : ''}.`);

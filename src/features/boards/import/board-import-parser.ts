@@ -8,6 +8,7 @@ import type {
   BoardImportSchemaField,
   BoardImportSource,
   BoardImportWorksheet,
+  BoardImportGroupSection,
 } from '../contracts/import.ts';
 
 const DEFAULT_MAX_FILE_BYTES = 25 * 1024 * 1024;
@@ -110,7 +111,7 @@ async function unzipEntries(buffer: ArrayBuffer): Promise<Map<string, Uint8Array
 const xmlText = (entries: Map<string, Uint8Array>, name: string, required = true): string => {
   const bytes = entries.get(name);
   if (!bytes) { if (required) throw new BoardImportError('IMPORT_XLSX_MISSING_PART', `The XLSX workbook is missing required part “${name}”.`); return ''; }
-  return textDecoder.decode(bytes);
+  return textDecoder.decode(bytes).replace(/<(\/?)(?:[A-Za-z_][\w.-]*:)(?=(?:workbook|sheets|sheet|worksheet|sheetData|row|c|v|t|si|is)\b)/g, '<$1');
 };
 const xmlDecode = (value: string) => value.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n))).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)));
 
@@ -121,7 +122,10 @@ function parseSharedStrings(xml: string): string[] {
 function columnIndex(ref: string): number { let index = 0; for (const ch of ref.replace(/\d/g, '')) index = index * 26 + ch.toUpperCase().charCodeAt(0) - 64; return Math.max(0, index - 1); }
 function parseXlsxSheet(xml: string, shared: readonly string[]): BoardImportPrimitive[][] {
   const rows: BoardImportPrimitive[][] = [];
-  for (const rowMatch of xml.matchAll(/<row\b([^>]*)>([\s\S]*?)<\/row>/g)) {
+  // Ignore XML self-closing empty rows; treating them as opening tags
+  // would attach the next section heading to the wrong spreadsheet row.
+  const expandedRows = xml.replace(/<row\b[^>]*\/>/g, '').replace(/<c\b[^>]*\/>/g, '');
+  for (const rowMatch of expandedRows.matchAll(/<row\b([^>]*)>([\s\S]*?)<\/row>/g)) {
     const rowNo = Number(/\br="(\d+)"/.exec(rowMatch[1]!)?.[1] || rows.length + 1); const row: BoardImportPrimitive[] = [];
     for (const cell of rowMatch[2]!.matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)) {
       const attrs = cell[1]!; const body = cell[2]!; const ref = /\br="([A-Z]+\d+)"/i.exec(attrs)?.[1] || ''; const index = ref ? columnIndex(ref) : row.length; const type = /\bt="([^"]+)"/.exec(attrs)?.[1] || '';
@@ -198,12 +202,45 @@ function parseXls(buffer: ArrayBuffer): ParsedBook {
 
 function fieldAliasMap(fields: readonly BoardImportSchemaField[]): Map<string, string> { const map=new Map<string,string>(); for(const field of fields){for(const alias of [field.key,field.label,...(field.aliases||[])]){const key=canonical(alias); if(key && !map.has(key)) map.set(key,field.key);}} return map; }
 function detectHeaderRow(rows: readonly BoardImportPrimitive[][], fields: readonly BoardImportSchemaField[]): number { const aliases=fieldAliasMap(fields); let best=-1,bestScore=-1; for(let i=0;i<Math.min(rows.length,25);i++){const row=rows[i]!; const values=row.map(canonical).filter(Boolean); if(!values.length)continue; const recognized=values.filter(v=>aliases.has(v)).length; const unique=new Set(values).size; const score=recognized*10+unique-Math.abs(values.length-unique)*5; if(score>bestScore){best=i;bestScore=score;}} if(best<0) throw new BoardImportError('IMPORT_HEADER_NOT_FOUND','No usable header row could be detected.'); return best; }
+/** Detect only explicit section headings directly followed by the same table header.
+ * The pre-header title is not a group when another isolated row is closer. */
+export function detectBoardImportGroupSections(rows: readonly (readonly BoardImportPrimitive[])[], headerIndex: number, headers: readonly string[]): readonly BoardImportGroupSection[] {
+  const meaningful = (row: readonly BoardImportPrimitive[]) => row.map((v,i)=>({i,text:normalizeHeader(v)})).filter(v=>v.text);
+  const matchesHeader = (row: readonly BoardImportPrimitive[]) => headers.every((h,i)=>canonical(row[i])===canonical(h));
+  const headings: {index:number;name:string;tableIndex:number}[] = [];
+  const before = rows.slice(0,headerIndex).map((row,i)=>({i,cells:meaningful(row)})).filter(x=>x.cells.length);
+  const adjacent = before.at(-1);
+  if (adjacent && adjacent.i===headerIndex-1 && adjacent.cells.length===1 && adjacent.cells[0]?.i===0 && adjacent.cells[0]?.text) {
+    headings.push({index:adjacent.i,name:adjacent.cells[0].text,tableIndex:headerIndex});
+  }
+  for (let i=headerIndex+1;i<rows.length-1;i++) {
+    const cell=meaningful(rows[i]??[]);
+    if (cell.length!==1 || cell[0]?.i!==0 || !cell[0].text) continue;
+    let next=i+1;
+    while(next<rows.length && !meaningful(rows[next]??[]).length)next++;
+    if(next<rows.length && matchesHeader(rows[next]??[])){
+      headings.push({index:i,name:cell[0].text,tableIndex:next});
+      i=next;
+    }
+  }
+  // A single title/header combination is not enough evidence of a grouped export.
+  if(headings.length<2) return Object.freeze([]);
+  const keys=new Set<string>();
+  for(const h of headings){const name=canonical(h.name);if(!name||keys.has(name)) return Object.freeze([]);keys.add(name);}
+  return Object.freeze(headings.map((h,i)=>Object.freeze({
+    headingRow:h.index+1,
+    name:h.name,
+    firstDataRow:h.tableIndex+2,
+    lastDataRow:(headings[i+1]?.index ?? rows.length),
+  })));
+}
+
 function buildMapping(headers: readonly string[], options: BoardImportOptions): {mapping:BoardImportColumnMapping[];missing:string[];unexpected:string[]} { const alias=fieldAliasMap(options.schema.fields); const override=options.columnMapping||{}; const targets=new Set<string>(); const mapping=headers.map((source)=>{const explicit=Object.prototype.hasOwnProperty.call(override,source)?override[source]:undefined; const target=explicit===undefined?(alias.get(canonical(source))??null):explicit; if(target && !options.schema.fields.some(f=>f.key===target)) throw new BoardImportError('IMPORT_MAPPING_UNKNOWN_TARGET',`Column “${source}” maps to unknown target “${target}”.`); if(target){if(targets.has(target)) throw new BoardImportError('IMPORT_MAPPING_DUPLICATE_TARGET',`More than one source column maps to “${target}”.`);targets.add(target);} return Object.freeze({source,target:target??null});}); const missing=options.schema.fields.filter(f=>f.required&&!targets.has(f.key)).map(f=>f.label); const unexpected=mapping.filter(m=>!m.target).map(m=>m.source); return {mapping,missing,unexpected}; }
 
 export async function parseBoardImport(source: BoardImportSource, options: BoardImportOptions): Promise<BoardImportDataset> {
   const diagnostics:BoardImportDiagnostic[]=[]; try { const kind=kindFromName(source.name); validateMime(kind,String(source.type||'')); const size=Number(source.size||0); const max=options.maxFileBytes??DEFAULT_MAX_FILE_BYTES; if(size>max) throw new BoardImportError('IMPORT_FILE_TOO_LARGE',`The import file exceeds the ${max.toLocaleString()} byte limit.`); const buffer=await source.arrayBuffer(); if(buffer.byteLength===0) throw new BoardImportError('IMPORT_EMPTY_FILE','The import file is empty.'); if(buffer.byteLength>max) throw new BoardImportError('IMPORT_FILE_TOO_LARGE',`The import file exceeds the ${max.toLocaleString()} byte limit.`);
     const book=kind==='csv'?parseCsvText(textDecoder.decode(buffer)):kind==='xlsx'?await parseXlsx(buffer):parseXls(buffer); const worksheets:BoardImportWorksheet[]=book.sheets.map((s,index)=>Object.freeze({name:s.name,index,hidden:s.hidden,rowCount:s.rows.length,columnCount:s.rows.reduce((m,r)=>Math.max(m,r.length),0)})); let selectedIndex=0; if(typeof options.worksheet==='number') selectedIndex=options.worksheet; else if(typeof options.worksheet==='string') selectedIndex=book.sheets.findIndex(s=>s.name===options.worksheet); else selectedIndex=Math.max(0,book.sheets.findIndex(s=>!s.hidden&&s.rows.some(r=>!rowBlank(r)))); if(selectedIndex<0||selectedIndex>=book.sheets.length) throw new BoardImportError('IMPORT_WORKSHEET_NOT_FOUND','The requested worksheet could not be found.'); const selected=book.sheets[selectedIndex]!; if(selected.hidden) diagnostics.push(Object.freeze({code:'IMPORT_HIDDEN_WORKSHEET',severity:'warning',message:`Worksheet “${selected.name}” is hidden.`,sheet:selected.name})); if(!selected.rows.length) throw new BoardImportError('IMPORT_WORKSHEET_EMPTY',`Worksheet “${selected.name}” does not contain data.`);
-    const headerIndex=options.headerRow?options.headerRow-1:detectHeaderRow(selected.rows,options.schema.fields); if(headerIndex<0||headerIndex>=selected.rows.length) throw new BoardImportError('IMPORT_HEADER_ROW_OUT_OF_RANGE','The configured header row is outside the worksheet range.'); const rawHeaders=selected.rows[headerIndex]!.map(normalizeHeader); const headers=rawHeaders.map((h,i)=>h||`__column_${i+1}`); const duplicateHeaders=headers.filter((h,i)=>headers.findIndex(x=>canonical(x)===canonical(h))!==i); if(duplicateHeaders.length) throw new BoardImportError('IMPORT_DUPLICATE_HEADERS',`Duplicate header names are not supported: ${[...new Set(duplicateHeaders)].join(', ')}.`); const {mapping,missing,unexpected}=buildMapping(headers,options); if(missing.length) diagnostics.push(Object.freeze({code:'IMPORT_MISSING_REQUIRED_COLUMNS',severity:'error',message:`Missing required columns: ${missing.join(', ')}.`})); if(unexpected.length) diagnostics.push(Object.freeze({code:'IMPORT_UNEXPECTED_COLUMNS',severity:options.allowUnexpectedColumns?'warning':'error',message:`Unsupported columns: ${unexpected.join(', ')}.`})); const rows=[]; const maxRows=options.maxRows??DEFAULT_MAX_ROWS; for(let i=headerIndex+1;i<selected.rows.length;i++){const raw=selected.rows[i]!.map(normalizePrimitive); if(rowBlank(raw))continue; if(rows.length>=maxRows) throw new BoardImportError('IMPORT_ROW_LIMIT_EXCEEDED',`The import contains more than ${maxRows.toLocaleString()} data rows.`); const values:Record<string,BoardImportPrimitive>={}; mapping.forEach((m,c)=>{if(m.target)values[m.target]=normalizePrimitive(raw[c]);}); rows.push(Object.freeze({sourceRow:i+1,values:Object.freeze(values),raw:Object.freeze(raw)}));} if(!rows.length) diagnostics.push(Object.freeze({code:'IMPORT_NO_DATA_ROWS',severity:'warning',message:'No non-blank data rows were found below the header.',sheet:selected.name})); return Object.freeze({format:kind,fileName:source.name,fileSize:buffer.byteLength,mimeType:String(source.type||''),selectedWorksheet:selected.name,worksheets:Object.freeze(worksheets),headerRow:headerIndex+1,headers:Object.freeze(headers),mapping:Object.freeze(mapping),missingRequiredColumns:Object.freeze(missing),unexpectedColumns:Object.freeze(unexpected),rows:Object.freeze(rows),diagnostics:Object.freeze(diagnostics),mutationAllowed:false as const});
+    const headerIndex=options.headerRow?options.headerRow-1:detectHeaderRow(selected.rows,options.schema.fields); if(headerIndex<0||headerIndex>=selected.rows.length) throw new BoardImportError('IMPORT_HEADER_ROW_OUT_OF_RANGE','The configured header row is outside the worksheet range.'); const rawHeaders=selected.rows[headerIndex]!.map(normalizeHeader); const headers=rawHeaders.map((h,i)=>h||`__column_${i+1}`); const duplicateHeaders=headers.filter((h,i)=>headers.findIndex(x=>canonical(x)===canonical(h))!==i); if(duplicateHeaders.length) throw new BoardImportError('IMPORT_DUPLICATE_HEADERS',`Duplicate header names are not supported: ${[...new Set(duplicateHeaders)].join(', ')}.`); const groupSections=detectBoardImportGroupSections(selected.rows,headerIndex,headers); const {mapping,missing,unexpected}=buildMapping(headers,options); if(missing.length) diagnostics.push(Object.freeze({code:'IMPORT_MISSING_REQUIRED_COLUMNS',severity:'error',message:`Missing required columns: ${missing.join(', ')}.`})); if(unexpected.length) diagnostics.push(Object.freeze({code:'IMPORT_UNEXPECTED_COLUMNS',severity:options.allowUnexpectedColumns?'warning':'error',message:`Unsupported columns: ${unexpected.join(', ')}.`})); const rows=[]; const maxRows=options.maxRows??DEFAULT_MAX_ROWS; for(let i=headerIndex+1;i<selected.rows.length;i++){const raw=selected.rows[i]!.map(normalizePrimitive); if(rowBlank(raw))continue; if(rows.length>=maxRows) throw new BoardImportError('IMPORT_ROW_LIMIT_EXCEEDED',`The import contains more than ${maxRows.toLocaleString()} data rows.`); const values:Record<string,BoardImportPrimitive>={}; mapping.forEach((m,c)=>{if(m.target)values[m.target]=normalizePrimitive(raw[c]);}); rows.push(Object.freeze({sourceRow:i+1,values:Object.freeze(values),raw:Object.freeze(raw)}));} if(!rows.length) diagnostics.push(Object.freeze({code:'IMPORT_NO_DATA_ROWS',severity:'warning',message:'No non-blank data rows were found below the header.',sheet:selected.name})); return Object.freeze({format:kind,fileName:source.name,fileSize:buffer.byteLength,mimeType:String(source.type||''),selectedWorksheet:selected.name,worksheets:Object.freeze(worksheets),headerRow:headerIndex+1,headers:Object.freeze(headers),mapping:Object.freeze(mapping),missingRequiredColumns:Object.freeze(missing),unexpectedColumns:Object.freeze(unexpected),rows:Object.freeze(rows),groupSections,diagnostics:Object.freeze(diagnostics),mutationAllowed:false as const});
   } catch(error){ if(error instanceof BoardImportError) throw error; throw new BoardImportError('IMPORT_PARSE_FAILED',error instanceof Error?error.message:'The import file could not be parsed.'); }
 }
 

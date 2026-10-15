@@ -18,7 +18,7 @@ if (!fs.existsSync(archive) || sha(archive) !== archiveSha) fail('original M108 
 
 const expected = new Map(Object.entries({
   'assets/js/core/auth.ts': 'b93073bd4b5a37359e5c8d499deb7f63a5e8edf448170ec4bb57aba30c76c511',
-  'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs': '942b332caedbd87fbd2332475d979d8350edba0c40c315b4b9afa1c1f46bf487',
+  'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs': '64bddafb64cb577aa9cb51605a86c5e7593597dcde521ee847cf037387a1683d',
   'assets/js/features/boards/board-schema.ts': '9b7d0a55bb47a85436d29801d7fd62beea44cb0944a016843b6a33994e61cce1',
   'assets/js/features/boards/controllers/board-menu-controller.ts': '303c39ff27de01d112dbd5f0a541ee51ee2a24acd50feee7312c97d11670449b',
   'assets/js/features/boards/controllers/column-workflows.ts': 'd86b8ca16a694c699cca7a7fe211aa6e3d581601f20bf1897ab17fbcb8fbd36d',
@@ -60,7 +60,7 @@ const expected = new Map(Object.entries({
   '.github/workflows/users-rbac-functional-recovery.yml': '463b08f3ad06136b5d9a4df18d3c01a70d1a9da09fecddbccfa240e95d3a62b5',
   '.github/workflows/final-legacy-deletion.yml': '09afc191799895d9696766e7306e5e7b70670e0c170b3d1ac9b3e1c96121c97c',
   '.github/actions/prepare-m108-baseline/action.yml': '8ec7e6db1aaee4b92cba29e31805103445eeb860e29869e2412ac59518a49b7a',
-  'assets/js/boards-ui.ts': '2afada75df7439ffb0d8b383f83a896cb6357fcf389f38738c4512e34ad2cce5',
+  'assets/js/boards-ui.ts': '86063248c13bd959fcc0d4ca626dfbec82e1b0f5ba1e2e8ccd8ef1142b769739',
   'assets/css/app.css': 'a67330e1eb590f01e1e3c3ce7632464dbb54ffa4d503687d2d97c4741ba79488',
   'assets/css/boards-monday.css': 'dfc0560f8d14dc19d3291291514a098b0ae8bbdaab413d4b4eae0f2cccb37dcd',
   'scripts/verify-m109-board-ux.mjs': '147375ee0eec195cc5a17c5135ade806143d2e2b88f49db97dd92e0d465389f3',
@@ -69,9 +69,97 @@ const expected = new Map(Object.entries({
   'scripts/test-m108-login-successor.mjs': '266e9b3dbb8a5790a80c21ef6dd5b42c9155e54c3de0d17907083865884f4ef6',
   'M108-LOGIN-SUCCESSOR-CONTINUATION.md': '357a7d5a3cae9de9376780fd55f63bfac033f71f942cb4a66d1bf424e02ebf5b',
 }));
+
+// M144.15 HF1 follows M143/M144.14 without rewriting historical approvals.
+// Exact reviewed successor: three runtime files plus two narrowly scoped tests.
+const m14415ExactSource = new Map([
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', 'e48fe28a46c0def531c42558537333a82d0ba13cb54155a22404799febbd1615'],
+  ['src/features/boards/import/board-import-wizard-commit.ts', '0b351be68bb4d059d98f8111b128738aa6085b95ddba922271e7ac5b6f2619de'],
+  ['src/features/boards/import/board-import-wizard-plan.ts', '7536ad306234757e2fb3303f59290a996a22da4c7c773910ec8e983310448c8d'],
+  ['tests/modern/board-import/m141-wizard-plan.verify.mjs', '1f7d3ac68bd0ed0b7c574a57143abfa77088dc36c2d044e91d2719889f6488f0'],
+  ['tests/modern/board-import/m142-wizard-integration.verify.mjs', '18a67300093d332604bc66187ca72d6fbe2d727bed51fedf8770bf2c4a3ed304'],
+ ]);
+// M144.15 HF3 permits only the reviewed UI bytes, never a blanket UI-file exemption.
+const m14415Hf3WizardUiPath = 'assets/js/features/boards/controllers/board-import-wizard-ui.ts';
+const m14415Hf3WizardUiSha256 = 'e1c615bc73335e448c2a4aa4ddcea2b7380866cdf605ba941e41e4f8ec9986cc';
+// M144.16: exact dual-file successor bound to the exact updated M78 guard.
+const m14416ExactSource = new Map([
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', '973d3cef0ecf594e85d04f076d3e51404d40c9188e5741084e7dab7b0e376400'],
+  ['src/features/boards/import/board-import-wizard-commit.ts', 'fe8e8d4b85db38abd40daa2e5ac26d534e94e11314f6f3d13e58107945dde14d'],
+ ]);
+const m14416M78GuardSha256 = '4a3406b4a66cca4dba99cd752128b35d366639d5398e5f713a6fde381b83bc83';
+const m14416Active = [...m14416ExactSource].every(([rel, digest]) =>
+  fs.existsSync(path.join(repo, rel)) && sha(path.join(repo, rel)) === digest) &&
+  sha(path.join(repo, 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14416M78GuardSha256;
+// M144.17: separate-group import successor is enabled only by all pinned
+// files, the reviewed SQL (not deployed), and the exact updated M78 guard.
+const m14417ExactFiles = new Map([
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', '82e0e1fd8eacb0baac9e1466d72b03c6d08e4154998d02964d0ab775f5a9e8f1'],
+  ['assets/js/features/boards/data/board-repository.ts', '7df9ca80fe96e8c20121171cdb06fd65b4919f030235f91c805715ac736a6a1f'],
+  ['src/features/boards/contracts/import.ts', 'e78d770f301b382dd41dc549e8be20798e8868cb6d8d11c8f50606ee8b875da8'],
+  ['src/features/boards/contracts/import-wizard.ts', '719f86f57c70887bc8bcda07641f34765085463f1b5aeee27f5f7b0735be5957'],
+  ['src/features/boards/contracts/import-wizard-commit.ts', '1f6c5ad48be7b3d8e471aa23a58aed9c0885c00094e31fc6f087e8d496d38dab'],
+  ['src/features/boards/import/board-import-parser.ts', 'eb4179729124020b23b7a04fda014c65d1ffcede4c8e3be9144b3026ebd3b9cb'],
+  ['src/features/boards/import/board-import-wizard-commit.ts', '274fdfaf669c57b7630317b647d4360d8608fe1e2f28166b2dfca595073fe8ea'],
+  ['supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql', '6ad80ef226fe6e711f4d82fe572dc42267531d2db5d5c234489370e6f7b16d54'],
+  ['tests/modern/board-import/m14417-grouped-monday.verify.mjs', 'd70e90ea308f66514edb83db7d27f927250723461fe40b1a12ed234fdf4b15cd'],
+]);
+// M144.17 grouped workbook fixture is part of the reviewed successor
+// even though it is a binary XLSX rather than an entry in the text-source map.
+const m14417GroupedFixturePath = 'tests/fixtures/board-import-synthetic-grouped-export.xlsx';
+const m14417GroupedFixtureSha256 = '65ee19379445c9617bd883d6050b89415cb67a542f6a0f1b01666f9e9917efc3';
+const m14417M78GuardSha256 = '1e856cd8d49f55b3d03b50610b4702a7fd074154f9ac71384669d3984ee281e3';
+const m14417Active = [...m14417ExactFiles].every(([rel,digest]) =>
+  fs.existsSync(path.join(repo,rel)) && sha(path.join(repo,rel)) === digest) &&
+  sha(path.join(repo,'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14417M78GuardSha256 &&
+  fs.existsSync(path.join(repo,m14417GroupedFixturePath)) &&
+  sha(path.join(repo,m14417GroupedFixturePath)) === m14417GroupedFixtureSha256;
+
+// M144.17 targeted M38 successor: an unchanged, reviewed grouped SQL source,
+// all M144.17 implementation hashes, and the exact M38 verifier bytes are required.
+// The original M38 capability baseline is *not* enlarged by this authorization.
+const m14417M38Path = 'verify-stage-g-m38-runtime-configuration-backend-preflight.mjs';
+const m14417M38Sha256 = '5214534282a11cb6120becdf27dc5ca0b5fca889e6b8edcf31dae24aad142a7f';
+const m14417M38Active = m14417Active && fs.existsSync(path.join(repo,m14417M38Path)) &&
+  sha(path.join(repo,m14417M38Path)) === m14417M38Sha256;
+
+const m14415ReviewedHash = (rel, actual, prior) => actual === prior ||
+  (m14417Active && m14417ExactFiles.get(rel) === actual) ||
+  (rel === m14415Hf3WizardUiPath && actual === m14415Hf3WizardUiSha256) ||
+  (m14416Active && m14416ExactSource.get(rel) === actual);
+const m14415M78GuardSha256 = '668718f030a43e73fe933bb3f07a9fe382eea4ca956478f014485c8b3223ca58';
+const m14415Active = [...m14415ExactSource].every(([rel, digest]) =>
+  fs.existsSync(path.join(repo, rel)) && m14415ReviewedHash(rel, sha(path.join(repo, rel)), digest)) &&
+  (sha(path.join(repo, 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14415M78GuardSha256 || m14416Active);
+// Three M144.15 HF1 predecessors did not change during M144.17.
+// Keep only these exact hashes; all new grouped bytes are independently pinned
+// in m14417ExactFiles and the grouped fixture hash above.
+const m14417InheritedM14415Paths = new Set([
+  'src/features/boards/import/board-import-wizard-plan.ts',
+  'tests/modern/board-import/m141-wizard-plan.verify.mjs',
+  'tests/modern/board-import/m142-wizard-integration.verify.mjs',
+]);
+// M144.18 HF3: exact-byte workflow packaging successor only; M108 baseline is unchanged.
+// Budget, embedded-asset, and source inventory guards below remain mandatory.
+const m14418Hf3CiWorkflowPath = '.github/workflows/ci.yml';
+const m14418Hf3CiWorkflowSha256 = '59844f0a25c0e6809743697b8c7fe2e0ea9c9fc321d1c63ea5926b8ebfea49ee';
+const isApprovedHistoricalOrM14415 = (rel, expectedDigest) => {
+  const file = path.join(repo, rel);
+  if (!fs.existsSync(file)) return false;
+  const actualDigest = sha(file);
+  return actualDigest === expectedDigest ||
+    (m14415Active && m14415ExactSource.has(rel) && m14415ReviewedHash(rel, actualDigest, m14415ExactSource.get(rel))) ||
+    (m14417Active && m14417ExactFiles.get(rel) === actualDigest) ||
+    (m14417M38Active && m14417InheritedM14415Paths.has(rel) &&
+      m14415ExactSource.get(rel) === actualDigest) ||
+    (m14417M38Active && rel === m14418Hf3CiWorkflowPath &&
+      actualDigest === m14418Hf3CiWorkflowSha256) ||
+    (m14417M38Active && rel === m14417M38Path);
+};
+
 for (const [rel, want] of expected) {
   const file = path.join(repo, rel);
-  if (!fs.existsSync(file) || sha(file) !== want) fail(`unapproved bytes or missing file: ${rel}`);
+  if (!isApprovedHistoricalOrM14415(rel, want) && !(m14415Active && rel === 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs') && !(m14417Active && rel === 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) fail(`unapproved bytes or missing file: ${rel}`);
 }
 
 // Only reproducible outputs are excluded; historical integration source is guarded.
@@ -121,6 +209,182 @@ const permittedAdded = new Set([
   'scripts/verify-m109-board-ux.mjs',
   '.github/actions/prepare-m108-baseline/action.yml',
 ]);
+// M141: exact, non-mutating Board Import wizard contract additions.
+// These are authorized successor additions only; preserve all M108 guards.
+const m141ApprovedAdditions = new Map(Object.entries({
+  "src/features/boards/contracts/import-wizard.ts": "f126606d8a2b26177d4731130562aa17e0c22823e8ad2ad28017c019fa20405d",
+  "src/features/boards/import/board-import-wizard-plan.ts": "9abda2153f22868e3685c994cb2dbc0bae91da42b5ee737cbe15a410c4c366b1",
+  "tests/modern/board-import/m141-wizard-plan.verify.mjs": "8fed6c729f89858e34b29edac7b6b903fb063e983150e0072e33e903892e60df",
+  "spec/M141-BOARD-IMPORT-WIZARD-CONTRACT-NOT-CERTIFIED.md": "e3d1301ee72ebae8d959c7d718c9543c8209a49a00da47ed362eeaa3538f135e"
+}));
+for (const [rel, digest] of m141ApprovedAdditions) {
+  if (!isApprovedHistoricalOrM14415(rel, digest)) {
+    fail(`M141 Board Import source digest mismatch: ${rel}`);
+  }
+  permittedAdded.add(rel);
+}
+// M141.2 — accept only the exact successor-aware M108 historical guard.
+const m1412ExactHistoricalGuard = 'scripts/verify-stage-i-m108-m107-source-guard.mjs';
+if (sha(path.join(repo,m1412ExactHistoricalGuard)) !== '201b0d5864f7487bb4f2f34261e69c6c3801e49918737bc3c675fd4d2fdb9e79') {
+  fail('M141.2 historical guard bytes differ from approved delegation');
+}
+permittedModified.add(m1412ExactHistoricalGuard);
+// M142: exact approved three-step wizard extension only.
+// Historical M108 predecessor identity and M141.2 delegation remain intact.
+const m142ApprovedWizardAdditions = new Map(Object.entries({
+  "assets/css/board-import-wizard.css": "3ee1ab4e968421eb98dbd67f8b543d6120a4d3413d440e2abfc4f07d6a34a0e6",
+  "assets/js/features/boards/controllers/board-import-wizard-ui.ts": "7fd7b09b9cccd4eb0bc36827d54cc845222e15c3dce676ae486669506c1fce81",
+  "spec/M142-WIZARD-IMPLEMENTATION-READINESS-NOT-CERTIFIED.md": "60fdf4b85d3cf1bd10ad08d95fe372f8f21dad85e488fcc3aef05853a53344ad",
+  "tests/modern/board-import/m142-wizard-integration.verify.mjs": "74f5b3517910b032571ec50b442f91438a81f5ce933e683778102bab56ae920f"
+}));
+for (const [rel, digest] of m142ApprovedWizardAdditions) {
+  if (!isApprovedHistoricalOrM14415(rel, digest)) fail(`M142 wizard source hash mismatch: ${rel}`);
+  permittedAdded.add(rel);
+}
+// M143 exact source-reviewed wizard approval; predecessor safeguards retained.
+const m143ApprovedSource = new Map(Object.entries({
+  'assets/js/features/boards/services/board-domain-service.ts': '1f6303fbc8784a4c1158d698fac1b96f6dfb44786fc4c0bee5863eb6b6015dff',
+  "assets/js/boards-ui.ts": "86063248c13bd959fcc0d4ca626dfbec82e1b0f5ba1e2e8ccd8ef1142b769739",
+  "assets/js/features/boards/controllers/board-import-wizard-ui.ts": "7fd7b09b9cccd4eb0bc36827d54cc845222e15c3dce676ae486669506c1fce81",
+  "assets/js/features/boards/data/board-repository.ts": "328808ebf9acc2a6d230c3b07b8be5fff4cdcc0dc1c05e9fccd691eaf7da8464",
+  "spec/M143-TRANSACTION-AND-DEPLOYMENT-BOUNDARIES-NOT-CERTIFIED.md": "56454d774a5cb3098aa1bda0b4b867849717e59d0b84ed98eb05fbfaf42a5f0d",
+  "src/features/boards/contracts/import-wizard-commit.ts": "8222931e5e97f9f383a7d1ec72c55a43ef28f406efcb5f2434de205f3007f961",
+  "src/features/boards/contracts/repository.ts": "41a4a63cb5f47a1982e784ba547b57c31684aeddd51332ef6b19bb6bae7e217e",
+  "src/features/boards/import/board-import-wizard-commit.ts": "877cb6cb3aaeec46006a369a2fadee99371af07dcdbd31c4eab2c5799de237e1",
+  "src/features/boards/import/board-import-wizard-plan.ts": "9abda2153f22868e3685c994cb2dbc0bae91da42b5ee737cbe15a410c4c366b1",
+  "supabase/m143/board_import_wizard_atomic_DRAFT.sql": "b883b3c432ae5ebcadd9fda2f15b5bcdeb0cff9448ace4862c6fb88fd5fd37fc",
+  "tests/modern/board-import/m143-contract.verify.mjs": "0f58c83dc169c82d9737b041c2404f64775193056ccd154dfd1edce638a3efa1",
+ }));
+for (const [rel, expectedSha] of m143ApprovedSource) {
+  if (!isApprovedHistoricalOrM14415(rel, expectedSha)) fail(`M143 source hash mismatch: ${rel}`);
+  if (["spec/M143-TRANSACTION-AND-DEPLOYMENT-BOUNDARIES-NOT-CERTIFIED.md", "src/features/boards/contracts/import-wizard-commit.ts", "src/features/boards/import/board-import-wizard-commit.ts", "supabase/m143/board_import_wizard_atomic_DRAFT.sql", "tests/modern/board-import/m143-contract.verify.mjs"].includes(rel)) permittedAdded.add(rel);
+  else if (!permittedAdded.has(rel)) permittedModified.add(rel);
+}
+// M143.2 exact isolated PostgreSQL fixture/test-source approval.
+const m1432ApprovedSource = new Map(Object.entries({
+  "supabase/tests/m143/m1432_atomic_behavior.test.sql": "c9d8b05224989b27a9e8a8f79dd01033f913daa4bd6322333e212c2398584b5b",
+  "supabase/tests/m143/m1432_isolated_postgresql_fixture.sql": "4666aeab87dbfdf11fb7c15fdad72fbf95fa4db68cfd19d471504c0d086cd1a2",
+}));
+for (const [rel, expectedSha] of m1432ApprovedSource) {
+  if (sha(path.join(repo, rel)) !== expectedSha) fail(`M143.2 SQL test source mismatch: ${rel}`);
+  permittedAdded.add(rel);
+}
+// M144 exact source-reviewed real-browser acceptance additions and UI hardening.
+const m144ApprovedSource = new Map(Object.entries({
+  "scripts/run-m144-wizard-browser.mjs": "c2e053bebb6ca8dd391aac58c306b6a61674dcee743785d99bc9128ee29a75dd",
+  "spec/M144-BROWSER-ACCEPTANCE-BOUNDARY-NOT-RELEASE-CERTIFIED.md": "0d95514cba353d54d8e62b3d2095d2ee815f1c6e928754724606325cc3bfeaef",
+  "tests/modern/e2e/m144-wizard-acceptance.spec.mjs": "847943b7ac5d3f2aee5075771a7b4e2975b4051ce2cf710bc18a88d19dd77417",
+  "tests/modern/e2e/m144-wizard-harness.html": "f7fb477a2993e7541d72beefe24898e4be51e6392158d2b9b91c9296fe9c22d8",
+  "tests/modern/e2e/m144-wizard-harness.ts": "6bcbb12e588a12cf5f18f44af2dec07bdca7c4e72f4563946a14b295ddd2e21f",
+}));
+for (const [rel, expectedSha] of m144ApprovedSource) {
+  if (sha(path.join(repo, rel)) !== expectedSha) fail(`M144 source SHA256 mismatch: ${rel}`);
+  permittedAdded.add(rel);
+}
+// M144.14 — reconcile the exact M144.4–M144.12 governed successor inventory.
+// This is an explicit, SHA-256-pinned and operation-typed extension to M108.
+// The original certified archive must still authenticate; unlisted mutations,
+// additions, removals, symlinks and different bytes remain rejected.
+// M144.18 HF2: a new measured total-build allowance is permitted only for
+// the exact already-reviewed embedded asset closure and the pinned budget
+// verifier/memo. Earlier M144.11 and M108 ceilings remain historical facts.
+const m14418BudgetMemoPath = 'M14418-ADAPTIVE-EMBEDDED-ASSET-PERFORMANCE-BUDGET-2026-10-15.md';
+const m14418BudgetActive =
+  fs.existsSync(path.join(repo, m14418BudgetMemoPath)) &&
+  sha(path.join(repo, m14418BudgetMemoPath)) === '72ca14866ad034046a6190ce15182dcf6d902dc096999309daa507effe71e9b4' &&
+  sha(path.join(repo, 'scripts/verify-performance-budgets.mjs')) === 'f04914f2d38577a400ef3ff049d4e2456d9446886defc874c2cef170b133168d' &&
+  sha(path.join(repo, 'vite.config.js')) === 'dd70ff9feb17e9a0d860f0d74c6cc48a216a66aca09726e8b259785aec54f2ca' &&
+  sha(path.join(repo, 'scripts/verify-dist.mjs')) === '66e9fd9d31ad26b44bb09fe8bfb94456e7e9f134e8497d2ba4fc0d9dcf716be2';
+
+const m14414ExactModified = new Map(Object.entries({
+  "scripts/verify-performance-budgets.mjs": "c03b656615a5bbd6e8eedc8e35df923493c9e8a341226f5bb959286ec12b2d38",
+  "verify-stage-g-m38-runtime-configuration-backend-preflight.mjs": "70ccabd7de336a98fb61966c098e0aa68b24dc31ec2d268a4f66d0471c0871eb",
+  "verify-stage-g-m46-boards-backend-data-contract-recovery.mjs": "0120bb601f5635e47c8bd86f1fb45adc2c9cb3a78382ddd7e7bdcbaa5def3078",
+}));
+const m14414ExactAdded = new Map(Object.entries({
+  "M144_11-HF1-BOARD-IMPORT-ADAPTIVE-PERFORMANCE-BUDGET.md": "3d9f5ef92e38fefc5a370ec92ab537637ce623b2679162365d0ce86cf45c6934",
+  "M144_4-GOVERNANCE-AND-STAGING-BOUNDARIES.md": "90195aefaf001ba5497eda95fae6db66eb0e6f367b64cebc66c7b8d3b8b7d0ad",
+  "M144_5-DISPOSABLE-DB-AND-SECURITY-BOUNDARY.md": "8615c7ef22f53c65a58f1e84e5f70e814340bc90d702cb05dc33071f9c643f27",
+  "M144_6-STAGING-READINESS-BOUNDARY.md": "1a7a99c1cde3f6241d76532531dd4b041522a8ac962ab1702f41b0253dab7108",
+  "M144_7-DEPLOYMENT-READINESS-BOUNDARY.md": "f145366b7e89abc7fffad706a5e0e743f27f2a69aa9af0dd7487d6bc2ccef95a",
+  "scripts/m14410_minimal_patch.py": "ae62a0967e7a69d4c2f4b546fb3476be9161b952ef0a687e820224df94d058fa",
+  "scripts/m1444_source_governance.py": "1f48bd8a55e677702761c4708872f491f53f752b54e24f73746dfda8746da33c",
+  "scripts/m1445_disposable_pg_qa.sh": "5ce1cd312f56396c5a2e4d2d1e0fbc22ac442d9936e6d77ea2f01ae24b4e2614",
+  "scripts/m1445_source_governance.py": "646e8eacb217a08b9fd120176b070310e6c05081543f71bbef1729733c42cfd8",
+  "scripts/m1446_source_governance.py": "57724d761c94dfc518c56b76e483dda9e9258f374ac4faf49ee743c863e52986",
+  "scripts/m1446_staging_readiness.py": "f428a8cb09a5263bb5a8b6077a564f937cfc33996ec53568cd8475e785cf37a2",
+  "scripts/m1447_deployment_gate.py": "96eb005b0d7bf4fd5e5122cafc97fdb702f1babd61f2ecc2da10954ca1420c88",
+  "scripts/m1448_hosted_parity_gate.py": "871f5e5f79e2a1e25c5f7a57738c720a1ab0d969d607828459ca44e3751d3ae9",
+  "scripts/m1449_branch_reconcile.py": "3bfe1bf796c2235d20dbb8bf2832fc28cf0c5233c608720f4c4f4c14691e9745",
+  "spec/M144_10-MINIMAL-BRANCH-PATCH-REVIEW.md": "133357fc2c3325e565618c8b4e20c169d7168e15bb1d3b4a3d3667c8dc8814db",
+  "spec/M144_10-PINNED-PATCH.json": "b6ff9c7d80c021312d807922846442ec0b370dd4cdab4e906c09ace884d9f3ef",
+  "spec/M144_12-M78-BOARD-WIZARD-SUCCESSOR-BOUNDARY.md": "3444bf8d1163630c6b3001a73690d43d2997d746f22c495c498c9df30b03c942",
+  "spec/M144_8-HOSTED-OBSERVATION.json": "ab5d3b169fe9c915d6b86febcfa38747c6f079837450e20f14236ad58f46c6c2",
+  "spec/M144_8-SHARED-SUPABASE-GITHUB-BOUNDARY.md": "f7bde04065f295781773bca144fd539d42b0909f9b0c8cd0e663071e2be55473",
+  "spec/M144_9-GITHUB-BRANCH-SNAPSHOT.json": "5fc92e435b6d6a015f0e55c8fa3665a32058cfcf94205353247a63190333c500",
+  "spec/M144_9-TEST-BRANCH-RECONCILIATION-BOUNDARY.md": "6b98cb52acd835db112a6d74b1124e20c1d29963be6ce1419e0f4a8a839d7aac",
+  "supabase/m1446/staging_catalog_READ_ONLY.sql": "afb1c3aff769a3887f3a75d36d82e05a48c83e783615b69b0decd44c1658e6a2",
+  "supabase/m1448/wizard_rpc_catalog_READ_ONLY.sql": "14b61d234d4d7d0ba66f5292c9260199c1093a7b67b13d285e0de556ea91f289",
+  "tests/modern/board-import/m14410-minimal-patch.verify.py": "c951793d4b9379921795b94e8f84134c99cc22625f9b1b1be6f07cdeb28f0e51",
+  "tests/modern/board-import/m14412-m78-guard.verify.py": "90a420ecc6a3631e36fb1a058ec67a7869e1ec7bfe5a010b997f82202ffbc1a0",
+  "tests/modern/board-import/m1449-reconcile.verify.py": "25cb204bd38b60d1e63f621e0739b9c7d51a416b662c516490a26bb5f1376bdf",
+}));
+for (const [rel, digest] of m14414ExactModified) {
+  const file = path.join(repo, rel);
+  if (!fs.existsSync(file) || (sha(file) !== digest && !(m14417M38Active && rel === m14417M38Path) && !(m14418BudgetActive && rel === 'scripts/verify-performance-budgets.mjs'))) fail(`M144.14 modified successor SHA256 mismatch: ${rel}`);
+  if (permittedAdded.has(rel)) fail(`M144.14 invalid modified classification: ${rel}`);
+  permittedModified.add(rel);
+}
+for (const [rel, digest] of m14414ExactAdded) {
+  const file = path.join(repo, rel);
+  if (!fs.existsSync(file) || sha(file) !== digest) fail(`M144.14 added successor SHA256 mismatch: ${rel}`);
+  if (permittedModified.has(rel)) fail(`M144.14 invalid added classification: ${rel}`);
+  permittedAdded.add(rel);
+}
+// M144.17 grouped-import inventory authority: exact reviewed source bytes
+// and the pinned SQL/test/fixture; no changes to predecessor M108 file classes.
+if (m14417M38Active) {
+  for (const rel of [
+    'assets/js/features/boards/data/board-repository.ts',
+    'src/features/boards/contracts/import.ts',
+    'src/features/boards/import/board-import-parser.ts',
+  ]) {
+    if (permittedAdded.has(rel) || sha(path.join(repo,rel)) !== m14417ExactFiles.get(rel))
+      fail(`M144.17 invalid modified source: ${rel}`);
+    permittedModified.add(rel);
+  }
+  for (const [rel,digest] of [
+    ['supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql',m14417ExactFiles.get('supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql')],
+    ['tests/modern/board-import/m14417-grouped-monday.verify.mjs',m14417ExactFiles.get('tests/modern/board-import/m14417-grouped-monday.verify.mjs')],
+    [m14417GroupedFixturePath,m14417GroupedFixtureSha256],
+  ]) {
+    if (permittedModified.has(rel) || sha(path.join(repo,rel)) !== digest)
+      fail(`M144.17 invalid added source: ${rel}`);
+    permittedAdded.add(rel);
+  }
+}
+
+// M144.18 release-readiness successor: the only modified non-Board files
+// are the embedded-asset Vite packaging contract and its dist verifier.
+// Require exact reviewed bytes, normal file classification, and retain the
+// immutable pinned M108 baseline comparison for all other paths.
+const m14418ExactModified = new Map([
+  ['vite.config.js', 'dd70ff9feb17e9a0d860f0d74c6cc48a216a66aca09726e8b259785aec54f2ca'],
+  ['scripts/verify-dist.mjs', '66e9fd9d31ad26b44bb09fe8bfb94456e7e9f134e8497d2ba4fc0d9dcf716be2'],
+]);
+for (const [rel, digest] of m14418ExactModified) {
+  const file = path.join(repo, rel);
+  if (!fs.existsSync(file) || sha(file) !== digest || permittedAdded.has(rel))
+    fail(`M144.18 embedded asset source digest/classification mismatch: ${rel}`);
+  permittedModified.add(rel);
+}
+
+// The memo is a new source file, not a generated output. Preserve the old
+// inventory and require the exact addition when this successor is active.
+if (!m14418BudgetActive || permittedModified.has(m14418BudgetMemoPath) ||
+    permittedAdded.has(m14418BudgetMemoPath)) fail('M144.18 governed budget successor incomplete');
+permittedAdded.add(m14418BudgetMemoPath);
+
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'm108-pinned-baseline-'));
 try {
   execFileSync('unzip', ['-q', archive, '-d', temp], { stdio: 'pipe' });

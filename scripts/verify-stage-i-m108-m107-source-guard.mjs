@@ -1,5 +1,20 @@
 import fs from 'node:fs'; import path from 'node:path'; import crypto from 'node:crypto'; import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+// M141.2 — M108's historical predecessor guard remains authoritative when
+// the pinned M108 successor verifier is absent (the original M108 archive).
+// On post-M108 successors, delegate to the exact-archive M108 verifier rather
+// than comparing legitimate M109+ code against the superseded M107 inventory.
+const m1412SuccessorVerifier = path.join(root,'scripts/verify-m108-login-successor.mjs');
+if (fs.existsSync(m1412SuccessorVerifier)) {
+  const { spawnSync } = await import('node:child_process');
+  const result = spawnSync(process.execPath,[m1412SuccessorVerifier],{cwd:root,stdio:'inherit'});
+  if (result.error || result.status !== 0) {
+    console.error('M108 M107 source guard: FAIL (pinned M108 successor rejected)');
+    process.exit(result.status || 1);
+  }
+  console.log('M108 M107 source guard: PASS (exact M108 successor archive and source authority)');
+  process.exit(0);
+}
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'M108-M107-BASELINE-SOURCE-MANIFEST.json'),'utf8'));
 if(manifest.checkpoint!=='M107'||manifest.artifactSha256!=='df8cfc1b0f77cfa5f6d2350a59418af76815676fafdd472e37bbcc4fae9bf0cb'){console.error('M108 M107 source guard: FAIL provenance');process.exit(1)}
 const baseline=new Map(manifest.entries.map(e=>[e.path,e]));

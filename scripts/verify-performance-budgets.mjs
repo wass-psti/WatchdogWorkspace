@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { analyzePerformanceBudget, enforcePerformanceBudgets } from './lib/performance-budget-analysis.mjs';
 
 const historicalBudgets = JSON.parse(await readFile(new URL('../config/performance-budgets.json', import.meta.url), 'utf8'));
@@ -7,6 +8,12 @@ const m95BudgetAuthority = await readFile(new URL('../M95-ADAPTIVE-CSS-PERFORMAN
 const m108TotalBuildBudgetAuthority = await readFile(new URL('../M108-TOTAL-BUILD-PERFORMANCE-BUDGET-2026-10-07.md', import.meta.url), 'utf8').catch(() => '');
 const m108CorrectiveAuthority = await readFile(new URL('../M108-MATERIAL-TRACKER-SECURITY-CORRECTIVE.md', import.meta.url), 'utf8').catch(() => '');
 const moduleRegistry = await readFile(new URL('../config/modules.ts', import.meta.url), 'utf8').catch(() => '');
+const m14411BudgetAuthority = await readFile(new URL('../M144_11-HF1-BOARD-IMPORT-ADAPTIVE-PERFORMANCE-BUDGET.md', import.meta.url), 'utf8').catch(() => '');
+const m143WizardSource = await readFile(new URL('../supabase/m143/board_import_wizard_atomic_DRAFT.sql', import.meta.url), 'utf8').catch(() => '');
+const m14418BudgetAuthority = await readFile(new URL('../M14418-ADAPTIVE-EMBEDDED-ASSET-PERFORMANCE-BUDGET-2026-10-15.md', import.meta.url), 'utf8').catch(() => '');
+const sourceDigest = async (relative) => createHash('sha256')
+  .update(await readFile(new URL(relative, import.meta.url))).digest('hex');
+
 
 const m95BudgetIsGoverned =
   m95Target.includes('inheritedM93Ceiling: 624000') &&
@@ -26,10 +33,30 @@ const m108TotalBuildBudgetIsGoverned =
   m108TotalBuildBudgetAuthority.includes('M108 successor total-build ceiling: `6700000`') &&
   m108TotalBuildBudgetAuthority.includes('Headroom after the measured M108 build: `23140`');
 
+// Explicitly govern the incremental M141–M144 Board Import bundle rather than
+// hiding excess bytes or weakening the inherited M108 ceiling on older baselines.
+const m14411BudgetIsGoverned = m108TotalBuildBudgetIsGoverned
+  && m143WizardSource.includes('create or replace function public.wm_import_board_wizard_atomic(')
+  && m14411BudgetAuthority.includes('M108 inherited ceiling: `6700000` bytes')
+  && m14411BudgetAuthority.includes('Measured PR #20 bundle: `6715228` bytes')
+  && m14411BudgetAuthority.includes('Approved successor ceiling: `6750000` bytes')
+  && m14411BudgetAuthority.includes('Successor headroom: `34772` bytes');
+
+// M144.18 successor allowance is bound to the exact two-file asset-closure
+// repair and recorded GitHub size measurement; other budgets are untouched.
+const m14418BudgetIsGoverned = m14411BudgetIsGoverned
+  && await sourceDigest('../vite.config.js') === 'dd70ff9feb17e9a0d860f0d74c6cc48a216a66aca09726e8b259785aec54f2ca'
+  && await sourceDigest('./verify-dist.mjs') === '66e9fd9d31ad26b44bb09fe8bfb94456e7e9f134e8497d2ba4fc0d9dcf716be2'
+  && m14418BudgetAuthority.includes('Previous governed Board Import total-build ceiling: `6750000` bytes')
+  && m14418BudgetAuthority.includes('Measured repaired QA distribution total: `6757466` bytes')
+  && m14418BudgetAuthority.includes('Approved M144.18 successor ceiling: `6780000` bytes')
+  && m14418BudgetAuthority.includes('Resulting measured headroom: `22534` bytes');
+
 const budgets = {
   ...historicalBudgets,
   initialCssRawBytes: m95BudgetIsGoverned ? 628000 : historicalBudgets.initialCssRawBytes,
-  totalBuildRawBytes: m108TotalBuildBudgetIsGoverned ? 6700000 : historicalBudgets.totalBuildRawBytes,
+  totalBuildRawBytes: m14418BudgetIsGoverned ? 6780000 :
+    (m14411BudgetIsGoverned ? 6750000 : (m108TotalBuildBudgetIsGoverned ? 6700000 : historicalBudgets.totalBuildRawBytes)),
 };
 
 const distRoot = new URL('../dist/', import.meta.url);
@@ -43,7 +70,7 @@ console.log(JSON.stringify({
   effectiveInitialCssBudget: budgets.initialCssRawBytes,
   cssBudgetAuthority: m95BudgetIsGoverned ? 'M95-successor-adaptive-628000' : 'historical-config',
   effectiveTotalBuildBudget: budgets.totalBuildRawBytes,
-  totalBuildBudgetAuthority: m108TotalBuildBudgetIsGoverned ? 'M108-successor-four-module-6700000' : 'historical-config',
+  totalBuildBudgetAuthority: m14418BudgetIsGoverned ? 'M144.18-governed-embedded-assets-6780000' : (m14411BudgetIsGoverned ? 'M144.11-HF1-governed-board-import-6750000' : (m108TotalBuildBudgetIsGoverned ? 'M108-successor-four-module-6700000' : 'historical-config')),
   largestInitialChunk: metrics.largestInitialChunk,
   totalManifestJsRawBytes: metrics.totalManifestJsRawBytes,
   largestAnyJsChunk: metrics.largestAnyJsChunk,
