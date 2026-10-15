@@ -231,6 +231,12 @@ const m14415WizardExactProtectedHashes = new Map([
   ['src/features/boards/import/board-import-wizard-plan.ts', '7536ad306234757e2fb3303f59290a996a22da4c7c773910ec8e983310448c8d'],
 ]);
 
+// M144.15 HF3: one additional reviewed wizard UI successor; every other hash is unchanged.
+const m14415Hf3WizardUiSha256 = 'e1c615bc73335e448c2a4aa4ddcea2b7380866cdf605ba941e41e4f8ec9986cc';
+const m14415Hf3WizardUiPath = 'assets/js/features/boards/controllers/board-import-wizard-ui.ts';
+const isReviewedWizardHash = (relative, actual, historical) => actual === historical ||
+  (relative === m14415Hf3WizardUiPath && actual === m14415Hf3WizardUiSha256);
+
 const modeFor = (stat) => {
   if (stat.isSymbolicLink()) return '120000';
   return (stat.mode & 0o111) !== 0 ? '100755' : '100644';
@@ -270,7 +276,7 @@ const actualByPath = new Map(actualEntries.map((entry) => [entry.path, entry]));
 const m14415WizardAuthorityExists = m143WizardAuthorityExists &&
   [...m14415WizardExactProtectedHashes].every(([relative, digest]) => {
     const entry = actualByPath.get(relative);
-    return entry?.sha256 === digest && entry.mode === '100644';
+    return Boolean(entry) && isReviewedWizardHash(relative, entry.sha256, digest) && entry.mode === '100644';
   });
 
 for (const [relative, expected] of expectedByPath) {
@@ -327,7 +333,7 @@ if (m143WizardAuthorityExists) {
     ok(Boolean(actual), `M143 protected wizard successor file missing: ${relative}`);
     if (!actual) continue;
     ok(actual.mode === '100644', `M143 protected wizard successor file mode drift: ${relative}`);
-    ok(actual.sha256 === expectedSha || (m14415WizardAuthorityExists && m14415WizardExactProtectedHashes.get(relative) === actual.sha256), `M143 protected wizard successor SHA-256 drift: ${relative}`);
+    ok(actual.sha256 === expectedSha || (m14415WizardAuthorityExists && isReviewedWizardHash(relative, actual.sha256, m14415WizardExactProtectedHashes.get(relative))), `M143 protected wizard successor SHA-256 drift: ${relative}`);
   }
 }
 for (const relative of actualByPath.keys()) {
@@ -358,7 +364,7 @@ for (const relative of actualByPath.keys()) {
       (m103AuthorityExists && m103AllowedNewProtectedFiles.has(relative)) ||
       (m143WizardAuthorityExists &&
         (m143WizardExactNewProtectedHashes.get(relative) === actualByPath.get(relative)?.sha256 ||
-         (m14415WizardAuthorityExists && m14415WizardExactProtectedHashes.get(relative) === actualByPath.get(relative)?.sha256)) &&
+         (m14415WizardAuthorityExists && isReviewedWizardHash(relative, actualByPath.get(relative)?.sha256, m14415WizardExactProtectedHashes.get(relative)))) &&
         actualByPath.get(relative)?.mode === '100644'),
       `new protected presentation file is not successor-authorized: ${relative}`,
     );

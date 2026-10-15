@@ -79,16 +79,21 @@ const m14415ExactSource = new Map([
   ['tests/modern/board-import/m141-wizard-plan.verify.mjs', '1f7d3ac68bd0ed0b7c574a57143abfa77088dc36c2d044e91d2719889f6488f0'],
   ['tests/modern/board-import/m142-wizard-integration.verify.mjs', '18a67300093d332604bc66187ca72d6fbe2d727bed51fedf8770bf2c4a3ed304'],
  ]);
-const m14415M78GuardSha256 = 'd2425aec4bd0ced1f67992c783db76cfb299cca4306bf6c0d9d7acdba642f99d';
+// M144.15 HF3 permits only the reviewed UI bytes, never a blanket UI-file exemption.
+const m14415Hf3WizardUiPath = 'assets/js/features/boards/controllers/board-import-wizard-ui.ts';
+const m14415Hf3WizardUiSha256 = 'e1c615bc73335e448c2a4aa4ddcea2b7380866cdf605ba941e41e4f8ec9986cc';
+const m14415ReviewedHash = (rel, actual, prior) => actual === prior ||
+  (rel === m14415Hf3WizardUiPath && actual === m14415Hf3WizardUiSha256);
+const m14415M78GuardSha256 = '668718f030a43e73fe933bb3f07a9fe382eea4ca956478f014485c8b3223ca58';
 const m14415Active = [...m14415ExactSource].every(([rel, digest]) =>
-  fs.existsSync(path.join(repo, rel)) && sha(path.join(repo, rel)) === digest) &&
+  fs.existsSync(path.join(repo, rel)) && m14415ReviewedHash(rel, sha(path.join(repo, rel)), digest)) &&
   sha(path.join(repo, 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14415M78GuardSha256;
 const isApprovedHistoricalOrM14415 = (rel, expectedDigest) => {
   const file = path.join(repo, rel);
   if (!fs.existsSync(file)) return false;
   const actualDigest = sha(file);
   return actualDigest === expectedDigest ||
-    (m14415Active && m14415ExactSource.get(rel) === actualDigest);
+    (m14415Active && m14415ExactSource.has(rel) && m14415ReviewedHash(rel, actualDigest, m14415ExactSource.get(rel)));
 };
 
 for (const [rel, want] of expected) {
