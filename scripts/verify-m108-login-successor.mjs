@@ -101,14 +101,14 @@ const m14417ExactFiles = new Map([
   ['src/features/boards/contracts/import-wizard-commit.ts', '1f6c5ad48be7b3d8e471aa23a58aed9c0885c00094e31fc6f087e8d496d38dab'],
   ['src/features/boards/import/board-import-parser.ts', 'eb4179729124020b23b7a04fda014c65d1ffcede4c8e3be9144b3026ebd3b9cb'],
   ['src/features/boards/import/board-import-wizard-commit.ts', '274fdfaf669c57b7630317b647d4360d8608fe1e2f28166b2dfca595073fe8ea'],
-  ['supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql', 'dae7ef40f0b1d6196b7ab339b897d9fbe180cd1d1cd1eccb3900095ca6ce0206'],
+  ['supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql', '6ad80ef226fe6e711f4d82fe572dc42267531d2db5d5c234489370e6f7b16d54'],
   ['tests/modern/board-import/m14417-grouped-monday.verify.mjs', 'd70e90ea308f66514edb83db7d27f927250723461fe40b1a12ed234fdf4b15cd'],
 ]);
 // M144.17 grouped workbook fixture is part of the reviewed successor
 // even though it is a binary XLSX rather than an entry in the text-source map.
 const m14417GroupedFixturePath = 'tests/fixtures/board-import-synthetic-grouped-export.xlsx';
 const m14417GroupedFixtureSha256 = '65ee19379445c9617bd883d6050b89415cb67a542f6a0f1b01666f9e9917efc3';
-const m14417M78GuardSha256 = '0bdc3dbdb02bc5e4d2e3084279e196a0526d99ecbc75e87b68743628880b8d2e';
+const m14417M78GuardSha256 = '1e856cd8d49f55b3d03b50610b4702a7fd074154f9ac71384669d3984ee281e3';
 const m14417Active = [...m14417ExactFiles].every(([rel,digest]) =>
   fs.existsSync(path.join(repo,rel)) && sha(path.join(repo,rel)) === digest) &&
   sha(path.join(repo,'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14417M78GuardSha256 &&
@@ -119,7 +119,7 @@ const m14417Active = [...m14417ExactFiles].every(([rel,digest]) =>
 // all M144.17 implementation hashes, and the exact M38 verifier bytes are required.
 // The original M38 capability baseline is *not* enlarged by this authorization.
 const m14417M38Path = 'verify-stage-g-m38-runtime-configuration-backend-preflight.mjs';
-const m14417M38Sha256 = '4e54e6cebef61ab708502ed381cd185aec23ec4283b29d5b5d3fb7f02321ce7f';
+const m14417M38Sha256 = '5214534282a11cb6120becdf27dc5ca0b5fca889e6b8edcf31dae24aad142a7f';
 const m14417M38Active = m14417Active && fs.existsSync(path.join(repo,m14417M38Path)) &&
   sha(path.join(repo,m14417M38Path)) === m14417M38Sha256;
 

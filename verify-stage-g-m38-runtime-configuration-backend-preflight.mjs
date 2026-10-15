@@ -27,10 +27,12 @@ for(const rpc of boardRpcs){
     // M38 runtime capabilities or claim the grouped SQL is deployed.
     const groupedSql=read('supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql');
     const groupedDigest=await import('node:crypto').then(({createHash})=>createHash('sha256').update(groupedSql).digest('hex'));
-    check(groupedDigest==='dae7ef40f0b1d6196b7ab339b897d9fbe180cd1d1cd1eccb3900095ca6ce0206'
+    check(groupedDigest==='6ad80ef226fe6e711f4d82fe572dc42267531d2db5d5c234489370e6f7b16d54'
       && groupedSql.includes('create or replace function public.wm_import_board_wizard_groups_atomic(')
       && groupedSql.includes('security definer')
       && groupedSql.includes('set search_path = pg_catalog, public')
+      && groupedSql.includes('v_target_id uuid;')
+      && !/\bwhere\s+id\s*=/.test(groupedSql)
       && groupedSql.includes('auth.uid()')
       && groupedSql.includes("public.work_board_access(p_board_id,'edit')")
       && groupedSql.includes('public.wm_import_board_wizard_atomic(')

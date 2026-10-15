@@ -24,7 +24,7 @@ declare
   result jsonb;
   item jsonb;
   board_version timestamptz;
-  id uuid;
+  v_target_id uuid;
   count_groups int;
   expected_rows int;
   rows_seen int := 0;
@@ -61,8 +61,8 @@ begin
     raise exception 'Grouped import limits: 2-25 groups and 1-5000 rows' using errcode='22023';
   end if;
   perform pg_advisory_xact_lock(hashtextextended(p_board_id::text, 0));
-  select updated_at into board_version from public.work_boards
-    where id=p_board_id and status='active' for update;
+  select b.updated_at into board_version from public.work_boards b
+    where b.id=p_board_id and b.status='active' for update;
   if board_version is null or not public.work_board_access(p_board_id,'edit') then
     raise exception 'Active Board edit access is required' using errcode='42501';
   end if;
@@ -95,13 +95,13 @@ begin
         raise exception 'The destination group name already exists' using errcode='PT409';
       end if;
     elsif section->'group'->>'action'='existing' then
-      begin id := (section->'group'->>'groupId')::uuid;
+      begin v_target_id := (section->'group'->>'groupId')::uuid;
       exception when others then raise exception 'Invalid destination group ID' using errcode='22023'; end;
-      if not exists(select 1 from public.work_board_groups g where g.id=id and g.board_id=p_board_id) then
+      if not exists(select 1 from public.work_board_groups g where g.id=v_target_id and g.board_id=p_board_id) then
         raise exception 'Destination group is not on this Board' using errcode='23503';
       end if;
-      if id::text=any(target_groups) then raise exception 'Different source groups share a destination' using errcode='22023'; end if;
-      target_groups := array_append(target_groups,id::text);
+      if v_target_id::text=any(target_groups) then raise exception 'Different source groups share a destination' using errcode='22023'; end if;
+      target_groups := array_append(target_groups,v_target_id::text);
     else
       raise exception 'Unsupported target group action' using errcode='22023';
     end if;
@@ -125,7 +125,7 @@ begin
   shared := jsonb_build_object('contract','m143-v1','worksheet',p_payload->'worksheet',
     'mappings',p_payload->'mappings','newColumns',p_payload->'newColumns','matches',p_payload->'matches');
   for section in select value from jsonb_array_elements(p_payload->'groups') loop
-    select updated_at into board_version from public.work_boards where id=p_board_id for update;
+    select b.updated_at into board_version from public.work_boards b where b.id=p_board_id for update;
     subpayload := shared || jsonb_build_object('group',section->'group','rows',section->'rows');
     if not first_pass then
       -- The first reviewed M143 call created the proposed columns. Convert all
@@ -133,10 +133,10 @@ begin
       remapped := '[]'::jsonb;
       for mapping in select value from jsonb_array_elements(p_payload->'mappings') loop
         if mapping->>'action'='create' then
-          select c.id into id from public.work_board_columns c
+          select c.id into v_target_id from public.work_board_columns c
             where c.board_id=p_board_id and lower(btrim(c.name))=lower(btrim(mapping->>'name'));
-          if id is null then raise exception 'Created column is missing in subsequent group' using errcode='PT409'; end if;
-          mapping := jsonb_build_object('source',mapping->>'source','action','existing','columnId',id::text);
+          if v_target_id is null then raise exception 'Created column is missing in subsequent group' using errcode='PT409'; end if;
+          mapping := jsonb_build_object('source',mapping->>'source','action','existing','columnId',v_target_id::text);
         end if;
         remapped := remapped || jsonb_build_array(mapping);
       end loop;

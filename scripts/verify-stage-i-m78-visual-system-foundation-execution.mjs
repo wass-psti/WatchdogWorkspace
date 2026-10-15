@@ -289,7 +289,7 @@ const m14417ExactFiles = new Map([
   ['src/features/boards/contracts/import-wizard-commit.ts', '1f6c5ad48be7b3d8e471aa23a58aed9c0885c00094e31fc6f087e8d496d38dab'],
   ['src/features/boards/import/board-import-parser.ts', 'eb4179729124020b23b7a04fda014c65d1ffcede4c8e3be9144b3026ebd3b9cb'],
   ['src/features/boards/import/board-import-wizard-commit.ts', '274fdfaf669c57b7630317b647d4360d8608fe1e2f28166b2dfca595073fe8ea'],
-  ['supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql', 'dae7ef40f0b1d6196b7ab339b897d9fbe180cd1d1cd1eccb3900095ca6ce0206'],
+  ['supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql', '6ad80ef226fe6e711f4d82fe572dc42267531d2db5d5c234489370e6f7b16d54'],
   ['tests/modern/board-import/m14417-grouped-monday.verify.mjs', 'd70e90ea308f66514edb83db7d27f927250723461fe40b1a12ed234fdf4b15cd'],
 ]);
 const m14417WizardAuthorityExists = m143WizardAuthorityExists &&
