@@ -87,13 +87,30 @@ function workManagementRuntimePlugin() {
       const embeddedSupportFiles = [
         'assets/css/foundation/tokens.css',
         'assets/css/foundation/themes.css',
+        // Referenced by all three copied embedded applications. Copy the exact
+        // existing source CSS rather than silently dropping the link at build.
+        'assets/css/foundation/token-architecture.css',
+        'assets/css/foundation/typography-system.css',
+        'assets/css/foundation/layout-system.css',
+        'assets/css/foundation/responsive-system.css',
+        'assets/css/foundation/accessibility-system.css',
         'assets/css/foundation/primitives.css',
+        'assets/css/foundation/overlay-system.css',
+        'assets/css/foundation/feedback-system.css',
+        'assets/css/foundation/dense-data-system.css',
+        'assets/css/foundation/analytics-system.css',
+        'assets/css/foundation/motion-continuity-system.css',
         'assets/css/foundation/module-unification.css',
         'assets/css/foundation/components.css',
         'assets/css/foundation/application-migration.css',
+        'assets/css/foundation/cross-module-responsive-harmonization.css',
         'assets/css/motion-design.css',
       ];
       for (const file of embeddedSupportFiles) await copyFileFromRoot(file, outputRoot);
+      // Vite also emits a fingerprinted manifest under build/. Its relative
+      // ./assets/icon.svg resolves to build/assets/icon.svg, not root/assets/.
+      // Keep both paths valid without changing PWA scope or the source manifest.
+      await copyFileFromRoot('public/assets/icon.svg', outputRoot, 'build/assets/icon.svg');
 
       for (const embeddedHtml of ['apps/time-tracker/index.html', 'apps/fueltrack-plus/runtime.html', 'apps/tradelink/runtime.html']) {
         const outputHtml = resolve(outputRoot, embeddedHtml);
@@ -115,6 +132,7 @@ function workManagementRuntimePlugin() {
         './index.html',
         './manifest.webmanifest',
         './assets/icon.svg',
+        './build/assets/icon.svg',
         './config/runtime-assets.js',
         ...embeddedSupportFiles.map((file) => `./${file}`),
         ...emitted,

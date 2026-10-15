@@ -1,5 +1,5 @@
 import { access, readFile, readdir, stat } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { dirname, resolve, sep } from 'node:path';
 import { extractContentSecurityPolicy, validateProductionContentSecurityPolicy } from './security/production-csp-policy.mjs';
 
 const root = resolve(process.cwd(), 'dist');
@@ -7,7 +7,7 @@ const fail = (message) => { throw new Error(`[dist] ${message}`); };
 const mustExist = async (path) => { try { await access(resolve(root, path)); } catch { fail(`missing ${path}`); } };
 
 for (const path of [
-  'index.html', 'service-worker.js', 'config/runtime-assets.js', 'manifest.webmanifest', 'assets/icon.svg',
+  'index.html', 'service-worker.js', 'config/runtime-assets.js', 'manifest.webmanifest', 'assets/icon.svg', 'build/assets/icon.svg',
   'apps/time-tracker/index.html', 'apps/time-tracker/app.js', 'apps/time-tracker/styles.css',
   'apps/fueltrack-plus/runtime.html', 'apps/fueltrack-plus/app.v3.17.0-wm6.js', 'apps/fueltrack-plus/styles.v3.17.0-wm6.css',
   'apps/tradelink/runtime.html', 'apps/tradelink/stability-runtime.js', 'apps/tradelink/app.v1.42.0-wm1.js', 'apps/tradelink/styles.v1.42.0-wm1.css',
@@ -30,6 +30,32 @@ for (const path of obsoletePresentationAssets) {
     if (String(error?.message || '').startsWith('[dist]')) throw error;
   }
 }
+
+// Copied embedded HTML is not transformed by Vite. Verify the *complete*
+// stylesheet dependency closure, not just a hand-picked sample of CSS files.
+// A missing sheet can pass JS tests and still break native module layouts.
+for (const embeddedHtml of [
+  'apps/time-tracker/index.html',
+  'apps/fueltrack-plus/runtime.html',
+  'apps/tradelink/runtime.html',
+]) {
+  const html = await readFile(resolve(root, embeddedHtml), 'utf8');
+  const hrefs = [...html.matchAll(/<link\s+[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi)]
+    .map((match) => match[1]);
+  if (!hrefs.length) fail(`embedded app has no stylesheet links: ${embeddedHtml}`);
+  for (const href of hrefs) {
+    if (!href || href.startsWith('/') || /^(?:[a-z]+:|\/\/)/i.test(href))
+      fail(`unexpected external/absolute stylesheet: ${embeddedHtml} -> ${href}`);
+    const dest = resolve(root, dirname(embeddedHtml), href);
+    if (!dest.startsWith(`${root}${sep}`)) fail(`stylesheet escapes dist: ${embeddedHtml} -> ${href}`);
+    await access(dest).catch(() => fail(`missing linked stylesheet: ${embeddedHtml} -> ${href}`));
+  }
+}
+// Vite fingerprints a second copy of the PWA manifest inside build/, where
+// its relative icon resolves to build/assets/icon.svg. Match the verified root.
+const canonicalIcon = await readFile(resolve(root, 'assets/icon.svg'));
+const buildManifestIcon = await readFile(resolve(root, 'build/assets/icon.svg'));
+if (!canonicalIcon.equals(buildManifestIcon)) fail('fingerprinted PWA manifest icon alias differs from root icon');
 
 const index = await readFile(resolve(root, 'index.html'), 'utf8');
 if (index.includes('/src/main.ts') || index.includes('assets/js/app.ts') || index.includes('assets/css/app.css')) fail('index.html still references unbundled shell sources');

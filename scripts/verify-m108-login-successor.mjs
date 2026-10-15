@@ -347,6 +347,21 @@ if (m14417M38Active) {
   }
 }
 
+// M144.18 release-readiness successor: the only modified non-Board files
+// are the embedded-asset Vite packaging contract and its dist verifier.
+// Require exact reviewed bytes, normal file classification, and retain the
+// immutable pinned M108 baseline comparison for all other paths.
+const m14418ExactModified = new Map([
+  ['vite.config.js', 'dd70ff9feb17e9a0d860f0d74c6cc48a216a66aca09726e8b259785aec54f2ca'],
+  ['scripts/verify-dist.mjs', '66e9fd9d31ad26b44bb09fe8bfb94456e7e9f134e8497d2ba4fc0d9dcf716be2'],
+]);
+for (const [rel, digest] of m14418ExactModified) {
+  const file = path.join(repo, rel);
+  if (!fs.existsSync(file) || sha(file) !== digest || permittedAdded.has(rel))
+    fail(`M144.18 embedded asset source digest/classification mismatch: ${rel}`);
+  permittedModified.add(rel);
+}
+
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'm108-pinned-baseline-'));
 try {
   execFileSync('unzip', ['-q', archive, '-d', temp], { stdio: 'pipe' });
