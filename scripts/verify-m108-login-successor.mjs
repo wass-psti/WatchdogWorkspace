@@ -279,6 +279,17 @@ for (const [rel, expectedSha] of m144ApprovedSource) {
 // This is an explicit, SHA-256-pinned and operation-typed extension to M108.
 // The original certified archive must still authenticate; unlisted mutations,
 // additions, removals, symlinks and different bytes remain rejected.
+// M144.18 HF2: a new measured total-build allowance is permitted only for
+// the exact already-reviewed embedded asset closure and the pinned budget
+// verifier/memo. Earlier M144.11 and M108 ceilings remain historical facts.
+const m14418BudgetMemoPath = 'M14418-ADAPTIVE-EMBEDDED-ASSET-PERFORMANCE-BUDGET-2026-10-15.md';
+const m14418BudgetActive =
+  fs.existsSync(path.join(repo, m14418BudgetMemoPath)) &&
+  sha(path.join(repo, m14418BudgetMemoPath)) === '72ca14866ad034046a6190ce15182dcf6d902dc096999309daa507effe71e9b4' &&
+  sha(path.join(repo, 'scripts/verify-performance-budgets.mjs')) === 'f04914f2d38577a400ef3ff049d4e2456d9446886defc874c2cef170b133168d' &&
+  sha(path.join(repo, 'vite.config.js')) === 'dd70ff9feb17e9a0d860f0d74c6cc48a216a66aca09726e8b259785aec54f2ca' &&
+  sha(path.join(repo, 'scripts/verify-dist.mjs')) === '66e9fd9d31ad26b44bb09fe8bfb94456e7e9f134e8497d2ba4fc0d9dcf716be2';
+
 const m14414ExactModified = new Map(Object.entries({
   "scripts/verify-performance-budgets.mjs": "c03b656615a5bbd6e8eedc8e35df923493c9e8a341226f5bb959286ec12b2d38",
   "verify-stage-g-m38-runtime-configuration-backend-preflight.mjs": "70ccabd7de336a98fb61966c098e0aa68b24dc31ec2d268a4f66d0471c0871eb",
@@ -314,7 +325,7 @@ const m14414ExactAdded = new Map(Object.entries({
 }));
 for (const [rel, digest] of m14414ExactModified) {
   const file = path.join(repo, rel);
-  if (!fs.existsSync(file) || (sha(file) !== digest && !(m14417M38Active && rel === m14417M38Path))) fail(`M144.14 modified successor SHA256 mismatch: ${rel}`);
+  if (!fs.existsSync(file) || (sha(file) !== digest && !(m14417M38Active && rel === m14417M38Path) && !(m14418BudgetActive && rel === 'scripts/verify-performance-budgets.mjs'))) fail(`M144.14 modified successor SHA256 mismatch: ${rel}`);
   if (permittedAdded.has(rel)) fail(`M144.14 invalid modified classification: ${rel}`);
   permittedModified.add(rel);
 }
@@ -361,6 +372,12 @@ for (const [rel, digest] of m14418ExactModified) {
     fail(`M144.18 embedded asset source digest/classification mismatch: ${rel}`);
   permittedModified.add(rel);
 }
+
+// The memo is a new source file, not a generated output. Preserve the old
+// inventory and require the exact addition when this successor is active.
+if (!m14418BudgetActive || permittedModified.has(m14418BudgetMemoPath) ||
+    permittedAdded.has(m14418BudgetMemoPath)) fail('M144.18 governed budget successor incomplete');
+permittedAdded.add(m14418BudgetMemoPath);
 
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'm108-pinned-baseline-'));
 try {
