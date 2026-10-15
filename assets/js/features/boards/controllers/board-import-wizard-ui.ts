@@ -35,17 +35,31 @@ type WizardState = {
   busy: boolean;
   commitFailed: boolean;
   skipBlankItemRows: boolean;
+  skipRepeatedHeaders: boolean;
 };
 const TYPES: readonly BoardColumnType[] = ['text','long_text','number','status','dropdown','date','people','checkbox','timeline','email','url'];
 const canonical = (s: string) => s.trim().replace(/\s+/g,' ').toLowerCase();
 const fileSource = (file: File): BoardImportSource => ({ name:file.name, type:file.type, size:file.size, arrayBuffer:()=>file.arrayBuffer() });
 const escapeAttribute = (esc: EscapeHtml, s: unknown): string => esc(s);
+/** Repeated Monday.com table headers are source metadata, never ordinary Items.
+ * Excluding them still requires a separate, explicit user choice. */
+export function repeatedWizardHeaderRows(dataset: BoardImportDataset): readonly number[] {
+  if (dataset.headers.length < 2) return [];
+  return dataset.rows.filter(row => dataset.headers.every((header,index) =>
+    canonical(String(row.raw[index] ?? '')) === canonical(header)))
+    .map(row => row.sourceRow);
+}
+
 /** Typed suggestion only when the user explicitly requests a NEW column.
  * The choice is visible and editable; no existing Board column is changed. */
 export function suggestWizardColumnType(source: string, dataset: BoardImportDataset): BoardColumnType {
   const label = canonical(source);
   const index = dataset.headers.findIndex(header => canonical(header) === label);
-  const samples = index < 0 ? [] : dataset.rows.map(row => row.raw[index]).filter(value => value !== null && value !== undefined && String(value).trim() !== '').slice(0, 40);
+  const repeatRows = new Set(repeatedWizardHeaderRows(dataset));
+  const nameIndex = dataset.headers.findIndex(h => ['name','item','item name','title'].includes(canonical(h)));
+  const samples = index < 0 ? [] : dataset.rows.filter(row => !repeatRows.has(row.sourceRow) &&
+    (nameIndex < 0 || String(row.raw[nameIndex] ?? '').trim() !== ''))
+    .map(row => row.raw[index]).filter(value => value !== null && value !== undefined && String(value).trim() !== '').slice(0, 40);
   const matches = (test: (value: unknown) => boolean) => samples.length > 0 && samples.every(test);
   if (/^(date|date updated|updated date|due date|start date|end date|deadline)$/.test(label) &&
       (!samples.length || matches(value => typeof value === 'number' && value >= 1 && value <= 2_958_465 || /^\d{4}-\d{2}-\d{2}$/.test(String(value))))) return 'date';
@@ -87,7 +101,7 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
     const state: WizardState = {
       step:'upload', file:null, dataset:null, mappings:[],
       group: board.groups[0] ? {action:'existing', groupId:String(board.groups[0].id)} : {action:'create',name:'Imported group'},
-      matches:{behavior:'add-new'},error:'',busy:false,commitFailed:false,skipBlankItemRows:false,
+      matches:{behavior:'add-new'},error:'',busy:false,commitFailed:false,skipBlankItemRows:false,skipRepeatedHeaders:false,
     };
     const root = document.createElement('div');
     root.className='wm-import-wizard-backdrop';
@@ -116,7 +130,10 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
     const draft=():BoardImportWizardDraft=>({sourceWorksheet:state.dataset?.selectedWorksheet??'',mappings:state.mappings,group:state.group,matches:state.matches});
     const reviewedDataset=():BoardImportDataset=>{
       const dataset=state.dataset!;
-      return state.skipBlankItemRows ? excludeBlankWizardItemRows(dataset,state.mappings) : dataset;
+      const withoutBlank = state.skipBlankItemRows ? excludeBlankWizardItemRows(dataset,state.mappings) : dataset;
+      if (!state.skipRepeatedHeaders) return withoutBlank;
+      const toExclude = new Set(repeatedWizardHeaderRows(withoutBlank));
+      return Object.freeze({ ...withoutBlank, rows: Object.freeze(withoutBlank.rows.filter(row => !toExclude.has(row.sourceRow))) });
     };
     const render=():void=>{
       if(disposed)return;
@@ -146,8 +163,10 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
         const skipped=state.mappings.filter(m=>m.action==='skip').length;
         const blankRows=blankWizardItemRows(dataset,state.mappings);
         const rowList=blankRows.slice(0,12).join(', ')+(blankRows.length>12?', …':'');
+        const repeatedRows=repeatedWizardHeaderRows(dataset);
+        const repeatedRowControl=repeatedRows.length?`<div class="wm-import-wizard-diagnostics" role="status"><strong>${repeatedRows.length} repeated spreadsheet header row${repeatedRows.length===1?'':'s'}</strong><p>Source rows: ${esc(repeatedRows.slice(0,12).join(', '))}. These rows repeat the source column names; they are not item data.</p><label><input type="checkbox" data-wizard-skip-headers ${state.skipRepeatedHeaders?'checked':''}> Explicitly exclude repeated header rows from this import</label></div>`:'';
         const blankRowControl=blankRows.length?`<div class="wm-import-wizard-diagnostics" role="status"><strong>${blankRows.length} spreadsheet row${blankRows.length===1?' has':'s have'} an empty Item name</strong><p>Source row${blankRows.length===1?'':'s'}: ${esc(rowList)}. Mapping a column does not fill its empty cells.</p><label><input type="checkbox" data-wizard-skip-blank ${state.skipBlankItemRows?'checked':''}> Explicitly exclude these ${blankRows.length} blank-name row${blankRows.length===1?'':'s'} from this import</label></div>`:'';
-        screen(`<section class="wm-import-wizard-content"><h1>Map your columns</h1><p>Choose which spreadsheet columns will become Board fields. New columns are proposed only; they are not created in this step.</p><div class="wm-import-wizard-options">${groupMarkup}${worksheet}<label>Unmapped columns<select data-wizard-bulk><option value="">Select an action</option><option value="create">Create new columns</option><option value="skip">Don't import</option></select></label></div><div class="wm-import-wizard-counts"><span>${mapped} mapped</span><span>${created} new</span><span>${skipped} excluded</span></div>${blankRowControl}<div class="wm-import-wizard-table-wrap"><table class="wm-import-wizard-table"><thead><tr><th>Spreadsheet column</th><th>Import as</th></tr></thead><tbody>${rows}</tbody></table></div></section>`,'Continue');
+        screen(`<section class="wm-import-wizard-content"><h1>Map your columns</h1><p>Choose which spreadsheet columns will become Board fields. New columns are proposed only; they are not created in this step.</p><div class="wm-import-wizard-options">${groupMarkup}${worksheet}<label>Unmapped columns<select data-wizard-bulk><option value="">Select an action</option><option value="create">Create new columns</option><option value="skip">Don't import</option></select></label></div><div class="wm-import-wizard-counts"><span>${mapped} mapped</span><span>${created} new</span><span>${skipped} excluded</span></div>${blankRowControl}${repeatedRowControl}<div class="wm-import-wizard-table-wrap"><table class="wm-import-wizard-table"><thead><tr><th>Spreadsheet column</th><th>Import as</th></tr></thead><tbody>${rows}</tbody></table></div></section>`,'Continue');
         return;
       }
       const plan=planBoardImportWizard(reviewedDataset(),currentBoard,draft());
@@ -188,7 +207,7 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
         state.mappings=defaultWizardMappings(parsed);
         state.group= current.groups[0]?{action:'existing',groupId:String(current.groups[0].id)}:{action:'create',name:'Imported group'};
         state.matches={behavior:'add-new'};
-        state.skipBlankItemRows=false;
+        state.skipBlankItemRows=false;state.skipRepeatedHeaders=false;
         state.step='map-columns';
       }catch(error){
         if(disposed)return;
@@ -252,7 +271,9 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
       if(target instanceof HTMLSelectElement && target.matches('[data-wizard-sheet]')){
         if(state.file)await parse(state.file,target.value);return;
       }
-      if(target instanceof HTMLInputElement && target.matches('[data-wizard-skip-blank]')){
+      if(target instanceof HTMLInputElement && target.matches('[data-wizard-skip-headers]')){
+        state.skipRepeatedHeaders=target.checked;
+      }else if(target instanceof HTMLInputElement && target.matches('[data-wizard-skip-blank]')){
         state.skipBlankItemRows=target.checked;
       }else if(target instanceof HTMLSelectElement && target.matches('[data-wizard-group]')){
         state.group=target.value==='create'?{action:'create',name:'Imported group'}:{action:'existing',groupId:target.value.slice('existing:'.length)};
@@ -264,7 +285,7 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
       }else if(target instanceof HTMLSelectElement && target.matches('[data-wizard-mapping]')){
         const index=Number(target.dataset.wizardMapping);const old=state.mappings[index];if(!old)return;
         const val=target.value;
-        state.skipBlankItemRows=false; // Changed primary mapping requires renewed row-exclusion consent.
+        state.skipBlankItemRows=false;state.skipRepeatedHeaders=false; // Changed primary mapping requires renewed row-exclusion consent.
         state.mappings[index]=val==='item'?{source:old.source,action:'item'}:val==='create'?{source:old.source,action:'create',name:old.source,columnType:state.dataset?suggestWizardColumnType(old.source,state.dataset):'text'}:val.startsWith('existing:')?{source:old.source,action:'existing',columnId:val.slice(9)}:{source:old.source,action:'skip'};
       }else if(target instanceof HTMLInputElement&&target.matches('[data-wizard-new-name]')){
         const index=Number(target.dataset.wizardNewName),old=state.mappings[index];if(old?.action==='create')state.mappings[index]={...old,name:target.value};

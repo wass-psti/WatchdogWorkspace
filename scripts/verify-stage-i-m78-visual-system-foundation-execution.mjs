@@ -237,7 +237,7 @@ const m14415Hf3WizardUiPath = 'assets/js/features/boards/controllers/board-impor
 // M144.16: both type-aware successor files must match simultaneously.
 // No blanket exemption and no relaxation of the M143 SQL or file-mode checks.
 const m14416ExactWizardHashes = new Map([
-  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', 'f34a2b923b89ef8e25892b67571a3961e606b002c144254b50d9a319ac37ce37'],
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', '973d3cef0ecf594e85d04f076d3e51404d40c9188e5741084e7dab7b0e376400'],
   ['src/features/boards/import/board-import-wizard-commit.ts', 'fe8e8d4b85db38abd40daa2e5ac26d534e94e11314f6f3d13e58107945dde14d'],
  ]);
 const isReviewedWizardHash = (relative, actual, historical) => actual === historical ||

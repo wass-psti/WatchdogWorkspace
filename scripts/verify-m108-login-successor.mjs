@@ -84,10 +84,10 @@ const m14415Hf3WizardUiPath = 'assets/js/features/boards/controllers/board-impor
 const m14415Hf3WizardUiSha256 = 'e1c615bc73335e448c2a4aa4ddcea2b7380866cdf605ba941e41e4f8ec9986cc';
 // M144.16: exact dual-file successor bound to the exact updated M78 guard.
 const m14416ExactSource = new Map([
-  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', 'f34a2b923b89ef8e25892b67571a3961e606b002c144254b50d9a319ac37ce37'],
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', '973d3cef0ecf594e85d04f076d3e51404d40c9188e5741084e7dab7b0e376400'],
   ['src/features/boards/import/board-import-wizard-commit.ts', 'fe8e8d4b85db38abd40daa2e5ac26d534e94e11314f6f3d13e58107945dde14d'],
  ]);
-const m14416M78GuardSha256 = '3417d0d68074a0c16a6c78f29fe2caf686e14613dce45c5316cab50b0ac71ef3';
+const m14416M78GuardSha256 = '4a3406b4a66cca4dba99cd752128b35d366639d5398e5f713a6fde381b83bc83';
 const m14416Active = [...m14416ExactSource].every(([rel, digest]) =>
   fs.existsSync(path.join(repo, rel)) && sha(path.join(repo, rel)) === digest) &&
   sha(path.join(repo, 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14416M78GuardSha256;
