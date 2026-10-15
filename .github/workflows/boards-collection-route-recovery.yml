@@ -45,7 +45,7 @@ jobs:
         run: node scripts/verify-stage-g-m45-certified-artifact.mjs
       - name: Upload certified M45 baseline
         if: ${{ github.event_name == 'push' && steps.milestone_state.outputs.state == 'pending' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: work-management-v1.43.2-stage-g-m45-certified-${{ github.sha }}
           path: |

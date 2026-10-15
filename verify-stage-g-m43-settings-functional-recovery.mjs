@@ -72,7 +72,7 @@ check(artifactVerifier.includes('computeM43CertificationTreeDigest')&&artifactVe
 check(releaseVerifier.includes('settings-recovery:browser')&&releaseVerifier.includes('backup-dr:test')&&releaseVerifier.includes('npm run verify')&&releaseVerifier.includes('npm run build'),'M43 pull-request release verifier exercises full non-publishing gates');
 check(workflow.includes('npm run settings-recovery:certify')&&workflow.includes('M43_SOURCE_COMMIT: ${{ github.sha }}'),'hosted push workflow invokes exact-commit fail-closed M43 finalizer');
 check(workflow.includes('npm run settings-recovery:verify:release')&&workflow.includes("github.event_name == 'pull_request'"),'hosted pull requests execute full non-publishing M43 release verification');
-check(workflow.includes('actions/upload-artifact@v4')&&workflow.includes('m43-certified-artifacts-upload')&&workflow.includes('if-no-files-found: error'),'certified artifact upload is repository-local and fail closed');
+check(workflow.includes('actions/upload-artifact@v7')&&workflow.includes('m43-certified-artifacts-upload')&&workflow.includes('if-no-files-found: error'),'certified artifact upload is repository-local and fail closed');
 check(!fs.existsSync('supabase/migrations/v1.43.2-stage-g-m43-settings-functional-recovery.sql'),'M43 introduces no unnecessary database migration');
 check(release.includes('M34 backup/disaster-recovery')&&release.includes('M39 authentication/session/access context'),'release status records retained authorities');
 check(release.includes(`**State:** ${state}`),'release status matches M43 activation state');

@@ -126,13 +126,13 @@ for (const expected of ['npm ci', 'verify-settings.mjs', 'npm run fueltrack-stab
 if (!errors.some((entry) => entry.startsWith('final-legacy-deletion.yml missing'))) pass('M35 final legacy deletion workflow is governed');
 
 const productionCutoverWorkflow = await readText('.github/workflows/production-cutover.yml');
-for (const expected of ['npm ci', 'npm run release:check', 'npm run cutover:check', 'npm run cutover:test', 'npm run cutover:artifact', 'npm run cutover:evidence', 'actions/upload-artifact@v4']) {
+for (const expected of ['npm ci', 'npm run release:check', 'npm run cutover:check', 'npm run cutover:test', 'npm run cutover:artifact', 'npm run cutover:evidence', 'actions/upload-artifact@v7']) {
   if (!productionCutoverWorkflow.includes(expected)) fail(`production-cutover.yml missing: ${expected}`);
 }
 if (!errors.some((entry) => entry.startsWith('production-cutover.yml missing'))) pass('M36 production cutover workflow is governed');
 
 const functionalRegressionWorkflow = await readText('.github/workflows/functional-regression-baseline.yml');
-for (const expected of ['npm ci', 'npm run functional-regression:check', 'npm run functional-regression:test', 'npm run functional-regression:browser', 'npm run functional-regression:evidence', 'actions/upload-artifact@v4']) {
+for (const expected of ['npm ci', 'npm run functional-regression:check', 'npm run functional-regression:test', 'npm run functional-regression:browser', 'npm run functional-regression:evidence', 'actions/upload-artifact@v7']) {
   if (!functionalRegressionWorkflow.includes(expected)) fail(`functional-regression-baseline.yml missing: ${expected}`);
 }
 if (!errors.some((entry) => entry.startsWith('functional-regression-baseline.yml missing'))) pass('M37 functional regression baseline workflow is governed');
