@@ -104,10 +104,16 @@ const m14417ExactFiles = new Map([
   ['supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql', 'dae7ef40f0b1d6196b7ab339b897d9fbe180cd1d1cd1eccb3900095ca6ce0206'],
   ['tests/modern/board-import/m14417-grouped-monday.verify.mjs', 'd70e90ea308f66514edb83db7d27f927250723461fe40b1a12ed234fdf4b15cd'],
 ]);
+// M144.17 grouped workbook fixture is part of the reviewed successor
+// even though it is a binary XLSX rather than an entry in the text-source map.
+const m14417GroupedFixturePath = 'tests/fixtures/board-import-synthetic-grouped-export.xlsx';
+const m14417GroupedFixtureSha256 = '65ee19379445c9617bd883d6050b89415cb67a542f6a0f1b01666f9e9917efc3';
 const m14417M78GuardSha256 = '0bdc3dbdb02bc5e4d2e3084279e196a0526d99ecbc75e87b68743628880b8d2e';
 const m14417Active = [...m14417ExactFiles].every(([rel,digest]) =>
   fs.existsSync(path.join(repo,rel)) && sha(path.join(repo,rel)) === digest) &&
-  sha(path.join(repo,'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14417M78GuardSha256;
+  sha(path.join(repo,'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14417M78GuardSha256 &&
+  fs.existsSync(path.join(repo,m14417GroupedFixturePath)) &&
+  sha(path.join(repo,m14417GroupedFixturePath)) === m14417GroupedFixtureSha256;
 
 // M144.17 targeted M38 successor: an unchanged, reviewed grouped SQL source,
 // all M144.17 implementation hashes, and the exact M38 verifier bytes are required.
@@ -125,6 +131,14 @@ const m14415M78GuardSha256 = '668718f030a43e73fe933bb3f07a9fe382eea4ca956478f014
 const m14415Active = [...m14415ExactSource].every(([rel, digest]) =>
   fs.existsSync(path.join(repo, rel)) && m14415ReviewedHash(rel, sha(path.join(repo, rel)), digest)) &&
   (sha(path.join(repo, 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14415M78GuardSha256 || m14416Active);
+// Three M144.15 HF1 predecessors did not change during M144.17.
+// Keep only these exact hashes; all new grouped bytes are independently pinned
+// in m14417ExactFiles and the grouped fixture hash above.
+const m14417InheritedM14415Paths = new Set([
+  'src/features/boards/import/board-import-wizard-plan.ts',
+  'tests/modern/board-import/m141-wizard-plan.verify.mjs',
+  'tests/modern/board-import/m142-wizard-integration.verify.mjs',
+]);
 const isApprovedHistoricalOrM14415 = (rel, expectedDigest) => {
   const file = path.join(repo, rel);
   if (!fs.existsSync(file)) return false;
@@ -132,6 +146,8 @@ const isApprovedHistoricalOrM14415 = (rel, expectedDigest) => {
   return actualDigest === expectedDigest ||
     (m14415Active && m14415ExactSource.has(rel) && m14415ReviewedHash(rel, actualDigest, m14415ExactSource.get(rel))) ||
     (m14417Active && m14417ExactFiles.get(rel) === actualDigest) ||
+    (m14417M38Active && m14417InheritedM14415Paths.has(rel) &&
+      m14415ExactSource.get(rel) === actualDigest) ||
     (m14417M38Active && rel === m14417M38Path);
 };
 
@@ -308,6 +324,29 @@ for (const [rel, digest] of m14414ExactAdded) {
   if (permittedModified.has(rel)) fail(`M144.14 invalid added classification: ${rel}`);
   permittedAdded.add(rel);
 }
+// M144.17 grouped-import inventory authority: exact reviewed source bytes
+// and the pinned SQL/test/fixture; no changes to predecessor M108 file classes.
+if (m14417M38Active) {
+  for (const rel of [
+    'assets/js/features/boards/data/board-repository.ts',
+    'src/features/boards/contracts/import.ts',
+    'src/features/boards/import/board-import-parser.ts',
+  ]) {
+    if (permittedAdded.has(rel) || sha(path.join(repo,rel)) !== m14417ExactFiles.get(rel))
+      fail(`M144.17 invalid modified source: ${rel}`);
+    permittedModified.add(rel);
+  }
+  for (const [rel,digest] of [
+    ['supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql',m14417ExactFiles.get('supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql')],
+    ['tests/modern/board-import/m14417-grouped-monday.verify.mjs',m14417ExactFiles.get('tests/modern/board-import/m14417-grouped-monday.verify.mjs')],
+    [m14417GroupedFixturePath,m14417GroupedFixtureSha256],
+  ]) {
+    if (permittedModified.has(rel) || sha(path.join(repo,rel)) !== digest)
+      fail(`M144.17 invalid added source: ${rel}`);
+    permittedAdded.add(rel);
+  }
+}
+
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'm108-pinned-baseline-'));
 try {
   execFileSync('unzip', ['-q', archive, '-d', temp], { stdio: 'pipe' });
