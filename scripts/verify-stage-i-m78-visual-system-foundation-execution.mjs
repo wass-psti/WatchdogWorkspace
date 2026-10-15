@@ -241,6 +241,7 @@ const m14416ExactWizardHashes = new Map([
   ['src/features/boards/import/board-import-wizard-commit.ts', 'fe8e8d4b85db38abd40daa2e5ac26d534e94e11314f6f3d13e58107945dde14d'],
  ]);
 const isReviewedWizardHash = (relative, actual, historical) => actual === historical ||
+  (m14417WizardAuthorityExists && m14417ExactFiles.get(relative) === actual) ||
   (relative === m14415Hf3WizardUiPath && actual === m14415Hf3WizardUiSha256) ||
   (m14416WizardAuthorityExists && m14416ExactWizardHashes.get(relative) === actual);
 
@@ -277,6 +278,27 @@ actualEntries.sort((a, b) => a.path.localeCompare(b.path));
 
 const expectedByPath = new Map(manifest.entries.map((entry) => [entry.path, entry]));
 const actualByPath = new Map(actualEntries.map((entry) => [entry.path, entry]));
+
+// M144.17 separate-group successor: exact runtime, contract, SQL and focused-test bytes.
+// No M143 archive hash is removed and no broad directory/file exemption exists.
+const m14417ExactFiles = new Map([
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', '82e0e1fd8eacb0baac9e1466d72b03c6d08e4154998d02964d0ab775f5a9e8f1'],
+  ['assets/js/features/boards/data/board-repository.ts', '7df9ca80fe96e8c20121171cdb06fd65b4919f030235f91c805715ac736a6a1f'],
+  ['src/features/boards/contracts/import.ts', 'e78d770f301b382dd41dc549e8be20798e8868cb6d8d11c8f50606ee8b875da8'],
+  ['src/features/boards/contracts/import-wizard.ts', '719f86f57c70887bc8bcda07641f34765085463f1b5aeee27f5f7b0735be5957'],
+  ['src/features/boards/contracts/import-wizard-commit.ts', '1f6c5ad48be7b3d8e471aa23a58aed9c0885c00094e31fc6f087e8d496d38dab'],
+  ['src/features/boards/import/board-import-parser.ts', 'eb4179729124020b23b7a04fda014c65d1ffcede4c8e3be9144b3026ebd3b9cb'],
+  ['src/features/boards/import/board-import-wizard-commit.ts', '274fdfaf669c57b7630317b647d4360d8608fe1e2f28166b2dfca595073fe8ea'],
+  ['supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql', 'dae7ef40f0b1d6196b7ab339b897d9fbe180cd1d1cd1eccb3900095ca6ce0206'],
+  ['tests/modern/board-import/m14417-grouped-monday.verify.mjs', 'd70e90ea308f66514edb83db7d27f927250723461fe40b1a12ed234fdf4b15cd'],
+]);
+const m14417WizardAuthorityExists = m143WizardAuthorityExists &&
+  [...m14417ExactFiles].every(([rel, digest]) => {
+    const absolute = path.join(root, rel);
+    if (!fs.existsSync(absolute)) return false;
+    const stat = fs.lstatSync(absolute);
+    return stat.isFile() && modeFor(stat) === '100644' && sha256(fs.readFileSync(absolute)) === digest;
+  });
 
 const m14416WizardAuthorityExists = m143WizardAuthorityExists &&
   [...m14416ExactWizardHashes].every(([relative, digest]) => {
@@ -346,7 +368,7 @@ if (m143WizardAuthorityExists) {
     ok(Boolean(actual), `M143 protected wizard successor file missing: ${relative}`);
     if (!actual) continue;
     ok(actual.mode === '100644', `M143 protected wizard successor file mode drift: ${relative}`);
-    ok(actual.sha256 === expectedSha || (m14415WizardAuthorityExists && isReviewedWizardHash(relative, actual.sha256, m14415WizardExactProtectedHashes.get(relative))), `M143 protected wizard successor SHA-256 drift: ${relative}`);
+    ok(actual.sha256 === expectedSha || (m14415WizardAuthorityExists && isReviewedWizardHash(relative, actual.sha256, m14415WizardExactProtectedHashes.get(relative))) || (m14417WizardAuthorityExists && m14417ExactFiles.get(relative) === actual.sha256), `M143 protected wizard successor SHA-256 drift: ${relative}`);
   }
 }
 for (const relative of actualByPath.keys()) {
@@ -377,7 +399,7 @@ for (const relative of actualByPath.keys()) {
       (m103AuthorityExists && m103AllowedNewProtectedFiles.has(relative)) ||
       (m143WizardAuthorityExists &&
         (m143WizardExactNewProtectedHashes.get(relative) === actualByPath.get(relative)?.sha256 ||
-         (m14415WizardAuthorityExists && isReviewedWizardHash(relative, actualByPath.get(relative)?.sha256, m14415WizardExactProtectedHashes.get(relative)))) &&
+         (m14415WizardAuthorityExists && isReviewedWizardHash(relative, actualByPath.get(relative)?.sha256, m14415WizardExactProtectedHashes.get(relative))) || (m14417WizardAuthorityExists && m14417ExactFiles.get(relative) === actualByPath.get(relative)?.sha256)) &&
         actualByPath.get(relative)?.mode === '100644'),
       `new protected presentation file is not successor-authorized: ${relative}`,
     );

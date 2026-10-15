@@ -153,3 +153,41 @@ export function createBoardImportWizardRpcRequest(
   };
   return Object.freeze({ boardId: plan.boardId, expectedBoardVersion: plan.boardVersion, payload: Object.freeze(output) });
 }
+
+/** Compose one atomic grouped RPC; never issue one HTTP request per spreadsheet group.
+ * Reuse the reviewed M143 planner and cell-normalization on every section. */
+export function createGroupedBoardImportWizardRpcRequest(
+  dataset: BoardImportDataset,
+  board: BoardEnvelope,
+  draft: BoardImportWizardDraft,
+): BoardImportWizardRpcRequest {
+  const sections=dataset.groupSections ?? [];
+  const targets=draft.sectionTargets ?? [];
+  if(sections.length<2 || sections.length>25 || targets.length!==sections.length) throw new Error('Review every detected spreadsheet group before importing.');
+  const seen=new Set<number>();
+  const usedNames=new Set<string>();
+  const grouped: { heading_row:number;name:string;group:BoardImportWizardDraft['group'];rows:readonly WizardWireRow[] }[]=[];
+  for(const section of sections){
+    const selected=targets.find(target=>target.headingRow===section.headingRow);
+    if(!selected || seen.has(section.headingRow) || selected.name!==section.name) throw new Error('Spreadsheet group mapping changed; review the import again.');
+    seen.add(section.headingRow);
+    const key=section.name.trim().toLocaleLowerCase();
+    if(usedNames.has(key)) throw new Error('Repeated group names cannot be mapped ambiguously.');
+    usedNames.add(key);
+    const filtered=dataset.rows.filter(row=>row.sourceRow>=section.firstDataRow&&row.sourceRow<=section.lastDataRow);
+    if(filtered.length===0) throw new Error(`Group “${section.name}” has no importable Item rows.`);
+    const partial=Object.freeze({...dataset,groupSections:Object.freeze([]),rows:Object.freeze(filtered)});
+    const single=createBoardImportWizardRpcRequest(partial,board,{...draft,group:selected.destination});
+    grouped.push(Object.freeze({heading_row:section.headingRow,name:section.name,group:selected.destination,rows:single.payload.rows}));
+  }
+  const rowCount=grouped.reduce((sum,section)=>sum+section.rows.length,0);
+  if(rowCount!==dataset.rows.length || rowCount>5000) throw new Error('Some spreadsheet rows are outside the detected groups. Review exclusions.');
+  const all=grouped.flatMap(section=>section.rows);
+  if(new Set(all.map(row=>row.source_row)).size!==all.length) throw new Error('A source row belongs to more than one group.');
+  const exemplar=createBoardImportWizardRpcRequest(
+    Object.freeze({...dataset,groupSections:Object.freeze([]),rows:Object.freeze(dataset.rows.filter(row=>row.sourceRow>=sections[0]!.firstDataRow&&row.sourceRow<=sections[0]!.lastDataRow))}),
+    board,{...draft,group:targets[0]!.destination},
+  );
+  return Object.freeze({boardId:exemplar.boardId,expectedBoardVersion:exemplar.expectedBoardVersion,
+    payload:Object.freeze({...exemplar.payload,contract:'m14417-v1' as const,rows:Object.freeze(all),groups:Object.freeze(grouped)})});
+}

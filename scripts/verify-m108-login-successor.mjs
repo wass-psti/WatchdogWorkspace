@@ -91,7 +91,26 @@ const m14416M78GuardSha256 = '4a3406b4a66cca4dba99cd752128b35d366639d5398e5f713a
 const m14416Active = [...m14416ExactSource].every(([rel, digest]) =>
   fs.existsSync(path.join(repo, rel)) && sha(path.join(repo, rel)) === digest) &&
   sha(path.join(repo, 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14416M78GuardSha256;
+// M144.17: separate-group import successor is enabled only by all pinned
+// files, the reviewed SQL (not deployed), and the exact updated M78 guard.
+const m14417ExactFiles = new Map([
+  ['assets/js/features/boards/controllers/board-import-wizard-ui.ts', '82e0e1fd8eacb0baac9e1466d72b03c6d08e4154998d02964d0ab775f5a9e8f1'],
+  ['assets/js/features/boards/data/board-repository.ts', '7df9ca80fe96e8c20121171cdb06fd65b4919f030235f91c805715ac736a6a1f'],
+  ['src/features/boards/contracts/import.ts', 'e78d770f301b382dd41dc549e8be20798e8868cb6d8d11c8f50606ee8b875da8'],
+  ['src/features/boards/contracts/import-wizard.ts', '719f86f57c70887bc8bcda07641f34765085463f1b5aeee27f5f7b0735be5957'],
+  ['src/features/boards/contracts/import-wizard-commit.ts', '1f6c5ad48be7b3d8e471aa23a58aed9c0885c00094e31fc6f087e8d496d38dab'],
+  ['src/features/boards/import/board-import-parser.ts', 'eb4179729124020b23b7a04fda014c65d1ffcede4c8e3be9144b3026ebd3b9cb'],
+  ['src/features/boards/import/board-import-wizard-commit.ts', '274fdfaf669c57b7630317b647d4360d8608fe1e2f28166b2dfca595073fe8ea'],
+  ['supabase/m14417/board_import_wizard_groups_atomic_REVIEW.sql', 'dae7ef40f0b1d6196b7ab339b897d9fbe180cd1d1cd1eccb3900095ca6ce0206'],
+  ['tests/modern/board-import/m14417-grouped-monday.verify.mjs', 'd70e90ea308f66514edb83db7d27f927250723461fe40b1a12ed234fdf4b15cd'],
+]);
+const m14417M78GuardSha256 = '0bdc3dbdb02bc5e4d2e3084279e196a0526d99ecbc75e87b68743628880b8d2e';
+const m14417Active = [...m14417ExactFiles].every(([rel,digest]) =>
+  fs.existsSync(path.join(repo,rel)) && sha(path.join(repo,rel)) === digest) &&
+  sha(path.join(repo,'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) === m14417M78GuardSha256;
+
 const m14415ReviewedHash = (rel, actual, prior) => actual === prior ||
+  (m14417Active && m14417ExactFiles.get(rel) === actual) ||
   (rel === m14415Hf3WizardUiPath && actual === m14415Hf3WizardUiSha256) ||
   (m14416Active && m14416ExactSource.get(rel) === actual);
 const m14415M78GuardSha256 = '668718f030a43e73fe933bb3f07a9fe382eea4ca956478f014485c8b3223ca58';
@@ -103,12 +122,13 @@ const isApprovedHistoricalOrM14415 = (rel, expectedDigest) => {
   if (!fs.existsSync(file)) return false;
   const actualDigest = sha(file);
   return actualDigest === expectedDigest ||
-    (m14415Active && m14415ExactSource.has(rel) && m14415ReviewedHash(rel, actualDigest, m14415ExactSource.get(rel)));
+    (m14415Active && m14415ExactSource.has(rel) && m14415ReviewedHash(rel, actualDigest, m14415ExactSource.get(rel))) ||
+    (m14417Active && m14417ExactFiles.get(rel) === actualDigest);
 };
 
 for (const [rel, want] of expected) {
   const file = path.join(repo, rel);
-  if (!isApprovedHistoricalOrM14415(rel, want) && !(m14415Active && rel === 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) fail(`unapproved bytes or missing file: ${rel}`);
+  if (!isApprovedHistoricalOrM14415(rel, want) && !(m14415Active && rel === 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs') && !(m14417Active && rel === 'scripts/verify-stage-i-m78-visual-system-foundation-execution.mjs')) fail(`unapproved bytes or missing file: ${rel}`);
 }
 
 // Only reproducible outputs are excluded; historical integration source is guarded.

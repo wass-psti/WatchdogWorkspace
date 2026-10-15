@@ -20,10 +20,23 @@ export type BoardImportWizardMatchChoice =
   | Readonly<{ behavior: 'add-new' }>
   | Readonly<{ behavior: 'skip' | 'update'; matchColumnId: 'item' | string }>;
 
+export interface BoardImportWizardSectionTarget {
+  readonly headingRow: number;
+  readonly name: string;
+  readonly destination: BoardImportWizardGroupChoice;
+}
+
+export interface BoardImportWizardSectionTarget {
+  readonly headingRow: number;
+  readonly name: string;
+  readonly destination: BoardImportWizardGroupChoice;
+}
+
 export interface BoardImportWizardDraft {
   readonly sourceWorksheet: string;
   readonly mappings: readonly BoardImportWizardColumnChoice[];
   readonly group: BoardImportWizardGroupChoice;
+  readonly sectionTargets?: readonly BoardImportWizardSectionTarget[];
   readonly matches: BoardImportWizardMatchChoice;
 }
 

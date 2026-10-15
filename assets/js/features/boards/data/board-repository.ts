@@ -501,7 +501,7 @@ export function createBoardRepository(auth: AuthTransportPort, options: BoardRep
     async importWizardAtomic(request: BoardImportWizardRpcRequest): Promise<BoardImportWizardCompletion> {
       // One server-owned RPC; never fall back to item-by-item mutations.
       return mutate('boards.import.wizard.atomic', async () => {
-        const response = await rpc('wm_import_board_wizard_atomic', {
+        const response = await rpc(request.payload.contract === 'm14417-v1' ? 'wm_import_board_wizard_groups_atomic' : 'wm_import_board_wizard_atomic', {
           p_board_id: request.boardId,
           p_expected_updated_at: request.expectedBoardVersion,
           p_payload: request.payload,
@@ -516,7 +516,7 @@ export function createBoardRepository(auth: AuthTransportPort, options: BoardRep
         const groupsCreated=Number(record?.groupsCreated ?? -1);
         if (![created,updated,skipped,rejected,affected,columnsCreated,groupsCreated].every(n=>Number.isSafeInteger(n)&&n>=0)
             || affected !== created+updated || created+updated+skipped+rejected !== request.payload.rows.length
-            || columnsCreated > request.payload.newColumns.length || groupsCreated>1) {
+            || columnsCreated > request.payload.newColumns.length || groupsCreated>(request.payload.groups?.length??1)) {
           throw new WorkManagementError('The server returned an invalid wizard import result.',{
             code:'WM_BOARD_WIZARD_IMPORT_RESULT_INVALID',category:'internal',operation:'boards.import.wizard.atomic',
           });

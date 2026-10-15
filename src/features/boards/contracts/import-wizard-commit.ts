@@ -1,5 +1,5 @@
 /** M143 wire contract. The server owns permissions, matches, schema and transactional validation. */
-import type { BoardImportWizardDraft } from './import-wizard.ts';
+import type { BoardImportWizardDraft, BoardImportWizardGroupChoice } from './import-wizard.ts';
 import type { BoardColumnType } from './domain.ts';
 
 export type WizardWireCell = string | number | boolean | null | Readonly<{ start: string; end: string }>;
@@ -15,17 +15,24 @@ export interface WizardWireRow {
   readonly values: Readonly<Record<string, WizardWireCell>>;
   readonly expected_item_updated_at?: string;
 }
+export interface WizardWireSection {
+  readonly heading_row: number;
+  readonly name: string;
+  readonly group: BoardImportWizardGroupChoice;
+  readonly rows: readonly WizardWireRow[];
+}
 export interface BoardImportWizardRpcRequest {
   readonly boardId: string;
   readonly expectedBoardVersion: string;
   readonly payload: Readonly<{
-    readonly contract: 'm143-v1';
+    readonly contract: 'm143-v1' | 'm14417-v1';
     readonly worksheet: string;
     readonly group: BoardImportWizardDraft['group'];
     readonly matches: BoardImportWizardDraft['matches'];
     readonly mappings: BoardImportWizardDraft['mappings'];
     readonly newColumns: readonly WizardWireColumn[];
     readonly rows: readonly WizardWireRow[];
+    readonly groups?: readonly WizardWireSection[];
   }>;
 }
 export interface BoardImportWizardCompletion {

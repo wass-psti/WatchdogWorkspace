@@ -70,7 +70,17 @@ export interface BoardImportWorksheet {
   readonly columnCount: number;
 }
 
+/** High-confidence Monday.com groups detected from isolated section headings
+ * immediately before a table header. Spreadsheet row numbers stay intact. */
+export interface BoardImportGroupSection {
+  readonly headingRow: number;
+  readonly name: string;
+  readonly firstDataRow: number;
+  readonly lastDataRow: number;
+}
+
 export interface BoardImportDataset {
+  readonly groupSections?: readonly BoardImportGroupSection[];
   readonly format: BoardImportFileKind;
   readonly fileName: string;
   readonly fileSize: number;

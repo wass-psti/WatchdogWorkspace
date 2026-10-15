@@ -1,13 +1,13 @@
 /** M142: non-mutating three-step Board Import wizard. M143 owns new backend mutation. */
 import type { BoardEnvelope, BoardColumnType } from '../../../../../src/features/boards/contracts/domain.ts';
 import type { BoardImportDataset, BoardImportSource } from '../../../../../src/features/boards/contracts/import.ts';
-import type { BoardImportWizardColumnChoice, BoardImportWizardDraft, BoardImportWizardGroupChoice, BoardImportWizardMatchChoice, BoardImportWizardStep } from '../../../../../src/features/boards/contracts/import-wizard.ts';
+import type { BoardImportWizardColumnChoice, BoardImportWizardDraft, BoardImportWizardGroupChoice, BoardImportWizardMatchChoice, BoardImportWizardStep, BoardImportWizardPlan, BoardImportWizardSectionTarget } from '../../../../../src/features/boards/contracts/import-wizard.ts';
 import type { OverlayManager } from '../../../../../src/platform/contracts/overlay.ts';
 import type { EscapeHtml, ToastRenderer } from '../../../../../src/platform/contracts/ui.ts';
 import { createBoardImportSchema } from '../../../../../src/features/boards/contracts/import.ts';
 import { parseBoardImport } from '../../../../../src/features/boards/import/board-import-parser.ts';
 import { blankWizardItemRows, excludeBlankWizardItemRows, planBoardImportWizard } from '../../../../../src/features/boards/import/board-import-wizard-plan.ts';
-import { createBoardImportWizardRpcRequest } from '../../../../../src/features/boards/import/board-import-wizard-commit.ts';
+import { createBoardImportWizardRpcRequest, createGroupedBoardImportWizardRpcRequest } from '../../../../../src/features/boards/import/board-import-wizard-commit.ts';
 import type { BoardImportWizardRpcRequest, BoardImportWizardCompletion } from '../../../../../src/features/boards/contracts/import-wizard-commit.ts';
 import { resolveGlobalOverlayRoot } from '../../../platform/ui/global-overlay-runtime.ts';
 import '../../../../css/board-import-wizard.css';
@@ -36,6 +36,7 @@ type WizardState = {
   commitFailed: boolean;
   skipBlankItemRows: boolean;
   skipRepeatedHeaders: boolean;
+  sectionTargets: BoardImportWizardSectionTarget[];
 };
 const TYPES: readonly BoardColumnType[] = ['text','long_text','number','status','dropdown','date','people','checkbox','timeline','email','url'];
 const canonical = (s: string) => s.trim().replace(/\s+/g,' ').toLowerCase();
@@ -85,6 +86,39 @@ export function defaultWizardMappings(dataset: BoardImportDataset): WizardMappin
   });
 }
 
+/** Read-only previews for each destination group: matching and duplicate keys are group-scoped. */
+export function planGroupedBoardImportWizard(dataset: BoardImportDataset, board: BoardEnvelope, draft: BoardImportWizardDraft): BoardImportWizardPlan {
+  const sections=dataset.groupSections??[];
+  const targets=draft.sectionTargets??[];
+  if(sections.length<2 || targets.length!==sections.length) throw new Error('Review the detected spreadsheet groups.');
+  const plans=sections.map(section=>{
+    const target=targets.find(item=>item.headingRow===section.headingRow && item.name===section.name);
+    if(!target) throw new Error(`No target selected for group “${section.name}”.`);
+    const rows=dataset.rows.filter(row=>row.sourceRow>=section.firstDataRow&&row.sourceRow<=section.lastDataRow);
+    return planBoardImportWizard({...dataset,rows},board,{...draft,group:target.destination});
+  });
+  const all=plans.flatMap(plan=>plan.decisions);
+  const unexpected=dataset.rows.filter(row=>!all.some(decision=>decision.sourceRow===row.sourceRow));
+  const errors=plans.flatMap(plan=>plan.errors);
+  for(const row of unexpected)errors.push({code:'WIZARD_GROUP_UNASSIGNED',message:`Spreadsheet row ${row.sourceRow} is outside the detected groups.`,sourceRow:row.sourceRow});
+  const sameExisting=new Set<string>();
+  const sameNew=new Set<string>();
+  for(const target of targets){
+    if(target.destination.action==='existing'){
+      const key=target.destination.groupId;
+      if(sameExisting.has(key))errors.push({code:'WIZARD_GROUP_TARGET_DUPLICATE',message:'Different source groups must not target the same existing Board group.'});
+      sameExisting.add(key);
+    }else{
+      const key=canonical(target.destination.name);
+      if(sameNew.has(key) || board.groups.some(g=>canonical(g.title)===key))errors.push({code:'WIZARD_GROUP_NAME_COLLISION',message:`Group “${target.destination.name}” already exists or is proposed twice.`});
+      sameNew.add(key);
+    }
+  }
+  const base=plans[0]!;
+  return Object.freeze({...base,decisions:Object.freeze(all),errors:Object.freeze(errors),
+    cautions:Object.freeze(plans.flatMap(plan=>plan.cautions)),configurationValid:errors.length===0});
+}
+
 export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc,overlayCoordinator,openExistingImporter,commitWizard,reloadBoard}: Dependencies) {
   let active: HTMLElement | null = null;
   let closeCurrent: (() => void) | null = null;
@@ -101,7 +135,7 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
     const state: WizardState = {
       step:'upload', file:null, dataset:null, mappings:[],
       group: board.groups[0] ? {action:'existing', groupId:String(board.groups[0].id)} : {action:'create',name:'Imported group'},
-      matches:{behavior:'add-new'},error:'',busy:false,commitFailed:false,skipBlankItemRows:false,skipRepeatedHeaders:false,
+      matches:{behavior:'add-new'},error:'',busy:false,commitFailed:false,skipBlankItemRows:false,skipRepeatedHeaders:false,sectionTargets:[],
     };
     const root = document.createElement('div');
     root.className='wm-import-wizard-backdrop';
@@ -127,13 +161,15 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
       const current=steps.findIndex(([step])=>step===state.step);
       container.innerHTML=`<header class="wm-import-wizard-header"><div class="wm-import-wizard-title"><strong>Import Board data</strong><span>${esc(board.board?.name??'Board')}</span></div><nav class="wm-import-wizard-progress" aria-label="Import progress">${steps.map(([step,title],i)=>`<span class="wm-import-wizard-step" data-current="${step===state.step}" ${step===state.step?'aria-current="step"':''}><i>${i+1}</i>${esc(title)}</span>`).join('')}</nav><button type="button" class="wm-import-wizard-close" data-wizard-close aria-label="Close Board Import" ${state.busy?'disabled':''}>×</button></header><main class="wm-import-wizard-main">${state.error?`<div class="wm-import-wizard-error" role="alert">${esc(state.error)}</div>`:''}${content}</main><footer class="wm-import-wizard-footer"><button type="button" data-wizard-classic class="wm-import-wizard-link" ${state.busy?'disabled':''}>Use existing reviewed importer</button><span class="wm-import-wizard-footer-actions"><button type="button" data-wizard-back class="secondary-btn" ${current===0||state.busy?'disabled':''}>Back</button><button type="button" data-wizard-next class="primary-btn" ${primaryDisabled||state.busy?'disabled':''}>${esc(primaryLabel)}</button></span></footer>`;
     };
-    const draft=():BoardImportWizardDraft=>({sourceWorksheet:state.dataset?.selectedWorksheet??'',mappings:state.mappings,group:state.group,matches:state.matches});
+    const draft=():BoardImportWizardDraft=>({sourceWorksheet:state.dataset?.selectedWorksheet??'',mappings:state.mappings,group:state.group,matches:state.matches,...(state.sectionTargets.length>1?{sectionTargets:state.sectionTargets}:{})});
     const reviewedDataset=():BoardImportDataset=>{
       const dataset=state.dataset!;
       const withoutBlank = state.skipBlankItemRows ? excludeBlankWizardItemRows(dataset,state.mappings) : dataset;
-      if (!state.skipRepeatedHeaders) return withoutBlank;
-      const toExclude = new Set(repeatedWizardHeaderRows(withoutBlank));
-      return Object.freeze({ ...withoutBlank, rows: Object.freeze(withoutBlank.rows.filter(row => !toExclude.has(row.sourceRow))) });
+      const withoutHeaders = state.skipRepeatedHeaders ? Object.freeze({...withoutBlank,rows:Object.freeze(withoutBlank.rows.filter(row => !new Set(repeatedWizardHeaderRows(withoutBlank)).has(row.sourceRow)))}) : withoutBlank;
+      if(state.sectionTargets.length<2)return withoutHeaders;
+      const headingRows=new Set(state.sectionTargets.map(target=>target.headingRow));
+      return Object.freeze({...withoutHeaders, rows:Object.freeze(withoutHeaders.rows.filter(row=>!headingRows.has(row.sourceRow)))});
+
     };
     const render=():void=>{
       if(disposed)return;
@@ -151,7 +187,7 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
       if(state.step==='map-columns'){
         const existing=board.groups.map((group)=>`<option value="existing:${esc(group.id)}" ${state.group.action==='existing'&&state.group.groupId===String(group.id)?'selected':''}>${esc(group.title)}</option>`).join('');
         const chosenGroup=state.group.action==='create'?'create':`existing:${state.group.groupId}`;
-        const groupMarkup=`<div class="wm-import-wizard-group"><label>Add items to <select data-wizard-group><option value="create" ${chosenGroup==='create'?'selected':''}>New group</option>${existing}</select></label>${state.group.action==='create'?`<label>New group name<input data-wizard-group-name maxlength="120" value="${escapeAttribute(esc,state.group.name)}" aria-label="New group name"></label>`:''}</div>`;
+        const groupMarkup=state.sectionTargets.length>1?`<section class="wm-import-wizard-diagnostics" aria-label="Detected source groups"><strong>${state.sectionTargets.length} Monday.com groups detected</strong><p>Group headings are not Items. Each source group is mapped separately in a single atomic import. Review the target for every group.</p>${state.sectionTargets.map((target,index)=>{const section=dataset.groupSections?.find(s=>s.headingRow===target.headingRow);const count=dataset.rows.filter(row=>row.sourceRow>=(section?.firstDataRow??Infinity)&&row.sourceRow<=(section?.lastDataRow??-1)).length;return `<label>${esc(target.name)} (source row ${target.headingRow}; ${count} source rows)<select data-wizard-section-target="${index}"><option value="create" ${target.destination.action==='create'?'selected':''}>Create new group “${esc(target.name)}”</option>${board.groups.map(group=>`<option value="existing:${esc(group.id)}" ${target.destination.action==='existing'&&target.destination.groupId===String(group.id)?'selected':''}>Existing: ${esc(group.title)}</option>`).join('')}</select></label>`;}).join('')}</section>`:`<div class="wm-import-wizard-group"><label>Add items to <select data-wizard-group><option value="create" ${chosenGroup==='create'?'selected':''}>New group</option>${existing}</select></label>${state.group.action==='create'?`<label>New group name<input data-wizard-group-name maxlength="120" value="${escapeAttribute(esc,state.group.name)}" aria-label="New group name"></label>`:''}</div>`;
         const worksheet=dataset.worksheets.length>1?`<label>Worksheet<select data-wizard-sheet>${dataset.worksheets.map((s)=>`<option value="${esc(s.name)}" ${s.name===dataset.selectedWorksheet?'selected':''}>${esc(s.name)}${s.hidden?' (hidden)':''}</option>`).join('')}</select></label>`:'';
         const rows=state.mappings.map((choice,index)=>{
           const options=[`<option value="skip" ${choice.action==='skip'?'selected':''}>Don't import</option>`,`<option value="item" ${choice.action==='item'?'selected':''}>Item (primary name)</option>`,...board.columns.filter(c=>c.system_key!=='title').map(c=>`<option value="existing:${esc(c.id)}" ${choice.action==='existing'&&choice.columnId===String(c.id)?'selected':''}>Map to: ${esc(c.name)}</option>`),`<option value="create" ${choice.action==='create'?'selected':''}>Create new column</option>`].join('');
@@ -169,7 +205,7 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
         screen(`<section class="wm-import-wizard-content"><h1>Map your columns</h1><p>Choose which spreadsheet columns will become Board fields. New columns are proposed only; they are not created in this step.</p><div class="wm-import-wizard-options">${groupMarkup}${worksheet}<label>Unmapped columns<select data-wizard-bulk><option value="">Select an action</option><option value="create">Create new columns</option><option value="skip">Don't import</option></select></label></div><div class="wm-import-wizard-counts"><span>${mapped} mapped</span><span>${created} new</span><span>${skipped} excluded</span></div>${blankRowControl}${repeatedRowControl}<div class="wm-import-wizard-table-wrap"><table class="wm-import-wizard-table"><thead><tr><th>Spreadsheet column</th><th>Import as</th></tr></thead><tbody>${rows}</tbody></table></div></section>`,'Continue');
         return;
       }
-      const plan=planBoardImportWizard(reviewedDataset(),currentBoard,draft());
+      const plan=state.sectionTargets.length>1?planGroupedBoardImportWizard(reviewedDataset(),currentBoard,draft()):planBoardImportWizard(reviewedDataset(),currentBoard,draft());
       const options=[`<option value="">Choose matching column</option>`,...state.mappings.flatMap(m=>m.action==='item'?[`<option value="item" ${state.matches.behavior!=='add-new'&&state.matches.matchColumnId==='item'?'selected':''}>Item (primary name)</option>`]:m.action==='existing'?[`<option value="${esc(m.columnId)}" ${state.matches.behavior!=='add-new'&&state.matches.matchColumnId===m.columnId?'selected':''}>${esc(currentBoard.columns.find(c=>String(c.id)===m.columnId)?.name??m.source)}</option>`]:[])].join('');
       const counts={create:0,update:0,skip:0,blocked:0};
       for(const decision of plan.decisions)counts[decision.decision]++;
@@ -180,7 +216,7 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
       if (state.commitFailed) commitIssue='The last import outcome is not confirmed. Close, refresh the Board, and start a new reviewed import before trying again.';
       else if (!canEdit()) commitIssue='Board edit permission is no longer available.';
       else if (plan.configurationValid) {
-        try { createBoardImportWizardRpcRequest(reviewedDataset(),currentBoard,draft()); }
+        try { if(state.sectionTargets.length>1)createGroupedBoardImportWizardRpcRequest(reviewedDataset(),currentBoard,draft()); else createBoardImportWizardRpcRequest(reviewedDataset(),currentBoard,draft()); }
         catch (error) { commitIssue=error instanceof Error?error.message:'Import contract validation failed.'; }
       }
       // HF3: A matching-policy change cannot resolve column-type restrictions.
@@ -191,7 +227,10 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
       const textResolution=newTypedColumns.length && !state.commitFailed && canEdit() && (needsChoiceApproval || Boolean(commitIssue))
         ? `<section class="wm-import-wizard-diagnostics" role="alert"><h2>Resolve column-type blockers</h2><p>Import Now cannot proceed while a proposed column fails validation. The current backend cannot create Status/Dropdown columns without configured options. Date, Checkbox, Number and other supported column types retain their selected behavior.</p><button type="button" class="secondary-btn" data-wizard-new-columns-as-text>Use Text for ${newTypedColumns.length} proposed column${newTypedColumns.length===1?'':'s'}</button><p>This is optional and affects only NEW columns. It preserves their names and spreadsheet values as text; it does not change existing Board columns. To keep native column types, use Back and correct the mappings instead.</p></section>`
         : '';
-      screen(`<section class="wm-import-wizard-content wm-import-wizard-matches"><h1>Handle matches</h1><p>Decide how rows that already exist in this group should be treated.</p><fieldset class="wm-import-wizard-match-policy"><legend>Matching policy</legend><label><input type="radio" name="wizard-behavior" value="add-new" ${behavior==='add-new'?'checked':''}><span><strong>Add as new items</strong><small>Propose new items even when values match existing records.</small></span></label><label><input type="radio" name="wizard-behavior" value="skip" ${behavior==='skip'?'checked':''}><span><strong>Skip</strong><small>Skip matching rows and create only unmatched rows.</small></span></label><label><input type="radio" name="wizard-behavior" value="update" ${behavior==='update'?'checked':''}><span><strong>Update</strong><small>Match a unique existing row; unmatched rows are skipped.</small></span></label></fieldset>${behavior!=='add-new'?`<label class="wm-import-wizard-match-select">Match using<select data-wizard-match-column>${options}</select></label>`:''}<div class="wm-import-wizard-summary" role="status"><span>${counts.create} to create</span><span>${counts.update} to update</span><span>${counts.skip} skipped</span><span>${counts.blocked} blocked</span></div>${validation}${cautions}${textResolution}${commitIssue?`<div class="wm-import-wizard-error" role="alert">${esc(commitIssue)}</div>`:''}<p class="wm-import-wizard-backend-note">Import commits as one transaction. If the M143 RPC is not installed, the server rejects the request without writes. Review the preview before importing.</p></section>`,'Import Now',!plan.configurationValid||Boolean(commitIssue));
+      const backendNote=state.sectionTargets.length>1
+        ? 'Grouped imports require the separately approved M14417 atomic backend RPC. If it is not installed, the server rejects the grouped import without writes. Do not retry an uncertain outcome.'
+        : 'Import commits as one transaction. If the M143 RPC is not installed, the server rejects the request without writes. Review the preview before importing.';
+      screen(`<section class="wm-import-wizard-content wm-import-wizard-matches"><h1>Handle matches</h1><p>Decide how rows that already exist in this group should be treated.</p><fieldset class="wm-import-wizard-match-policy"><legend>Matching policy</legend><label><input type="radio" name="wizard-behavior" value="add-new" ${behavior==='add-new'?'checked':''}><span><strong>Add as new items</strong><small>Propose new items even when values match existing records.</small></span></label><label><input type="radio" name="wizard-behavior" value="skip" ${behavior==='skip'?'checked':''}><span><strong>Skip</strong><small>Skip matching rows and create only unmatched rows.</small></span></label><label><input type="radio" name="wizard-behavior" value="update" ${behavior==='update'?'checked':''}><span><strong>Update</strong><small>Match a unique existing row; unmatched rows are skipped.</small></span></label></fieldset>${behavior!=='add-new'?`<label class="wm-import-wizard-match-select">Match using<select data-wizard-match-column>${options}</select></label>`:''}<div class="wm-import-wizard-summary" role="status"><span>${counts.create} to create</span><span>${counts.update} to update</span><span>${counts.skip} skipped</span><span>${counts.blocked} blocked</span></div>${validation}${cautions}${textResolution}${commitIssue?`<div class="wm-import-wizard-error" role="alert">${esc(commitIssue)}</div>`:''}<p class="wm-import-wizard-backend-note">${esc(backendNote)}</p></section>`,'Import Now',!plan.configurationValid||Boolean(commitIssue));
     };
     const parse=async(file:File,worksheet?:string):Promise<void>=>{
       if(disposed)return;
@@ -208,6 +247,11 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
         state.group= current.groups[0]?{action:'existing',groupId:String(current.groups[0].id)}:{action:'create',name:'Imported group'};
         state.matches={behavior:'add-new'};
         state.skipBlankItemRows=false;state.skipRepeatedHeaders=false;
+        state.sectionTargets=(parsed.groupSections??[]).map(section=>{
+          const matches=current.groups.filter(group=>canonical(group.title)===canonical(section.name));
+          const destination:BoardImportWizardGroupChoice=matches.length===1?{action:'existing',groupId:String(matches[0]!.id)}:{action:'create',name:section.name};
+          return {headingRow:section.headingRow,name:section.name,destination};
+        });
         state.step='map-columns';
       }catch(error){
         if(disposed)return;
@@ -238,7 +282,7 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
             if(!latest?.board || !canEdit()) { state.error='Board access has changed; reopen the import.';render();return; }
             try {
               if(String(latest.board.updated_at)!==String(board.board?.updated_at)){state.error='Board changed since opening the wizard. Close, refresh and review again.';render();return;}
-            const request=createBoardImportWizardRpcRequest(reviewedDataset(),latest,draft());
+            const request=state.sectionTargets.length>1?createGroupedBoardImportWizardRpcRequest(reviewedDataset(),latest,draft()):createBoardImportWizardRpcRequest(reviewedDataset(),latest,draft());
               state.busy=true;state.error='';render();
               const result=await commitWizard(request);
               state.busy=false;
@@ -256,7 +300,7 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
         if(state.step==='upload'&&state.dataset){state.step='map-columns';render();}
         else if(state.step==='map-columns'&&state.dataset){
           const current=getBoard();if(!current){state.error='Target Board is unavailable.';render();return;}
-          const plan=planBoardImportWizard(reviewedDataset(),current,draft());
+          const plan=state.sectionTargets.length>1?planGroupedBoardImportWizard(reviewedDataset(),current,draft()):planBoardImportWizard(reviewedDataset(),current,draft());
           if(!plan.configurationValid){state.error=plan.errors.map(e=>e.message).slice(0,3).join(' · ');render();return;}
           state.error='';state.step='handle-matches';render();
         }
@@ -275,6 +319,10 @@ export function createBoardImportWizardUi({getBoard,canEdit,toast,escapeHtml:esc
         state.skipRepeatedHeaders=target.checked;
       }else if(target instanceof HTMLInputElement && target.matches('[data-wizard-skip-blank]')){
         state.skipBlankItemRows=target.checked;
+      }else if(target instanceof HTMLSelectElement && target.matches('[data-wizard-section-target]')){
+        const index=Number(target.dataset.wizardSectionTarget);const old=state.sectionTargets[index];
+        if(!old)return;
+        state.sectionTargets[index]={...old,destination:target.value==='create'?{action:'create',name:old.name}:{action:'existing',groupId:target.value.slice('existing:'.length)}};
       }else if(target instanceof HTMLSelectElement && target.matches('[data-wizard-group]')){
         state.group=target.value==='create'?{action:'create',name:'Imported group'}:{action:'existing',groupId:target.value.slice('existing:'.length)};
       }else if(target instanceof HTMLInputElement && target.matches('[data-wizard-group-name]') && state.group.action==='create'){
