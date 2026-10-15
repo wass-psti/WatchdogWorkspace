@@ -233,6 +233,14 @@ jobs:
             | xargs -0 sha256sum \
             | sed 's#  dist/#  #' > dist/SHA256SUMS.txt
           test -s dist/SHA256SUMS.txt
+          # Expose only the two reviewed Vite metadata files when uploading hidden files.
+          unexpected_hidden="$(find dist -type f -path '*/.*' \
+            ! -path 'dist/.vite/licenses.md' \
+            ! -path 'dist/.vite/manifest.json' -print)"
+          if test -n "$unexpected_hidden"; then
+            printf 'BLOCKED: unreviewed hidden dist files:\n%s\n' "$unexpected_hidden" >&2
+            exit 1
+          fi
 
       - name: Upload M36 production cutover evidence
         uses: actions/upload-artifact@v4
@@ -249,3 +257,4 @@ jobs:
           path: dist
           if-no-files-found: error
           retention-days: 14
+          include-hidden-files: true
