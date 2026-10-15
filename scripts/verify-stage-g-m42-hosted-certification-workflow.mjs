@@ -29,7 +29,7 @@ requireText('CERTIFIED SOURCE COMMIT: $GITHUB_SHA', 'PASS-record source commit b
 requireText('stage-g-m42-certification-tree.mjs .', 'hosted source-tree digest recomputation');
 requireText("grep -Fq -- '- **State:** active-certified'", 'certified state verification');
 requireText('sha256sum -c CHECKSUMS.sha256', 'published baseline checksum verification');
-requireText('actions/upload-artifact@v4', 'certified artifact upload');
+requireText('actions/upload-artifact@v7', 'certified artifact upload');
 requireText('Stage verified M42 artifacts for upload', 'verified artifact staging step');
 requireText('STAGE_DIR="m42-certified-artifacts-upload"', 'repository-local upload staging directory');
 requireText('cp "../$ZIP" "$STAGE_DIR/$ZIP"', 'certified ZIP staging copy');

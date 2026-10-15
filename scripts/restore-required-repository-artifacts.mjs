@@ -151,7 +151,7 @@ const entries = [
       'npm run cutover:test',
       'npm run cutover:artifact',
       'npm run cutover:evidence',
-      'actions/upload-artifact@v4',
+      'actions/upload-artifact@v7',
     ],
   },
 
@@ -164,7 +164,7 @@ const entries = [
       'npm run functional-regression:test',
       'npm run functional-regression:browser',
       'npm run functional-regression:evidence',
-      'actions/upload-artifact@v4',
+      'actions/upload-artifact@v7',
     ],
   },  {
     source: 'governance-artifacts/github/workflows/deploy-pages.yml',

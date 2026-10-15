@@ -53,7 +53,7 @@ for (const token of [
   'npm run observability:check',
   'npm run observability:test',
   'SHA256SUMS.txt',
-  'actions/upload-artifact@v4',
+  'actions/upload-artifact@v7',
 ]) {
   assert.ok(ci.includes(token), `CI workflow missing ${token}`);
 }

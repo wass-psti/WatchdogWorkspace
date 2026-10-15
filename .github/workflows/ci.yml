@@ -243,7 +243,7 @@ jobs:
           fi
 
       - name: Upload M36 production cutover evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: work-management-cutover-evidence-${{ github.sha }}
           path: cutover-evidence
@@ -251,7 +251,7 @@ jobs:
           retention-days: 30
 
       - name: Upload certified production artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: work-management-dist-${{ github.sha }}
           path: dist

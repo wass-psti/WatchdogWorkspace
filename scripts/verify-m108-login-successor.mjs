@@ -143,11 +143,45 @@ const m14417InheritedM14415Paths = new Set([
 // Budget, embedded-asset, and source inventory guards below remain mandatory.
 const m14418Hf3CiWorkflowPath = '.github/workflows/ci.yml';
 const m14418Hf3CiWorkflowSha256 = '59844f0a25c0e6809743697b8c7fe2e0ea9c9fc321d1c63ea5926b8ebfea49ee';
+// Issue #21: action v7 successor is exact-byte and cannot weaken the original M108 baseline.
+// Approval requires every reviewed workflow, restoration template, and historical verifier byte.
+const issue21V7ExactModified = new Map(Object.entries({
+  ".github/workflows/boards-backend-data-contract-recovery.yml": "289a8be3c37a7a6aaf72b87b493f0a15b365e7eda4c0bba2fe90a9f73002daf4",
+  ".github/workflows/boards-collection-route-recovery.yml": "d2354df4ed17a9a167ca67ee94ac7b4110129e70268c6f809c75250eb0147974",
+  ".github/workflows/boards-columns-cells-status-system-recovery.yml": "b758858c3675b07801f8512ac862349de60f5e74ca49bd8228a3aefbc402d9b6",
+  ".github/workflows/boards-kanban-drag-drop-recovery.yml": "56efc798d174d4a01425f446358439d05e67089adc3565ef2dc1af3ac5f94826",
+  ".github/workflows/boards-table-group-item-recovery.yml": "b93152be22a592f2b2c8694e6b1d221a9d5c8b80b815a8110e7e669809ac16c2",
+  ".github/workflows/ci.yml": "d7eb202177a6e2c63c08516d95f507c51931b42c7ab37262a4b4c6afab74940c",
+  ".github/workflows/deploy-pages.yml": "c19702d6d02959dac9b4904e88dc8e5f5888dedf06b7d52b00ac231dc7940188",
+  ".github/workflows/functional-regression-baseline.yml": "a0ebbd43fd3b6d63c2fcdad5ff4e379f5e2ed430e2b47702bac9420057cc309c",
+  ".github/workflows/m42-certified-baseline.yml": "0c8953171ece4ce77db012a73dd7fb81cd967fe37974d27c0ad6fc67ff7510dc",
+  ".github/workflows/m54-functional-production-readiness.yml": "c7b3545c89dded26c807043a1453bd93615be34175be278c94e58a46254e1174",
+  ".github/workflows/management-authority-consolidation.yml": "5254675eae35f24449481b90bb7b243f7adefae512384f9e1fbed9553988b625",
+  ".github/workflows/production-cutover.yml": "1017a97b1c55715c6a050fd173ba3ff1ede13b0ff66d03908132a5d3a72ab38e",
+  ".github/workflows/rich-item-workspace-file-recovery.yml": "452f799c0c92709af699e82d35510cd39c3aefb74436136ec81a787548dcdcd3",
+  ".github/workflows/settings-functional-recovery.yml": "56e96d254d907466acca9cfa087543e672857e7d459cc2324c4bb5b285151ebb",
+  "governance-artifacts/github/workflows/ci.yml": "4079743dbd3a501591976e27f03d1bd185c3f28920b59978d0efa2f49aa50506",
+  "governance-artifacts/github/workflows/deploy-pages.yml": "2c6126b7875fb6cc88fbc75d3ffaf8b83ca343f7c71c685187e0ffa9b93b0bf2",
+  "governance-artifacts/github/workflows/functional-regression-baseline.yml": "a0ebbd43fd3b6d63c2fcdad5ff4e379f5e2ed430e2b47702bac9420057cc309c",
+  "governance-artifacts/github/workflows/production-cutover.yml": "d59e70a0e8f4ff0c81a31c975fd9e69cd80437c0b0a8a04370dd547f62cfa66d",
+  "scripts/restore-required-repository-artifacts.mjs": "70325bfc979a75ccaf5dd8a60ac63fd62b895706fc8bf38a20879f5b7b87b03f",
+  "scripts/verify-package-governance.mjs": "db0faf2a7d1590dcde419a3d701bb2e865202d7de2db12357f406793e9819183",
+  "scripts/verify-stage-g-m42-hosted-certification-workflow.mjs": "2f03a40c16ee5c8d77846d935619597c168d17de47609b77db2518283305aaba",
+  "verify-stage-a-m1-ci-package-governance.mjs": "68f8eb40e2de4402965d51bd2bbcc20a010165610f09b2333f9a0c1a764bd90a",
+  "verify-stage-f-m36-production-cutover-certification.mjs": "4c2efb559d86cdd8b4867309a7e6f5c905e3196915c1d1e7c16acaf776acb82d",
+  "verify-stage-g-m37-functional-regression-baseline.mjs": "cd579ceccf8ef4cd09e747a8f4bf4132118b19ed33d6f250341acf12d19821bd",
+  "verify-stage-g-m42-users-rbac-functional-recovery.mjs": "17f0a6bf00c67221d5a0de0248176c4f80c09c3e2c9510e72ae16366a267e709",
+  "verify-stage-g-m43-settings-functional-recovery.mjs": "e0c11d16bbe667d94dbffcf92d76ac31a8d99ce89f71a08ea720b88fffc80870",
+  "verify-stage-g-m50-state-aware-workflows.mjs": "edf17bcc68c1435f28f55e04eb3320d7708ddf86552f2b40d57d16fccc22e2de",
+}));
+const issue21V7Active = m14417M38Active && [...issue21V7ExactModified].every(([rel, digest]) =>
+  fs.existsSync(path.join(repo, rel)) && sha(path.join(repo, rel)) === digest);
 const isApprovedHistoricalOrM14415 = (rel, expectedDigest) => {
   const file = path.join(repo, rel);
   if (!fs.existsSync(file)) return false;
   const actualDigest = sha(file);
   return actualDigest === expectedDigest ||
+    (issue21V7Active && issue21V7ExactModified.get(rel) === actualDigest) ||
     (m14415Active && m14415ExactSource.has(rel) && m14415ReviewedHash(rel, actualDigest, m14415ExactSource.get(rel))) ||
     (m14417Active && m14417ExactFiles.get(rel) === actualDigest) ||
     (m14417M38Active && m14417InheritedM14415Paths.has(rel) &&
@@ -384,6 +418,15 @@ for (const [rel, digest] of m14418ExactModified) {
 if (!m14418BudgetActive || permittedModified.has(m14418BudgetMemoPath) ||
     permittedAdded.has(m14418BudgetMemoPath)) fail('M144.18 governed budget successor incomplete');
 permittedAdded.add(m14418BudgetMemoPath);
+
+// The v7 successor authorizes only the exact modified files that exist in the
+// frozen M108 predecessor inventory. No new source files are implicitly allowed.
+if (!issue21V7Active) fail('Issue #21 v7 successor source digest/lineage mismatch');
+for (const [rel, digest] of issue21V7ExactModified) {
+  if (!fs.existsSync(path.join(repo, rel)) || sha(path.join(repo, rel)) !== digest || permittedAdded.has(rel))
+    fail(`Issue #21 v7 changed source missing/classification mismatch: ${rel}`);
+  permittedModified.add(rel);
+}
 
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'm108-pinned-baseline-'));
 try {

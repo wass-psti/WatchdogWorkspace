@@ -40,14 +40,14 @@ jobs:
       - run: npm run cutover:artifact
       - run: npm run cutover:evidence
       - name: Upload certified production dist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: work-management-v1.43.2-production-cutover-dist-${{ github.sha }}
           path: dist
           if-no-files-found: error
           retention-days: 30
       - name: Upload production cutover evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: work-management-v1.43.2-production-cutover-evidence-${{ github.sha }}
           path: cutover-evidence

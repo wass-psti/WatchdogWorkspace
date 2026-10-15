@@ -34,7 +34,7 @@ jobs:
         run: npm run functional-regression:browser
       - name: Stage G M37 evidence summary
         run: npm run functional-regression:evidence
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: m37-functional-regression-evidence
           path: m37-evidence/
