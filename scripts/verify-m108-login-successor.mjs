@@ -139,6 +139,10 @@ const m14417InheritedM14415Paths = new Set([
   'tests/modern/board-import/m141-wizard-plan.verify.mjs',
   'tests/modern/board-import/m142-wizard-integration.verify.mjs',
 ]);
+// M144.18 HF3: exact-byte workflow packaging successor only; M108 baseline is unchanged.
+// Budget, embedded-asset, and source inventory guards below remain mandatory.
+const m14418Hf3CiWorkflowPath = '.github/workflows/ci.yml';
+const m14418Hf3CiWorkflowSha256 = '59844f0a25c0e6809743697b8c7fe2e0ea9c9fc321d1c63ea5926b8ebfea49ee';
 const isApprovedHistoricalOrM14415 = (rel, expectedDigest) => {
   const file = path.join(repo, rel);
   if (!fs.existsSync(file)) return false;
@@ -148,6 +152,8 @@ const isApprovedHistoricalOrM14415 = (rel, expectedDigest) => {
     (m14417Active && m14417ExactFiles.get(rel) === actualDigest) ||
     (m14417M38Active && m14417InheritedM14415Paths.has(rel) &&
       m14415ExactSource.get(rel) === actualDigest) ||
+    (m14417M38Active && rel === m14418Hf3CiWorkflowPath &&
+      actualDigest === m14418Hf3CiWorkflowSha256) ||
     (m14417M38Active && rel === m14417M38Path);
 };
 
