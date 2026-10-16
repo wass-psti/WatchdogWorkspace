@@ -85,17 +85,6 @@ export const applicationManifest = Object.freeze({
     normalizedModuleData: 'canonical-module-state-foundation-v1',
     normalizedModuleDataRegistry: 'config/modules.ts',
     normalizedModuleDataService: 'assets/js/platform/data/normalized-module-data-service.ts',
-    timeTrackerStabilization: 'embedded-timetracker-stability-v1',
-    timeTrackerStabilityRuntime: 'apps/time-tracker/stability-runtime.js',
-    timeTrackerRuntime: 'apps/time-tracker/app.js',
-    fuelTrackStabilization: 'embedded-fueltrack-stability-v1',
-    fuelTrackStabilityRuntime: 'apps/fueltrack-plus/stability-runtime.js',
-    fuelTrackRuntime: 'apps/fueltrack-plus/app.v3.17.0-wm6.js',
-    fuelTrackAnalytics: 'apache-echarts-6.1-route-lazy',
-    fuelTrackAnalyticsRuntime: 'assets/js/runtime/fueltrack-analytics.ts',
-    tradeLinkStabilization: 'embedded-tradelink-stability-v1',
-    tradeLinkStabilityRuntime: 'apps/tradelink/stability-runtime.js',
-    tradeLinkRuntime: 'apps/tradelink/app.v1.42.0-wm1.js',
     modulePresentation: 'hybrid-native-retirement-gated-v1',
     modulePresentationHost: 'assets/js/runtime/module-presentation-host.ts',
     moduleRetirementPolicy: 'config/stage-e-m26-iframe-retirement-target.ts',
@@ -358,16 +347,8 @@ export function validateApplicationManifest(manifest: ApplicationManifest = appl
   if (manifest.architectureVersion >= 30 && (manifest.architecture.normalizedModuleData !== 'canonical-module-state-foundation-v1' || !manifest.architecture.normalizedModuleDataRegistry || !manifest.architecture.normalizedModuleDataService)) {
     errors.push('Architecture v30+ requires canonical normalized module data registry/service authorities.');
   }
-  if (manifest.architectureVersion >= 31 && (manifest.architecture.timeTrackerStabilization !== 'embedded-timetracker-stability-v1' || !manifest.architecture.timeTrackerStabilityRuntime || !manifest.architecture.timeTrackerRuntime)) {
-    errors.push('Architecture v31+ requires TimeTracker stabilization authorities.');
-  }
-  if (manifest.architectureVersion >= 32 && (manifest.architecture.fuelTrackStabilization !== 'embedded-fueltrack-stability-v1' || !manifest.architecture.fuelTrackStabilityRuntime || !manifest.architecture.fuelTrackRuntime || manifest.architecture.fuelTrackAnalytics !== 'apache-echarts-6.1-route-lazy' || !manifest.architecture.fuelTrackAnalyticsRuntime)) {
-    errors.push('Architecture v32+ requires FuelTrack+ stabilization and route-lazy Apache ECharts authorities.');
-  }
-  if (manifest.architectureVersion >= 33 && (manifest.architecture.tradeLinkStabilization !== 'embedded-tradelink-stability-v1' || !manifest.architecture.tradeLinkStabilityRuntime || !manifest.architecture.tradeLinkRuntime)) {
-    errors.push('Architecture v33+ requires TradeLink stabilization authorities.');
-  }
-
+  // M145: embedded-app stabilization assertions retired with the old modules.
+  // Generic host contracts and core platform guards remain.
   if (manifest.architectureVersion >= 35 && (manifest.architecture.realtimePlatform !== 'authenticated-private-channel-platform-v1' || !manifest.architecture.realtimePlatformContract || !manifest.architecture.realtimePlatformRuntime || !manifest.architecture.realtimeTransport || manifest.architecture.realtimeTokenLifecycle !== 'platform-shared-refresh-v1')) {
     errors.push('Architecture v35+ requires the authenticated private-channel realtime platform authority and shared token lifecycle.');
   }

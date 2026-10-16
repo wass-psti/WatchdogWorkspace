@@ -1,4 +1,5 @@
 import { CAPABILITIES, hasPlatformCapability, platformAdminModuleRole as resolvePlatformAdminModuleRole, canAccessModuleByPolicy } from '../platform/auth/permissions.ts';
+import { moduleDefinitionsById } from '../../../config/modules.ts';
 
 import type { Capability, PlatformRole } from '../../../src/types/auth.ts';
 import type { ModuleId as PlatformModuleId } from '../../../src/types/identifiers.ts';
@@ -1030,7 +1031,7 @@ class AuthManager extends EventTarget {
   }
 
   moduleIdentityContext(moduleId: string): EmbeddedModuleIdentityContext | null {
-    if (!isPlatformModuleId(moduleId)) return null;
+    if (!isPlatformModuleId(moduleId) || !Object.hasOwn(moduleDefinitionsById, moduleId)) return null;
     const identity = this.identityContext();
     if (!identity) return null;
     return {
@@ -1046,6 +1047,7 @@ class AuthManager extends EventTarget {
   }
 
   canAccessModule(moduleId: string): boolean {
+    if (!Object.hasOwn(moduleDefinitionsById, moduleId)) return false;
     return canAccessModuleByPolicy({ authenticated:this.isAuthenticated, accountActive:this.isAccountActive, platformRole:this.platformRole, assignments:this.assignments, moduleId });
   }
 

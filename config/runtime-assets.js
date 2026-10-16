@@ -31,7 +31,6 @@ self.WM_RUNTIME_ASSETS = Object.freeze([
   './assets/js/runtime/module-host.ts',
   './assets/js/runtime/authorization-context.ts',
   './assets/js/runtime/module-bootstrap.ts',
-  './assets/js/runtime/fueltrack-analytics.ts',
   './assets/js/runtime/feature-registry.ts',
   './assets/js/runtime/route-controller.ts',
   './assets/js/runtime/services/route-policy.ts',

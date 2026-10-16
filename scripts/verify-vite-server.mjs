@@ -40,7 +40,6 @@ try {
   const bootstrapPath = mode === 'dev' ? '/assets/js/runtime/module-bootstrap.ts' : '/assets/js/runtime/module-bootstrap.js';
   for (const path of [
     '/', '/manifest.webmanifest', '/assets/icon.svg',
-    '/apps/time-tracker/index.html', '/apps/fueltrack-plus/runtime.html', '/apps/tradelink/runtime.html', '/apps/material-tracker/index.html',
     bootstrapPath,
   ]) {
     const response = await fetch(`${base}${path}`, { cache: 'no-store' });
@@ -66,19 +65,22 @@ try {
 
   const browserBinary = await findBrowserBinary();
 
-  // In preview, open every copied embedded page without a parent host. The shared
-  // bootstrap must still execute successfully and settle into an explicit auth/startup
-  // failure state. The browser is driven through CDP with a real wall-clock deadline,
-  // so a wedged Chromium process cannot stall certification indefinitely.
-  if (mode === 'preview') {
-    for (const path of ['/apps/time-tracker/index.html', '/apps/fueltrack-plus/runtime.html', '/apps/tradelink/runtime.html', '/apps/material-tracker/index.html']) {
-      const embedded = await captureBrowserDom(browserBinary, `${base}${path}`, {
-        timeoutMs: 20_000,
-        ready: (html) => /could not start|Authenticated .* access is required|Authenticated WatchdogWorkspace session is required|Open .* through Work Management/.test(html),
-      });
-      if (!/could not start|Authenticated .* access is required|Authenticated WatchdogWorkspace session is required|Open .* through Work Management/.test(embedded.dom)) {
-        throw new Error(`Embedded preview did not reach an explicit startup state for ${path}; production bootstrap may be non-executable.`);
-      }
+  // M145: retired standalone entrypoints must never become executable HTML.
+  // Vite may return its normal SPA fallback for an unknown path; that fallback
+  // is allowed, but an old module bootstrap/document is not.
+  for (const retired of [
+    '/apps/time-tracker/index.html', '/apps/fueltrack-plus/runtime.html',
+    '/apps/tradelink/runtime.html', '/apps/material-tracker/index.html',
+  ]) {
+    const response = await fetch(`${base}${retired}`, { cache: 'no-store' });
+    if (!response.ok) continue; // Explicit 404/403 is also valid.
+    const html = await response.text();
+    if (/<(?:script|link)[^>]+(?:apps\/(?:time-tracker|fueltrack-plus|tradelink|material-tracker)|app\.v3\.17\.0-wm6|app\.v1\.42\.0-wm1)/i.test(html) ||
+        /data-wm-surface=["']time-tracker["']|data-wm-embedded-module|WMModuleStore/i.test(html)) {
+      throw new Error(`Retired entrypoint remains executable in ${mode}: ${retired}`);
+    }
+    if (!html.includes('<div id="app"')) {
+      throw new Error(`Unknown legacy entrypoint is neither denied nor the platform SPA fallback: ${retired}`);
     }
   }
 

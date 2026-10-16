@@ -1,0 +1,67 @@
+name: M145 Clean Platform Successor
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m145-clean-platform-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  certify-current-core:
+    name: M145 exact predecessor and empty-module platform
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VITE_RUNTIME_ENV: ci
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_BASE_PATH: ./
+      VITE_BUILD_SOURCEMAP: "false"
+    steps:
+      - name: Checkout M145 successor
+        uses: actions/checkout@v6
+      - name: Setup Node from pinned toolchain
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Restore authenticated frozen M108 archive
+        uses: ./.github/actions/prepare-m108-baseline
+      - name: Fetch exact predecessor outside current working tree
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          predecessor="$RUNNER_TEMP/m145-original-production"
+          gh repo clone "$GITHUB_REPOSITORY" "$predecessor" -- --filter=blob:none --quiet
+          git -C "$predecessor" checkout --quiet --detach 994e925898fa7de596050cd06ec68a5a94a7c92b
+          test "$(git -C "$predecessor" rev-parse HEAD)" = 994e925898fa7de596050cd06ec68a5a94a7c92b
+          printf 'M145_PREDECESSOR_DIR=%s\n' "$predecessor" >> "$GITHUB_ENV"
+      - name: Authenticate exact predecessor and execute unmodified M108 guard there
+        run: node scripts/verify-m145-predecessor-provenance.mjs
+      - name: Check governed decommissioned source inventory
+        run: node scripts/verify-m145-clean-platform.mjs
+      - name: Install unchanged, pinned platform dependencies
+        run: npm ci
+      - name: Check empty module registry, denied old routes, preserved core routes
+        run: node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-m145-successor-core.mjs
+      - name: Typecheck unchanged runtime inputs
+        run: npm run typecheck
+      - name: Lint unchanged runtime inputs
+        run: npm run lint:eslint
+      - name: Build proposed static platform without old apps
+        run: npm run build
+      - name: Verify built core entry and legacy bundle exclusion
+        run: node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-m145-successor-core.mjs --dist
+      - name: Recheck source protection after build
+        run: node scripts/verify-m145-clean-platform.mjs
+      # Browser-authenticated QA and old workflow successor release routing
+      # are mandatory separate promotion gates. This job cannot certify them.
