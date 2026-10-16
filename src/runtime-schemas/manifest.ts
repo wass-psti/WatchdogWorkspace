@@ -323,15 +323,8 @@ export const applicationManifestSchema = z.object({
   if (manifest.architectureVersion >= 30 && (manifest.architecture.normalizedModuleData !== 'canonical-module-state-foundation-v1' || !manifest.architecture.normalizedModuleDataRegistry || !manifest.architecture.normalizedModuleDataService)) {
     context.addIssue({ code: 'custom', message: 'Architecture v30+ requires the canonical normalized module data registry and service authorities.', path: ['architecture'] });
   }
-  if (manifest.architectureVersion >= 31 && (manifest.architecture.timeTrackerStabilization !== 'embedded-timetracker-stability-v1' || !manifest.architecture.timeTrackerStabilityRuntime || !manifest.architecture.timeTrackerRuntime)) {
-    context.addIssue({ code: 'custom', message: 'Architecture v31+ requires the certified TimeTracker stabilization runtime and embedded application authorities.', path: ['architecture'] });
-  }
-  if (manifest.architectureVersion >= 32 && (manifest.architecture.fuelTrackStabilization !== 'embedded-fueltrack-stability-v1' || !manifest.architecture.fuelTrackStabilityRuntime || !manifest.architecture.fuelTrackRuntime || manifest.architecture.fuelTrackAnalytics !== 'apache-echarts-6.1-route-lazy' || !manifest.architecture.fuelTrackAnalyticsRuntime)) {
-    context.addIssue({ code: 'custom', message: 'Architecture v32+ requires the certified FuelTrack+ stabilization runtime, production wm6 authority, and route-lazy Apache ECharts analytics boundary.', path: ['architecture'] });
-  }
-  if (manifest.architectureVersion >= 33 && (manifest.architecture.tradeLinkStabilization !== 'embedded-tradelink-stability-v1' || !manifest.architecture.tradeLinkStabilityRuntime || !manifest.architecture.tradeLinkRuntime)) {
-    context.addIssue({ code: 'custom', message: 'Architecture v33+ requires the certified TradeLink stabilization runtime and production application authority.', path: ['architecture'] });
-  }
+  // M145: legacy embedded-application runtime validators have no active subjects.
+  // The generic module host remains governed by the following v34 contract.
   if (manifest.architectureVersion >= 34 && (manifest.architecture.modulePresentation !== 'hybrid-native-retirement-gated-v1' || !manifest.architecture.modulePresentationHost || !manifest.architecture.moduleRetirementPolicy || manifest.architecture.moduleIsolation !== 'hybrid-native-or-same-origin-iframe')) {
     context.addIssue({ code: 'custom', message: 'Architecture v34+ requires the hybrid module-presentation host and explicit iframe-retirement policy.', path: ['architecture'] });
   }

@@ -12,8 +12,8 @@ jobs:
           node-version: 22.16.0
           cache: npm
       - run: npm ci
-      - run: npm run recovery-quality:check
-      - run: npm run recovery-quality:test
+      - run: node scripts/verify-m145-pr-regression.mjs
+      - run: npm run backup-dr:test && npm run service-worker-update:test && npm run observability:test
       - run: npx playwright install --with-deps chromium
-      - run: npm run recovery-quality:browser
-      - run: npm run build && npm run verify:dist
+      - run: node scripts/run-m145-current-core-browser.mjs quality
+      - run: npm run build && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-m145-successor-core.mjs --dist

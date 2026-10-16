@@ -75,51 +75,13 @@ function workManagementRuntimePlugin() {
     async writeBundle(outputOptions, bundle) {
       const outputRoot = resolve(rootDir, outputOptions.dir || 'dist');
 
-      // Embedded application UI remains isolated, while the shared host/identity/cloud
-      // runtime is now a TypeScript build entry. The copied HTML is rewritten to the
-      // stable emitted bootstrap path after Vite compiles that runtime boundary.
-      await cp(resolve(rootDir, 'apps'), resolve(outputRoot, 'apps'), {
-        recursive: true,
-        force: true,
-        filter: (source) => !source.includes(`${resolve(rootDir, 'apps')}/.DS_Store`),
-      });
-
-      const embeddedSupportFiles = [
-        'assets/css/foundation/tokens.css',
-        'assets/css/foundation/themes.css',
-        // Referenced by all three copied embedded applications. Copy the exact
-        // existing source CSS rather than silently dropping the link at build.
-        'assets/css/foundation/token-architecture.css',
-        'assets/css/foundation/typography-system.css',
-        'assets/css/foundation/layout-system.css',
-        'assets/css/foundation/responsive-system.css',
-        'assets/css/foundation/accessibility-system.css',
-        'assets/css/foundation/primitives.css',
-        'assets/css/foundation/overlay-system.css',
-        'assets/css/foundation/feedback-system.css',
-        'assets/css/foundation/dense-data-system.css',
-        'assets/css/foundation/analytics-system.css',
-        'assets/css/foundation/motion-continuity-system.css',
-        'assets/css/foundation/module-unification.css',
-        'assets/css/foundation/components.css',
-        'assets/css/foundation/application-migration.css',
-        'assets/css/foundation/cross-module-responsive-harmonization.css',
-        'assets/css/motion-design.css',
-      ];
-      for (const file of embeddedSupportFiles) await copyFileFromRoot(file, outputRoot);
+      // M145: no embedded standalone application is shipped. A future
+      // integration must explicitly register its assets and verified entrypoint.
+      const embeddedSupportFiles = [];
       // Vite also emits a fingerprinted manifest under build/. Its relative
       // ./assets/icon.svg resolves to build/assets/icon.svg, not root/assets/.
       // Keep both paths valid without changing PWA scope or the source manifest.
       await copyFileFromRoot('public/assets/icon.svg', outputRoot, 'build/assets/icon.svg');
-
-      for (const embeddedHtml of ['apps/time-tracker/index.html', 'apps/fueltrack-plus/runtime.html', 'apps/tradelink/runtime.html']) {
-        const outputHtml = resolve(outputRoot, embeddedHtml);
-        const html = await readFile(outputHtml, 'utf8');
-        await writeFile(outputHtml, html
-          .replace('../../assets/js/runtime/module-bootstrap.ts', '../../assets/js/runtime/module-bootstrap.js')
-          .replace('../../assets/js/runtime/motion-orchestrator.ts', '../../assets/js/runtime/motion-orchestrator.js')
-          .replace('../../assets/js/runtime/motion-design.ts', '../../assets/js/runtime/motion-design.js'), 'utf8');
-      }
 
       await copyFileFromRoot('service-worker.js', outputRoot);
 
@@ -184,22 +146,19 @@ export default defineConfig(({ mode }) => {
       reportCompressedSize: true,
       license: { fileName: '.vite/licenses.md' },
       rolldownOptions: {
-        // Copied embedded application HTML imports named APIs from stable Vite entries.
-        // Preserve those entry signatures even when manual code-splitting groups are active.
+        // Preserve only shared host entry signatures; no standalone app entry remains.
         preserveEntrySignatures: 'strict',
         input: {
           index: resolve(rootDir, 'index.html'),
           'module-bootstrap': resolve(rootDir, 'assets/js/runtime/module-bootstrap.ts'),
           'motion-orchestrator': resolve(rootDir, 'assets/js/runtime/motion-orchestrator.ts'),
           'motion-design': resolve(rootDir, 'assets/js/runtime/motion-design.ts'),
-          'fueltrack-analytics': resolve(rootDir, 'assets/js/runtime/fueltrack-analytics.ts'),
         },
         output: {
           entryFileNames: (chunk) => {
             if (chunk.name === 'module-bootstrap') return 'assets/js/runtime/module-bootstrap.js';
             if (chunk.name === 'motion-orchestrator') return 'assets/js/runtime/motion-orchestrator.js';
             if (chunk.name === 'motion-design') return 'assets/js/runtime/motion-design.js';
-            if (chunk.name === 'fueltrack-analytics') return 'assets/js/runtime/fueltrack-analytics.js';
             return 'build/[name]-[hash].js';
           },
           chunkFileNames: 'build/[name]-[hash].js',

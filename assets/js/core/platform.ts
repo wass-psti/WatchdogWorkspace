@@ -1,6 +1,7 @@
 import type { ApplicationManifest } from '../../../src/types/manifest.ts';
 import type { ModuleId } from '../../../src/types/identifiers.ts';
 import type { WorkManagementModuleDefinition } from '../../../src/types/modules.ts';
+import { modules } from '../../../config/modules.ts';
 import { storage } from './storage.ts';
 import { activateWaitingServiceWorker, registerManagedServiceWorker } from '../platform/update/service-worker-update.ts';
 import type { ServiceWorkerUpdateLifecycleEvent } from '../../../src/platform/contracts/service-worker-update.ts';
@@ -52,7 +53,7 @@ const isDevelopmentBuild = (): boolean => recordOf(recordOf(import.meta)?.env)?.
 export const DEFAULT_PREFERENCES: PlatformPreferences = Object.freeze({
   theme: 'system',
   compact: false,
-  favorites: Object.freeze(['time-tracker']),
+  favorites: Object.freeze([]),
   recent: Object.freeze([]),
 });
 
@@ -65,7 +66,7 @@ function isValidIsoDate(value: unknown): value is string {
 export function normalizePreferences(value: unknown): PlatformPreferences {
   const input = recordOf(value) ?? {};
   const favorites = Array.isArray(input.favorites)
-    ? [...new Set(input.favorites.filter((id): id is string => typeof id === 'string' && Boolean(id.trim())).map((id) => id.trim()))]
+    ? [...new Set(input.favorites.filter((id): id is string => typeof id === 'string' && Boolean(id.trim()) && modules.some((mod) => mod.id === id.trim())).map((id) => id.trim()))]
     : [...DEFAULT_PREFERENCES.favorites];
   const recent = Array.isArray(input.recent)
     ? input.recent.flatMap((entry): RecentModulePreference[] => {
@@ -74,7 +75,7 @@ export function normalizePreferences(value: unknown): PlatformPreferences {
         const openedAt = record?.openedAt;
         return id && isValidIsoDate(openedAt) ? [{ id, openedAt: new Date(openedAt).toISOString() }] : [];
       })
-      .filter((entry, index, list) => list.findIndex((candidate) => candidate.id === entry.id) === index)
+      .filter((entry, index, list) => modules.some((mod) => mod.id === entry.id) && list.findIndex((candidate) => candidate.id === entry.id) === index)
       .slice(0, 8)
     : [];
   const theme = typeof input.theme === 'string' && VALID_THEMES.has(input.theme as ThemePreference) ? input.theme as ThemePreference : DEFAULT_PREFERENCES.theme;

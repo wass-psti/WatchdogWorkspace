@@ -2,17 +2,11 @@ name: Stage G M37 Functional Regression Baseline
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - 'assets/**'
-      - 'src/**'
-      - 'config/**'
-      - 'tests/modern/e2e/**'
-      - 'scripts/**'
-      - 'regression-baseline/**'
-      - 'verify-stage-g-m37-functional-regression-baseline.mjs'
-      - '.github/workflows/functional-regression-baseline.yml'
-
+    inputs:
+      historical_sha:
+        description: 'Must equal exact pre-removal production Git SHA; run on the archived predecessor ref'
+        required: true
+        type: string
 permissions:
   contents: read
 
@@ -20,6 +14,15 @@ jobs:
   characterize:
     runs-on: ubuntu-latest
     steps:
+      - name: Fail closed unless executing the exact original milestone commit
+        shell: bash
+        env:
+          EXPECTED_HISTORICAL_SHA: ${{ inputs.historical_sha }}
+        run: |
+          set -Eeuo pipefail
+          test "$GITHUB_SHA" = '994e925898fa7de596050cd06ec68a5a94a7c92b' || { echo 'Historical-only workflow must run on the original archived commit' >&2; exit 1; }
+          test "$EXPECTED_HISTORICAL_SHA" = '994e925898fa7de596050cd06ec68a5a94a7c92b' || { echo 'Expected SHA not authorized' >&2; exit 1; }
+
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:

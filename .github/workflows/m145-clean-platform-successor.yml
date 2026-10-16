@@ -1,0 +1,115 @@
+name: M145 Clean Platform Successor
+
+# Historical M108 is replayed against the authenticated predecessor; current
+# M145 core is verified here. Never rerun the pre-retirement module suites on
+# removed production sources or mark them as passing on M145.
+on:
+  workflow_call:
+    inputs:
+      runtime_environment:
+        description: Production only when called by reviewed main-branch deployment or cutover
+        required: false
+        type: string
+        default: ci
+  push:
+    branches: [m145/remove-legacy-apps-staging]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m145-clean-platform-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  certify-current-core:
+    name: M145 exact predecessor and empty-module platform
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VITE_RUNTIME_ENV: ${{ inputs.runtime_environment || 'ci' }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_BASE_PATH: ./
+      VITE_BUILD_SOURCEMAP: "false"
+    steps:
+      - name: Checkout M145 successor
+        uses: actions/checkout@v6
+      - name: Setup Node from pinned toolchain
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Restore authenticated frozen M108 archive
+        uses: ./.github/actions/prepare-m108-baseline
+      - name: Fetch exact predecessor outside current working tree
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          predecessor="$RUNNER_TEMP/m145-original-production"
+          gh repo clone "$GITHUB_REPOSITORY" "$predecessor" -- --filter=blob:none --quiet
+          git -C "$predecessor" checkout --quiet --detach 994e925898fa7de596050cd06ec68a5a94a7c92b
+          test "$(git -C "$predecessor" rev-parse HEAD)" = 994e925898fa7de596050cd06ec68a5a94a7c92b
+          printf 'M145_PREDECESSOR_DIR=%s\n' "$predecessor" >> "$GITHUB_ENV"
+      - name: Authenticate exact predecessor and execute unmodified M108 guard there
+        run: node scripts/verify-m145-predecessor-provenance.mjs
+      - name: Check governed decommissioned source inventory
+        run: node scripts/verify-m145-clean-platform.mjs
+      - name: Validate M145 CI profile and delegated gate contract
+        run: node scripts/verify-m145-ci-routing.mjs
+      - name: Check fail-closed M145 Pages and manual cutover routing
+        run: node scripts/verify-m145-deployment-routing.mjs
+      - name: Enforce M145.8 historical workflow generation ownership
+        run: node scripts/verify-m145-workflow-ownership.mjs
+      - name: Validate M145 current-core regression workflow coverage
+        run: node scripts/verify-m145-pr-regression.mjs
+      - name: Install unchanged, pinned platform dependencies
+        run: npm ci
+      - name: Check empty module registry, denied old routes, preserved core routes
+        run: node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-m145-successor-core.mjs
+      - name: Typecheck unchanged runtime inputs
+        run: npm run typecheck
+      - name: Lint unchanged runtime inputs
+        run: npm run lint:eslint
+      - name: Build proposed static platform without old apps
+        run: npm run build
+      - name: Verify built core entry and legacy bundle exclusion
+        run: node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-m145-successor-core.mjs --dist
+      - name: Recheck source protection after build
+        run: node scripts/verify-m145-clean-platform.mjs
+      - name: Verify M145 distribution paths and create SHA-256 inventory
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s dist/index.html
+          test -s dist/service-worker.js
+          test -s dist/manifest.webmanifest
+          test -s dist/config/runtime-assets.js
+          if find dist -type f -name '*.map' -print -quit | grep -q .; then
+            echo 'Unapproved source map in release dist' >&2
+            exit 1
+          fi
+          if grep -qE 'src/main\.tsx?|%BASE_URL%|127\.0\.0\.1|localhost' dist/index.html; then
+            echo 'Development reference in release HTML' >&2
+            exit 1
+          fi
+          find dist -type f ! -name SHA256SUMS.txt -print0 |
+            LC_ALL=C sort -z |
+            xargs -0 sha256sum |
+            sed 's#  dist/#  #' > dist/SHA256SUMS.txt
+          ( cd dist && sha256sum -c SHA256SUMS.txt )
+          hidden=$(find dist -type f -path '*/.*' ! -path 'dist/.vite/licenses.md' ! -path 'dist/.vite/manifest.json' -print)
+          test -z "$hidden" || { echo "Unauthorized hidden dist files: $hidden" >&2; exit 1; }
+      - name: Upload M145 verified distribution
+        uses: actions/upload-artifact@v7
+        with:
+          name: watchdog-m145-core-dist-${{ github.sha }}
+          path: dist
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 14
+      # Browser-authenticated QA and old workflow successor release routing
+      # are mandatory separate promotion gates. This job cannot certify them.
