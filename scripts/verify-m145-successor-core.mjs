@@ -14,7 +14,20 @@ assert(manifest.baseReleaseCommit === '994e925898fa7de596050cd06ec68a5a94a7c92b'
 assert(manifest.scope.length === 4 && retired.every(id => manifest.scope.includes(id)), 'unexpected application removal scope');
 assert(manifest.cloudMutation === false && manifest.cloudDataDeleted === false && manifest.newApplicationAdded === false, 'unauthorized data or integration work');
 assert(manifest.proposedDeletedPaths.length === 209, 'different approved deletion count');
-assert(Object.keys(manifest.approvedModifiedSha256).length === 11, 'original M145 modifications were changed');
+// The original 11 app-retirement modifications stay pinned; M145.6 permits
+// exactly one additional existing-file update, the governed CI entry point.
+const originalM145 = [
+  'assets/js/core/auth.ts', 'assets/js/core/platform.ts',
+  'assets/js/features/home/index.ts', 'assets/js/runtime/services/route-policy.ts',
+  'config/application-manifest.ts', 'config/modules.ts', 'config/runtime-assets.js',
+  'package.json', 'src/runtime-schemas/manifest.ts', 'vite.config.js',
+  'scripts/verify-vite-server.mjs',
+];
+assert(originalM145.every(key => typeof manifest.approvedModifiedSha256[key] === 'string') &&
+  Object.keys(manifest.approvedModifiedSha256).length === originalM145.length + 1 &&
+  manifest.approvedModifiedSha256['.github/workflows/ci.yml'] ===
+    '110ab17a0c88711892054b3c9c2420375e556533f41cfdd706f0ecd0f9bce4cb',
+  'original 11 M145 modifications or single governed CI successor digest changed');
 const { modules, moduleDefinitionsById, normalizedModuleDataRegistry } = await import('../config/modules.ts');
 const { moduleRegistry } = await import('../assets/js/features/modules/index.ts');
 const { createRoutePolicyService } = await import('../assets/js/runtime/services/route-policy.ts');
