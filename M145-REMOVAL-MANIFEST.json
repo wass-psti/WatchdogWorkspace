@@ -235,7 +235,8 @@
     "package.json": "4c14509e76a2400b9084b28b11bdb8896f9e2853a43034d869df704f3e394c49",
     "src/runtime-schemas/manifest.ts": "7bb2f26caecb1c1b181fb4382eddcd19208f2b8074c6c8417be2a6e1160d06b1",
     "vite.config.js": "6be14a92d712047144427743e9f84f5f6aae5757df998e8b1918b39ddab31cf4",
-    "scripts/verify-vite-server.mjs": "1a41db3594b8cfbb9afd43925819cddedf92202c201d39af82d888bd897bb775"
+    "scripts/verify-vite-server.mjs": "1a41db3594b8cfbb9afd43925819cddedf92202c201d39af82d888bd897bb775",
+    ".github/workflows/ci.yml": "110ab17a0c88711892054b3c9c2420375e556533f41cfdd706f0ecd0f9bce4cb"
   },
   "protectedPrefixes": [
     "supabase/",
@@ -3097,6 +3098,7 @@
     "scripts/verify-m145-predecessor-provenance.mjs",
     "scripts/certify-m145-removal-local.sh",
     "scripts/verify-m145-successor-core.mjs",
-    ".github/workflows/m145-clean-platform-successor.yml"
+    ".github/workflows/m145-clean-platform-successor.yml",
+    "scripts/verify-m145-ci-routing.mjs"
   ]
 }

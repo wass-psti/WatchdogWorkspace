@@ -1,9 +1,12 @@
 name: M145 Clean Platform Successor
 
+# Historical M108 is replayed against the authenticated predecessor; current
+# M145 core is verified here. Never rerun the pre-retirement module suites on
+# removed production sources or mark them as passing on M145.
 on:
-  pull_request:
+  workflow_call:
   push:
-    branches: [main]
+    branches: [m145/remove-legacy-apps-staging]
   workflow_dispatch:
 
 permissions:
@@ -49,6 +52,8 @@ jobs:
         run: node scripts/verify-m145-predecessor-provenance.mjs
       - name: Check governed decommissioned source inventory
         run: node scripts/verify-m145-clean-platform.mjs
+      - name: Validate M145 CI profile and delegated gate contract
+        run: node scripts/verify-m145-ci-routing.mjs
       - name: Install unchanged, pinned platform dependencies
         run: npm ci
       - name: Check empty module registry, denied old routes, preserved core routes
@@ -63,5 +68,36 @@ jobs:
         run: node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-m145-successor-core.mjs --dist
       - name: Recheck source protection after build
         run: node scripts/verify-m145-clean-platform.mjs
+      - name: Verify M145 distribution paths and create SHA-256 inventory
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s dist/index.html
+          test -s dist/service-worker.js
+          test -s dist/manifest.webmanifest
+          test -s dist/config/runtime-assets.js
+          if find dist -type f -name '*.map' -print -quit | grep -q .; then
+            echo 'Unapproved source map in release dist' >&2
+            exit 1
+          fi
+          if grep -qE 'src/main\.tsx?|%BASE_URL%|127\.0\.0\.1|localhost' dist/index.html; then
+            echo 'Development reference in release HTML' >&2
+            exit 1
+          fi
+          find dist -type f ! -name SHA256SUMS.txt -print0 |
+            LC_ALL=C sort -z |
+            xargs -0 sha256sum |
+            sed 's#  dist/#  #' > dist/SHA256SUMS.txt
+          ( cd dist && sha256sum -c SHA256SUMS.txt )
+          hidden=$(find dist -type f -path '*/.*' ! -path 'dist/.vite/licenses.md' ! -path 'dist/.vite/manifest.json' -print)
+          test -z "$hidden" || { echo "Unauthorized hidden dist files: $hidden" >&2; exit 1; }
+      - name: Upload M145 verified distribution
+        uses: actions/upload-artifact@v7
+        with:
+          name: watchdog-m145-core-dist-${{ github.sha }}
+          path: dist
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 14
       # Browser-authenticated QA and old workflow successor release routing
       # are mandatory separate promotion gates. This job cannot certify them.
