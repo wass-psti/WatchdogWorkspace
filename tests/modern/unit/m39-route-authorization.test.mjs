@@ -37,10 +37,12 @@ describe('M39 route authorization and recovery', () => {
     });
   });
 
-  it('allows an assigned embedded module', () => {
+  it('rejects even an assigned module when that module has been retired', () => {
+    // The M145 registry is empty. An old assignment must never recreate an
+    // application's access, regardless of the caller's authorization callback.
     expect(decide({
       route: { name: 'app', moduleId: 'time-tracker' },
       canAccessModule: (moduleId) => moduleId === 'time-tracker',
-    })).toEqual({ kind: 'allow' });
+    })).toEqual({ kind: 'render-forbidden', reason: 'module' });
   });
 });

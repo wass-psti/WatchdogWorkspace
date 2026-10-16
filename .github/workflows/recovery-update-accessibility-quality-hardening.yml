@@ -16,4 +16,4 @@ jobs:
       - run: npm run backup-dr:test && npm run service-worker-update:test && npm run observability:test
       - run: npx playwright install --with-deps chromium
       - run: node scripts/run-m145-current-core-browser.mjs quality
-      - run: npm run build && node scripts/verify-m145-successor-core.mjs --dist
+      - run: npm run build && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-m145-successor-core.mjs --dist

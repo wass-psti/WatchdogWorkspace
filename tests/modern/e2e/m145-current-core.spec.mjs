@@ -1,25 +1,41 @@
 import { test, expect } from '@playwright/test';
 import { installM39Fixture, seedM39Session, waitForM39Identity, waitForM40ApplicationReady } from './helpers/m39-auth-fixture.mjs';
 
-const move = async (page, route) => page.evaluate(value => { location.hash = `#/${value}`; }, route);
-const state = page => page.evaluate(async () => ({
-  context: globalThis.WorkManagementRuntime?.getContext?.(),
-  lifecycle: await globalThis.WorkManagementRuntime?.get?.('route-lifecycle.current'),
-  frames: document.querySelectorAll('#moduleFrame, #nativeModuleHost').length,
-  root: document.querySelectorAll('[data-wm-react-shell-root]').length,
-  auth: document.querySelectorAll('[data-wm-authentication-ui-host]').length,
-}));
+// One browser snapshot is used per assertion; the original approach sampled
+// route lifecycle and URL separately during asynchronous hash transitions.
+const move = async (page, route) => {
+  await page.evaluate(value => { location.hash = `#/${value}`; }, route);
+  await expect.poll(() => page.evaluate(() => location.hash), { timeout: 12000 })
+    .toBe(`#/${route}`);
+};
+const state = page => page.evaluate(async () => {
+  const runtime = globalThis.WorkManagementRuntime;
+  const lifecycle = await runtime?.get?.('route-lifecycle.current');
+  return {
+    hash: location.hash,
+    context: runtime?.getContext?.(), lifecycle,
+    frames: document.querySelectorAll('#moduleFrame, #nativeModuleHost').length,
+    root: document.querySelectorAll('[data-wm-react-shell-root]').length,
+  };
+});
 async function core(page, route, owner) {
-  await page.waitForFunction(async ({route,owner}) => {
-    const runtime=globalThis.WorkManagementRuntime;
-    const lifecycle=await runtime?.get?.('route-lifecycle.current');
-    return runtime?.getContext?.()?.route===route && lifecycle?.phase==='committed' && lifecycle?.owner===owner;
-  }, {route,owner}, {timeout:12000});
-  const s=await state(page);
-  expect(s.root).toBe(1);
-  expect(s.lifecycle.owner).toBe(owner);
-  expect(s.context.route).toBe(route);
-  expect(s.frames).toBe(0);
+  // All details must agree in the SAME committed snapshot. A fast hashchange
+  // can otherwise invalidate a previously observed route/owner pair.
+  await expect.poll(async () => {
+    const s = await state(page);
+    return {
+      route: s.context?.route ?? null,
+      owner: s.lifecycle?.owner ?? null,
+      phase: s.lifecycle?.phase ?? null,
+      lifecycleRoute: s.lifecycle?.route?.name ?? null,
+      hashMatches: route === 'app'
+        ? s.hash.startsWith('#/app/') : s.hash === `#/${route}`,
+      root: s.root, frames: s.frames,
+    };
+  }, { timeout: 15000, intervals: [50, 100, 250] }).toEqual({
+    route, owner, phase: 'committed', lifecycleRoute: route,
+    hashMatches: true, root: 1, frames: 0,
+  });
 }
 
 test('@m145-auth anonymous login and authentic core management remain available', async ({page}) => {
@@ -28,7 +44,7 @@ test('@m145-auth anonymous login and authentic core management remain available'
   await expect(page.locator('[data-wm-react-shell-root]')).toHaveCount(1);
   await seedM39Session(page,{principal:'admin'});
   await installM39Fixture(page,{principal:'admin'});
-  await page.goto('/#/account');
+  await page.goto('/?m145-seeded-session=1#/account');
   await waitForM39Identity(page,{role:'admin_general_manager'});
   await waitForM40ApplicationReady(page);
   await core(page,'account','management');

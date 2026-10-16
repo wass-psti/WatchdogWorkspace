@@ -24,14 +24,20 @@ const originalM145 = [
   'scripts/verify-vite-server.mjs',
 ];
 assert(originalM145.every(key => typeof manifest.approvedModifiedSha256[key] === 'string') &&
-  Object.keys(manifest.approvedModifiedSha256).length === originalM145.length + 3 + 13 + 7 &&
+  Object.keys(manifest.approvedModifiedSha256).length === originalM145.length + 3 + 13 + 7 + 1 &&
   manifest.approvedModifiedSha256['.github/workflows/ci.yml'] ===
     '110ab17a0c88711892054b3c9c2420375e556533f41cfdd706f0ecd0f9bce4cb' &&
   manifest.approvedModifiedSha256['.github/workflows/deploy-pages.yml'] ===
     '507cbefd55c81f3c25ba784c15f7f841ff9efb247988f27b87bfd338c39f7394' &&
   manifest.approvedModifiedSha256['.github/workflows/production-cutover.yml'] ===
-    '3029d2150c055f405bd0990d669f3551deec66e2ce730b79f3e61ea63eebf027',
-  'original 11 M145 modifications or exactly three approved successor workflow digests changed');
+    '3029d2150c055f405bd0990d669f3551deec66e2ce730b79f3e61ea63eebf027' &&
+  manifest.approvedModifiedSha256['tests/modern/unit/m39-route-authorization.test.mjs'] ===
+    '137e71921d7753409857cdce1bc08e3305f304f55593cd86daf1009ad69a3150' &&
+  manifest.approvedModifiedSha256['.github/workflows/recovery-update-accessibility-quality-hardening.yml'] ===
+    '29fc5b1161e0a23f2eb0da4e0cfcd8a3266821e19c1b4a82ffacdbd4f677ac70' &&
+  manifest.approvedModifiedSha256['.github/workflows/service-worker-updates.yml'] ===
+    '5ebda5b53551969a1bc83e2de329c0f37413ad8a025b4da12ba35b9405d400d0',
+  'approved M145 modifications or workflow digests changed');
 const { modules, moduleDefinitionsById, normalizedModuleDataRegistry } = await import('../config/modules.ts');
 const { moduleRegistry } = await import('../assets/js/features/modules/index.ts');
 const { createRoutePolicyService } = await import('../assets/js/runtime/services/route-policy.ts');

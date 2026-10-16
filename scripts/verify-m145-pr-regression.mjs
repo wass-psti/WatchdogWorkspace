@@ -30,7 +30,18 @@
  }
  const database=read('.github/workflows/database-tests.yml');
  require(database.includes('pull_request:')&&database.includes('database-rls:test:local'),'independent DB/RLS job missing');
+ for (const name of ['recovery-update-accessibility-quality-hardening.yml', 'service-worker-updates.yml']) {
+   const workflow=read('.github/workflows/'+name);
+   require(workflow.includes('node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-m145-successor-core.mjs --dist'),
+     'Node type-stripping missing in '+name);
+ }
+ const routeUnit=read('tests/modern/unit/m39-route-authorization.test.mjs');
+ require(routeUnit.includes("it('rejects even an assigned module when that module has been retired'")
+   && routeUnit.includes("kind: 'render-forbidden', reason: 'module'"),
+   'modern unit suite must deny even historically assigned retired modules');
  const script=read('tests/modern/e2e/m145-current-core.spec.mjs');
+ require(script.includes('expect.poll(async () =>') && script.includes('lifecycleRoute:'), 'atomic committed browser route coverage missing');
+ require(script.includes('/?m145-seeded-session=1#/account'), 'authenticated first-load synthetic session boundary missing');
  for(const expected of ['@m145-auth','@m145-route','@m145-quality','time-tracker','fueltrack-plus','tradelink','material-tracker','boards','users','settings','account'])require(script.includes(expected),'browser profile missing '+expected);
  const runner=read('scripts/run-m145-current-core-browser.mjs');
  require(runner.includes('spawnSync(playwright')&&runner.includes('if(result.status!==0)throw Error'),'browser must fail closed');
