@@ -16,7 +16,10 @@ jobs:
       - run: npm ci
       - run: npm run backup-dr:check
       - run: npm run backup-dr:test
-      - run: npm run database-rls:check
+      # The frozen M29 checker assumes pre-retirement CI directly invokes M29.
+      # M145 keeps the distinct database-rls PR workflow mandatory and checks
+      # both its trigger and its source rather than falsely passing old M29.
+      - run: node scripts/verify-m145-pr-regression.mjs
       - run: npm run observability:check
       - run: npm run service-worker-update:check
       - run: npm run lint:eslint

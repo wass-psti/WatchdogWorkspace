@@ -17,6 +17,8 @@ jobs:
       - run: npm run dependencies:ensure
       - run: npm run auth-stabilization:check
       - run: npm run auth-stabilization:test
-      - run: npm run auth-stabilization:browser
+      # Preserve frozen M39 browser scenarios on original predecessor; M145
+      # validates current login/session restoration and retired-route denial.
+      - run: node scripts/run-m145-current-core-browser.mjs auth
       - run: npm run typecheck
       - run: npm run lint:eslint

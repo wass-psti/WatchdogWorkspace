@@ -31,6 +31,6 @@ jobs:
       - name: Build production service worker
         run: npm run build
       - name: Verify production service-worker/update artifact
-        run: npm run service-worker-update:dist
+        run: node scripts/verify-m145-successor-core.mjs --dist && node scripts/verify-m145-pr-regression.mjs
       - name: Verify production preview
         run: npm run verify:preview

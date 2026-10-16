@@ -13,7 +13,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm run performance:check
+      - run: node scripts/verify-m145-pr-regression.mjs && node scripts/verify-performance-budget-analysis.mjs
       - run: npm run performance:bench
       - run: npm run build
-      - run: npm run performance:bundle
+      - run: node scripts/verify-m145-performance-dist.mjs

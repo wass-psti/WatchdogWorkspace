@@ -17,6 +17,8 @@ jobs:
       - run: npm run dependencies:ensure
       - run: npm run route-lifecycle:check
       - run: npm run route-lifecycle:test
-      - run: npm run route-lifecycle:browser
+      # Preserve frozen M40 browser scenarios on original predecessor; M145
+      # verifies ownership of remaining core routes and forbidden retired routes.
+      - run: node scripts/run-m145-current-core-browser.mjs route
       - run: npm run typecheck
       - run: npm run lint:eslint

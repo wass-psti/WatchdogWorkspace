@@ -64,6 +64,8 @@ jobs:
         run: node scripts/verify-m145-deployment-routing.mjs
       - name: Enforce M145.8 historical workflow generation ownership
         run: node scripts/verify-m145-workflow-ownership.mjs
+      - name: Validate M145 current-core regression workflow coverage
+        run: node scripts/verify-m145-pr-regression.mjs
       - name: Install unchanged, pinned platform dependencies
         run: npm ci
       - name: Check empty module registry, denied old routes, preserved core routes
