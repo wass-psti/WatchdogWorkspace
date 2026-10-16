@@ -1,9 +1,11 @@
-name: Deploy Work Management v1.43.2
+name: Deploy WatchdogWorkspace M145 Clean Platform
 
+# Production deployment is possible only from main, after the authenticated
+# M108 predecessor and M145 current-core successor gate succeeds. Never deploy
+# directly from the QA staging branch or accept the historical M36 artifact.
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -13,409 +15,163 @@ permissions:
 
 concurrency:
   group: github-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  build:
-    name: Verify and build v1.43.2
+  authorize-main:
+    name: Reject any non-production deployment ref
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require production main ref before invoking release certifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$GITHUB_REF" = 'refs/heads/main' || { echo 'M145 Pages deployment refused: only main is authorized' >&2; exit 1; }
+          echo 'Production main-only deployment precondition: PASS'
+
+  certify-current-core:
+    name: Verify M145 exact predecessor and current core
+    needs: [authorize-main]
+    uses: ./.github/workflows/m145-clean-platform-successor.yml
+    with:
+      runtime_environment: production
+    permissions:
+      contents: read
+
+  prepare-pages:
+    name: Authenticate M145 artifact and backend before Pages upload
+    needs: [certify-current-core]
     runs-on: ubuntu-latest
     env:
-      VITE_RUNTIME_ENV: production
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
-      VITE_BASE_PATH: ./
-      VITE_BUILD_SOURCEMAP: "false"
-
     steps:
-      - name: Checkout repository
+      - name: Checkout reviewed production code
         uses: actions/checkout@v6
-
-      - name: Setup governed Node.js
-        uses: actions/setup-node@v4
+      - name: Download artifact produced by successful M145 successor
+        uses: actions/download-artifact@v4
         with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      # Supply the SHA-256-verified historical M108 archive to the successor
-      # source guard; never bypass or alter historical certification guards.
-      - name: Restore pinned M108 predecessor provenance
-        uses: ./.github/actions/prepare-m108-baseline
-
+          name: watchdog-m145-core-dist-${{ github.sha }}
+          path: dist
+      - name: Validate deployment workflow contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node scripts/verify-m145-deployment-routing.mjs
+      - name: Authenticate downloaded artifact and reject retired runtimes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s dist/index.html
+          test -s dist/service-worker.js
+          test -s dist/manifest.webmanifest
+          test -s dist/config/runtime-assets.js
+          test -s dist/.vite/manifest.json
+          test -s dist/.vite/licenses.md
+          test -s dist/SHA256SUMS.txt
+          ( cd dist && sha256sum -c SHA256SUMS.txt )
+          if find dist -type f -name '*.map' -print -quit | grep -q .; then
+            echo 'Unapproved source maps in M145 Pages artifact' >&2
+            exit 1
+          fi
+          if grep -qE 'src/main\.tsx?|%BASE_URL%|127\.0\.0\.1|localhost' dist/index.html; then
+            echo 'Source-only or local URL reference in M145 production HTML' >&2
+            exit 1
+          fi
+          for retired in time-tracker fueltrack-plus tradelink material-tracker; do
+            test ! -d "dist/apps/$retired" || { echo "Retired app in artifact: $retired" >&2; exit 1; }
+          done
+          test ! -d dist/integrations/material-tracker || { echo 'Material Tracker integration in artifact' >&2; exit 1; }
+          echo 'M145 Pages artifact integrity and old-app exclusion: PASS'
       - name: Require production public backend configuration
         shell: bash
         run: |
-          set -euo pipefail
-          test -n "${VITE_SUPABASE_URL}" || {
-            echo "::error::Repository variable VITE_SUPABASE_URL is not configured."
-            exit 1
-          }
-          test -n "${VITE_SUPABASE_PUBLISHABLE_KEY}" || {
-            echo "::error::Repository variable VITE_SUPABASE_PUBLISHABLE_KEY is not configured."
-            exit 1
-          }
-          case "${VITE_SUPABASE_URL}" in
-            https://*.supabase.co) ;;
-            *)
-              echo "::error::VITE_SUPABASE_URL does not look like the intended HTTPS Supabase project URL."
-              exit 1
-              ;;
-          esac
-
-      - name: Validate M38 production backend configuration
-        run: npm run backend-preflight:config:production
-
-      - name: Verify M105 production backend parity repository contract
-        run: node verify-v1432-m105-production-backend-parity.mjs
-
-      - name: Verify live production backend deployment contract
+          set -Eeuo pipefail
+          test -n "$VITE_SUPABASE_URL" || { echo 'Production Supabase URL missing' >&2; exit 1; }
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo 'Public Supabase key missing' >&2; exit 1; }
+          case "$VITE_SUPABASE_URL" in https://*.supabase.co) ;; *) echo 'Unexpected Supabase URL' >&2; exit 1;; esac
+      - name: Assert production board-import backend contract
         shell: bash
         run: |
-          set -euo pipefail
-
+          set -Eeuo pipefail
           endpoint="${VITE_SUPABASE_URL%/}/rest/v1/rpc/wm_deployment_contract_attestation"
-
-          curl --fail --silent --show-error --location \
-            --retry 5 \
-            --retry-delay 3 \
-            -H "apikey: ${VITE_SUPABASE_PUBLISHABLE_KEY}" \
-            -H "Content-Type: application/json" \
-            --data '{}' \
-            "$endpoint" \
-            -o /tmp/wm-production-backend-attestation.json
-
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 \
+            -H "apikey: ${VITE_SUPABASE_PUBLISHABLE_KEY}" -H 'Content-Type: application/json' \
+            --data '{}' "$endpoint" -o "$RUNNER_TEMP/wm-backend-attestation.json"
           node -e '
             const fs=require("fs");
-
-            const raw=JSON.parse(
-              fs.readFileSync(
-                "/tmp/wm-production-backend-attestation.json",
-                "utf8"
-              )
-            );
-
-            const payload=
-              Array.isArray(raw)
-                ? raw[0]
-                : raw;
-
-            if(
-              payload?.schema_version!=="1.43.2-m105-v1"
-            ){
-              throw new Error(
-                "Unexpected M105 backend schema."
-              );
-            }
-
-            if(
-              payload?.required_rpc!==
-              "wm_import_board_items_atomic"
-            ){
-              throw new Error(
-                "Unexpected required RPC."
-              );
-            }
-
-            if(
-              payload?.wm_import_board_items_atomic!==true ||
-              payload?.compatible!==true
-            ){
-              throw new Error(
-                "Production backend contract is incomplete."
-              );
-            }
-
-            console.log(
-              "Production backend deployment contract: PASS"
-            );
+            const raw=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/wm-backend-attestation.json","utf8"));
+            const a=Array.isArray(raw)?raw[0]:raw;
+            if(a?.schema_version!=="1.43.2-m105-v1" ||
+               a?.required_rpc!=="wm_import_board_items_atomic" ||
+               a?.wm_import_board_items_atomic!==true || a?.compatible!==true)
+              throw Error("Required production Board Import backend contract not verified");
+            console.log("Production backend attestation: PASS");
           '
-
-      - name: Install exact lockfile dependencies
-        run: npm ci
-
-      - name: Verify exact installed dependency graph
-        run: npm run dependencies:ensure
-
-      - name: Verify governed toolchain self-dispatch
-        run: npm run toolchain:dispatch:check
-
-      - name: Verify package governance and secret hygiene
-        run: npm run governance:check
-
-      - name: Run Stage A security baseline gate
-        run: npm run security:check
-
-      - name: Run Stage B React 19.2 composition boundary gate
-        run: npm run react:check
-
-      - name: Run Stage B Work Management React Design System source gate
-        run: npm run design-system:check
-
-      - name: Run M4/M5 governance synchronization regression gate
-        run: npm run governance:sync-check
-
-      - name: Run M4 corrective integrity gate
-        run: npm run corrective:check
-
-      - name: Run M4 vendor declaration compatibility gate
-        run: npm run vendor-types:check
-
-      - name: Run M4 production CSP serialization compatibility gate
-        run: npm run csp-dist:check
-
-      - name: Run Stage B primitive interaction architecture gate
-        run: npm run interactions:check
-
-      - name: Run Stage B runtime schema architecture gate
-        run: npm run runtime-schemas:check
-
-      - name: Stage B M7 Supabase client adapter
-        run: npm run supabase-client:check
-
-      - name: Stage B M8 TanStack Query migration
-        run: npm run tanstack-query:check
-
-      - name: Stage B M9 client-state ownership model
-        run: npm run client-state:check
-
-      - name: Stage C M10 React shell
-        run: npm run react-shell:check
-
-      - name: Stage C M11 global overlays
-        run: npm run global-overlays:check
-
-      - name: Stage C M12 Authentication UI
-        run: npm run authentication-ui:check
-      - name: Stage C M13 Account / Settings / User Management
-        run: npm run account-settings-users:check
-
-      - name: Stage C M14 Command Palette / Shared Application UI
-        run: npm run shared-app-ui:check
-
-
-      - name: Stage D M15 React Board presentation facade
-
-        run: npm run board-presentation:check
-
-      - name: Stage D M16 Board component decomposition
-        run: npm run board-components:check
-
-      - name: Stage D M17 TanStack Table evaluation
-        run: npm run tanstack-table-evaluation:check
-
-      - name: Stage D M18 Board virtualization
-        run: npm run board-virtualization:check
-
-      - name: Stage D M19 Drag-and-drop evaluation
-        run: npm run drag-drop-evaluation:check
-
-      - name: Stage D M20 Board collaborative Realtime
-        run: npm run board-realtime:check
-
-      - name: Stage D M21 Rich Item Workspace
-        run: npm run rich-item-workspace:check
-      - name: Verify M22 normalized module data
-        run: npm run normalized-module-data:check
-      - name: Stage E M23 TimeTracker stabilization
-        run: npm run timetracker-stabilization:check
-      - name: Stage E M24 FuelTrack+ stabilization
-        run: npm run fueltrack-stabilization:check
-      - name: Stage E M25 TradeLink stabilization
-        run: npm run tradelink-stabilization:check
-
-      - name: Stage E M26 iframe retirement
-        run: npm run iframe-retirement:check
-
-      - name: Stage F M27 Realtime platform architecture
-        run: npm run realtime-platform:check
-
-      - name: Stage F M28 Edge Functions
-        run: npm run edge-functions:check
-      - name: Stage F M29 Database/RLS test suite
-        run: npm run database-rls:check
-
-      - name: Stage F M30 Modern testing stack
-        run: npm run modern-tests:check
-
-      - name: Stage G M38 Runtime configuration/backend capability preflight
-        run: npm run backend-preflight:check && npm run backend-preflight:test
-
-      - name: Stage F M31 Performance engineering
-        run: npm run performance:check
-
-      - name: Run M31 hot-path performance benchmarks
-        run: npm run performance:bench
-
-      - name: Stage F M32 Observability
-        run: npm run observability:check
-
-      - name: Run M32 observability execution vectors
-        run: npm run observability:test
-
-      - name: Stage F M33 Service worker / update strategy
-        run: npm run service-worker-update:check
-
-      - name: Run M33 service-worker/update execution vectors
-        run: npm run service-worker-update:test
-
-      - name: Stage F M34 Backup and disaster recovery
-        run: npm run backup-dr:check
-
-      - name: Run M34 backup/disaster-recovery execution vectors
-        run: npm run backup-dr:test
-
-      - name: Stage F M35 Final legacy deletion
-        run: npm run legacy-deletion:check
-
-      - name: Run M35 final legacy deletion execution vectors
-        run: npm run legacy-deletion:test
-
-      - name: Stage F M36 Production cutover certification
-        run: npm run cutover:check
-
-      - name: Run M36 production cutover execution vectors
-        run: npm run cutover:test
-
-      - name: Stage G M37 Functional Regression Baseline
-        run: npm run functional-regression:check
-
-      - name: Run M37 functional regression source characterization
-        run: npm run functional-regression:test
-
-
-      - name: Run governed ESLint and TypeScript lint gate
-        run: npm run lint
-
-      - name: Audit dependencies for high or critical vulnerabilities
-        run: npm run audit:ci
-
-      - name: Run complete v1.43.2 release gate
-        run: npm run release:check
-
-      - name: Verify M36 production cutover artifact
-        run: npm run cutover:artifact
-
-      - name: Generate M36 production cutover evidence
-        run: npm run cutover:evidence
-
-      - name: Verify production artifact before upload
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          test -f dist/index.html
-          test -f dist/service-worker.js
-          test -f dist/manifest.webmanifest
-          test -f dist/config/runtime-assets.js
-          test -f dist/assets/js/runtime/module-bootstrap.js
-          test -f dist/assets/js/runtime/motion-orchestrator.js
-          test -f dist/assets/js/runtime/motion-design.js
-
-          if grep -qE 'src/main\.tsx?|%BASE_URL%|127\.0\.0\.1|localhost' dist/index.html; then
-            echo "::error::dist/index.html still contains a source-only or development reference."
-            exit 1
-          fi
-
-          grep -qE '\./build/index-[^"]+\.js' dist/index.html
-          grep -qE '\./build/index-[^"]+\.css' dist/index.html
-          grep -q 'work-management-v1.43.2' dist/service-worker.js
-
-          if find dist -type f -name '*.map' -print -quit | grep -q .; then
-            echo "::error::Production source maps are present even though VITE_BUILD_SOURCEMAP=false."
-            exit 1
-          fi
-
-          echo "Production deployment artifact sanity check: PASS"
-          echo "Only ./dist will be uploaded to GitHub Pages."
-
-      - name: Upload M36 production cutover evidence
-        uses: actions/upload-artifact@v7
-        with:
-          name: work-management-cutover-evidence-${{ github.sha }}
-          path: cutover-evidence
-          if-no-files-found: error
-          retention-days: 90
-
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-
-      - name: Upload production dist only
+      - name: Upload only authenticated M145 distribution to Pages
         uses: actions/upload-pages-artifact@v4
         with:
           path: ./dist
 
   deploy:
-    name: Deploy v1.43.2 to GitHub Pages
-    needs: build
+    name: Deploy M145 clean-platform release to GitHub Pages
+    needs: [prepare-pages]
     runs-on: ubuntu-latest
-    env:
-      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
     steps:
-      - name: Deploy GitHub Pages artifact
+      - name: Deploy reviewed and authenticated Pages artifact
         id: deployment
         uses: actions/deploy-pages@v5
-
-      - name: Re-verify production backend contract after Pages deployment
+      - name: Require production public backend configuration
         shell: bash
         run: |
-          set -euo pipefail
-
+          set -Eeuo pipefail
+          test -n "$VITE_SUPABASE_URL" || { echo 'Production Supabase URL missing' >&2; exit 1; }
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo 'Public Supabase key missing' >&2; exit 1; }
+          case "$VITE_SUPABASE_URL" in https://*.supabase.co) ;; *) echo 'Unexpected Supabase URL' >&2; exit 1;; esac
+      - name: Assert production board-import backend contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
           endpoint="${VITE_SUPABASE_URL%/}/rest/v1/rpc/wm_deployment_contract_attestation"
-
-          curl --fail --silent --show-error --location \
-            --retry 5 \
-            --retry-delay 3 \
-            -H "apikey: ${VITE_SUPABASE_PUBLISHABLE_KEY}" \
-            -H "Content-Type: application/json" \
-            --data '{}' \
-            "$endpoint" \
-            -o /tmp/wm-production-backend-attestation.json
-
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 \
+            -H "apikey: ${VITE_SUPABASE_PUBLISHABLE_KEY}" -H 'Content-Type: application/json' \
+            --data '{}' "$endpoint" -o "$RUNNER_TEMP/wm-backend-attestation.json"
           node -e '
             const fs=require("fs");
-
-            const raw=JSON.parse(
-              fs.readFileSync(
-                "/tmp/wm-production-backend-attestation.json",
-                "utf8"
-              )
-            );
-
-            const payload=
-              Array.isArray(raw)
-                ? raw[0]
-                : raw;
-
-            if(
-              payload?.schema_version!=="1.43.2-m105-v1" ||
-              payload?.required_rpc!==
-                "wm_import_board_items_atomic" ||
-              payload?.wm_import_board_items_atomic!==true ||
-              payload?.compatible!==true
-            ){
-              throw new Error(
-                "Production backend contract mismatch after deployment."
-              );
-            }
-
-            console.log(
-              "Production backend post-deploy contract: PASS"
-            );
+            const raw=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/wm-backend-attestation.json","utf8"));
+            const a=Array.isArray(raw)?raw[0]:raw;
+            if(a?.schema_version!=="1.43.2-m105-v1" ||
+               a?.required_rpc!=="wm_import_board_items_atomic" ||
+               a?.wm_import_board_items_atomic!==true || a?.compatible!==true)
+              throw Error("Required production Board Import backend contract not verified");
+            console.log("Production backend attestation: PASS");
           '
-
-      - name: Production post-deploy HTTP smoke
+      - name: Verify live host and retired-app HTTP paths
         shell: bash
         env:
           WM_PRODUCTION_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           base="${WM_PRODUCTION_URL%/}/"
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${base}" -o /tmp/work-management-index.html
-          test -s /tmp/work-management-index.html
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${base}service-worker.js" -o /tmp/work-management-service-worker.js
-          grep -q 'work-management-v1.43.2' /tmp/work-management-service-worker.js
-          echo "Production post-deploy HTTP smoke: PASS (${base})"
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${base}" -o "$RUNNER_TEMP/m145-production-index.html"
+          test -s "$RUNNER_TEMP/m145-production-index.html"
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "${base}service-worker.js" -o "$RUNNER_TEMP/m145-production-service-worker.js"
+          grep -q 'work-management-v1.43.2' "$RUNNER_TEMP/m145-production-service-worker.js"
+          # Pages may serve a 404 HTML fallback; only the HTTP status matters.
+          for old in \
+            apps/time-tracker/index.html \
+            apps/fueltrack-plus/runtime.html \
+            apps/tradelink/runtime.html \
+            apps/material-tracker/index.html; do
+            code="$(curl --silent --show-error --location --output /dev/null --write-out '%{http_code}' "${base}${old}?m145-retired=1")"
+            case "$code" in 404|410) ;; *) echo "Retired URL unexpectedly served: $old ($code)" >&2; exit 1;; esac
+          done
+          echo "M145 live host health and retired module denial: PASS ($base)"

@@ -24,10 +24,14 @@ const originalM145 = [
   'scripts/verify-vite-server.mjs',
 ];
 assert(originalM145.every(key => typeof manifest.approvedModifiedSha256[key] === 'string') &&
-  Object.keys(manifest.approvedModifiedSha256).length === originalM145.length + 1 &&
+  Object.keys(manifest.approvedModifiedSha256).length === originalM145.length + 3 &&
   manifest.approvedModifiedSha256['.github/workflows/ci.yml'] ===
-    '110ab17a0c88711892054b3c9c2420375e556533f41cfdd706f0ecd0f9bce4cb',
-  'original 11 M145 modifications or single governed CI successor digest changed');
+    '110ab17a0c88711892054b3c9c2420375e556533f41cfdd706f0ecd0f9bce4cb' &&
+  manifest.approvedModifiedSha256['.github/workflows/deploy-pages.yml'] ===
+    '507cbefd55c81f3c25ba784c15f7f841ff9efb247988f27b87bfd338c39f7394' &&
+  manifest.approvedModifiedSha256['.github/workflows/production-cutover.yml'] ===
+    '3029d2150c055f405bd0990d669f3551deec66e2ce730b79f3e61ea63eebf027',
+  'original 11 M145 modifications or exactly three approved successor workflow digests changed');
 const { modules, moduleDefinitionsById, normalizedModuleDataRegistry } = await import('../config/modules.ts');
 const { moduleRegistry } = await import('../assets/js/features/modules/index.ts');
 const { createRoutePolicyService } = await import('../assets/js/runtime/services/route-policy.ts');

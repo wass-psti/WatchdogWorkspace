@@ -236,7 +236,9 @@
     "src/runtime-schemas/manifest.ts": "7bb2f26caecb1c1b181fb4382eddcd19208f2b8074c6c8417be2a6e1160d06b1",
     "vite.config.js": "6be14a92d712047144427743e9f84f5f6aae5757df998e8b1918b39ddab31cf4",
     "scripts/verify-vite-server.mjs": "1a41db3594b8cfbb9afd43925819cddedf92202c201d39af82d888bd897bb775",
-    ".github/workflows/ci.yml": "110ab17a0c88711892054b3c9c2420375e556533f41cfdd706f0ecd0f9bce4cb"
+    ".github/workflows/ci.yml": "110ab17a0c88711892054b3c9c2420375e556533f41cfdd706f0ecd0f9bce4cb",
+    ".github/workflows/deploy-pages.yml": "507cbefd55c81f3c25ba784c15f7f841ff9efb247988f27b87bfd338c39f7394",
+    ".github/workflows/production-cutover.yml": "3029d2150c055f405bd0990d669f3551deec66e2ce730b79f3e61ea63eebf027"
   },
   "protectedPrefixes": [
     "supabase/",
@@ -3099,6 +3101,7 @@
     "scripts/certify-m145-removal-local.sh",
     "scripts/verify-m145-successor-core.mjs",
     ".github/workflows/m145-clean-platform-successor.yml",
-    "scripts/verify-m145-ci-routing.mjs"
+    "scripts/verify-m145-ci-routing.mjs",
+    "scripts/verify-m145-deployment-routing.mjs"
   ]
 }

@@ -1,60 +1,39 @@
-name: Production Cutover Certification
+name: M145 Production Cutover Certification (Explicit Manual Gate)
+
+# Historical M36 remains available in the immutable predecessor. This current
+# M145 certification is manual, SHA-pinned and non-deploying. The normal Pages
+# workflow has its own mandatory reusable successor verification dependency.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+    inputs:
+      expected_main_sha:
+        description: Exact reviewed main commit to certify (40 hexadecimal characters)
+        required: true
+        type: string
+
 permissions:
   contents: read
-jobs:
-  certify-cutover:
-    runs-on: ubuntu-latest
-    env:
-      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
-      VITE_BASE_PATH: ./
-      VITE_BUILD_SOURCEMAP: "false"
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
 
-      # Supply the SHA-256-verified historical M108 archive to the successor
-      # source guard; never bypass or alter historical certification guards.
-      - name: Restore pinned M108 predecessor provenance
-        uses: ./.github/actions/prepare-m108-baseline
-      - name: Require production public backend configuration
+jobs:
+  require-reviewed-main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assert explicit production release commit
         shell: bash
+        env:
+          EXPECTED_MAIN_SHA: ${{ inputs.expected_main_sha }}
         run: |
-          set -euo pipefail
-          test -n "${VITE_SUPABASE_URL}" || { echo "::error::VITE_SUPABASE_URL is not configured."; exit 1; }
-          test -n "${VITE_SUPABASE_PUBLISHABLE_KEY}" || { echo "::error::VITE_SUPABASE_PUBLISHABLE_KEY is not configured."; exit 1; }
-          case "${VITE_SUPABASE_URL}" in https://*.supabase.co) ;; *) echo "::error::Unexpected Supabase URL."; exit 1;; esac
-      - run: npm ci
-      - run: npm run dependencies:ensure
-      - run: npm run governance:check
-      - run: npm run security:check
-      - run: npm run verify:historical-all
-      - run: npm run legacy-deletion:check
-      - name: Stage F M36 Production cutover certification
-        run: npm run cutover:check
-      - run: npm run cutover:test
-      - run: npm run release:check
-      - run: npm run cutover:artifact
-      - run: npm run cutover:evidence
-      - name: Upload certified production dist
-        uses: actions/upload-artifact@v7
-        with:
-          name: work-management-v1.43.2-production-cutover-dist-${{ github.sha }}
-          path: dist
-          if-no-files-found: error
-          retention-days: 30
-      - name: Upload production cutover evidence
-        uses: actions/upload-artifact@v7
-        with:
-          name: work-management-v1.43.2-production-cutover-evidence-${{ github.sha }}
-          path: cutover-evidence
-          if-no-files-found: error
-          retention-days: 90
+          set -Eeuo pipefail
+          test "$GITHUB_REF" = refs/heads/main || { echo 'Only main may be certified' >&2; exit 1; }
+          [[ "$EXPECTED_MAIN_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid expected main SHA' >&2; exit 1; }
+          test "$EXPECTED_MAIN_SHA" = "$GITHUB_SHA" || { echo 'Review SHA mismatch; refusing certification' >&2; exit 1; }
+          echo 'Explicit current main SHA authorization: PASS'
+
+  certify-current-core:
+    name: Reuse authenticated M145 historical and current-core gate
+    needs: [require-reviewed-main]
+    uses: ./.github/workflows/m145-clean-platform-successor.yml
+    with:
+      runtime_environment: production
+    permissions:
+      contents: read
