@@ -48,6 +48,18 @@ for(const [rel,want] of Object.entries(original)){
 }
 for(const rel of now)check(Object.hasOwn(original,rel)||allowedNew.has(rel),'unexpected added file: '+rel);
 for(const rel of allowedNew)check(now.has(rel),'required M145 artifact missing: '+rel);
+// M145.8: all additions except the manifest carrying this inventory must be
+// SHA256 authenticated, including the verifier itself and workflow pin file.
+// The self-referential manifest is instead bound to the signed Git tree and
+// final distributed ZIP digest; do not introduce an impossible self hash.
+const pinnedAdds=manifest.approvedAddedSha256;
+check(pinnedAdds && Object.keys(pinnedAdds).length===allowedNew.size-1, 'new-source digest coverage incomplete');
+for(const rel of allowedNew) {
+  if(rel==='M145-REMOVAL-MANIFEST.json')continue;
+  check(Object.hasOwn(pinnedAdds,rel),'missing digest for newly added source: '+rel);
+  check(sha(rel)===pinnedAdds[rel],'newly added source drift: '+rel);
+}
+for(const rel of Object.keys(pinnedAdds))check(allowedNew.has(rel) && rel!=='M145-REMOVAL-MANIFEST.json','unapproved added-source pin: '+rel);
 check(archiveOnlyQaEvidence.size===2 && [...archiveOnlyQaEvidence.keys()].every(rel => Object.hasOwn(original,rel) && !allowedDeleted.has(rel) && !allowedNew.has(rel)), 'QA-only exclusion cannot expand original removal or addition scope');
 const c=read('config/modules.ts');
 check(c.includes('Object.freeze({});')&&!c.includes("route: './apps/"),'no registered legacy application');

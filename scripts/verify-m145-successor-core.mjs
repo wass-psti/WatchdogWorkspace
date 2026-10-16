@@ -24,7 +24,7 @@ const originalM145 = [
   'scripts/verify-vite-server.mjs',
 ];
 assert(originalM145.every(key => typeof manifest.approvedModifiedSha256[key] === 'string') &&
-  Object.keys(manifest.approvedModifiedSha256).length === originalM145.length + 3 &&
+  Object.keys(manifest.approvedModifiedSha256).length === originalM145.length + 3 + 13 &&
   manifest.approvedModifiedSha256['.github/workflows/ci.yml'] ===
     '110ab17a0c88711892054b3c9c2420375e556533f41cfdd706f0ecd0f9bce4cb' &&
   manifest.approvedModifiedSha256['.github/workflows/deploy-pages.yml'] ===

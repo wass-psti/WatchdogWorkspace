@@ -1,5 +1,5 @@
 {
-  "task": "M145 — remove currently integrated standalone apps (candidate only)",
+  "task": "M145 \u2014 remove currently integrated standalone apps (candidate only)",
   "sourceKind": "Issue 21 premerge candidate, byte-equivalent checked against production PR22 tree for reviewed files",
   "baseReleaseCommit": "994e925898fa7de596050cd06ec68a5a94a7c92b",
   "sourceArchive": "WatchdogWorkspace-ISSUE21-V7-UNMERGED-QA-COMPLETE-SOURCE.zip",
@@ -238,7 +238,20 @@
     "scripts/verify-vite-server.mjs": "1a41db3594b8cfbb9afd43925819cddedf92202c201d39af82d888bd897bb775",
     ".github/workflows/ci.yml": "110ab17a0c88711892054b3c9c2420375e556533f41cfdd706f0ecd0f9bce4cb",
     ".github/workflows/deploy-pages.yml": "507cbefd55c81f3c25ba784c15f7f841ff9efb247988f27b87bfd338c39f7394",
-    ".github/workflows/production-cutover.yml": "3029d2150c055f405bd0990d669f3551deec66e2ce730b79f3e61ea63eebf027"
+    ".github/workflows/production-cutover.yml": "3029d2150c055f405bd0990d669f3551deec66e2ce730b79f3e61ea63eebf027",
+    ".github/workflows/boards-backend-data-contract-recovery.yml": "3e111a5c492f1de7614119f36dc4a683bd212d7f7f93c2f6c887c8e334b2391f",
+    ".github/workflows/boards-collection-route-recovery.yml": "bb964d8cb0f3b5cfae73490e33149b19318578989e7faf95dda527c520b20dda",
+    ".github/workflows/boards-columns-cells-status-system-recovery.yml": "ff567d59aa2e03da79aa58cda00ad28b7f86fac619fac5c907e2d3d032f1be8f",
+    ".github/workflows/boards-kanban-drag-drop-recovery.yml": "b3b79a5fed93a11ee9bbc9da08472da041ef57563b34b0f7687ce794efa5f51e",
+    ".github/workflows/boards-table-group-item-recovery.yml": "ab2bdfef94e2614b0f5b033c2567ec0ae7347192cf00582b9196f8f9fea8f036",
+    ".github/workflows/management-authority-consolidation.yml": "f1e9e43354c7346c4e5e45016afc47a756976b415d672772bd407d4ea8789e70",
+    ".github/workflows/rich-item-workspace-file-recovery.yml": "c7236e3cabac7c036d4fdc94ca010ab2a9f4c193d4f4a6a2e65eff1ddfd76ad2",
+    ".github/workflows/users-rbac-functional-recovery.yml": "c4202a526d753a7271cc270f895b82903cdcb3a4c85f5dd04f5baf7a5e60e1fb",
+    ".github/workflows/settings-functional-recovery.yml": "f1bfcee6e01a8fec30cb1f9ae6a6a6acd729866c1b2ad9ebb705f5727a9d7751",
+    ".github/workflows/account-functional-recovery.yml": "5909e4d5886450c440558ea257ba0db1a31bbf3504d3435bbff5465a9c0b1ba9",
+    ".github/workflows/final-legacy-deletion.yml": "487c0c77effc91f2f1fccd0888040a506886188c4ee9e2cfb5fe04868f646123",
+    ".github/workflows/cross-module-rbac-authenticated-e2e.yml": "338d78aecbc084a977e57233689e6a10ce9b6d9259c8515e4f6d492e75379907",
+    ".github/workflows/functional-regression-baseline.yml": "10c17ed48c8568609cfdb951833783ccd7da70d82041cb90dbe4548b8a691aab"
   },
   "protectedPrefixes": [
     "supabase/",
@@ -3102,6 +3115,21 @@
     "scripts/verify-m145-successor-core.mjs",
     ".github/workflows/m145-clean-platform-successor.yml",
     "scripts/verify-m145-ci-routing.mjs",
-    "scripts/verify-m145-deployment-routing.mjs"
-  ]
+    "scripts/verify-m145-deployment-routing.mjs",
+    "M1458-HISTORICAL-WORKFLOW-INVENTORY.json",
+    "scripts/verify-m145-workflow-ownership.mjs"
+  ],
+  "approvedAddedSha256": {
+    "apps/README.md": "7147eab0256d68bf7a6264730b5b0c6f7d548507bcfa92eb5fb79bef74fa85a6",
+    "scripts/verify-m145-clean-platform.mjs": "ee0df767d210fdd3f9adfe6d4d31f8e7e3274295788b0dac16f43c4a1bad29df",
+    "M145-CONTINUATION.md": "735bac744661fcf93d9bafd992cacf3c375cf68a895073795d34f4d10117d099",
+    "scripts/verify-m145-predecessor-provenance.mjs": "f491439db93d215780ecc2b53f246cc5e429cfd1157b7a4867b3a365b70f3e6c",
+    "scripts/certify-m145-removal-local.sh": "8dda68ceb227568fbae01ace9bd4445a7179c9e3d7641a1d1cbce3cc8d2dc8e8",
+    "scripts/verify-m145-successor-core.mjs": "008dc5b83c4dcb60e8c506ef2944753edc04e5d99ff51c1e0b6774540e132c42",
+    ".github/workflows/m145-clean-platform-successor.yml": "831f076e416d1e5ceb64b4b3103a12cd8f8c9b715355b70e360789623806d35f",
+    "scripts/verify-m145-ci-routing.mjs": "ba5d23893a550ba6341167e1d5fc37767a00da2164850f496fe67f528025816f",
+    "scripts/verify-m145-deployment-routing.mjs": "73c93e72f0e4e693d78ffd19ec36e1737c3324c35de0953124cac9435e532580",
+    "M1458-HISTORICAL-WORKFLOW-INVENTORY.json": "09cd2d65a3307fcb1ce26fd62e7c593bebb2d14468119765a28c379ebc6a7848",
+    "scripts/verify-m145-workflow-ownership.mjs": "7c71607728578aa116274168b9dfedbfc4d2f6ffc7c8adcd654af78302ff7d19"
+  }
 }

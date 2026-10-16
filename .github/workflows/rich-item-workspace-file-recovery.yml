@@ -1,8 +1,11 @@
 name: Rich Item Workspace File Recovery
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
+    inputs:
+      historical_sha:
+        description: 'Must equal exact pre-removal production Git SHA; run on the archived predecessor ref'
+        required: true
+        type: string
 permissions:
   contents: read
 jobs:
@@ -13,6 +16,15 @@ jobs:
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://jtlusodorfnyzgyuewkz.supabase.co' }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_CrkvaTRYTYAMVbieywNMyg_a0F7HpB6' }}
     steps:
+      - name: Fail closed unless executing the exact original milestone commit
+        shell: bash
+        env:
+          EXPECTED_HISTORICAL_SHA: ${{ inputs.historical_sha }}
+        run: |
+          set -Eeuo pipefail
+          test "$GITHUB_SHA" = '994e925898fa7de596050cd06ec68a5a94a7c92b' || { echo 'Historical-only workflow must run on the original archived commit' >&2; exit 1; }
+          test "$EXPECTED_HISTORICAL_SHA" = '994e925898fa7de596050cd06ec68a5a94a7c92b' || { echo 'Expected SHA not authorized' >&2; exit 1; }
+
       - uses: actions/checkout@v4
       - name: Restore pinned M108 predecessor provenance
         uses: ./.github/actions/prepare-m108-baseline

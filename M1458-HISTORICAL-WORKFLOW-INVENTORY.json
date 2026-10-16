@@ -1,0 +1,52 @@
+{
+  "milestone": "M145.8",
+  "predecessorCommit": "994e925898fa7de596050cd06ec68a5a94a7c92b",
+  "reason": "Archive-only historical milestone workflows; core/security CI unchanged and separately required",
+  "frozenOriginalSource": {
+    "boards-backend-data-contract-recovery.yml": "289a8be3c37a7a6aaf72b87b493f0a15b365e7eda4c0bba2fe90a9f73002daf4",
+    "boards-collection-route-recovery.yml": "d2354df4ed17a9a167ca67ee94ac7b4110129e70268c6f809c75250eb0147974",
+    "boards-columns-cells-status-system-recovery.yml": "b758858c3675b07801f8512ac862349de60f5e74ca49bd8228a3aefbc402d9b6",
+    "boards-kanban-drag-drop-recovery.yml": "56efc798d174d4a01425f446358439d05e67089adc3565ef2dc1af3ac5f94826",
+    "boards-table-group-item-recovery.yml": "b93152be22a592f2b2c8694e6b1d221a9d5c8b80b815a8110e7e669809ac16c2",
+    "management-authority-consolidation.yml": "5254675eae35f24449481b90bb7b243f7adefae512384f9e1fbed9553988b625",
+    "rich-item-workspace-file-recovery.yml": "452f799c0c92709af699e82d35510cd39c3aefb74436136ec81a787548dcdcd3",
+    "users-rbac-functional-recovery.yml": "463b08f3ad06136b5d9a4df18d3c01a70d1a9da09fecddbccfa240e95d3a62b5",
+    "settings-functional-recovery.yml": "56e96d254d907466acca9cfa087543e672857e7d459cc2324c4bb5b285151ebb",
+    "account-functional-recovery.yml": "79653dd7a92ec7119dd0f9feb131fb72e3cd9fcefc642a5113a86a25b6bffb9b",
+    "final-legacy-deletion.yml": "09afc191799895d9696766e7306e5e7b70670e0c170b3d1ac9b3e1c96121c97c",
+    "cross-module-rbac-authenticated-e2e.yml": "82ee3405722511139695e0b10234837620dca0fc247ed600a8aba85e89666c8b",
+    "functional-regression-baseline.yml": "a0ebbd43fd3b6d63c2fcdad5ff4e379f5e2ed430e2b47702bac9420057cc309c"
+  },
+  "archiveOnlyWorkflows": {
+    "boards-backend-data-contract-recovery.yml": "3e111a5c492f1de7614119f36dc4a683bd212d7f7f93c2f6c887c8e334b2391f",
+    "boards-collection-route-recovery.yml": "bb964d8cb0f3b5cfae73490e33149b19318578989e7faf95dda527c520b20dda",
+    "boards-columns-cells-status-system-recovery.yml": "ff567d59aa2e03da79aa58cda00ad28b7f86fac619fac5c907e2d3d032f1be8f",
+    "boards-kanban-drag-drop-recovery.yml": "b3b79a5fed93a11ee9bbc9da08472da041ef57563b34b0f7687ce794efa5f51e",
+    "boards-table-group-item-recovery.yml": "ab2bdfef94e2614b0f5b033c2567ec0ae7347192cf00582b9196f8f9fea8f036",
+    "management-authority-consolidation.yml": "f1e9e43354c7346c4e5e45016afc47a756976b415d672772bd407d4ea8789e70",
+    "rich-item-workspace-file-recovery.yml": "c7236e3cabac7c036d4fdc94ca010ab2a9f4c193d4f4a6a2e65eff1ddfd76ad2",
+    "users-rbac-functional-recovery.yml": "c4202a526d753a7271cc270f895b82903cdcb3a4c85f5dd04f5baf7a5e60e1fb",
+    "settings-functional-recovery.yml": "f1bfcee6e01a8fec30cb1f9ae6a6a6acd729866c1b2ad9ebb705f5727a9d7751",
+    "account-functional-recovery.yml": "5909e4d5886450c440558ea257ba0db1a31bbf3504d3435bbff5465a9c0b1ba9",
+    "final-legacy-deletion.yml": "487c0c77effc91f2f1fccd0888040a506886188c4ee9e2cfb5fe04868f646123",
+    "cross-module-rbac-authenticated-e2e.yml": "338d78aecbc084a977e57233689e6a10ce9b6d9259c8515e4f6d492e75379907",
+    "functional-regression-baseline.yml": "10c17ed48c8568609cfdb951833783ccd7da70d82041cb90dbe4548b8a691aab"
+  },
+  "retainedAutomaticWorkflows": [
+    "auth-session-access-context.yml",
+    "backend-capability-preflight.yml",
+    "backup-disaster-recovery.yml",
+    "ci.yml",
+    "codeql.yml",
+    "database-tests.yml",
+    "dependency-review.yml",
+    "deploy-pages.yml",
+    "m145-clean-platform-successor.yml",
+    "modern-tests.yml",
+    "observability.yml",
+    "performance.yml",
+    "recovery-update-accessibility-quality-hardening.yml",
+    "route-lifecycle-recovery.yml",
+    "service-worker-updates.yml"
+  ]
+}
